@@ -1,0 +1,72 @@
+name: MSBuild
+
+on:
+  push:
+    branches:
+    - main
+    - release/*
+    tags:
+    - '[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+    - main
+    - release/*
+
+env:
+  SOLUTION_FILE_PATH: Pimax-OpenXR.sln
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    environment: build-and-sign
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v2
+    
+    - name: Checkout submodules
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: git submodule update --init
+
+    - name: Setup DevEnv
+      uses: seanmiddleditch/gha-setup-vsdevenv@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v2.3.1
+      with:
+        python-version: 3.8
+
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
+    - name: Build
+      env:
+        PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
+        PFX_NAME: "comodo"
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        # Need to build vdproj. We must invoke this tool from inside its own folder.
+        $DisableOutOfProcBuild=$(vswhere -latest -find  **\DisableOutOfProcBuild.exe)
+        Push-Location $(Split-Path $DisableOutOfProcBuild)
+        & $DisableOutOfProcBuild
+        Pop-Location
+        
+        # Finally, we may build the project.
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build ${{env.BUILD_CONFIGURATION}}
+
+    - name: Signing
+      env:
+        PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
+        PFX_NAME: "comodo"
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        $pfxName = if ($env:PFX_NAME) { $env:PFX_NAME } else { "selfsigncert" };
+        installer/signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/Pimax-OpenXR.msi
+
+    - name: Publish
+      uses: actions/upload-artifact@v2
+      with:
+        name: Setup
+        path: installer/output/Pimax-OpenXR.msi
