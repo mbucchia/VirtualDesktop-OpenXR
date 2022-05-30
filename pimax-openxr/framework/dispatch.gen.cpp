@@ -50,11 +50,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateInstanceExtensionProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateInstanceExtensionProperties: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateInstanceExtensionProperties %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateInstanceExtensionProperties_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateInstanceExtensionProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -70,11 +72,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateInstance_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateInstance: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateInstance %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateInstance_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateInstance %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -90,11 +94,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetInstanceProperties: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetInstanceProperties %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetInstanceProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -110,11 +116,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrPollEvent_Error", TLArg(exc.what(), "Error"));
 			Log("xrPollEvent: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrPollEvent %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrPollEvent_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrPollEvent %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -130,11 +138,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetSystem_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetSystem: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetSystem %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetSystem_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetSystem %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -150,11 +160,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetSystemProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetSystemProperties: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetSystemProperties %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetSystemProperties_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetSystemProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -170,11 +182,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateEnvironmentBlendModes_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateEnvironmentBlendModes: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateEnvironmentBlendModes %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateEnvironmentBlendModes_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateEnvironmentBlendModes %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -190,11 +204,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateSession: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateSession %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateSession_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -210,11 +226,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrDestroySession_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroySession: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrDestroySession %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrDestroySession_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrDestroySession %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -230,11 +248,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateReferenceSpaces: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateReferenceSpaces %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateReferenceSpaces %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -250,11 +270,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateReferenceSpace: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateReferenceSpace %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateReferenceSpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -270,11 +292,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetReferenceSpaceBoundsRect_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetReferenceSpaceBoundsRect: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetReferenceSpaceBoundsRect %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetReferenceSpaceBoundsRect_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetReferenceSpaceBoundsRect %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -290,11 +314,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateActionSpace: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateActionSpace %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateActionSpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -310,11 +336,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrLocateSpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrLocateSpace: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrLocateSpace %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrLocateSpace_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrLocateSpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -330,11 +358,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrDestroySpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroySpace: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrDestroySpace %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrDestroySpace_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrDestroySpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -350,11 +380,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurations_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateViewConfigurations: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateViewConfigurations %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurations_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateViewConfigurations %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -370,11 +402,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetViewConfigurationProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetViewConfigurationProperties: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetViewConfigurationProperties %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetViewConfigurationProperties_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetViewConfigurationProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -390,11 +424,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurationViews_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateViewConfigurationViews: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateViewConfigurationViews %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurationViews_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateViewConfigurationViews %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -410,11 +446,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainFormats_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateSwapchainFormats: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateSwapchainFormats %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainFormats_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateSwapchainFormats %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -430,11 +468,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateSwapchain: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateSwapchain %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateSwapchain %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -450,11 +490,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroySwapchain: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrDestroySwapchain %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrDestroySwapchain %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -470,11 +512,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateSwapchainImages: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateSwapchainImages %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateSwapchainImages %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -490,11 +534,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage_Error", TLArg(exc.what(), "Error"));
 			Log("xrAcquireSwapchainImage: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrAcquireSwapchainImage %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrAcquireSwapchainImage %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -510,11 +556,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrWaitSwapchainImage_Error", TLArg(exc.what(), "Error"));
 			Log("xrWaitSwapchainImage: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrWaitSwapchainImage %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrWaitSwapchainImage_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrWaitSwapchainImage %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -530,11 +578,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage_Error", TLArg(exc.what(), "Error"));
 			Log("xrReleaseSwapchainImage: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrReleaseSwapchainImage %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrReleaseSwapchainImage %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -550,11 +600,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrBeginSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrBeginSession: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrBeginSession %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrBeginSession_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrBeginSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -570,11 +622,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEndSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrEndSession: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEndSession %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEndSession_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEndSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -590,11 +644,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrRequestExitSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrRequestExitSession: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrRequestExitSession %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrRequestExitSession_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrRequestExitSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -610,11 +666,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrWaitFrame_Error", TLArg(exc.what(), "Error"));
 			Log("xrWaitFrame: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrWaitFrame %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrWaitFrame_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrWaitFrame %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -630,11 +688,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrBeginFrame_Error", TLArg(exc.what(), "Error"));
 			Log("xrBeginFrame: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrBeginFrame %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrBeginFrame_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrBeginFrame %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -650,11 +710,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEndFrame_Error", TLArg(exc.what(), "Error"));
 			Log("xrEndFrame: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEndFrame %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEndFrame_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEndFrame %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -670,11 +732,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrLocateViews_Error", TLArg(exc.what(), "Error"));
 			Log("xrLocateViews: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrLocateViews %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrLocateViews_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrLocateViews %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -690,11 +754,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrStringToPath_Error", TLArg(exc.what(), "Error"));
 			Log("xrStringToPath: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrStringToPath %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrStringToPath_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrStringToPath %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -710,11 +776,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrPathToString_Error", TLArg(exc.what(), "Error"));
 			Log("xrPathToString: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrPathToString %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrPathToString_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrPathToString %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -730,11 +798,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateActionSet_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateActionSet: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateActionSet %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateActionSet_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateActionSet %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -750,11 +820,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroyActionSet: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrDestroyActionSet %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrDestroyActionSet %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -770,11 +842,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateAction_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateAction: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrCreateAction %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrCreateAction_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrCreateAction %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -790,11 +864,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrDestroyAction_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroyAction: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrDestroyAction %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrDestroyAction_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrDestroyAction %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -810,11 +886,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrSuggestInteractionProfileBindings_Error", TLArg(exc.what(), "Error"));
 			Log("xrSuggestInteractionProfileBindings: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrSuggestInteractionProfileBindings %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrSuggestInteractionProfileBindings_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrSuggestInteractionProfileBindings %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -830,11 +908,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets_Error", TLArg(exc.what(), "Error"));
 			Log("xrAttachSessionActionSets: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrAttachSessionActionSets %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrAttachSessionActionSets %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -850,11 +930,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetCurrentInteractionProfile_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetCurrentInteractionProfile: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetCurrentInteractionProfile %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetCurrentInteractionProfile_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetCurrentInteractionProfile %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -870,11 +952,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStateBoolean: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetActionStateBoolean %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetActionStateBoolean %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -890,11 +974,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStateFloat: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetActionStateFloat %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetActionStateFloat %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -910,11 +996,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStateVector2f: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetActionStateVector2f %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetActionStateVector2f %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -930,11 +1018,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStatePose: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetActionStatePose %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetActionStatePose %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -950,11 +1040,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrSyncActions_Error", TLArg(exc.what(), "Error"));
 			Log("xrSyncActions: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrSyncActions %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrSyncActions_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrSyncActions %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -970,11 +1062,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrEnumerateBoundSourcesForAction_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateBoundSourcesForAction: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrEnumerateBoundSourcesForAction %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateBoundSourcesForAction_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrEnumerateBoundSourcesForAction %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -990,11 +1084,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetInputSourceLocalizedName: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrGetInputSourceLocalizedName %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrGetInputSourceLocalizedName %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -1010,11 +1106,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback_Error", TLArg(exc.what(), "Error"));
 			Log("xrApplyHapticFeedback: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrApplyHapticFeedback %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrApplyHapticFeedback %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -1030,11 +1128,13 @@ namespace RUNTIME_NAMESPACE
 		}
 		catch (std::exception exc)
 		{
+			TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback_Error", TLArg(exc.what(), "Error"));
 			Log("xrStopHapticFeedback: %s\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}
 
-		DebugLog("<-- xrStopHapticFeedback %d\n", result);
+		TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- xrStopHapticFeedback %s\n", xr::ToCString(result));
 
 		return result;
 	}

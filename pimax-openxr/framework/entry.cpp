@@ -53,7 +53,7 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
 
     // Start logging to file.
     if (!logStream.is_open()) {
-        std::string logFile = (localAppData / "logs" / (RuntimeName + ".log")).string();
+        std::string logFile = (localAppData / (RuntimeName + ".log")).string();
         logStream.open(logFile, std::ios_base::ate);
     }
 

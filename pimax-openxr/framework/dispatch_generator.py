@@ -150,11 +150,13 @@ namespace RUNTIME_NAMESPACE
 		}}
 		catch (std::exception exc)
 		{{
+			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
 			Log("{cur_cmd.name}: %s\\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}}
 
-		DebugLog("<-- {cur_cmd.name} %d\\n", result);
+		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Result", TLArg(xr::ToCString(result), "Result"));
+		DebugLog("<-- {cur_cmd.name} %s\\n", xr::ToCString(result));
 
 		return result;
 	}}
@@ -171,6 +173,7 @@ namespace RUNTIME_NAMESPACE
 		}}
 		catch (std::runtime_error exc)
 		{{
+			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
 			Log("{cur_cmd.name}: %s\\n", exc.what());
 		}}
 

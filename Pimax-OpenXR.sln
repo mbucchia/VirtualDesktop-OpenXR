@@ -17,6 +17,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{BA775DE9-671E-4E3B-92AC-9828C2AAF490}"
 	ProjectSection(SolutionItems) = preProject
 		scripts\Install-Runtime.ps1 = scripts\Install-Runtime.ps1
+		scripts\PimaxOpenXR.wprp = scripts\PimaxOpenXR.wprp
 	EndProjectSection
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "installer", "installer\installer.vdproj", "{8B253B1D-439A-4A30-AEC6-D1984861AD88}"

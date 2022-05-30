@@ -23,35 +23,44 @@
 #pragma once
 
 // Standard library.
-#include <array>
+#include <algorithm>
 #include <chrono>
+#include <condition_variable>
 #include <cstdarg>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <set>
+#include <optional>
 #include <sstream>
 #include <string>
-#include <memory>
-#include <map>
-#include <optional>
 #include <vector>
 
 using namespace std::chrono_literals;
 
 // Windows header files.
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
 #include <unknwn.h>
 #include <wrl.h>
 #include <wil/resource.h>
+#include <traceloggingactivity.h>
+#include <traceloggingprovider.h>
 
 using Microsoft::WRL::ComPtr;
 
 // Graphics APIs.
 #include <d3d11.h>
 #include <dxgi.h>
+
+// Pimax SDK
+#include <PVR.h>
+#include <PVR_API_D3D.h>
 
 // OpenXR + Windows-specific definitions.
 #define XR_NO_PROTOTYPES
@@ -65,7 +74,10 @@ using Microsoft::WRL::ComPtr;
 
 // OpenXR utilities.
 #include <XrError.h>
+#include <XrHandle.h>
 #include <XrMath.h>
+#include <XrStereoView.h>
+#include <XrToString.h>
 
 // FMT formatter.
 #include <fmt/format.h>

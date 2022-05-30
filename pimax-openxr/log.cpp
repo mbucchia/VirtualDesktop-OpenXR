@@ -25,6 +25,13 @@
 namespace pimax_openxr::log {
     extern std::ofstream logStream;
 
+    // {cbf3adcd-42b1-4c38-830b-91980af201f6}
+    TRACELOGGING_DEFINE_PROVIDER(g_traceProvider,
+                                 "PimaxOpenXR",
+                                 (0xcbf3adcd, 0x42b1, 0x4c38, 0x83, 0x0b, 0x91, 0x98, 0x0a, 0xf2, 0x01, 0xf6));
+
+    TraceLoggingActivity<g_traceProvider> g_traceActivity;
+
     namespace {
 
         // Utility logging function.

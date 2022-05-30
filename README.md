@@ -12,10 +12,16 @@ For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.l
 
 ## Limitations
 
-- TBD
+- Windows OS support only.
+- Direct3D 11 support only.
+- Limited support for quad layers (no alpha blending).
+- No motion controller support.
+- No depth reprojection support.
+- No motion smoothing nor motion reprojection support.
+- No hidden area mesh support.
 
 ## Known issues
 
-- TBD`
+- Compatible with OpenXR Toolkit 1.1.0 (version 1.1.2 and above have serious menu issues due to the quad layer limitations above).
 
 If you are having issues, please visit the [Issues page](https://github.com/mbucchia/Pimax-OpenXR/issues) to look at existing support requests or to file a new one.
