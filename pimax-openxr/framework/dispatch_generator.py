@@ -202,7 +202,7 @@ namespace RUNTIME_NAMESPACE
 		}}
 '''
 
-        generated += '''		else 
+        generated += f'''		else
 		{{
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
 		}}

@@ -22,6 +22,6 @@ For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.l
 
 ## Known issues
 
-- Compatible with OpenXR Toolkit 1.1.0 (version 1.1.2 and above have serious menu issues due to the quad layer limitations above).
+- Compatible only with OpenXR Toolkit 1.1.0 (version 1.1.2 and above have serious menu issues due to the quad layer limitations above).
 
 If you are having issues, please visit the [Issues page](https://github.com/mbucchia/Pimax-OpenXR/issues) to look at existing support requests or to file a new one.

@@ -74,7 +74,6 @@ using Microsoft::WRL::ComPtr;
 
 // OpenXR utilities.
 #include <XrError.h>
-#include <XrHandle.h>
 #include <XrMath.h>
 #include <XrStereoView.h>
 #include <XrToString.h>

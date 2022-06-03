@@ -57,7 +57,7 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
         logStream.open(logFile, std::ios_base::ate);
     }
 
-    Log("%s\n", RuntimePrettyNameFull.c_str());
+    Log("%s\n", RuntimePrettyName.c_str());
 
     if (!loaderInfo || !runtimeRequest || loaderInfo->structType != XR_LOADER_INTERFACE_STRUCT_LOADER_INFO ||
         loaderInfo->structVersion != XR_LOADER_INFO_STRUCT_VERSION ||

@@ -1354,9 +1354,9 @@ namespace RUNTIME_NAMESPACE
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStopHapticFeedback);
 		}
 		else 
-		{{
+		{
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
-		}}
+		}
 
 		return XR_SUCCESS;
 	}
