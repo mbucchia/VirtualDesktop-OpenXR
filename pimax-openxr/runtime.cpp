@@ -949,6 +949,8 @@ namespace {
                               TLPArg(session, "Session"),
                               TLArg(xr::ToCString(referenceSpaceType), "ReferenceSpaceType"));
 
+            bounds->width = bounds->height = 0.f;
+
             return XR_SPACE_BOUNDS_UNAVAILABLE;
         }
 
@@ -979,7 +981,9 @@ namespace {
 
             // Locate the HMD for view poses, otherwise use the origin.
             XrPosef pose = Pose::Identity();
-            if (xrSpace->referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
+            if ((xrSpace->referenceType == XR_REFERENCE_SPACE_TYPE_VIEW ||
+                 xrBaseSpace->referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) &&
+                xrSpace->referenceType != xrBaseSpace->referenceType) {
                 pvrPoseStatef state{};
                 CHECK_PVRCMD(
                     pvr_getTrackedDevicePoseState(m_pvrSession, pvrTrackedDevice_HMD, xrTimeToPvrTime(time), &state));
@@ -998,6 +1002,11 @@ namespace {
                     location->locationFlags |=
                         (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
                 }
+
+                // If the view is the reference, then we need the inverted pose.
+                if (xrBaseSpace->referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
+                    StoreXrPose(&location->pose, LoadInvertedXrPose(location->pose));
+                }
             } else {
                 location->locationFlags =
                     (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
@@ -1005,9 +1014,10 @@ namespace {
             }
 
             // Apply the offset transforms.
-            StoreXrPose(&location->pose,
-                        XMMatrixMultiply(LoadXrPose(xrSpace->poseInSpace),
-                                         XMMatrixMultiply(LoadXrPose(xrBaseSpace->poseInSpace), LoadXrPose(pose))));
+            StoreXrPose(
+                &location->pose,
+                XMMatrixMultiply(LoadXrPose(xrSpace->poseInSpace),
+                                 XMMatrixMultiply(LoadXrPose(pose), LoadInvertedXrPose(xrBaseSpace->poseInSpace))));
 
             TraceLoggingWrite(g_traceProvider,
                               "xrLocateSpace",
@@ -1558,13 +1568,20 @@ namespace {
                 TraceLoggingWrite(g_traceProvider, "WaitFrame1_End");
 
                 const double now = pvr_getTimeSeconds(m_pvr);
-                const double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, m_nextFrameIndex);
+                double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, m_nextFrameIndex);
                 TraceLoggingWrite(g_traceProvider,
                                   "WaitFrame",
                                   TLArg(m_nextFrameIndex, "ThisFrameIndex"),
                                   TLArg(now, "Now"),
                                   TLArg(predictedDisplayTime, "PredictedDisplayTime"),
                                   TLArg(predictedDisplayTime - now, "PhotonTime"));
+
+                // When behind too much (200ms is arbitrary), we skip rendering and provide an ideal frame time.
+                if (predictedDisplayTime < now - 0.2) {
+                    // We always render the first frame to kick off PVR.
+                    frameState->shouldRender = m_nextFrameIndex == 0;
+                    predictedDisplayTime = now + m_frameDuration;
+                }
 
                 // Setup the app frame for use and the next frame for this call.
                 frameState->predictedDisplayTime = pvrTimeToXrTime(predictedDisplayTime);
@@ -1932,7 +1949,7 @@ namespace {
             double pvrTime = xrTimeToPvrTime(time);
             pvrTime -= m_pvrTimeFromQpcTimeOffset;
 
-            performanceCounter->QuadPart = pvrTime * m_qpcFrequency.QuadPart;
+            performanceCounter->QuadPart = (LONGLONG)(pvrTime * m_qpcFrequency.QuadPart);
 
             TraceLoggingWrite(g_traceProvider,
                               "xrConvertTimeToWin32PerformanceCounterKHR",
