@@ -1,6 +1,8 @@
 # OpenXR runtime for Pimax headsets
 
-This is a minimal OpenXR runtime for Pimax devices.
+This program is an unofficial OpenXR runtime for Pimax headsets with minimal functionality. It is not produced by Pimax.
+
+It is built on top of the official Pimax PVR native SDK and aims to provide a very fast and efficient implementation of the OpenXR standard for Pimax headsets. This runtime is not compliant and only implement what is necessary to run common OpenXR applications.
 
 DISCLAIMER: This software is distributed as-is, without any warranties or conditions of any kind. Use at your own risks.
 
@@ -19,12 +21,24 @@ For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.l
 - Limited support for quad layers (no alpha blending).
 - No motion controller support.
 - No depth reprojection support.
-- No hidden area mesh support.
 
-So far, it has only been tested with Microsoft Flight Simulator 2020 and DCS (through the use of [OpenComposite](https://gitlab.com/znixian/OpenOVR/-/tree/openxr)), and with a Pimax 8KX.
+Tested with the following applications with a Pimax 8KX:
+- Microsoft Flight Simulator 2020*
+- Digital Combat Simulator (DCS)* (through [OpenComposite](https://gitlab.com/znixian/OpenOVR/-/tree/openxr))
+- Assetto Corsa* (through OpenComposite)
+- IL-2 Sturmovik (through OpenComposite)
+- Unity
+- StereoKit*
+
+(*) OpenXR Toolkit version 1.1.0 was tested with these applications.
 
 ## Known issues
 
-- Not yet compatible with the OpenXR Toolkit.
+- This runtime is not yet compatible with the OpenXR Toolkit. It may or may not work depending on the application.
+  - Please use only OpenXR Toolkit version 1.1.0. More recent versions will not work.
+  - Please disable the OpenXR Toolkit if you are having issues.
+- War Thunder crashes upon startup.
+- Project Cars 2 (through OpenComposite) does not correctly display each eye.
+- Applications hosted in a secure app container will fail to start: the Pimax SDK does not seem to support RPC in this configuration.
 
 If you are having issues, please visit the [Issues page](https://github.com/mbucchia/Pimax-OpenXR/issues) to look at existing support requests or to file a new one.
