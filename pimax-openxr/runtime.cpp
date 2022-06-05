@@ -239,6 +239,8 @@ namespace {
                 *function = reinterpret_cast<PFN_xrVoidFunction>(_xrConvertWin32PerformanceCounterToTimeKHR);
             } else if (apiName == "xrConvertTimeToWin32PerformanceCounterKHR") {
                 *function = reinterpret_cast<PFN_xrVoidFunction>(_xrConvertTimeToWin32PerformanceCounterKHR);
+            } else if (apiName == "xrGetVisibilityMaskKHR") {
+                *function = reinterpret_cast<PFN_xrVoidFunction>(_xrGetVisibilityMaskKHR);
             } else {
                 result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
             }
@@ -267,7 +269,10 @@ namespace {
                 {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
                  XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION},
 
-                // FIXME: Add new extensions here: XR_KHR_visibility_mask...
+                // Hidden area mesh.
+                {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION},
+
+                // FIXME: Add new extensions here.
             };
 
             TraceLoggingWrite(g_traceProvider,
@@ -343,7 +348,8 @@ namespace {
                 // FIXME: Add new extension validation here.
                 if (extensionName == XR_KHR_D3D11_ENABLE_EXTENSION_NAME) {
                     m_isD3D11Supported = true;
-                } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
+                } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME ||
+                           extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
                     // Do nothing.
                 } else {
                     return XR_ERROR_EXTENSION_NOT_PRESENT;
@@ -1974,6 +1980,67 @@ namespace {
             return XR_SUCCESS;
         }
 
+        XrResult xrGetVisibilityMaskKHR(XrSession session,
+                                        XrViewConfigurationType viewConfigurationType,
+                                        uint32_t viewIndex,
+                                        XrVisibilityMaskTypeKHR visibilityMaskType,
+                                        XrVisibilityMaskKHR* visibilityMask) {
+            if (visibilityMask->type != XR_TYPE_VISIBILITY_MASK_KHR) {
+                return XR_ERROR_VALIDATION_FAILURE;
+            }
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetVisibilityMaskKHR",
+                              TLPArg(session, "Session"),
+                              TLArg(xr::ToCString(viewConfigurationType), "ViewConfigurationType"),
+                              TLArg(viewIndex, "ViewIndex"),
+                              TLArg(xr::ToCString(visibilityMaskType), "VisibilityMaskType"),
+                              TLArg(visibilityMask->vertexCapacityInput, "VertexCapacityInput"),
+                              TLArg(visibilityMask->indexCapacityInput, "IndexCapacityInput"));
+
+            if (!m_sessionCreated || session != (XrSession)1) {
+                return XR_ERROR_HANDLE_INVALID;
+            }
+
+            if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+
+            if (viewIndex >= xr::StereoView::Count) {
+                return XR_ERROR_VALIDATION_FAILURE;
+            }
+
+            if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR) {
+                // TODO: This is a non-standard return for this function.
+                return XR_ERROR_FEATURE_UNSUPPORTED;
+            }
+
+            const auto verticesCount =
+                pvr_getEyeHiddenAreaMesh(m_pvrSession, !viewIndex ? pvrEye_Left : pvrEye_Right, nullptr, 0);
+            TraceLoggingWrite(g_traceProvider, "PVR_EyeHiddenAreaMesh", TLArg(verticesCount, "VerticesCount"));
+
+            if (visibilityMask->vertexCapacityInput == 0) {
+                visibilityMask->vertexCountOutput = verticesCount;
+                visibilityMask->indexCountOutput = verticesCount;
+            } else if (visibilityMask->vertices && visibilityMask->indices) {
+                if (visibilityMask->vertexCapacityInput < verticesCount ||
+                    visibilityMask->indexCapacityInput < verticesCount) {
+                    return XR_ERROR_SIZE_INSUFFICIENT;
+                }
+
+                static_assert(sizeof(XrVector2f) == sizeof(pvrVector2f));
+                pvr_getEyeHiddenAreaMesh(m_pvrSession,
+                                         !viewIndex ? pvrEye_Left : pvrEye_Right,
+                                         (pvrVector2f*)visibilityMask->vertices,
+                                         verticesCount);
+
+                convertSteamVRToOpenXRHiddenMesh(
+                    m_cachedEyeInfo[viewIndex].Fov, visibilityMask->vertices, visibilityMask->indices, verticesCount);
+            }
+
+            return XR_SUCCESS;
+        }
+
         //
         // Actions management.
         // TODO: Not supported. We do the bare minimum so that the app will not crash but also detect common errors.
@@ -2496,6 +2563,47 @@ namespace {
             committed.insert(std::make_pair(xrSwapchain.pvrSwapchain[0], slice));
         }
 
+        void convertSteamVRToOpenXRHiddenMesh(const pvrFovPort& fov,
+                                              XrVector2f* vertices,
+                                              uint32_t* indices,
+                                              uint32_t count) const {
+            const float b = -fov.DownTan;
+            const float t = fov.UpTan;
+            const float l = -fov.LeftTan;
+            const float r = fov.RightTan;
+
+            // z = -1, n = 1
+            // pndcx = (2n/(r-l) * pvx - (r+l)/(r-l)) / -z => pvx = (pndcx + (r+l)/(r-l))/(2n/(r-l))
+            // pndcy = (2n/(t-b) * pvy - (t+b)/(t-b)) / -z => pvy = (pndcy + (t+b)/(t-b))/(2n/(t-b))
+            const float hSpanRcp = 1.0f / (r - l);
+            const float vSpanRcp = 1.0f / (t - b);
+
+            // (r+l)/(r-l)
+            const float rplOverHSpan = (r + l) * hSpanRcp;
+            const float tpbOverVSpan = (t + b) * vSpanRcp;
+
+            const float halfHSpan = (r - l) * 0.5f;
+            const float halfVSpan = (t - b) * 0.5f;
+
+            // constTerm = (r+l)/(r-l)/(2n(r-l))
+            const float hConstTerm = rplOverHSpan * halfHSpan;
+            const float vConstTerm = tpbOverVSpan * halfVSpan;
+
+            for (uint32_t i = 0; i < count; i++) {
+                // Screen to NDC.
+                XrVector2f ndc{(vertices[i].x - 0.5f) * 2.f, (vertices[i].y - 0.5f) * 2.f};
+
+                // Project the vertex.
+                XMStoreFloat2(reinterpret_cast<XMFLOAT2*>(&vertices[i]),
+                              XMVectorMultiplyAdd(XMVECTORF32{{{ndc.x, ndc.y, 0.f, 0.f}}},
+                                                  XMVECTORF32{{{halfHSpan, halfVSpan, 0.f, 0.f}}},
+                                                  XMVECTORF32{{{hConstTerm, vConstTerm, 0.f, 0.f}}}));
+
+                // Record the indices.
+                indices[i] = i;
+            }
+        }
+
         std::string getXrPath(XrPath path) const {
             if (path == XR_NULL_PATH) {
                 return "";
@@ -2598,6 +2706,28 @@ namespace {
             }
 
             DebugLog("<-- xrConvertTimeToWin32PerformanceCounterKHR %s\n", xr::ToCString(result));
+
+            return result;
+        }
+
+        static XrResult _xrGetVisibilityMaskKHR(XrSession session,
+                                                XrViewConfigurationType viewConfigurationType,
+                                                uint32_t viewIndex,
+                                                XrVisibilityMaskTypeKHR visibilityMaskType,
+                                                XrVisibilityMaskKHR* visibilityMask) {
+            DebugLog("--> xrGetVisibilityMaskKHR\n");
+
+            XrResult result;
+            try {
+                result = dynamic_cast<OpenXrRuntime*>(GetInstance())
+                             ->xrGetVisibilityMaskKHR(
+                                 session, viewConfigurationType, viewIndex, visibilityMaskType, visibilityMask);
+            } catch (std::exception& exc) {
+                Log("xrGetVisibilityMaskKHR: %s\n", exc.what());
+                result = XR_ERROR_RUNTIME_FAILURE;
+            }
+
+            DebugLog("<-- xrGetVisibilityMaskKHR %s\n", xr::ToCString(result));
 
             return result;
         }
