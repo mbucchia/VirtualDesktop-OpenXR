@@ -1562,10 +1562,32 @@ namespace {
             {
                 std::unique_lock lock(m_frameLock);
 
-                // Limit to 1 frame in-flight.
-                TraceLoggingWrite(g_traceProvider, "WaitFrame1_Begin");
-                m_frameCondVar.wait(lock, [&] { return !m_frameWaited; });
-                TraceLoggingWrite(g_traceProvider, "WaitFrame1_End");
+                // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
+                if (m_frameWaited) {
+                    TraceLoggingWrite(g_traceProvider, "WaitFrame1_Begin");
+                    const bool timedOut = !m_frameCondVar.wait_for(lock, 10000ms, [&] { return m_frameBegun; });
+                    TraceLoggingWrite(g_traceProvider, "WaitFrame1_End", TLArg(timedOut, "TimedOut"));
+                    // TODO: What to do if timed out? This would mean an app deadlock should have happened.
+                }
+
+                // Calculate the time to the next frame.
+                auto timeout = 100ms;
+                double amount = 0.0;
+                if (m_lastFrameWaitedTime) {
+                    const double now = pvr_getTimeSeconds(m_pvr);
+                    const double nextFrameTime = m_lastFrameWaitedTime.value() + m_frameDuration;
+                    if (nextFrameTime > now) {
+                        amount = nextFrameTime - now;
+                        timeout = std::chrono::milliseconds((uint64_t)(amount * 1e3));
+                    } else {
+                        timeout = 0ms;
+                    }
+                }
+
+                // Wait for xrEndFrame() completion or for the next frame time.
+                TraceLoggingWrite(g_traceProvider, "WaitFrame2_Begin", TLArg(amount, "Amount"));
+                const bool timedOut = !m_frameCondVar.wait_for(lock, timeout, [&] { return !m_frameBegun; });
+                TraceLoggingWrite(g_traceProvider, "WaitFrame2_End", TLArg(timedOut, "TimedOut"));
 
                 const double now = pvr_getTimeSeconds(m_pvr);
                 double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, m_nextFrameIndex);
@@ -1592,19 +1614,6 @@ namespace {
                 TraceLoggingWrite(g_traceProvider, "WaitFrame", TLArg(m_nextFrameIndex, "NextFrameIndex"));
             }
 
-            // Throttle if needed.
-            // TODO: Apparently this is not needed. Not sure what throttles the display? pvr_submitFrame() I suspect.
-#if 0
-            if (m_lastFrameWaitedTime) {
-                const double now = pvr_getTimeSeconds(m_pvr);
-                const double delta = now - m_lastFrameWaitedTime.value();
-                if (delta < m_frameDuration) {
-                    TraceLoggingWrite(g_traceProvider, "WaitFrame2_Begin", TLArg(delta, "Amount"));
-                    std::this_thread::sleep_for(std::chrono::duration<double>(delta));
-                    TraceLoggingWrite(g_traceProvider, "WaitFrame2_End");
-                }
-            }
-#endif
             m_lastFrameWaitedTime = pvr_getTimeSeconds(m_pvr);
 
             TraceLoggingWrite(g_traceProvider,
@@ -1627,6 +1636,8 @@ namespace {
                 return XR_ERROR_HANDLE_INVALID;
             }
 
+            bool frameDiscarded = false;
+
             // Critical section.
             {
                 std::unique_lock lock(m_frameLock);
@@ -1636,15 +1647,21 @@ namespace {
                 }
 
                 if (m_frameBegun) {
-                    return XR_FRAME_DISCARDED;
+                    frameDiscarded = true;
                 }
 
                 m_currentFrameIndex = m_nextFrameIndex;
                 TraceLoggingWrite(g_traceProvider, "BeginFrame", TLArg(m_nextFrameIndex, "CurrentFrameIndex"));
+
+                m_frameWaited = false;
                 m_frameBegun = true;
+
+                // Signal xrWaitFrame().
+                TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
+                m_frameCondVar.notify_one();
             }
 
-            return XR_SUCCESS;
+            return !frameDiscarded ? XR_SUCCESS : XR_FRAME_DISCARDED;
         }
 
         XrResult xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo) override {
@@ -1819,7 +1836,6 @@ namespace {
                     TraceLoggingWrite(g_traceProvider, "PVR_SubmitFrame_End");
                 }
 
-                m_frameWaited = false;
                 m_frameBegun = false;
 
                 // Signal xrWaitFrame().
