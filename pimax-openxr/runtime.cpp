@@ -528,7 +528,10 @@ namespace {
                               TLArg(info.Resolution.h, "ResolutionHeight"));
 
             properties->vendorId = info.VendorId;
-            sprintf_s(properties->systemName, sizeof(properties->systemName), "%s", info.ProductName);
+
+            // We include the "aapvr" string because some applications like OpenXR Toolkit rely on this string to
+            // identify Pimax.
+            sprintf_s(properties->systemName, sizeof(properties->systemName), "%s (aapvr)", info.ProductName);
             properties->systemId = systemId;
 
             properties->trackingProperties.positionTracking = XR_TRUE;
