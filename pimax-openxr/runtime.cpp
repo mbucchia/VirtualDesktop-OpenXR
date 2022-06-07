@@ -1705,11 +1705,10 @@ namespace {
                 std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
 
                 // Construct the list of layers.
-                std::vector<pvrLayer_Union> layersAllocator;
+                std::vector<pvrLayer_Union> layersAllocator(frameEndInfo->layerCount);
                 std::vector<pvrLayerHeader*> layers;
                 for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
-                    layersAllocator.push_back({});
-                    auto& layer = layersAllocator.back();
+                    auto& layer = layersAllocator[i];
 
                     // TODO: What do we do with layerFlags?
 
