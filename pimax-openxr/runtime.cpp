@@ -387,7 +387,7 @@ namespace {
                 return XR_ERROR_HANDLE_INVALID;
             }
 
-            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Pimax (Unofficial)");
+            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "PimaxXR (Unofficial)");
             // This cannot be all 0.
             instanceProperties->runtimeVersion =
                 XR_MAKE_VERSION(RuntimeVersionMajor,

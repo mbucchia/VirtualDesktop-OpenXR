@@ -28,11 +28,11 @@ namespace pimax_openxr {
 
     const unsigned int RuntimeVersionMajor = 0;
     const unsigned int RuntimeVersionMinor = 1;
-    const unsigned int RuntimeVersionPatch = 0;
+    const unsigned int RuntimeVersionPatch = 1;
 
     const std::string RuntimeName = "pimax-openxr";
-    const std::string RuntimePrettyName = fmt::format(
-        "Pimax-OpenXR - Unreleased (v{}.{}.{})", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
+    const std::string RuntimePrettyName =
+        fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
 
     // Singleton accessor.
     OpenXrApi* GetInstance();

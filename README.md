@@ -1,4 +1,4 @@
-# OpenXR runtime for Pimax headsets
+# PimaxXR: an OpenXR runtime for Pimax headsets
 
 This program is an unofficial OpenXR runtime for Pimax headsets with minimal functionality. It is not produced by Pimax.
 

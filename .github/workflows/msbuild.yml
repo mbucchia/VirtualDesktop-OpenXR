@@ -63,10 +63,10 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         $pfxName = if ($env:PFX_NAME) { $env:PFX_NAME } else { "selfsigncert" };
-        installer/signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/Pimax-OpenXR.msi
+        installer/signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/PimaxXR.msi
 
     - name: Publish
       uses: actions/upload-artifact@v2
       with:
         name: Setup
-        path: installer/output/Pimax-OpenXR.msi
+        path: installer/output/PimaxXR.msi
