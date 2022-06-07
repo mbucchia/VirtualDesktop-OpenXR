@@ -42,3 +42,9 @@ Tested with the following applications with a Pimax 8KX:
 - Applications hosted in a secure app container will fail to start: the Pimax SDK does not seem to support RPC in this configuration.
 
 If you are having issues, please visit the [Issues page](https://github.com/mbucchia/Pimax-OpenXR/issues) to look at existing support requests or to file a new one.
+
+## Contributors
+
+Special thanks to the following individuals for their contributions:
+
+- Vladimir Dranyonkov
