@@ -18,8 +18,8 @@ For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.l
 - Direct3D support only.
   - Direct3D 11 is supported out-of-the-box.
   - Direct3D 12 is supported via [OpenXR-D3D12on11](https://github.com/mbucchia/OpenXR-D3D12on11).
-- Limited support for quad layers (no alpha blending).
 - No motion controller support.
+- No parallel projection support.
 - No depth reprojection support.
 
 Tested with the following applications with a Pimax 8KX:
@@ -27,6 +27,7 @@ Tested with the following applications with a Pimax 8KX:
 - Digital Combat Simulator (DCS)* (through [OpenComposite](https://gitlab.com/znixian/OpenOVR/-/tree/openxr))
 - Assetto Corsa* (through OpenComposite)
 - IL-2 Sturmovik (through OpenComposite)
+- R.E.A.L mod (Cyberpunk 2077, Red Dead Redemption 2)
 - Unity
 - StereoKit*
 
@@ -35,10 +36,11 @@ Tested with the following applications with a Pimax 8KX:
 ## Known issues
 
 - This runtime is not yet compatible with the OpenXR Toolkit. It may or may not work depending on the application.
-  - Please use only OpenXR Toolkit version 1.1.0. More recent versions will not work.
   - Please disable the OpenXR Toolkit if you are having issues.
 - War Thunder crashes upon startup.
+- Assetto Corsa Competizione (through OpenComposite) crashes upon startup.
 - Project Cars 2 (through OpenComposite) does not correctly display each eye.
+- rFactor 2 (through OpenComposite) does not correctly display each eye.
 - Applications hosted in a secure app container will fail to start: the Pimax SDK does not seem to support RPC in this configuration.
 
 If you are having issues, please visit the [Issues page](https://github.com/mbucchia/Pimax-OpenXR/issues) to look at existing support requests or to file a new one.
