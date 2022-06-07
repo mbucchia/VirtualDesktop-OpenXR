@@ -1497,7 +1497,8 @@ namespace {
         XrResult xrWaitFrame(XrSession session,
                              const XrFrameWaitInfo* frameWaitInfo,
                              XrFrameState* frameState) override {
-            if (frameWaitInfo->type != XR_TYPE_FRAME_WAIT_INFO || frameState->type != XR_TYPE_FRAME_STATE) {
+            if ((frameWaitInfo && frameWaitInfo->type != XR_TYPE_FRAME_WAIT_INFO) ||
+                frameState->type != XR_TYPE_FRAME_STATE) {
                 return XR_ERROR_VALIDATION_FAILURE;
             }
 
@@ -1632,7 +1633,7 @@ namespace {
         }
 
         XrResult xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo) override {
-            if (frameBeginInfo->type != XR_TYPE_FRAME_BEGIN_INFO) {
+            if (frameBeginInfo && frameBeginInfo->type != XR_TYPE_FRAME_BEGIN_INFO) {
                 return XR_ERROR_VALIDATION_FAILURE;
             }
 
