@@ -199,13 +199,15 @@ namespace {
             Log("PVR: %s\n", versionString.data());
             TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
-            // Create the PVR session.
-            CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
-
-            // Check if the hidden area mask is available.
-            m_isVisibilityMaskSupported = pvr_getEyeHiddenAreaMesh(m_pvrSession, pvrEye_Left, nullptr, 0) != 0;
-            if (!m_isVisibilityMaskSupported) {
-                Log("Hidden area mesh is not enabled\n");
+            // Create the PVR session. Failing here is not considered fatal. We will try to initialize again during
+            // xrGetSystem(). This is to allow the application to create the instance and query its properties even if
+            // pi_server is not available.
+            if (pvr_createSession(m_pvr, &m_pvrSession) == pvr_success) {
+                // Check if the hidden area mask is available.
+                m_isVisibilityMaskSupported = pvr_getEyeHiddenAreaMesh(m_pvrSession, pvrEye_Left, nullptr, 0) != 0;
+                if (!m_isVisibilityMaskSupported) {
+                    Log("Hidden area mesh is not enabled\n");
+                }
             }
 
             QueryPerformanceFrequency(&m_qpcFrequency);
@@ -472,6 +474,11 @@ namespace {
 
             if (getInfo->formFactor != XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY) {
                 return XR_ERROR_FORM_FACTOR_UNSUPPORTED;
+            }
+
+            // Create the PVR session.
+            if (!m_pvrSession) {
+                CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
             }
 
             // Check for HMD presence.
