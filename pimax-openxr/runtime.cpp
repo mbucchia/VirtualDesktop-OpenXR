@@ -1748,8 +1748,6 @@ namespace {
 
                         layer.Header.Type = pvrLayerType_EyeFov;
 
-                        // TODO: layer.EyeFov.SensorSampleTime = XXX? Latch value from latest xrLocateViews()?
-
                         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
                             TraceLoggingWrite(
                                 g_traceProvider,
@@ -1795,6 +1793,8 @@ namespace {
                             layer.EyeFov.Fov[eye].UpTan = tan(proj->views[eye].fov.angleUp);
                             layer.EyeFov.Fov[eye].LeftTan = -tan(proj->views[eye].fov.angleLeft);
                             layer.EyeFov.Fov[eye].RightTan = tan(proj->views[eye].fov.angleRight);
+
+                            layer.EyeFov.SensorSampleTime = xrTimeToPvrTime(frameEndInfo->displayTime);
                         }
                     } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD) {
                         const XrCompositionLayerQuad* quad =
