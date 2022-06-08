@@ -41,7 +41,7 @@ namespace RUNTIME_NAMESPACE
 
 	XrResult xrEnumerateInstanceExtensionProperties(const char* layerName, uint32_t propertyCapacityInput, uint32_t* propertyCountOutput, XrExtensionProperties* properties)
 	{
-		DebugLog("--> xrEnumerateInstanceExtensionProperties\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateInstanceExtensionProperties");
 
 		XrResult result;
 		try
@@ -56,14 +56,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateInstanceExtensionProperties_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateInstanceExtensionProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateInstance(const XrInstanceCreateInfo* createInfo, XrInstance* instance)
 	{
-		DebugLog("--> xrCreateInstance\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateInstance");
 
 		XrResult result;
 		try
@@ -78,14 +77,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateInstance_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateInstance %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties)
 	{
-		DebugLog("--> xrGetInstanceProperties\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties");
 
 		XrResult result;
 		try
@@ -100,14 +98,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetInstanceProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData)
 	{
-		DebugLog("--> xrPollEvent\n");
+		TraceLoggingWrite(g_traceProvider, "xrPollEvent");
 
 		XrResult result;
 		try
@@ -122,14 +119,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrPollEvent_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrPollEvent %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetSystem(XrInstance instance, const XrSystemGetInfo* getInfo, XrSystemId* systemId)
 	{
-		DebugLog("--> xrGetSystem\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetSystem");
 
 		XrResult result;
 		try
@@ -144,14 +140,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetSystem_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetSystem %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProperties* properties)
 	{
-		DebugLog("--> xrGetSystemProperties\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetSystemProperties");
 
 		XrResult result;
 		try
@@ -166,14 +161,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetSystemProperties_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetSystemProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateEnvironmentBlendModes(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t environmentBlendModeCapacityInput, uint32_t* environmentBlendModeCountOutput, XrEnvironmentBlendMode* environmentBlendModes)
 	{
-		DebugLog("--> xrEnumerateEnvironmentBlendModes\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateEnvironmentBlendModes");
 
 		XrResult result;
 		try
@@ -188,14 +182,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateEnvironmentBlendModes_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateEnvironmentBlendModes %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateSession(XrInstance instance, const XrSessionCreateInfo* createInfo, XrSession* session)
 	{
-		DebugLog("--> xrCreateSession\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateSession");
 
 		XrResult result;
 		try
@@ -210,14 +203,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateSession_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrDestroySession(XrSession session)
 	{
-		DebugLog("--> xrDestroySession\n");
+		TraceLoggingWrite(g_traceProvider, "xrDestroySession");
 
 		XrResult result;
 		try
@@ -232,14 +224,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrDestroySession_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrDestroySession %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateReferenceSpaces(XrSession session, uint32_t spaceCapacityInput, uint32_t* spaceCountOutput, XrReferenceSpaceType* spaces)
 	{
-		DebugLog("--> xrEnumerateReferenceSpaces\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces");
 
 		XrResult result;
 		try
@@ -254,14 +245,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateReferenceSpaces %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo* createInfo, XrSpace* space)
 	{
-		DebugLog("--> xrCreateReferenceSpace\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace");
 
 		XrResult result;
 		try
@@ -276,14 +266,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateReferenceSpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df* bounds)
 	{
-		DebugLog("--> xrGetReferenceSpaceBoundsRect\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetReferenceSpaceBoundsRect");
 
 		XrResult result;
 		try
@@ -298,14 +287,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetReferenceSpaceBoundsRect_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetReferenceSpaceBoundsRect %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo* createInfo, XrSpace* space)
 	{
-		DebugLog("--> xrCreateActionSpace\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace");
 
 		XrResult result;
 		try
@@ -320,14 +308,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateActionSpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation* location)
 	{
-		DebugLog("--> xrLocateSpace\n");
+		TraceLoggingWrite(g_traceProvider, "xrLocateSpace");
 
 		XrResult result;
 		try
@@ -342,14 +329,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrLocateSpace_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrLocateSpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrDestroySpace(XrSpace space)
 	{
-		DebugLog("--> xrDestroySpace\n");
+		TraceLoggingWrite(g_traceProvider, "xrDestroySpace");
 
 		XrResult result;
 		try
@@ -364,14 +350,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrDestroySpace_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrDestroySpace %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateViewConfigurations(XrInstance instance, XrSystemId systemId, uint32_t viewConfigurationTypeCapacityInput, uint32_t* viewConfigurationTypeCountOutput, XrViewConfigurationType* viewConfigurationTypes)
 	{
-		DebugLog("--> xrEnumerateViewConfigurations\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurations");
 
 		XrResult result;
 		try
@@ -386,14 +371,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurations_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateViewConfigurations %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetViewConfigurationProperties(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, XrViewConfigurationProperties* configurationProperties)
 	{
-		DebugLog("--> xrGetViewConfigurationProperties\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetViewConfigurationProperties");
 
 		XrResult result;
 		try
@@ -408,14 +392,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetViewConfigurationProperties_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetViewConfigurationProperties %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateViewConfigurationViews(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t viewCapacityInput, uint32_t* viewCountOutput, XrViewConfigurationView* views)
 	{
-		DebugLog("--> xrEnumerateViewConfigurationViews\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurationViews");
 
 		XrResult result;
 		try
@@ -430,14 +413,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurationViews_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateViewConfigurationViews %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateSwapchainFormats(XrSession session, uint32_t formatCapacityInput, uint32_t* formatCountOutput, int64_t* formats)
 	{
-		DebugLog("--> xrEnumerateSwapchainFormats\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainFormats");
 
 		XrResult result;
 		try
@@ -452,14 +434,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainFormats_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateSwapchainFormats %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo* createInfo, XrSwapchain* swapchain)
 	{
-		DebugLog("--> xrCreateSwapchain\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain");
 
 		XrResult result;
 		try
@@ -474,14 +455,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateSwapchain %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrDestroySwapchain(XrSwapchain swapchain)
 	{
-		DebugLog("--> xrDestroySwapchain\n");
+		TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain");
 
 		XrResult result;
 		try
@@ -496,14 +476,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrDestroySwapchain %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateSwapchainImages(XrSwapchain swapchain, uint32_t imageCapacityInput, uint32_t* imageCountOutput, XrSwapchainImageBaseHeader* images)
 	{
-		DebugLog("--> xrEnumerateSwapchainImages\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages");
 
 		XrResult result;
 		try
@@ -518,14 +497,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateSwapchainImages %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquireInfo* acquireInfo, uint32_t* index)
 	{
-		DebugLog("--> xrAcquireSwapchainImage\n");
+		TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage");
 
 		XrResult result;
 		try
@@ -540,14 +518,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrAcquireSwapchainImage %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo* waitInfo)
 	{
-		DebugLog("--> xrWaitSwapchainImage\n");
+		TraceLoggingWrite(g_traceProvider, "xrWaitSwapchainImage");
 
 		XrResult result;
 		try
@@ -562,14 +539,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrWaitSwapchainImage_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrWaitSwapchainImage %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrReleaseSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageReleaseInfo* releaseInfo)
 	{
-		DebugLog("--> xrReleaseSwapchainImage\n");
+		TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage");
 
 		XrResult result;
 		try
@@ -584,14 +560,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrReleaseSwapchainImage %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrBeginSession(XrSession session, const XrSessionBeginInfo* beginInfo)
 	{
-		DebugLog("--> xrBeginSession\n");
+		TraceLoggingWrite(g_traceProvider, "xrBeginSession");
 
 		XrResult result;
 		try
@@ -606,14 +581,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrBeginSession_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrBeginSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEndSession(XrSession session)
 	{
-		DebugLog("--> xrEndSession\n");
+		TraceLoggingWrite(g_traceProvider, "xrEndSession");
 
 		XrResult result;
 		try
@@ -628,14 +602,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEndSession_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEndSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrRequestExitSession(XrSession session)
 	{
-		DebugLog("--> xrRequestExitSession\n");
+		TraceLoggingWrite(g_traceProvider, "xrRequestExitSession");
 
 		XrResult result;
 		try
@@ -650,14 +623,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrRequestExitSession_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrRequestExitSession %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrWaitFrame(XrSession session, const XrFrameWaitInfo* frameWaitInfo, XrFrameState* frameState)
 	{
-		DebugLog("--> xrWaitFrame\n");
+		TraceLoggingWrite(g_traceProvider, "xrWaitFrame");
 
 		XrResult result;
 		try
@@ -672,14 +644,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrWaitFrame_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrWaitFrame %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo)
 	{
-		DebugLog("--> xrBeginFrame\n");
+		TraceLoggingWrite(g_traceProvider, "xrBeginFrame");
 
 		XrResult result;
 		try
@@ -694,14 +665,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrBeginFrame_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrBeginFrame %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo)
 	{
-		DebugLog("--> xrEndFrame\n");
+		TraceLoggingWrite(g_traceProvider, "xrEndFrame");
 
 		XrResult result;
 		try
@@ -716,14 +686,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEndFrame_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEndFrame %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrLocateViews(XrSession session, const XrViewLocateInfo* viewLocateInfo, XrViewState* viewState, uint32_t viewCapacityInput, uint32_t* viewCountOutput, XrView* views)
 	{
-		DebugLog("--> xrLocateViews\n");
+		TraceLoggingWrite(g_traceProvider, "xrLocateViews");
 
 		XrResult result;
 		try
@@ -738,14 +707,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrLocateViews_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrLocateViews %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrStringToPath(XrInstance instance, const char* pathString, XrPath* path)
 	{
-		DebugLog("--> xrStringToPath\n");
+		TraceLoggingWrite(g_traceProvider, "xrStringToPath");
 
 		XrResult result;
 		try
@@ -760,14 +728,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrStringToPath_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrStringToPath %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrPathToString(XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
 	{
-		DebugLog("--> xrPathToString\n");
+		TraceLoggingWrite(g_traceProvider, "xrPathToString");
 
 		XrResult result;
 		try
@@ -782,14 +749,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrPathToString_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrPathToString %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo* createInfo, XrActionSet* actionSet)
 	{
-		DebugLog("--> xrCreateActionSet\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateActionSet");
 
 		XrResult result;
 		try
@@ -804,14 +770,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateActionSet_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateActionSet %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrDestroyActionSet(XrActionSet actionSet)
 	{
-		DebugLog("--> xrDestroyActionSet\n");
+		TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet");
 
 		XrResult result;
 		try
@@ -826,14 +791,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrDestroyActionSet %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo* createInfo, XrAction* action)
 	{
-		DebugLog("--> xrCreateAction\n");
+		TraceLoggingWrite(g_traceProvider, "xrCreateAction");
 
 		XrResult result;
 		try
@@ -848,14 +812,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrCreateAction_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrCreateAction %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrDestroyAction(XrAction action)
 	{
-		DebugLog("--> xrDestroyAction\n");
+		TraceLoggingWrite(g_traceProvider, "xrDestroyAction");
 
 		XrResult result;
 		try
@@ -870,14 +833,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrDestroyAction_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrDestroyAction %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrSuggestInteractionProfileBindings(XrInstance instance, const XrInteractionProfileSuggestedBinding* suggestedBindings)
 	{
-		DebugLog("--> xrSuggestInteractionProfileBindings\n");
+		TraceLoggingWrite(g_traceProvider, "xrSuggestInteractionProfileBindings");
 
 		XrResult result;
 		try
@@ -892,14 +854,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrSuggestInteractionProfileBindings_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrSuggestInteractionProfileBindings %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttachInfo* attachInfo)
 	{
-		DebugLog("--> xrAttachSessionActionSets\n");
+		TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets");
 
 		XrResult result;
 		try
@@ -914,14 +875,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrAttachSessionActionSets %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetCurrentInteractionProfile(XrSession session, XrPath topLevelUserPath, XrInteractionProfileState* interactionProfile)
 	{
-		DebugLog("--> xrGetCurrentInteractionProfile\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetCurrentInteractionProfile");
 
 		XrResult result;
 		try
@@ -936,14 +896,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetCurrentInteractionProfile_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetCurrentInteractionProfile %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateBoolean* state)
 	{
-		DebugLog("--> xrGetActionStateBoolean\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean");
 
 		XrResult result;
 		try
@@ -958,14 +917,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetActionStateBoolean %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateFloat* state)
 	{
-		DebugLog("--> xrGetActionStateFloat\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat");
 
 		XrResult result;
 		try
@@ -980,14 +938,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetActionStateFloat %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateVector2f* state)
 	{
-		DebugLog("--> xrGetActionStateVector2f\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f");
 
 		XrResult result;
 		try
@@ -1002,14 +959,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetActionStateVector2f %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetActionStatePose(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStatePose* state)
 	{
-		DebugLog("--> xrGetActionStatePose\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose");
 
 		XrResult result;
 		try
@@ -1024,14 +980,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetActionStatePose %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrSyncActions(XrSession session, const XrActionsSyncInfo* syncInfo)
 	{
-		DebugLog("--> xrSyncActions\n");
+		TraceLoggingWrite(g_traceProvider, "xrSyncActions");
 
 		XrResult result;
 		try
@@ -1046,14 +1001,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrSyncActions_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrSyncActions %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrEnumerateBoundSourcesForAction(XrSession session, const XrBoundSourcesForActionEnumerateInfo* enumerateInfo, uint32_t sourceCapacityInput, uint32_t* sourceCountOutput, XrPath* sources)
 	{
-		DebugLog("--> xrEnumerateBoundSourcesForAction\n");
+		TraceLoggingWrite(g_traceProvider, "xrEnumerateBoundSourcesForAction");
 
 		XrResult result;
 		try
@@ -1068,14 +1022,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateBoundSourcesForAction_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrEnumerateBoundSourcesForAction %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrGetInputSourceLocalizedName(XrSession session, const XrInputSourceLocalizedNameGetInfo* getInfo, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
 	{
-		DebugLog("--> xrGetInputSourceLocalizedName\n");
+		TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName");
 
 		XrResult result;
 		try
@@ -1090,14 +1043,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrGetInputSourceLocalizedName %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrApplyHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo, const XrHapticBaseHeader* hapticFeedback)
 	{
-		DebugLog("--> xrApplyHapticFeedback\n");
+		TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback");
 
 		XrResult result;
 		try
@@ -1112,14 +1064,13 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrApplyHapticFeedback %s\n", xr::ToCString(result));
 
 		return result;
 	}
 
 	XrResult xrStopHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo)
 	{
-		DebugLog("--> xrStopHapticFeedback\n");
+		TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback");
 
 		XrResult result;
 		try
@@ -1134,7 +1085,6 @@ namespace RUNTIME_NAMESPACE
 		}
 
 		TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- xrStopHapticFeedback %s\n", xr::ToCString(result));
 
 		return result;
 	}
@@ -1353,7 +1303,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStopHapticFeedback);
 		}
-		else 
+		else
 		{
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
 		}

@@ -2659,18 +2659,21 @@ namespace {
         static XrResult _xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
                                                            XrSystemId systemId,
                                                            XrGraphicsRequirementsD3D11KHR* graphicsRequirements) {
-            DebugLog("--> xrGetD3D11GraphicsRequirementsKHR\n");
+            TraceLoggingWrite(g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR");
 
             XrResult result;
             try {
                 result = dynamic_cast<OpenXrRuntime*>(GetInstance())
                              ->xrGetD3D11GraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
             } catch (std::exception& exc) {
+                TraceLoggingWrite(
+                    g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
                 Log("xrGetD3D11GraphicsRequirementsKHR: %s\n", exc.what());
                 result = XR_ERROR_RUNTIME_FAILURE;
             }
 
-            DebugLog("<-- xrGetD3D11GraphicsRequirementsKHR %s\n", xr::ToCString(result));
+            TraceLoggingWrite(
+                g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR_Result", TLArg(xr::ToCString(result), "Result"));
 
             return result;
         }
@@ -2678,18 +2681,22 @@ namespace {
         static XrResult _xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
                                                                    const LARGE_INTEGER* performanceCounter,
                                                                    XrTime* time) {
-            DebugLog("--> xrConvertWin32PerformanceCounterToTimeKHR\n");
+            TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR");
 
             XrResult result;
             try {
                 result = dynamic_cast<OpenXrRuntime*>(GetInstance())
                              ->xrConvertWin32PerformanceCounterToTimeKHR(instance, performanceCounter, time);
             } catch (std::exception& exc) {
+                TraceLoggingWrite(
+                    g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR_Error", TLArg(exc.what(), "Error"));
                 Log("xrConvertWin32PerformanceCounterToTimeKHR: %s\n", exc.what());
                 result = XR_ERROR_RUNTIME_FAILURE;
             }
 
-            DebugLog("<-- xrConvertWin32PerformanceCounterToTimeKHR %s\n", xr::ToCString(result));
+            TraceLoggingWrite(g_traceProvider,
+                              "xrConvertWin32PerformanceCounterToTimeKHR_Result",
+                              TLArg(xr::ToCString(result), "Result"));
 
             return result;
         }
@@ -2697,18 +2704,22 @@ namespace {
         static XrResult _xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance,
                                                                    XrTime time,
                                                                    LARGE_INTEGER* performanceCounter) {
-            DebugLog("--> xrConvertTimeToWin32PerformanceCounterKHR\n");
+            TraceLoggingWrite(g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR");
 
             XrResult result;
             try {
                 result = dynamic_cast<OpenXrRuntime*>(GetInstance())
                              ->xrConvertTimeToWin32PerformanceCounterKHR(instance, time, performanceCounter);
             } catch (std::exception& exc) {
+                TraceLoggingWrite(
+                    g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR_Error", TLArg(exc.what(), "Error"));
                 Log("xrConvertTimeToWin32PerformanceCounterKHR: %s\n", exc.what());
                 result = XR_ERROR_RUNTIME_FAILURE;
             }
 
-            DebugLog("<-- xrConvertTimeToWin32PerformanceCounterKHR %s\n", xr::ToCString(result));
+            TraceLoggingWrite(g_traceProvider,
+                              "xrConvertTimeToWin32PerformanceCounterKHR_Result",
+                              TLArg(xr::ToCString(result), "Result"));
 
             return result;
         }
@@ -2718,7 +2729,7 @@ namespace {
                                                 uint32_t viewIndex,
                                                 XrVisibilityMaskTypeKHR visibilityMaskType,
                                                 XrVisibilityMaskKHR* visibilityMask) {
-            DebugLog("--> xrGetVisibilityMaskKHR\n");
+            TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR");
 
             XrResult result;
             try {
@@ -2726,11 +2737,12 @@ namespace {
                              ->xrGetVisibilityMaskKHR(
                                  session, viewConfigurationType, viewIndex, visibilityMaskType, visibilityMask);
             } catch (std::exception& exc) {
+                TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR_Error", TLArg(exc.what(), "Error"));
                 Log("xrGetVisibilityMaskKHR: %s\n", exc.what());
                 result = XR_ERROR_RUNTIME_FAILURE;
             }
 
-            DebugLog("<-- xrGetVisibilityMaskKHR %s\n", xr::ToCString(result));
+            TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR_Result", TLArg(xr::ToCString(result), "Result"));
 
             return result;
         }

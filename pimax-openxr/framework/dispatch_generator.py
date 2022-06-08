@@ -141,7 +141,7 @@ namespace RUNTIME_NAMESPACE
                     generated += f'''
 	XrResult {cur_cmd.name}({parameters_list})
 	{{
-		DebugLog("--> {cur_cmd.name}\\n");
+		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
 
 		XrResult result;
 		try
@@ -156,7 +156,6 @@ namespace RUNTIME_NAMESPACE
 		}}
 
 		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Result", TLArg(xr::ToCString(result), "Result"));
-		DebugLog("<-- {cur_cmd.name} %s\\n", xr::ToCString(result));
 
 		return result;
 	}}
@@ -165,7 +164,7 @@ namespace RUNTIME_NAMESPACE
                     generated += f'''
 	void {cur_cmd.name}({parameters_list})
 	{{
-		DebugLog("--> {cur_cmd.name}\\n");
+		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
 
 		try
 		{{
@@ -177,7 +176,7 @@ namespace RUNTIME_NAMESPACE
 			Log("{cur_cmd.name}: %s\\n", exc.what());
 		}}
 
-		DebugLog("<-- {cur_cmd.name} %d\\n");
+		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Complete");
 	}}
 '''
                 
@@ -208,7 +207,7 @@ namespace RUNTIME_NAMESPACE
 		}}
 
 		return XR_SUCCESS;
-	}'''
+	}}'''
 
         return generated
 
