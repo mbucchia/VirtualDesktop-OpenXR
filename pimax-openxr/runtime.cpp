@@ -199,6 +199,15 @@ namespace {
             Log("PVR: %s\n", versionString.data());
             TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
+            // Create the PVR session.
+            CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
+
+            // Check if the hidden area mask is available.
+            m_isVisibilityMaskSupported = pvr_getEyeHiddenAreaMesh(m_pvrSession, pvrEye_Left, nullptr, 0) != 0;
+            if (!m_isVisibilityMaskSupported) {
+                Log("Hidden area mesh is not enabled\n");
+            }
+
             QueryPerformanceFrequency(&m_qpcFrequency);
 
             // Calibrate the timestamp conversion.
@@ -258,33 +267,36 @@ namespace {
                                                         uint32_t propertyCapacityInput,
                                                         uint32_t* propertyCountOutput,
                                                         XrExtensionProperties* properties) override {
-            static const struct {
+            struct Extensions {
                 const char* extensionName;
                 uint32_t extensionVersion;
-            } extensions[] = {
-                // Direct3D 11 support.
-                {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION},
-
-                // Qpc timestamp conversion.
-                {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
-                 XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION},
-
-                // Hidden area mesh.
-                {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION},
-
-                // FIXME: Add new extensions here.
             };
+
+            std::vector<Extensions> extensions;
+            extensions.push_back( // Direct3D 11 support.
+                {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION});
+
+            extensions.push_back( // Qpc timestamp conversion.
+                {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
+                 XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
+
+            if (m_isVisibilityMaskSupported) {
+                extensions.push_back( // Hidden area mesh.
+                    {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
+            }
+
+            // FIXME: Add new extensions here.
 
             TraceLoggingWrite(g_traceProvider,
                               "xrEnumerateInstanceExtensionProperties",
                               TLArg(layerName, "LayerName"),
                               TLArg(propertyCapacityInput, "PropertyCapacityInput"));
 
-            if (propertyCapacityInput && propertyCapacityInput < ARRAYSIZE(extensions)) {
+            if (propertyCapacityInput && propertyCapacityInput < extensions.size()) {
                 return XR_ERROR_SIZE_INSUFFICIENT;
             }
 
-            *propertyCountOutput = ARRAYSIZE(extensions);
+            *propertyCountOutput = (uint32_t)extensions.size();
             TraceLoggingWrite(g_traceProvider,
                               "xrEnumerateInstanceExtensionProperties",
                               TLArg(*propertyCountOutput, "PropertyCountOutput"));
@@ -339,6 +351,7 @@ namespace {
                 Log("Requested API layer: %s\n", createInfo->enabledApiLayerNames[i]);
             }
 
+            bool isVisibilityMaskSupported = false;
             for (uint32_t i = 0; i < createInfo->enabledExtensionCount; i++) {
                 const std::string_view extensionName(createInfo->enabledExtensionNames[i]);
 
@@ -348,13 +361,15 @@ namespace {
                 // FIXME: Add new extension validation here.
                 if (extensionName == XR_KHR_D3D11_ENABLE_EXTENSION_NAME) {
                     m_isD3D11Supported = true;
-                } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME ||
-                           extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
+                } else if (m_isVisibilityMaskSupported && extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
+                    isVisibilityMaskSupported = true;
+                } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
                     // Do nothing.
                 } else {
                     return XR_ERROR_EXTENSION_NOT_PRESENT;
                 }
             }
+            m_isVisibilityMaskSupported = isVisibilityMaskSupported;
 
             m_instanceCreated = true;
             *instance = (XrInstance)1;
@@ -458,9 +473,6 @@ namespace {
             if (getInfo->formFactor != XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY) {
                 return XR_ERROR_FORM_FACTOR_UNSUPPORTED;
             }
-
-            // Create the PVR session.
-            CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
 
             // Check for HMD presence.
             pvrHmdStatus status{};
@@ -2001,6 +2013,10 @@ namespace {
                               TLArg(visibilityMask->vertexCapacityInput, "VertexCapacityInput"),
                               TLArg(visibilityMask->indexCapacityInput, "IndexCapacityInput"));
 
+            if (!m_isVisibilityMaskSupported) {
+                return XR_ERROR_FUNCTION_UNSUPPORTED;
+            }
+
             if (!m_sessionCreated || session != (XrSession)1) {
                 return XR_ERROR_HANDLE_INVALID;
             }
@@ -2014,8 +2030,10 @@ namespace {
             }
 
             if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR) {
-                // TODO: This is a non-standard return for this function.
-                return XR_ERROR_FEATURE_UNSUPPORTED;
+                // We only support the hidden area mesh.
+                visibilityMask->vertexCountOutput = 0;
+                visibilityMask->indexCountOutput = 0;
+                return XR_SUCCESS;
             }
 
             const auto verticesCount =
@@ -2625,6 +2643,7 @@ namespace {
         pvrSessionHandle m_pvrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
+        bool m_isVisibilityMaskSupported{false};
         bool m_isD3D11Supported{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
