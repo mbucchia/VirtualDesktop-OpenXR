@@ -1682,6 +1682,8 @@ namespace {
                 m_currentFrameIndex = m_nextFrameIndex;
                 TraceLoggingWrite(g_traceProvider, "BeginFrame", TLArg(m_nextFrameIndex, "CurrentFrameIndex"));
 
+                CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, m_currentFrameIndex));
+
                 m_frameWaited = false;
                 m_frameBegun = true;
 
@@ -1860,7 +1862,7 @@ namespace {
                                       TLArg(m_nextFrameIndex, "CurrentFrameIndex"),
                                       TLArg(layers.size(), "NumLayers"));
                     CHECK_PVRCMD(
-                        pvr_submitFrame(m_pvrSession, m_currentFrameIndex, layers.data(), (unsigned int)layers.size()));
+                        pvr_endFrame(m_pvrSession, m_currentFrameIndex, layers.data(), (unsigned int)layers.size()));
                     TraceLoggingWrite(g_traceProvider, "PVR_SubmitFrame_End");
                 }
 
