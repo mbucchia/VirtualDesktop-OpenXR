@@ -35,7 +35,7 @@ from reg import Registry
 from generator import write
 from xrconventions import OpenXRConventions
 
-EXCLUDED_API = ['xrGetInstanceProcAddr', 'xrEnumerateApiLayerProperties', 'xrResultToString', 'xrStructureTypeToString']
+EXCLUDED_API = ['xrGetInstanceProcAddr', 'xrEnumerateApiLayerProperties']
 
 class DispatchGenOutputGenerator(AutomaticSourceOutputGenerator):
     '''Common generator utilities and formatting.'''

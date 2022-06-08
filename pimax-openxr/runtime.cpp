@@ -1949,6 +1949,50 @@ namespace {
         // Utilities.
         //
 
+        XrResult xrResultToString(XrInstance instance,
+                                  XrResult value,
+                                  char buffer[XR_MAX_RESULT_STRING_SIZE]) override {
+#define EMIT_RESULT_STRING(name, value)                                                                                \
+    case name:                                                                                                         \
+        sprintf_s(buffer, sizeof(buffer), "%s", #name);                                                                \
+        break;
+
+            switch (value) {
+                XR_LIST_ENUM_XrResult(EMIT_RESULT_STRING);
+
+            default:
+                if (XR_FAILED(value)) {
+                    sprintf_s(buffer, sizeof(buffer), "XR_UNKNOWN_FAILURE_%d", (int)value);
+                } else {
+                    sprintf_s(buffer, sizeof(buffer), "XR_UNKNOWN_SUCCESS_%d", (int)value);
+                }
+            }
+
+#undef EMIT_RESULT_STRING
+
+            return XR_SUCCESS;
+        }
+
+        XrResult xrStructureTypeToString(XrInstance instance,
+                                         XrStructureType value,
+                                         char buffer[XR_MAX_STRUCTURE_NAME_SIZE]) override {
+#define EMIT_STRUCTURE_TYPE_STRING(name, value)                                                                        \
+    case name:                                                                                                         \
+        sprintf_s(buffer, sizeof(buffer), "%s", #name);                                                                \
+        break;
+
+            switch ((int)value) {
+                XR_LIST_ENUM_XrStructureType(EMIT_STRUCTURE_TYPE_STRING);
+
+            default:
+                sprintf_s(buffer, sizeof(buffer), "XR_UNKNOWN_STRUCTURE_TYPE_%d", (int)value);
+            }
+
+#undef EMIT_STRUCTURE_TYPE_STRING
+
+            return XR_SUCCESS;
+        }
+
         XrResult xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
                                                            const LARGE_INTEGER* performanceCounter,
                                                            XrTime* time) {

@@ -68,6 +68,7 @@ using Microsoft::WRL::ComPtr;
 #define XR_USE_GRAPHICS_API_D3D11
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
+#include <openxr/openxr_reflection.h>
 
 // OpenXR loader interfaces.
 #include <loader_interfaces.h>

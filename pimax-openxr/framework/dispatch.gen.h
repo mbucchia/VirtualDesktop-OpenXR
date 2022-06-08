@@ -48,6 +48,8 @@ namespace RUNTIME_NAMESPACE
 		virtual XrResult xrDestroyInstance(XrInstance instance) = 0;
 		virtual XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties) = 0;
 		virtual XrResult xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData) = 0;
+		virtual XrResult xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE]) = 0;
+		virtual XrResult xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE]) = 0;
 		virtual XrResult xrGetSystem(XrInstance instance, const XrSystemGetInfo* getInfo, XrSystemId* systemId) = 0;
 		virtual XrResult xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProperties* properties) = 0;
 		virtual XrResult xrEnumerateEnvironmentBlendModes(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t environmentBlendModeCapacityInput, uint32_t* environmentBlendModeCountOutput, XrEnvironmentBlendMode* environmentBlendModes) = 0;

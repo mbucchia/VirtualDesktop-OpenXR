@@ -123,6 +123,48 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
+	XrResult xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE])
+	{
+		TraceLoggingWrite(g_traceProvider, "xrResultToString");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrResultToString(instance, value, buffer);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrResultToString_Error", TLArg(exc.what(), "Error"));
+			Log("xrResultToString: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrResultToString_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
+	{
+		TraceLoggingWrite(g_traceProvider, "xrStructureTypeToString");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrStructureTypeToString(instance, value, buffer);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrStructureTypeToString_Error", TLArg(exc.what(), "Error"));
+			Log("xrStructureTypeToString: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrStructureTypeToString_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
 	XrResult xrGetSystem(XrInstance instance, const XrSystemGetInfo* getInfo, XrSystemId* systemId)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetSystem");
@@ -1118,6 +1160,14 @@ namespace RUNTIME_NAMESPACE
 		else if (apiName == "xrPollEvent")
 		{
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrPollEvent);
+		}
+		else if (apiName == "xrResultToString")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrResultToString);
+		}
+		else if (apiName == "xrStructureTypeToString")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStructureTypeToString);
 		}
 		else if (apiName == "xrGetSystem")
 		{

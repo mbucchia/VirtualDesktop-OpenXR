@@ -29,6 +29,7 @@ Tested with the following applications with a Pimax 8KX:
 - IL-2 Sturmovik (through OpenComposite)
 - R.E.A.L mod (Cyberpunk 2077, Red Dead Redemption 2)
 - Unity
+- Unreal Engine
 - StereoKit*
 
 (*) OpenXR Toolkit version 1.1.0 was tested with these applications.
