@@ -278,6 +278,9 @@ namespace {
             extensions.push_back( // Direct3D 11 support.
                 {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION});
 
+            extensions.push_back( // Depth buffer submission.
+                {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
+
             extensions.push_back( // Qpc timestamp conversion.
                 {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
                  XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
@@ -363,6 +366,8 @@ namespace {
                 // FIXME: Add new extension validation here.
                 if (extensionName == XR_KHR_D3D11_ENABLE_EXTENSION_NAME) {
                     m_isD3D11Supported = true;
+                } else if (extensionName == XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME) {
+                    m_isDepthSupported = true;
                 } else if (m_isVisibilityMaskSupported && extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
                     isVisibilityMaskSupported = true;
                 } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
@@ -1348,6 +1353,7 @@ namespace {
                 desc.BindFlags |= pvrTextureBind_DX_UnorderedAccess;
             }
 
+            // TODO: Apparently PVR does not like texture arrays for depth. We will need to emulate support for this.
             pvrTextureSwapChain pvrSwapchain{};
             CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &pvrSwapchain));
 
@@ -1746,6 +1752,19 @@ namespace {
                                           TLArg(proj->layerFlags, "Flags"),
                                           TLPArg(proj->space, "Space"));
 
+                        // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
+                        static_assert(offsetof(decltype(layer.EyeFov), ColorTexture) ==
+                                      offsetof(decltype(layer.EyeFovDepth), ColorTexture));
+                        static_assert(offsetof(decltype(layer.EyeFov), Viewport) ==
+                                      offsetof(decltype(layer.EyeFovDepth), Viewport));
+                        static_assert(offsetof(decltype(layer.EyeFov), Fov) ==
+                                      offsetof(decltype(layer.EyeFovDepth), Fov));
+                        static_assert(offsetof(decltype(layer.EyeFov), RenderPose) ==
+                                      offsetof(decltype(layer.EyeFovDepth), RenderPose));
+                        static_assert(offsetof(decltype(layer.EyeFov), SensorSampleTime) ==
+                                      offsetof(decltype(layer.EyeFovDepth), SensorSampleTime));
+
+                        // Start without depth. We might change the type to pvrLayerType_EyeFovDepth further below.
                         layer.Header.Type = pvrLayerType_EyeFov;
 
                         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
@@ -1797,6 +1816,61 @@ namespace {
                             // This looks incorrect (because "sensor time" should be different from "display time"), but
                             // this is what the PVR sample code does.
                             layer.EyeFov.SensorSampleTime = xrTimeToPvrTime(frameEndInfo->displayTime);
+
+                            // Submit depth.
+                            if (m_isDepthSupported) {
+                                const XrBaseInStructure* entry =
+                                    reinterpret_cast<const XrBaseInStructure*>(proj->views[eye].next);
+                                while (entry) {
+                                    if (entry->type == XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR) {
+                                        const XrCompositionLayerDepthInfoKHR* depth =
+                                            reinterpret_cast<const XrCompositionLayerDepthInfoKHR*>(entry);
+
+                                        layer.Header.Type = pvrLayerType_EyeFovDepth;
+
+                                        TraceLoggingWrite(
+                                            g_traceProvider,
+                                            "xrEndFrame_View",
+                                            TLArg("Depth", "Type"),
+                                            TLArg(eye, "Index"),
+                                            TLPArg(depth->subImage.swapchain, "Swapchain"),
+                                            TLArg(depth->subImage.imageArrayIndex, "ImageArrayIndex"),
+                                            TLArg(xr::ToString(depth->subImage.imageRect).c_str(), "ImageRect"),
+                                            TLArg(depth->nearZ, "Near"),
+                                            TLArg(depth->farZ, "Far"),
+                                            TLArg(depth->minDepth, "MinDepth"),
+                                            TLArg(depth->maxDepth, "MaxDepth"));
+
+                                        if (!m_swapchains.count(depth->subImage.swapchain)) {
+                                            return XR_ERROR_HANDLE_INVALID;
+                                        }
+
+                                        Swapchain* xrDepthSwapchain = (Swapchain*)depth->subImage.swapchain;
+
+                                        // Fill out depth buffer information.
+                                        prepareAndCommitSwapchainImage(*xrDepthSwapchain,
+                                                                       depth->subImage.imageArrayIndex,
+                                                                       committedSwapchainImages);
+                                        layer.EyeFovDepth.DepthTexture[eye] =
+                                            xrDepthSwapchain->pvrSwapchain[depth->subImage.imageArrayIndex];
+
+                                        if (!isValidSwapchainRect(xrDepthSwapchain->pvrDesc,
+                                                                  depth->subImage.imageRect)) {
+                                            return XR_ERROR_SWAPCHAIN_RECT_INVALID;
+                                        }
+
+                                        // Fill out projection information.
+                                        layer.EyeFovDepth.DepthProjectionDesc.Projection22 =
+                                            depth->farZ / (depth->nearZ - depth->farZ);
+                                        layer.EyeFovDepth.DepthProjectionDesc.Projection23 =
+                                            (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
+                                        layer.EyeFovDepth.DepthProjectionDesc.Projection32 = -1.f;
+
+                                        break;
+                                    }
+                                    entry = entry->next;
+                                }
+                            }
                         }
                     } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD) {
                         const XrCompositionLayerQuad* quad =
@@ -2700,6 +2774,7 @@ namespace {
         bool m_systemCreated{false};
         bool m_isVisibilityMaskSupported{false};
         bool m_isD3D11Supported{false};
+        bool m_isDepthSupported{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
         double m_frameDuration{0};

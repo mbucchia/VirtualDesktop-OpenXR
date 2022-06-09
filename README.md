@@ -20,7 +20,6 @@ For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.l
   - Direct3D 12 is supported via [OpenXR-D3D12on11](https://github.com/mbucchia/OpenXR-D3D12on11).
 - No motion controller support.
 - No parallel projection support.
-- No depth reprojection support.
 
 Tested with the following applications with a Pimax 8KX:
 - Microsoft Flight Simulator 2020*
