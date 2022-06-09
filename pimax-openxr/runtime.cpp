@@ -504,9 +504,15 @@ namespace {
             // Cache common information.
             CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[0]));
             CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[1]));
+            m_floorHeight = pvr_getFloatConfig(m_pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_GetConfig",
+                              TLArg(CONFIG_KEY_EYE_HEIGHT, "Config"),
+                              TLArg(m_floorHeight, "EyeHeight"));
 
             // Setup common parameters.
             CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
+            CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
 
             m_systemCreated = true;
             *systemId = (XrSystemId)1;
@@ -903,8 +909,8 @@ namespace {
                                             uint32_t spaceCapacityInput,
                                             uint32_t* spaceCountOutput,
                                             XrReferenceSpaceType* spaces) override {
-            static const XrReferenceSpaceType referenceSpaces[] = {XR_REFERENCE_SPACE_TYPE_VIEW,
-                                                                   XR_REFERENCE_SPACE_TYPE_LOCAL};
+            static const XrReferenceSpaceType referenceSpaces[] = {
+                XR_REFERENCE_SPACE_TYPE_VIEW, XR_REFERENCE_SPACE_TYPE_LOCAL, XR_REFERENCE_SPACE_TYPE_STAGE};
 
             TraceLoggingWrite(g_traceProvider,
                               "xrEnumerateReferenceSpaces",
@@ -951,8 +957,6 @@ namespace {
                 return XR_ERROR_HANDLE_INVALID;
             }
 
-            // We still accept STAGE even though we don't advertise it... Certain applications like OpenComposite assume
-            // that it is available. It will implicitly revert to LOCAL.
             if (createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_VIEW &&
                 createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL &&
                 createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE) {
@@ -1036,6 +1040,12 @@ namespace {
                         (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
                 }
 
+                // If the space is stage and not local, add the height.
+                if ((xrSpace->referenceType == XR_REFERENCE_SPACE_TYPE_STAGE ||
+                     xrBaseSpace->referenceType == XR_REFERENCE_SPACE_TYPE_STAGE)) {
+                    pose.position.y += m_floorHeight;
+                }
+
                 // If the view is the reference, then we need the inverted pose.
                 if (xrBaseSpace->referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
                     StoreXrPose(&location->pose, LoadInvertedXrPose(location->pose));
@@ -1044,6 +1054,12 @@ namespace {
                 location->locationFlags =
                     (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                      XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+
+                // If the space is stage and not local, add the height.
+                if ((xrSpace->referenceType == XR_REFERENCE_SPACE_TYPE_STAGE ||
+                     xrBaseSpace->referenceType == XR_REFERENCE_SPACE_TYPE_STAGE)) {
+                    pose.position.y -= m_floorHeight;
+                }
             }
 
             // Apply the offset transforms.
@@ -2779,6 +2795,7 @@ namespace {
         LUID m_adapterLuid{};
         double m_frameDuration{0};
         pvrEyeRenderInfo m_cachedEyeInfo[xr::StereoView::Count];
+        float m_floorHeight{0.f};
         LARGE_INTEGER m_qpcFrequency;
         double m_pvrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
