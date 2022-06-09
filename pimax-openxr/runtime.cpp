@@ -1794,6 +1794,8 @@ namespace {
                             layer.EyeFov.Fov[eye].LeftTan = -tan(proj->views[eye].fov.angleLeft);
                             layer.EyeFov.Fov[eye].RightTan = tan(proj->views[eye].fov.angleRight);
 
+                            // This looks incorrect (because "sensor time" should be different from "display time"), but
+                            // this is what the PVR sample code does.
                             layer.EyeFov.SensorSampleTime = xrTimeToPvrTime(frameEndInfo->displayTime);
                         }
                     } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD) {
