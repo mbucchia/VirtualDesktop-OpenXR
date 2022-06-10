@@ -49,7 +49,8 @@ extern "C" {
 // Entry point for the loader.
 XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
                                                                             XrNegotiateRuntimeRequest* runtimeRequest) {
-    localAppData = std::filesystem::path(getenv("LOCALAPPDATA"));
+    localAppData = std::filesystem::path(getenv("LOCALAPPDATA")) / RuntimeName;
+    CreateDirectoryA(localAppData.string().c_str(), nullptr);
 
     // Start logging to file.
     if (!logStream.is_open()) {
@@ -79,5 +80,9 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
     runtimeRequest->runtimeApiVersion = XR_CURRENT_API_VERSION;
 
     return XR_SUCCESS;
+}
+
+__declspec(dllexport) const char* WINAPI getVersionString() {
+    return RuntimePrettyName.c_str();
 }
 }

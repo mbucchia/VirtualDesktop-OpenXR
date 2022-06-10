@@ -27,6 +27,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHub", "GitHub", "{8F6FBE
 		.github\workflows\msbuild.yml = .github\workflows\msbuild.yml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "companion", "companion\companion.csproj", "{795212E0-1E96-44AB-8D87-9DA1751C0EB2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{93D573D0-634F-4BA0-8FE0-FB63D7D00A05} = {93D573D0-634F-4BA0-8FE0-FB63D7D00A05}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -40,6 +45,10 @@ Global
 		{8B253B1D-439A-4A30-AEC6-D1984861AD88}.Debug|x64.ActiveCfg = Debug
 		{8B253B1D-439A-4A30-AEC6-D1984861AD88}.Release|x64.ActiveCfg = Release
 		{8B253B1D-439A-4A30-AEC6-D1984861AD88}.Release|x64.Build.0 = Release
+		{795212E0-1E96-44AB-8D87-9DA1751C0EB2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{795212E0-1E96-44AB-8D87-9DA1751C0EB2}.Debug|x64.Build.0 = Debug|Any CPU
+		{795212E0-1E96-44AB-8D87-9DA1751C0EB2}.Release|x64.ActiveCfg = Release|Any CPU
+		{795212E0-1E96-44AB-8D87-9DA1751C0EB2}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

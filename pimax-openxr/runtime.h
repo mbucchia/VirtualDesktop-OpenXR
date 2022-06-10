@@ -33,6 +33,7 @@ namespace pimax_openxr {
     const std::string RuntimeName = "pimax-openxr";
     const std::string RuntimePrettyName =
         fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
+    const std::string RegPrefix = "SOFTWARE\\PimaxXR";
 
     // Singleton accessor.
     OpenXrApi* GetInstance();

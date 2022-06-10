@@ -77,11 +77,12 @@
       <Command>REM Sign the DLL.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "PimaxXR" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName).json $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
+copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -131,11 +132,12 @@ copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
       <Command>REM Sign the DLL.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "PimaxXR" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName).json $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
+copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>

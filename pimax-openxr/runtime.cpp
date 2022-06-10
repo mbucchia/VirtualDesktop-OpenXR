@@ -93,6 +93,23 @@ namespace {
     using namespace DirectX;
     using namespace xr::math;
 
+    // https://docs.microsoft.com/en-us/archive/msdn-magazine/2017/may/c-use-modern-c-to-access-the-windows-registry
+    std::optional<int> RegGetDword(HKEY hKey, const std::string& subKey, const std::string& value) {
+        DWORD data{};
+        DWORD dataSize = sizeof(data);
+        LONG retCode = ::RegGetValue(hKey,
+                                     std::wstring(subKey.begin(), subKey.end()).c_str(),
+                                     std::wstring(value.begin(), value.end()).c_str(),
+                                     RRF_RT_REG_DWORD,
+                                     nullptr,
+                                     &data,
+                                     &dataSize);
+        if (retCode != ERROR_SUCCESS) {
+            return {};
+        }
+        return data;
+    }
+
     XrTime pvrTimeToXrTime(double pvrTime) {
         return (XrTime)(pvrTime * 1e9);
     }
@@ -512,7 +529,9 @@ namespace {
 
             // Setup common parameters.
             CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
-            CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+            if (getSetting("recenter_on_startup").value_or(1)) {
+                CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+            }
 
             m_systemCreated = true;
             *systemId = (XrSystemId)1;
@@ -2669,6 +2688,11 @@ namespace {
             XrReferenceSpaceType referenceType;
             XrPosef poseInSpace;
         };
+
+
+        std::optional<int> getSetting(const std::string& value) const {
+            return RegGetDword(HKEY_LOCAL_MACHINE, RegPrefix, value);
+        }
 
         void prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
                                             uint32_t slice,
