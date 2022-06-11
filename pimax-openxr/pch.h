@@ -57,6 +57,7 @@ using Microsoft::WRL::ComPtr;
 // Graphics APIs.
 #include <d3d11.h>
 #include <dxgi.h>
+#include <d3dcompiler.h>
 
 // Pimax SDK
 #include <PVR.h>

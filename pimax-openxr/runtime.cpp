@@ -207,6 +207,36 @@ namespace {
         return true;
     }
 
+    inline void SetDebugName(ID3D11DeviceChild* resource, std::string_view name) {
+        if (resource && !name.empty()) {
+            resource->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.data());
+        }
+    }
+
+    const std::string_view ResolveShaderHlsl[] = {
+        R"_(
+Texture2D in_texture : register(t0);
+RWTexture2D<float> out_texture : register(u0);
+
+[numthreads(8, 8, 1)]
+void main(uint2 pos : SV_DispatchThreadID)
+{
+    // Only keep the depth component.
+    out_texture[pos] = in_texture[pos].x;
+}
+    )_",
+        R"_(
+Texture2DArray in_texture : register(t0);
+RWTexture2D<float> out_texture : register(u0);
+
+[numthreads(8, 8, 1)]
+void main(uint2 pos : SV_DispatchThreadID)
+{
+    // Only keep the depth component.
+    out_texture[pos] = in_texture[float3(pos, 0)].x;
+}
+    )_"};
+
     class OpenXrRuntime : public OpenXrApi {
       public:
         OpenXrRuntime() {
@@ -785,6 +815,41 @@ namespace {
                     m_d3d11Device = d3dBindings->device;
                     m_d3d11Device->GetImmediateContext(m_d3d11DeviceContext.ReleaseAndGetAddressOf());
 
+                    // Create the resources for depth resolve.
+                    for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
+                        ComPtr<ID3DBlob> shaderBytes;
+                        ComPtr<ID3DBlob> errMsgs;
+                        DWORD flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+
+#ifdef _DEBUG
+                        flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
+#else
+                        flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
+#endif
+
+                        HRESULT hr = D3DCompile(ResolveShaderHlsl[i].data(),
+                                                ResolveShaderHlsl[i].size(),
+                                                nullptr,
+                                                nullptr,
+                                                nullptr,
+                                                "main",
+                                                "cs_5_0",
+                                                flags,
+                                                0,
+                                                shaderBytes.ReleaseAndGetAddressOf(),
+                                                errMsgs.ReleaseAndGetAddressOf());
+                        if (FAILED(hr)) {
+                            std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
+                            Log("D3DCompile failed %X: %s", hr, errMsg.c_str());
+                            CHECK_HRESULT(hr, "D3DCompile failed");
+                        }
+                        CHECK_HRCMD(m_d3d11Device->CreateComputeShader(shaderBytes->GetBufferPointer(),
+                                                                       shaderBytes->GetBufferSize(),
+                                                                       nullptr,
+                                                                       m_resolveShader[i].ReleaseAndGetAddressOf()));
+                        SetDebugName(m_resolveShader[i].Get(), "DepthResolve CS");
+                    }
+
                     hasGraphicsBindings = true;
                 }
 
@@ -844,6 +909,9 @@ namespace {
             m_viewSpace = XR_NULL_HANDLE;
 
             // FIXME: Add session and frame resource cleanup here.
+            for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
+                m_resolveShader[i].Reset();
+            }
             m_d3d11DeviceContext.Reset();
             m_d3d11Device.Reset();
             m_sessionState = XR_SESSION_STATE_UNKNOWN;
@@ -1388,21 +1456,36 @@ namespace {
                 desc.BindFlags |= pvrTextureBind_DX_UnorderedAccess;
             }
 
-            // TODO: Apparently PVR does not like texture arrays for depth. We will need to emulate support for this.
+            // There are 2 situations in PVR where we cannot use the PVR swapchain alone:
+            // - PVR does not let you submit a slice of a texture array and always reads from the first slice.
+            //   To mitigate this, we will create several swapchains with ArraySize=1 and we will make copies during
+            //   xrEndFrame().
+            //
+            // - PVR does not like the D32_FLOAT_S8X24 format.
+            //   To mitigate this, we will create a D32_FLOAT swapchain and perform a conversion during xrEndFrame().
+
             pvrTextureSwapChain pvrSwapchain{};
+            bool needDepthResolve = false;
+            if (desc.Format == PVR_FORMAT_D32_FLOAT_S8X24_UINT) {
+                desc.Format = PVR_FORMAT_D32_FLOAT;
+                needDepthResolve = true;
+            }
             CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &pvrSwapchain));
 
             // Create the internal struct.
             Swapchain* xrSwapchain = new Swapchain;
             xrSwapchain->pvrSwapchain.push_back(pvrSwapchain);
+            xrSwapchain->slices.push_back({});
+            xrSwapchain->imagesResourceView.push_back({});
             xrSwapchain->pvrDesc = desc;
+            xrSwapchain->xrDesc = *createInfo;
+            xrSwapchain->needDepthResolve = needDepthResolve;
 
             // Lazily-filled state.
-            for (int i = 0; i < desc.ArraySize; i++) {
-                if (i) {
-                    xrSwapchain->pvrSwapchain.push_back(nullptr);
-                }
-                xrSwapchain->images.push_back({});
+            for (int i = 1; i < desc.ArraySize; i++) {
+                xrSwapchain->pvrSwapchain.push_back(nullptr);
+                xrSwapchain->slices.push_back({});
+                xrSwapchain->imagesResourceView.push_back({});
             }
 
             *swapchain = (XrSwapchain)xrSwapchain;
@@ -1410,7 +1493,10 @@ namespace {
             // Maintain a list of known swapchains for validation and cleanup.
             m_swapchains.insert(*swapchain);
 
-            TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain", TLPArg(*swapchain, "Swapchain"));
+            TraceLoggingWrite(g_traceProvider,
+                              "xrCreateSwapchain",
+                              TLPArg(*swapchain, "Swapchain"),
+                              TLArg(needDepthResolve, "NeedDepthResolve"));
 
             return XR_SUCCESS;
         }
@@ -1464,9 +1550,72 @@ namespace {
                 g_traceProvider, "xrEnumerateSwapchainImages", TLArg(*imageCountOutput, "ImageCountOutput"));
 
             if (images) {
-                const bool alreadyCached = !xrSwapchain->images[0].empty();
+                // Detect whether this is the first call to xrEnumerateSwapchainImages() for this swapchain.
+                const bool initialized = !xrSwapchain->slices[0].empty();
 
                 // FIXME: Here we assume D3D11 since it's the only API supported for now.
+
+                // PVR does not properly support certain depth format, and we will need an intermediate texture for the
+                // app to use, then perform additional conversion steps during xrEndFrame().
+                D3D11_TEXTURE2D_DESC desc{};
+                if (xrSwapchain->needDepthResolve) {
+                    // FIXME: Today we only do resolve for D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
+                    // corresponding formats below.
+
+                    desc.ArraySize = xrSwapchain->xrDesc.arraySize;
+                    desc.Format = DXGI_FORMAT_R32G8X24_TYPELESS;
+                    desc.Width = xrSwapchain->xrDesc.width;
+                    desc.Height = xrSwapchain->xrDesc.height;
+                    desc.MipLevels = xrSwapchain->xrDesc.mipCount;
+                    desc.SampleDesc.Count = xrSwapchain->xrDesc.sampleCount;
+
+                    // PVR does not support creating a depth texture with the RTV/UAV capability. We must use another
+                    // intermediate texture to run our shader.
+                    if (!initialized) {
+                        D3D11_TEXTURE2D_DESC resolvedDesc = desc;
+                        resolvedDesc.ArraySize = 1;
+                        resolvedDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+                        resolvedDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+                        CHECK_HRCMD(m_d3d11Device->CreateTexture2D(
+                            &resolvedDesc, nullptr, xrSwapchain->resolved.ReleaseAndGetAddressOf()));
+                        SetDebugName(xrSwapchain->resolved.Get(),
+                                     fmt::format("DepthResolve Texture[{}]", (void*)xrSwapchain));
+                    }
+
+                    // The texture will be sampled by our resolve shader.
+                    desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+                    if (xrSwapchain->xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
+                        desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+                    }
+                    if (xrSwapchain->xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                        desc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+                    }
+                    if (xrSwapchain->xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
+                        desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+                    }
+
+                    // Make the texture shareable in case the application needs to share it.
+                    desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+                }
+
+                auto traceTexture = [](ID3D11Texture2D* texture, const char* type) {
+                    D3D11_TEXTURE2D_DESC desc;
+                    texture->GetDesc(&desc);
+                    TraceLoggingWrite(g_traceProvider,
+                                      "xrEnumerateSwapchainImages",
+                                      TLArg(type, "Type"),
+                                      TLArg(desc.Width, "Width"),
+                                      TLArg(desc.Height, "Height"),
+                                      TLArg(desc.ArraySize, "ArraySize"),
+                                      TLArg(desc.MipLevels, "MipCount"),
+                                      TLArg(desc.SampleDesc.Count, "SampleCount"),
+                                      TLArg((int)desc.Format, "Format"),
+                                      TLArg((int)desc.Usage, "Usage"),
+                                      TLArg(desc.BindFlags, "BindFlags"),
+                                      TLArg(desc.CPUAccessFlags, "CPUAccessFlags"),
+                                      TLArg(desc.MiscFlags, "MiscFlags"));
+                };
 
                 // Query the textures for the swapchain.
                 XrSwapchainImageD3D11KHR* d3d11Images = reinterpret_cast<XrSwapchainImageD3D11KHR*>(images);
@@ -1475,11 +1624,37 @@ namespace {
                         return XR_ERROR_VALIDATION_FAILURE;
                     }
 
-                    CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                        m_pvrSession, xrSwapchain->pvrSwapchain[0], i, IID_PPV_ARGS(&d3d11Images[i].texture)));
+                    if (!initialized) {
+                        ID3D11Texture2D* swapchainTexture;
+                        CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
+                            m_pvrSession, xrSwapchain->pvrSwapchain[0], i, IID_PPV_ARGS(&swapchainTexture)));
+                        SetDebugName(swapchainTexture, fmt::format("Runtime Texture[{}, {}]", i, (void*)xrSwapchain));
 
-                    if (!alreadyCached) {
-                        xrSwapchain->images[0].push_back(d3d11Images[i].texture);
+                        xrSwapchain->slices[0].push_back(swapchainTexture);
+                        if (i == 0) {
+                            traceTexture(swapchainTexture, "PVR");
+                        }
+
+                        if (xrSwapchain->needDepthResolve) {
+                            // Create the intermediate texture if needed.
+                            ComPtr<ID3D11Texture2D> intermediateTexture;
+                            CHECK_HRCMD(m_d3d11Device->CreateTexture2D(
+                                &desc, nullptr, intermediateTexture.ReleaseAndGetAddressOf()));
+                            SetDebugName(intermediateTexture.Get(),
+                                         fmt::format("App Texture[{}, {}]", i, (void*)xrSwapchain));
+
+                            xrSwapchain->images.push_back(intermediateTexture);
+                            for (uint32_t i = 0; i < xrSwapchain->xrDesc.arraySize; i++) {
+                                xrSwapchain->imagesResourceView[i].push_back({});
+                            }
+                        }
+                    }
+
+                    d3d11Images[i].texture =
+                        !xrSwapchain->needDepthResolve ? xrSwapchain->slices[0][i] : xrSwapchain->images[i].Get();
+
+                    if (!initialized && i == 0) {
+                        traceTexture(d3d11Images[0].texture, "Runtime");
                     }
 
                     TraceLoggingWrite(
@@ -1507,7 +1682,15 @@ namespace {
 
             // Query the image index from PVR.
             int pvrIndex = -1;
-            CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain->pvrSwapchain[0], &pvrIndex));
+            if (!xrSwapchain->needDepthResolve) {
+                CHECK_PVRCMD(
+                    pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain->pvrSwapchain[0], &pvrIndex));
+            } else {
+                pvrIndex = xrSwapchain->currentIndex++;
+                if (xrSwapchain->currentIndex >= xrSwapchain->images.size()) {
+                    xrSwapchain->currentIndex = 0;
+                }
+            }
 
             *index = pvrIndex;
 
@@ -2679,16 +2862,34 @@ namespace {
 
       private:
         struct Swapchain {
+            // The PVR swapchain objects. For texture arrays, we must have one swapchain per slice due to PVR
+            // limitation.
             std::vector<pvrTextureSwapChain> pvrSwapchain;
-            std::vector<std::vector<ID3D11Texture2D*>> images;
+
+            // The cached textures used for copy between swapchains.
+            std::vector<std::vector<ID3D11Texture2D*>> slices;
+
+            // Certain depth formats require use to go through an intermediate texture and resolve (copy, convert) the
+            // texture later. We manage our own set of textures and image index.
+            bool needDepthResolve{false};
+            std::vector<ComPtr<ID3D11Texture2D>> images;
+            uint32_t currentIndex{0};
+
+            // Resources needed to run the resolve shader.
+            std::vector<std::vector<ComPtr<ID3D11ShaderResourceView>>> imagesResourceView;
+            ComPtr<ID3D11Texture2D> resolved;
+            ComPtr<ID3D11UnorderedAccessView> resolvedAccessView;
+
+            // Information recorded at creation.
+            XrSwapchainCreateInfo xrDesc;
             pvrTextureSwapChainDesc pvrDesc;
         };
 
         struct Space {
+            // Information recorded at creation.
             XrReferenceSpaceType referenceType;
             XrPosef poseInSpace;
         };
-
 
         std::optional<int> getSetting(const std::string& value) const {
             return RegGetDword(HKEY_LOCAL_MACHINE, RegPrefix, value);
@@ -2702,10 +2903,12 @@ namespace {
                 return;
             }
 
-            // PVR does not seem to support texture arrays and always reads from the first slice. We must do a copy to
-            // slice 0 into another swapchain.
-            if (slice != 0) {
-                // Lazily create a second swapchain for this index.
+            // Circumvent some of PVR's limitations:
+            // - For texture arrays, we must do a copy to slice 0 into another swapchain.
+            // - For unsupported depth format, we must do a conversion.
+            // For unsupported depth formats with texture arrays, we must do both!
+            if (slice > 0 || xrSwapchain.needDepthResolve) {
+                // Lazily create a second swapchain for this slice of the array.
                 if (!xrSwapchain.pvrSwapchain[slice]) {
                     auto desc = xrSwapchain.pvrDesc;
                     desc.ArraySize = 1;
@@ -2714,7 +2917,7 @@ namespace {
 
                     int count = -1;
                     CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &count));
-                    if (count != xrSwapchain.images[0].size()) {
+                    if (count != xrSwapchain.slices[0].size()) {
                         throw std::runtime_error("Swapchain image count mismatch");
                     }
 
@@ -2725,27 +2928,95 @@ namespace {
                         ID3D11Texture2D* texture = nullptr;
                         CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
                             m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(&texture)));
+                        SetDebugName(texture,
+                                     fmt::format("Runtime Sliced Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
 
-                        xrSwapchain.images[slice].push_back(texture);
+                        xrSwapchain.slices[slice].push_back(texture);
                     }
                 }
 
-                // Copy from the texture array.
-                int pvrSourceIndex = -1;
-                CHECK_PVRCMD(
-                    pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrSourceIndex));
+                // Copy or convert into the PVR swapchain.
                 int pvrDestIndex = -1;
                 CHECK_PVRCMD(
                     pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &pvrDestIndex));
 
-                m_d3d11DeviceContext->CopySubresourceRegion(xrSwapchain.images[slice][pvrDestIndex],
-                                                            0,
-                                                            0,
-                                                            0,
-                                                            0,
-                                                            xrSwapchain.images[0][pvrSourceIndex],
-                                                            slice,
-                                                            nullptr);
+                if (!xrSwapchain.needDepthResolve) {
+                    int pvrSourceIndex = -1;
+                    CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(
+                        m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrSourceIndex));
+
+                    m_d3d11DeviceContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex],
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                                xrSwapchain.slices[0][pvrSourceIndex],
+                                                                slice,
+                                                                nullptr);
+                } else {
+                    // FIXME: Today we only do resolve for D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
+                    // corresponding formats below.
+
+                    // Lazily create SRV/UAV.
+                    if (!xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex]) {
+                        D3D11_SHADER_RESOURCE_VIEW_DESC desc{};
+
+                        desc.ViewDimension = xrSwapchain.xrDesc.arraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D
+                                                                               : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+                        desc.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+                        desc.Texture2DArray.ArraySize = 1;
+                        desc.Texture2DArray.MipLevels = xrSwapchain.xrDesc.mipCount;
+                        desc.Texture2DArray.FirstArraySlice =
+                            D3D11CalcSubresource(0, slice, desc.Texture2DArray.MipLevels);
+
+                        CHECK_HRCMD(m_d3d11Device->CreateShaderResourceView(
+                            xrSwapchain.images[xrSwapchain.currentIndex].Get(),
+                            &desc,
+                            xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].ReleaseAndGetAddressOf()));
+                        SetDebugName(
+                            xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].Get(),
+                            fmt::format(
+                                "DepthResolve SRV[{}, {}, {}]", slice, xrSwapchain.currentIndex, (void*)&xrSwapchain));
+                    }
+                    if (!xrSwapchain.resolvedAccessView) {
+                        D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
+
+                        desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+                        desc.Format = DXGI_FORMAT_R32_FLOAT;
+                        desc.Texture2D.MipSlice = 0;
+
+                        CHECK_HRCMD(m_d3d11Device->CreateUnorderedAccessView(
+                            xrSwapchain.resolved.Get(),
+                            &desc,
+                            xrSwapchain.resolvedAccessView.ReleaseAndGetAddressOf()));
+                        SetDebugName(xrSwapchain.resolvedAccessView.Get(),
+                                     fmt::format("DepthResolve UAV[{}]", (void*)&xrSwapchain));
+                    }
+
+                    // 0: shader for Tex2D, 1: shader for Tex2DArray.
+                    const int shaderToUse = xrSwapchain.xrDesc.arraySize == 1 ? 0 : 1;
+                    m_d3d11DeviceContext->CSSetShader(m_resolveShader[shaderToUse].Get(), nullptr, 0);
+
+                    m_d3d11DeviceContext->CSSetShaderResources(
+                        0, 1, xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].GetAddressOf());
+                    m_d3d11DeviceContext->CSSetUnorderedAccessViews(
+                        0, 1, xrSwapchain.resolvedAccessView.GetAddressOf(), nullptr);
+
+                    m_d3d11DeviceContext->Dispatch((unsigned int)std::ceil(xrSwapchain.xrDesc.width / 8),
+                                                   (unsigned int)std::ceil(xrSwapchain.xrDesc.height / 8),
+                                                   1);
+
+                    // Unbind all resources to avoid D3D validation errors.
+                    m_d3d11DeviceContext->CSSetShader(nullptr, nullptr, 0);
+                    ID3D11UnorderedAccessView* nullUAV[] = {nullptr};
+                    m_d3d11DeviceContext->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
+                    ID3D11ShaderResourceView* nullSRV[] = {nullptr};
+                    m_d3d11DeviceContext->CSSetShaderResources(0, 1, nullSRV);
+
+                    // Final copy into the PVR texture.
+                    m_d3d11DeviceContext->CopySubresourceRegion(
+                        xrSwapchain.slices[slice][pvrDestIndex], 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
+                }
             }
 
             // Commit the texture to PVR.
@@ -2828,6 +3099,7 @@ namespace {
         // Session state.
         ComPtr<ID3D11Device> m_d3d11Device;
         ComPtr<ID3D11DeviceContext> m_d3d11DeviceContext;
+        ComPtr<ID3D11ComputeShader> m_resolveShader[2];
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         bool m_sessionStateDirty{false};

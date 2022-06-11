@@ -69,7 +69,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;d3d12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;d3dcompiler.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -77,7 +77,7 @@
       <Command>REM Sign the DLL.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "PimaxXR" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName).json $(OutDir)
@@ -124,7 +124,7 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;d3d12.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;d3dcompiler.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
@@ -132,7 +132,7 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
       <Command>REM Sign the DLL.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "PimaxXR" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName).json $(OutDir)
