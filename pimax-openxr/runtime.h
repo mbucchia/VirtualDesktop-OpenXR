@@ -28,7 +28,7 @@ namespace pimax_openxr {
 
     const unsigned int RuntimeVersionMajor = 0;
     const unsigned int RuntimeVersionMinor = 1;
-    const unsigned int RuntimeVersionPatch = 3;
+    const unsigned int RuntimeVersionPatch = 4;
 
     const std::string RuntimeName = "pimax-openxr";
     const std::string RuntimePrettyName =

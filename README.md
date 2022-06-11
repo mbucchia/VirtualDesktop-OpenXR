@@ -35,7 +35,7 @@ Tested with the following applications with a Pimax 8KX:
 - Unreal Engine
 - StereoKit*
 
-(*) OpenXR Toolkit version 1.1.0 was tested with these applications.
+(*) OpenXR Toolkit was tested with these applications.
 
 ## Known issues
 
