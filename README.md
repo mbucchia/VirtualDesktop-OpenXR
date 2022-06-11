@@ -10,12 +10,12 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 
 Download the latest version from the [Releases page](https://github.com/mbucchia/Pimax-OpenXR/releases). Find the installer program under **Assets**, file `PimaxXR-X.Y.Z.msi`.
 
-For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.log`.
+For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr\pimax-openxr.log`.
 
 ## Limitations
 
 - Windows OS support only.
-- Graphics support: Direct3D 11, Direct3D 12.
+- Graphics support: Direct3D 11, Direct3D 12, Vulkan.
 - No motion controller support.
 - No parallel projection support.
 
