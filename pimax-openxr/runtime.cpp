@@ -504,6 +504,12 @@ void main(uint2 pos : SV_DispatchThreadID)
                 createInfo->applicationInfo.applicationName,
                 createInfo->applicationInfo.engineName);
 
+            m_isOpenComposite =
+                std::string_view(createInfo->applicationInfo.applicationName).find("OpenComposite_") == 0;
+            if (m_isOpenComposite) {
+                Log("Detected OpenComposite\n");
+            }
+
             for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
                 TraceLoggingWrite(
                     g_traceProvider, "xrCreateInstance", TLArg(createInfo->enabledApiLayerNames[i], "ApiLayerName"));
@@ -2326,7 +2332,10 @@ void main(uint2 pos : SV_DispatchThreadID)
                 m_currentFrameIndex = m_nextFrameIndex;
                 TraceLoggingWrite(g_traceProvider, "BeginFrame", TLArg(m_nextFrameIndex, "CurrentFrameIndex"));
 
-                CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, m_currentFrameIndex));
+                // TODO: I don't understand this issue... Works with all apps so far but crashes with OpenComposite.
+                if (!m_isOpenComposite) {
+                    CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, m_currentFrameIndex));
+                }
 
                 m_frameWaited = false;
                 m_frameBegun = true;
@@ -4250,6 +4259,7 @@ void main(uint2 pos : SV_DispatchThreadID)
         bool m_isVulkanSupported{false};
         bool m_isVulkan2Supported{false};
         bool m_isDepthSupported{false};
+        bool m_isOpenComposite{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
         double m_frameDuration{0};
