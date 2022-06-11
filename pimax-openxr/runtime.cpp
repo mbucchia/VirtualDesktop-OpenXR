@@ -207,7 +207,13 @@ namespace {
         return true;
     }
 
-    inline void SetDebugName(ID3D11DeviceChild* resource, std::string_view name) {
+    inline void setDebugName(ID3D11DeviceChild* resource, std::string_view name) {
+        if (resource && !name.empty()) {
+            resource->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.data());
+        }
+    }
+
+    inline void setDebugName(ID3D12Object* resource, std::string_view name) {
         if (resource && !name.empty()) {
             resource->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.data());
         }
@@ -293,6 +299,8 @@ void main(uint2 pos : SV_DispatchThreadID)
             // spec.
             if (apiName == "xrGetD3D11GraphicsRequirementsKHR") {
                 *function = reinterpret_cast<PFN_xrVoidFunction>(_xrGetD3D11GraphicsRequirementsKHR);
+            } else if (apiName == "xrGetD3D12GraphicsRequirementsKHR") {
+                *function = reinterpret_cast<PFN_xrVoidFunction>(_xrGetD3D12GraphicsRequirementsKHR);
             } else if (apiName == "xrConvertWin32PerformanceCounterToTimeKHR") {
                 *function = reinterpret_cast<PFN_xrVoidFunction>(_xrConvertWin32PerformanceCounterToTimeKHR);
             } else if (apiName == "xrConvertTimeToWin32PerformanceCounterKHR") {
@@ -324,6 +332,8 @@ void main(uint2 pos : SV_DispatchThreadID)
             std::vector<Extensions> extensions;
             extensions.push_back( // Direct3D 11 support.
                 {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION});
+            extensions.push_back( // Direct3D 12 support.
+                {XR_KHR_D3D12_ENABLE_EXTENSION_NAME, XR_KHR_D3D12_enable_SPEC_VERSION});
 
             extensions.push_back( // Depth buffer submission.
                 {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
@@ -413,6 +423,8 @@ void main(uint2 pos : SV_DispatchThreadID)
                 // FIXME: Add new extension validation here.
                 if (extensionName == XR_KHR_D3D11_ENABLE_EXTENSION_NAME) {
                     m_isD3D11Supported = true;
+                } else if (extensionName == XR_KHR_D3D12_ENABLE_EXTENSION_NAME) {
+                    m_isD3D12Supported = true;
                 } else if (extensionName == XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME) {
                     m_isDepthSupported = true;
                 } else if (m_isVisibilityMaskSupported && extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
@@ -712,26 +724,10 @@ void main(uint2 pos : SV_DispatchThreadID)
             }
 
             // Get the display device LUID.
-            pvrDisplayInfo info{};
-            CHECK_PVRCMD(pvr_getEyeDisplayInfo(m_pvrSession, pvrEye_Left, &info));
-            TraceLoggingWrite(g_traceProvider,
-                              "PVR_EyeDisplayInfo",
-                              TraceLoggingCharArray((char*)&info.luid, sizeof(LUID), "Luid"),
-                              TLArg(info.edid_vid, "EdidVid"),
-                              TLArg(info.edid_pid, "EdidPid"),
-                              TLArg(info.pos_x, "PosX"),
-                              TLArg(info.pos_y, "PosY"),
-                              TLArg(info.width, "Width"),
-                              TLArg(info.height, "Height"),
-                              TLArg(info.refresh_rate, "RefreshRate"),
-                              TLArg((int)info.disp_state, "DispState"),
-                              TLArg((int)info.eye_display, "EyeDisplay"),
-                              TLArg((int)info.eye_rotate, "EyeRotate"));
-
-            memcpy(&m_adapterLuid, &info.luid, sizeof(LUID));
+            fillDisplayDeviceInfo();
 
             memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
-            graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
+            graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_11_1;
 
             TraceLoggingWrite(
                 g_traceProvider,
@@ -739,8 +735,46 @@ void main(uint2 pos : SV_DispatchThreadID)
                 TraceLoggingCharArray((char*)&graphicsRequirements->adapterLuid, sizeof(LUID), "AdapterLuid"),
                 TLArg((int)graphicsRequirements->minFeatureLevel, "MinFeatureLevel"));
 
-            // We also store the expected frame duration.
-            m_frameDuration = 1.0 / info.refresh_rate;
+            m_graphicsRequirementQueried = true;
+
+            return XR_SUCCESS;
+        }
+
+        XrResult xrGetD3D12GraphicsRequirementsKHR(XrInstance instance,
+                                                   XrSystemId systemId,
+                                                   XrGraphicsRequirementsD3D12KHR* graphicsRequirements) {
+            if (graphicsRequirements->type != XR_TYPE_GRAPHICS_REQUIREMENTS_D3D12_KHR) {
+                return XR_ERROR_VALIDATION_FAILURE;
+            }
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetD3D12GraphicsRequirementsKHR",
+                              TLPArg(instance, "Instance"),
+                              TLArg((int)systemId, "SystemId"));
+
+            if (!m_instanceCreated || instance != (XrInstance)1) {
+                return XR_ERROR_HANDLE_INVALID;
+            }
+
+            if (!m_systemCreated || systemId != (XrSystemId)1) {
+                return XR_ERROR_SYSTEM_INVALID;
+            }
+
+            if (!m_isD3D12Supported) {
+                return XR_ERROR_FUNCTION_UNSUPPORTED;
+            }
+
+            // Get the display device LUID.
+            fillDisplayDeviceInfo();
+
+            memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
+            graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_12_0;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrGetD3D12GraphicsRequirementsKHR",
+                TraceLoggingCharArray((char*)&graphicsRequirements->adapterLuid, sizeof(LUID), "AdapterLuid"),
+                TLArg((int)graphicsRequirements->minFeatureLevel, "MinFeatureLevel"));
 
             m_graphicsRequirementQueried = true;
 
@@ -782,8 +816,6 @@ void main(uint2 pos : SV_DispatchThreadID)
             }
 
             // Get the graphics device.
-            ComPtr<IDXGIDevice> dxgiDevice;
-            ComPtr<IDXGIAdapter> dxgiAdapter;
             bool hasGraphicsBindings = false;
             const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
             while (entry) {
@@ -791,81 +823,20 @@ void main(uint2 pos : SV_DispatchThreadID)
                     const XrGraphicsBindingD3D11KHR* d3dBindings =
                         reinterpret_cast<const XrGraphicsBindingD3D11KHR*>(entry);
 
-                    // Check that this is the correct adapter for the HMD.
-                    CHECK_HRCMD(d3dBindings->device->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
-                    CHECK_HRCMD(dxgiDevice->GetAdapter(dxgiAdapter.ReleaseAndGetAddressOf()));
-
-                    DXGI_ADAPTER_DESC desc;
-                    CHECK_HRCMD(dxgiAdapter->GetDesc(&desc));
-
-                    std::string deviceName;
-                    const std::wstring wadapterDescription(desc.Description);
-                    std::transform(wadapterDescription.begin(),
-                                   wadapterDescription.end(),
-                                   std::back_inserter(deviceName),
-                                   [](wchar_t c) { return (char)c; });
-
-                    TraceLoggingWrite(g_traceProvider, "xrCreateSession", TLArg(deviceName.c_str(), "AdapterName"));
-                    Log("Using adapter: %s\n", deviceName.c_str());
-
-                    if (memcmp(&desc.AdapterLuid, &m_adapterLuid, sizeof(LUID))) {
-                        return XR_ERROR_GRAPHICS_DEVICE_INVALID;
-                    }
-                    m_d3d11Device = d3dBindings->device;
-                    m_d3d11Device->GetImmediateContext(m_d3d11DeviceContext.ReleaseAndGetAddressOf());
-
-                    // Create the resources for depth resolve.
-                    for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
-                        ComPtr<ID3DBlob> shaderBytes;
-                        ComPtr<ID3DBlob> errMsgs;
-                        DWORD flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-
-#ifdef _DEBUG
-                        flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
-#else
-                        flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
-#endif
-
-                        HRESULT hr = D3DCompile(ResolveShaderHlsl[i].data(),
-                                                ResolveShaderHlsl[i].size(),
-                                                nullptr,
-                                                nullptr,
-                                                nullptr,
-                                                "main",
-                                                "cs_5_0",
-                                                flags,
-                                                0,
-                                                shaderBytes.ReleaseAndGetAddressOf(),
-                                                errMsgs.ReleaseAndGetAddressOf());
-                        if (FAILED(hr)) {
-                            std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
-                            Log("D3DCompile failed %X: %s", hr, errMsg.c_str());
-                            CHECK_HRESULT(hr, "D3DCompile failed");
-                        }
-                        CHECK_HRCMD(m_d3d11Device->CreateComputeShader(shaderBytes->GetBufferPointer(),
-                                                                       shaderBytes->GetBufferSize(),
-                                                                       nullptr,
-                                                                       m_resolveShader[i].ReleaseAndGetAddressOf()));
-                        SetDebugName(m_resolveShader[i].Get(), "DepthResolve CS");
+                    const auto result = initializeD3D11(*d3dBindings);
+                    if (XR_FAILED(result)) {
+                        return result;
                     }
 
-                    // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
-                    // not see our OpenXR frames.
-                    if (GetModuleHandleA("renderdoc.dll")) {
-                        DXGI_SWAP_CHAIN_DESC1 swapchainDesc{};
-                        swapchainDesc.Width = 8;
-                        swapchainDesc.Height = 8;
-                        swapchainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                        swapchainDesc.SampleDesc.Count = 1;
-                        swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-                        swapchainDesc.BufferCount = 3;
-                        swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-                        swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+                    hasGraphicsBindings = true;
+                    break;
+                } else if (m_isD3D12Supported && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D12_KHR) {
+                    const XrGraphicsBindingD3D12KHR* d3dBindings =
+                        reinterpret_cast<const XrGraphicsBindingD3D12KHR*>(entry);
 
-                        ComPtr<IDXGIFactory2> dxgiFactory;
-                        CHECK_HRCMD(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
-                        CHECK_HRCMD(dxgiFactory->CreateSwapChainForComposition(
-                            dxgiDevice.Get(), &swapchainDesc, nullptr, m_dxgiSwapchain.ReleaseAndGetAddressOf()));
+                    const auto result = initializeD3D12(*d3dBindings);
+                    if (XR_FAILED(result)) {
+                        return result;
                     }
 
                     hasGraphicsBindings = true;
@@ -927,12 +898,8 @@ void main(uint2 pos : SV_DispatchThreadID)
             m_viewSpace = XR_NULL_HANDLE;
 
             // FIXME: Add session and frame resource cleanup here.
-            for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
-                m_resolveShader[i].Reset();
-            }
-            m_dxgiSwapchain.Reset();
-            m_d3d11DeviceContext.Reset();
-            m_d3d11Device.Reset();
+            cleanupD3D12();
+            cleanupD3D11();
             m_sessionState = XR_SESSION_STATE_UNKNOWN;
             m_sessionStateDirty = false;
             m_sessionCreated = false;
@@ -1391,7 +1358,6 @@ void main(uint2 pos : SV_DispatchThreadID)
                 return XR_ERROR_HANDLE_INVALID;
             }
 
-            // FIXME: Here we assume D3D11 since it's the only API supported for now.
             if (formatCapacityInput && formatCapacityInput < ARRAYSIZE(d3dFormats)) {
                 return XR_ERROR_SIZE_INSUFFICIENT;
             }
@@ -1445,7 +1411,6 @@ void main(uint2 pos : SV_DispatchThreadID)
 
             pvrTextureSwapChainDesc desc{};
 
-            // FIXME: Here we assume D3D11 since it's the only API supported for now.
             desc.Format = dxgiToPvrTextureFormat((DXGI_FORMAT)createInfo->format);
             if (desc.Format == PVR_FORMAT_UNKNOWN) {
                 return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
@@ -1464,7 +1429,6 @@ void main(uint2 pos : SV_DispatchThreadID)
             }
             desc.SampleCount = createInfo->sampleCount;
 
-            // FIXME: Here we assume D3D11 since it's the only API supported for now.
             if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
                 desc.BindFlags |= pvrTextureBind_DX_RenderTarget;
             }
@@ -1492,22 +1456,22 @@ void main(uint2 pos : SV_DispatchThreadID)
             CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &pvrSwapchain));
 
             // Create the internal struct.
-            Swapchain* xrSwapchain = new Swapchain;
-            xrSwapchain->pvrSwapchain.push_back(pvrSwapchain);
-            xrSwapchain->slices.push_back({});
-            xrSwapchain->imagesResourceView.push_back({});
-            xrSwapchain->pvrDesc = desc;
-            xrSwapchain->xrDesc = *createInfo;
-            xrSwapchain->needDepthResolve = needDepthResolve;
+            Swapchain& xrSwapchain = *new Swapchain;
+            xrSwapchain.pvrSwapchain.push_back(pvrSwapchain);
+            xrSwapchain.slices.push_back({});
+            xrSwapchain.imagesResourceView.push_back({});
+            xrSwapchain.pvrDesc = desc;
+            xrSwapchain.xrDesc = *createInfo;
+            xrSwapchain.needDepthResolve = needDepthResolve;
 
             // Lazily-filled state.
             for (int i = 1; i < desc.ArraySize; i++) {
-                xrSwapchain->pvrSwapchain.push_back(nullptr);
-                xrSwapchain->slices.push_back({});
-                xrSwapchain->imagesResourceView.push_back({});
+                xrSwapchain.pvrSwapchain.push_back(nullptr);
+                xrSwapchain.slices.push_back({});
+                xrSwapchain.imagesResourceView.push_back({});
             }
 
-            *swapchain = (XrSwapchain)xrSwapchain;
+            *swapchain = (XrSwapchain)&xrSwapchain;
 
             // Maintain a list of known swapchains for validation and cleanup.
             m_swapchains.insert(*swapchain);
@@ -1527,14 +1491,14 @@ void main(uint2 pos : SV_DispatchThreadID)
                 return XR_ERROR_HANDLE_INVALID;
             }
 
-            Swapchain* xrSwapchain = (Swapchain*)swapchain;
+            Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
-            while (!xrSwapchain->pvrSwapchain.empty()) {
-                auto pvrSwapchain = xrSwapchain->pvrSwapchain.back();
+            while (!xrSwapchain.pvrSwapchain.empty()) {
+                auto pvrSwapchain = xrSwapchain.pvrSwapchain.back();
                 if (pvrSwapchain) {
                     pvr_destroyTextureSwapChain(m_pvrSession, pvrSwapchain);
                 }
-                xrSwapchain->pvrSwapchain.pop_back();
+                xrSwapchain.pvrSwapchain.pop_back();
             }
 
             m_swapchains.erase(swapchain);
@@ -1555,10 +1519,10 @@ void main(uint2 pos : SV_DispatchThreadID)
                 return XR_ERROR_HANDLE_INVALID;
             }
 
-            Swapchain* xrSwapchain = (Swapchain*)swapchain;
+            Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
             int count = -1;
-            CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain->pvrSwapchain[0], &count));
+            CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[0], &count));
 
             if (imageCapacityInput && imageCapacityInput < (uint32_t)count) {
                 return XR_ERROR_SIZE_INSUFFICIENT;
@@ -1569,115 +1533,12 @@ void main(uint2 pos : SV_DispatchThreadID)
                 g_traceProvider, "xrEnumerateSwapchainImages", TLArg(*imageCountOutput, "ImageCountOutput"));
 
             if (images) {
-                // Detect whether this is the first call to xrEnumerateSwapchainImages() for this swapchain.
-                const bool initialized = !xrSwapchain->slices[0].empty();
-
-                // FIXME: Here we assume D3D11 since it's the only API supported for now.
-
-                // PVR does not properly support certain depth format, and we will need an intermediate texture for the
-                // app to use, then perform additional conversion steps during xrEndFrame().
-                D3D11_TEXTURE2D_DESC desc{};
-                if (xrSwapchain->needDepthResolve) {
-                    // FIXME: Today we only do resolve for D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
-                    // corresponding formats below.
-
-                    desc.ArraySize = xrSwapchain->xrDesc.arraySize;
-                    desc.Format = DXGI_FORMAT_R32G8X24_TYPELESS;
-                    desc.Width = xrSwapchain->xrDesc.width;
-                    desc.Height = xrSwapchain->xrDesc.height;
-                    desc.MipLevels = xrSwapchain->xrDesc.mipCount;
-                    desc.SampleDesc.Count = xrSwapchain->xrDesc.sampleCount;
-
-                    // PVR does not support creating a depth texture with the RTV/UAV capability. We must use another
-                    // intermediate texture to run our shader.
-                    if (!initialized) {
-                        D3D11_TEXTURE2D_DESC resolvedDesc = desc;
-                        resolvedDesc.ArraySize = 1;
-                        resolvedDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-                        resolvedDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-                        CHECK_HRCMD(m_d3d11Device->CreateTexture2D(
-                            &resolvedDesc, nullptr, xrSwapchain->resolved.ReleaseAndGetAddressOf()));
-                        SetDebugName(xrSwapchain->resolved.Get(),
-                                     fmt::format("DepthResolve Texture[{}]", (void*)xrSwapchain));
-                    }
-
-                    // The texture will be sampled by our resolve shader.
-                    desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-
-                    if (xrSwapchain->xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
-                        desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-                    }
-                    if (xrSwapchain->xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                        desc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
-                    }
-                    if (xrSwapchain->xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
-                        desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
-                    }
-
-                    // Make the texture shareable in case the application needs to share it.
-                    desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
-                }
-
-                auto traceTexture = [](ID3D11Texture2D* texture, const char* type) {
-                    D3D11_TEXTURE2D_DESC desc;
-                    texture->GetDesc(&desc);
-                    TraceLoggingWrite(g_traceProvider,
-                                      "xrEnumerateSwapchainImages",
-                                      TLArg(type, "Type"),
-                                      TLArg(desc.Width, "Width"),
-                                      TLArg(desc.Height, "Height"),
-                                      TLArg(desc.ArraySize, "ArraySize"),
-                                      TLArg(desc.MipLevels, "MipCount"),
-                                      TLArg(desc.SampleDesc.Count, "SampleCount"),
-                                      TLArg((int)desc.Format, "Format"),
-                                      TLArg((int)desc.Usage, "Usage"),
-                                      TLArg(desc.BindFlags, "BindFlags"),
-                                      TLArg(desc.CPUAccessFlags, "CPUAccessFlags"),
-                                      TLArg(desc.MiscFlags, "MiscFlags"));
-                };
-
-                // Query the textures for the swapchain.
-                XrSwapchainImageD3D11KHR* d3d11Images = reinterpret_cast<XrSwapchainImageD3D11KHR*>(images);
-                for (uint32_t i = 0; i < *imageCountOutput; i++) {
-                    if (d3d11Images->type != XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR) {
-                        return XR_ERROR_VALIDATION_FAILURE;
-                    }
-
-                    if (!initialized) {
-                        ID3D11Texture2D* swapchainTexture;
-                        CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                            m_pvrSession, xrSwapchain->pvrSwapchain[0], i, IID_PPV_ARGS(&swapchainTexture)));
-                        SetDebugName(swapchainTexture, fmt::format("Runtime Texture[{}, {}]", i, (void*)xrSwapchain));
-
-                        xrSwapchain->slices[0].push_back(swapchainTexture);
-                        if (i == 0) {
-                            traceTexture(swapchainTexture, "PVR");
-                        }
-
-                        if (xrSwapchain->needDepthResolve) {
-                            // Create the intermediate texture if needed.
-                            ComPtr<ID3D11Texture2D> intermediateTexture;
-                            CHECK_HRCMD(m_d3d11Device->CreateTexture2D(
-                                &desc, nullptr, intermediateTexture.ReleaseAndGetAddressOf()));
-                            SetDebugName(intermediateTexture.Get(),
-                                         fmt::format("App Texture[{}, {}]", i, (void*)xrSwapchain));
-
-                            xrSwapchain->images.push_back(intermediateTexture);
-                            for (uint32_t i = 0; i < xrSwapchain->xrDesc.arraySize; i++) {
-                                xrSwapchain->imagesResourceView[i].push_back({});
-                            }
-                        }
-                    }
-
-                    d3d11Images[i].texture =
-                        !xrSwapchain->needDepthResolve ? xrSwapchain->slices[0][i] : xrSwapchain->images[i].Get();
-
-                    if (!initialized && i == 0) {
-                        traceTexture(d3d11Images[0].texture, "Runtime");
-                    }
-
-                    TraceLoggingWrite(
-                        g_traceProvider, "xrEnumerateSwapchainImages", TLPArg(d3d11Images[i].texture, "Texture"));
+                if (m_d3d12Device) {
+                    XrSwapchainImageD3D12KHR* d3d12Images = reinterpret_cast<XrSwapchainImageD3D12KHR*>(images);
+                    return getSwapchainImagesD3D12(xrSwapchain, d3d12Images, *imageCountOutput);
+                } else {
+                    XrSwapchainImageD3D11KHR* d3d11Images = reinterpret_cast<XrSwapchainImageD3D11KHR*>(images);
+                    return getSwapchainImagesD3D11(xrSwapchain, d3d11Images, *imageCountOutput);
                 }
             }
 
@@ -1697,17 +1558,16 @@ void main(uint2 pos : SV_DispatchThreadID)
                 return XR_ERROR_HANDLE_INVALID;
             }
 
-            Swapchain* xrSwapchain = (Swapchain*)swapchain;
+            Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
             // Query the image index from PVR.
             int pvrIndex = -1;
-            if (!xrSwapchain->needDepthResolve) {
-                CHECK_PVRCMD(
-                    pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain->pvrSwapchain[0], &pvrIndex));
+            if (!xrSwapchain.needDepthResolve) {
+                CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrIndex));
             } else {
-                pvrIndex = xrSwapchain->currentIndex++;
-                if (xrSwapchain->currentIndex >= xrSwapchain->images.size()) {
-                    xrSwapchain->currentIndex = 0;
+                pvrIndex = xrSwapchain.currentIndex++;
+                if (xrSwapchain.currentIndex >= xrSwapchain.images.size()) {
+                    xrSwapchain.currentIndex = 0;
                 }
             }
 
@@ -1969,6 +1829,15 @@ void main(uint2 pos : SV_DispatchThreadID)
                     return XR_ERROR_CALL_ORDER_INVALID;
                 }
 
+                // Serializes the app work between D3D12 and D3D11.
+                if (m_d3d12Fence) {
+                    m_fenceValue++;
+                    TraceLoggingWrite(
+                        g_traceProvider, "xrEndFrame_Sync", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));
+                    CHECK_HRCMD(m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue));
+                    CHECK_HRCMD(m_d3d11DeviceContext->Wait(m_d3d11Fence.Get(), m_fenceValue));
+                }
+
                 std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
 
                 // Construct the list of layers.
@@ -2020,15 +1889,15 @@ void main(uint2 pos : SV_DispatchThreadID)
                                 return XR_ERROR_HANDLE_INVALID;
                             }
 
-                            Swapchain* xrSwapchain = (Swapchain*)proj->views[eye].subImage.swapchain;
+                            Swapchain& xrSwapchain = *(Swapchain*)proj->views[eye].subImage.swapchain;
 
                             // Fill out color buffer information.
                             prepareAndCommitSwapchainImage(
-                                *xrSwapchain, proj->views[eye].subImage.imageArrayIndex, committedSwapchainImages);
+                                xrSwapchain, proj->views[eye].subImage.imageArrayIndex, committedSwapchainImages);
                             layer.EyeFov.ColorTexture[eye] =
-                                xrSwapchain->pvrSwapchain[proj->views[eye].subImage.imageArrayIndex];
+                                xrSwapchain.pvrSwapchain[proj->views[eye].subImage.imageArrayIndex];
 
-                            if (!isValidSwapchainRect(xrSwapchain->pvrDesc, proj->views[eye].subImage.imageRect)) {
+                            if (!isValidSwapchainRect(xrSwapchain.pvrDesc, proj->views[eye].subImage.imageRect)) {
                                 return XR_ERROR_SWAPCHAIN_RECT_INVALID;
                             }
                             layer.EyeFov.Viewport[eye].x = proj->views[eye].subImage.imageRect.offset.x;
@@ -2082,16 +1951,16 @@ void main(uint2 pos : SV_DispatchThreadID)
                                             return XR_ERROR_HANDLE_INVALID;
                                         }
 
-                                        Swapchain* xrDepthSwapchain = (Swapchain*)depth->subImage.swapchain;
+                                        Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
 
                                         // Fill out depth buffer information.
-                                        prepareAndCommitSwapchainImage(*xrDepthSwapchain,
+                                        prepareAndCommitSwapchainImage(xrDepthSwapchain,
                                                                        depth->subImage.imageArrayIndex,
                                                                        committedSwapchainImages);
                                         layer.EyeFovDepth.DepthTexture[eye] =
-                                            xrDepthSwapchain->pvrSwapchain[depth->subImage.imageArrayIndex];
+                                            xrDepthSwapchain.pvrSwapchain[depth->subImage.imageArrayIndex];
 
-                                        if (!isValidSwapchainRect(xrDepthSwapchain->pvrDesc,
+                                        if (!isValidSwapchainRect(xrDepthSwapchain.pvrDesc,
                                                                   depth->subImage.imageRect)) {
                                             return XR_ERROR_SWAPCHAIN_RECT_INVALID;
                                         }
@@ -2135,16 +2004,16 @@ void main(uint2 pos : SV_DispatchThreadID)
                             return XR_ERROR_HANDLE_INVALID;
                         }
 
-                        Swapchain* xrSwapchain = (Swapchain*)quad->subImage.swapchain;
+                        Swapchain& xrSwapchain = *(Swapchain*)quad->subImage.swapchain;
 
                         // TODO: We ignore eyeVisibility as there is no equivalent.
 
                         // Fill out color buffer information.
                         prepareAndCommitSwapchainImage(
-                            *xrSwapchain, quad->subImage.imageArrayIndex, committedSwapchainImages);
-                        layer.Quad.ColorTexture = xrSwapchain->pvrSwapchain[quad->subImage.imageArrayIndex];
+                            xrSwapchain, quad->subImage.imageArrayIndex, committedSwapchainImages);
+                        layer.Quad.ColorTexture = xrSwapchain.pvrSwapchain[quad->subImage.imageArrayIndex];
 
-                        if (!isValidSwapchainRect(xrSwapchain->pvrDesc, quad->subImage.imageRect)) {
+                        if (!isValidSwapchainRect(xrSwapchain.pvrDesc, quad->subImage.imageRect)) {
                             return XR_ERROR_SWAPCHAIN_RECT_INVALID;
                         }
                         layer.Quad.Viewport.x = quad->subImage.imageRect.offset.x;
@@ -2905,6 +2774,9 @@ void main(uint2 pos : SV_DispatchThreadID)
             ComPtr<ID3D11Texture2D> resolved;
             ComPtr<ID3D11UnorderedAccessView> resolvedAccessView;
 
+            // Resources needed for interop.
+            std::vector<ComPtr<ID3D12Resource>> d3d12Images;
+
             // Information recorded at creation.
             XrSwapchainCreateInfo xrDesc;
             pvrTextureSwapChainDesc pvrDesc;
@@ -2918,6 +2790,420 @@ void main(uint2 pos : SV_DispatchThreadID)
 
         std::optional<int> getSetting(const std::string& value) const {
             return RegGetDword(HKEY_LOCAL_MACHINE, RegPrefix, value);
+        }
+
+        void fillDisplayDeviceInfo() {
+            pvrDisplayInfo info{};
+            CHECK_PVRCMD(pvr_getEyeDisplayInfo(m_pvrSession, pvrEye_Left, &info));
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_EyeDisplayInfo",
+                              TraceLoggingCharArray((char*)&info.luid, sizeof(LUID), "Luid"),
+                              TLArg(info.edid_vid, "EdidVid"),
+                              TLArg(info.edid_pid, "EdidPid"),
+                              TLArg(info.pos_x, "PosX"),
+                              TLArg(info.pos_y, "PosY"),
+                              TLArg(info.width, "Width"),
+                              TLArg(info.height, "Height"),
+                              TLArg(info.refresh_rate, "RefreshRate"),
+                              TLArg((int)info.disp_state, "DispState"),
+                              TLArg((int)info.eye_display, "EyeDisplay"),
+                              TLArg((int)info.eye_rotate, "EyeRotate"));
+
+            // We also store the expected frame duration.
+            m_frameDuration = 1.0 / info.refresh_rate;
+
+            memcpy(&m_adapterLuid, &info.luid, sizeof(LUID));
+        }
+
+        XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings, bool interop = false) {
+            // Check that this is the correct adapter for the HMD.
+            ComPtr<IDXGIDevice> dxgiDevice;
+            CHECK_HRCMD(d3dBindings.device->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
+
+            ComPtr<IDXGIAdapter> dxgiAdapter;
+            CHECK_HRCMD(dxgiDevice->GetAdapter(dxgiAdapter.ReleaseAndGetAddressOf()));
+
+            DXGI_ADAPTER_DESC desc;
+            CHECK_HRCMD(dxgiAdapter->GetDesc(&desc));
+
+            if (!interop) {
+                std::string deviceName;
+                const std::wstring wadapterDescription(desc.Description);
+                std::transform(wadapterDescription.begin(),
+                               wadapterDescription.end(),
+                               std::back_inserter(deviceName),
+                               [](wchar_t c) { return (char)c; });
+
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrCreateSession",
+                                  TLArg("D3D11", "Api"),
+                                  TLArg(deviceName.c_str(), "AdapterName"));
+                Log("Using Direct3D 11 on adapter: %s\n", deviceName.c_str());
+            }
+
+            if (memcmp(&desc.AdapterLuid, &m_adapterLuid, sizeof(LUID))) {
+                return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+            }
+
+            ComPtr<ID3D11DeviceContext> deviceContext;
+            d3dBindings.device->GetImmediateContext(deviceContext.ReleaseAndGetAddressOf());
+
+            // Query the necessary flavors of device & device context, which will let use use fences. We only really
+            // need those for D3D12 support, but using the same flavor keeps the code common.
+            CHECK_HRCMD(d3dBindings.device->QueryInterface(m_d3d11Device.ReleaseAndGetAddressOf()));
+            CHECK_HRCMD(deviceContext->QueryInterface(m_d3d11DeviceContext.ReleaseAndGetAddressOf()));
+
+            // Create the resources for depth resolve.
+            for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
+                ComPtr<ID3DBlob> shaderBytes;
+                ComPtr<ID3DBlob> errMsgs;
+                DWORD flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+
+#ifdef _DEBUG
+                flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
+#else
+                flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
+#endif
+
+                HRESULT hr = D3DCompile(ResolveShaderHlsl[i].data(),
+                                        ResolveShaderHlsl[i].size(),
+                                        nullptr,
+                                        nullptr,
+                                        nullptr,
+                                        "main",
+                                        "cs_5_0",
+                                        flags,
+                                        0,
+                                        shaderBytes.ReleaseAndGetAddressOf(),
+                                        errMsgs.ReleaseAndGetAddressOf());
+                if (FAILED(hr)) {
+                    std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
+                    Log("D3DCompile failed %X: %s", hr, errMsg.c_str());
+                    CHECK_HRESULT(hr, "D3DCompile failed");
+                }
+                CHECK_HRCMD(m_d3d11Device->CreateComputeShader(shaderBytes->GetBufferPointer(),
+                                                               shaderBytes->GetBufferSize(),
+                                                               nullptr,
+                                                               m_resolveShader[i].ReleaseAndGetAddressOf()));
+                setDebugName(m_resolveShader[i].Get(), "DepthResolve CS");
+            }
+
+            // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
+            // not see our OpenXR frames.
+            if (GetModuleHandleA("renderdoc.dll")) {
+                DXGI_SWAP_CHAIN_DESC1 swapchainDesc{};
+                swapchainDesc.Width = 8;
+                swapchainDesc.Height = 8;
+                swapchainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                swapchainDesc.SampleDesc.Count = 1;
+                swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+                swapchainDesc.BufferCount = 3;
+                swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+                swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+                ComPtr<IDXGIFactory2> dxgiFactory;
+                CHECK_HRCMD(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
+                CHECK_HRCMD(dxgiFactory->CreateSwapChainForComposition(
+                    dxgiDevice.Get(), &swapchainDesc, nullptr, m_dxgiSwapchain.ReleaseAndGetAddressOf()));
+            }
+
+            return XR_SUCCESS;
+        }
+
+        void cleanupD3D11() {
+            // Flush any pending work.
+            wil::unique_handle eventHandle;
+            m_d3d11DeviceContext->Flush1(D3D11_CONTEXT_TYPE_ALL, eventHandle.get());
+            WaitForSingleObject(eventHandle.get(), INFINITE);
+
+            m_dxgiSwapchain.Reset();
+            for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
+                m_resolveShader[i].Reset();
+            }
+            m_d3d11DeviceContext.Reset();
+            m_d3d11Device.Reset();
+        }
+
+        XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain,
+                                         XrSwapchainImageD3D11KHR* d3d11Images,
+                                         uint32_t count,
+                                         bool interop = false) {
+            // Detect whether this is the first call for this swapchain.
+            const bool initialized = !xrSwapchain.slices[0].empty();
+
+            // PVR does not properly support certain depth format, and we will need an intermediate texture for the
+            // app to use, then perform additional conversion steps during xrEndFrame().
+            D3D11_TEXTURE2D_DESC desc{};
+            if (!initialized && xrSwapchain.needDepthResolve) {
+                // FIXME: Today we only do resolve for D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
+                // corresponding formats below.
+
+                desc.ArraySize = xrSwapchain.xrDesc.arraySize;
+                desc.Format = DXGI_FORMAT_R32G8X24_TYPELESS;
+                desc.Width = xrSwapchain.xrDesc.width;
+                desc.Height = xrSwapchain.xrDesc.height;
+                desc.MipLevels = xrSwapchain.xrDesc.mipCount;
+                desc.SampleDesc.Count = xrSwapchain.xrDesc.sampleCount;
+
+                // PVR does not support creating a depth texture with the RTV/UAV capability. We must use another
+                // intermediate texture to run our shader.
+                D3D11_TEXTURE2D_DESC resolvedDesc = desc;
+                resolvedDesc.ArraySize = 1;
+                resolvedDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+                resolvedDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+                CHECK_HRCMD(m_d3d11Device->CreateTexture2D(
+                    &resolvedDesc, nullptr, xrSwapchain.resolved.ReleaseAndGetAddressOf()));
+                setDebugName(xrSwapchain.resolved.Get(), fmt::format("DepthResolve Texture[{}]", (void*)&xrSwapchain));
+
+                // The texture will be sampled by our resolve shader.
+                desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+                if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
+                    desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+                }
+                if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                    desc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+                }
+                if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
+                    desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+                }
+
+                // Make the texture shareable in case the application needs to share it and since we need to support
+                // D3D12 interop.
+                // We don't use NT handles since they are less permissive in terms of formats.
+                desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+            }
+
+            auto traceTexture = [](ID3D11Texture2D* texture, const char* type) {
+                D3D11_TEXTURE2D_DESC desc;
+                texture->GetDesc(&desc);
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrEnumerateSwapchainImages",
+                                  TLArg("D3D11", "Api"),
+                                  TLArg(type, "Type"),
+                                  TLArg(desc.Width, "Width"),
+                                  TLArg(desc.Height, "Height"),
+                                  TLArg(desc.ArraySize, "ArraySize"),
+                                  TLArg(desc.MipLevels, "MipCount"),
+                                  TLArg(desc.SampleDesc.Count, "SampleCount"),
+                                  TLArg((int)desc.Format, "Format"),
+                                  TLArg((int)desc.Usage, "Usage"),
+                                  TLArg(desc.BindFlags, "BindFlags"),
+                                  TLArg(desc.CPUAccessFlags, "CPUAccessFlags"),
+                                  TLArg(desc.MiscFlags, "MiscFlags"));
+            };
+
+            // Query the textures for the swapchain.
+            for (uint32_t i = 0; i < count; i++) {
+                if (d3d11Images[i].type != XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR) {
+                    return XR_ERROR_VALIDATION_FAILURE;
+                }
+
+                if (!initialized) {
+                    ID3D11Texture2D* swapchainTexture;
+                    CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
+                        m_pvrSession, xrSwapchain.pvrSwapchain[0], i, IID_PPV_ARGS(&swapchainTexture)));
+                    setDebugName(swapchainTexture, fmt::format("Runtime Texture[{}, {}]", i, (void*)&xrSwapchain));
+
+                    xrSwapchain.slices[0].push_back(swapchainTexture);
+                    if (i == 0) {
+                        traceTexture(swapchainTexture, "PVR");
+                    }
+
+                    if (xrSwapchain.needDepthResolve) {
+                        // Create the intermediate texture if needed.
+                        ComPtr<ID3D11Texture2D> intermediateTexture;
+                        CHECK_HRCMD(m_d3d11Device->CreateTexture2D(
+                            &desc, nullptr, intermediateTexture.ReleaseAndGetAddressOf()));
+                        setDebugName(intermediateTexture.Get(),
+                                     fmt::format("App Texture[{}, {}]", i, (void*)&xrSwapchain));
+
+                        xrSwapchain.images.push_back(intermediateTexture);
+                        for (uint32_t i = 0; i < xrSwapchain.xrDesc.arraySize; i++) {
+                            xrSwapchain.imagesResourceView[i].push_back({});
+                        }
+                    }
+                }
+
+                d3d11Images[i].texture =
+                    !xrSwapchain.needDepthResolve ? xrSwapchain.slices[0][i] : xrSwapchain.images[i].Get();
+
+                if (!interop) {
+                    if (i == 0) {
+                        traceTexture(d3d11Images[0].texture, "Runtime");
+                    }
+
+                    TraceLoggingWrite(g_traceProvider,
+                                      "xrEnumerateSwapchainImages",
+                                      TLArg("D3D11", "Api"),
+                                      TLPArg(d3d11Images[i].texture, "Texture"));
+                }
+            }
+
+            return XR_SUCCESS;
+        }
+
+        XrResult initializeD3D12(const XrGraphicsBindingD3D12KHR& d3dBindings) {
+            // Check that this is the correct adapter for the HMD.
+            ComPtr<IDXGIFactory1> dxgiFactory;
+            CHECK_HRCMD(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
+
+            const auto adapterLuid = d3dBindings.device->GetAdapterLuid();
+            ComPtr<IDXGIAdapter1> dxgiAdapter;
+            for (UINT adapterIndex = 0;; adapterIndex++) {
+                // EnumAdapters1 will fail with DXGI_ERROR_NOT_FOUND when there are no more adapters to
+                // enumerate.
+                CHECK_HRCMD(dxgiFactory->EnumAdapters1(adapterIndex, dxgiAdapter.ReleaseAndGetAddressOf()));
+
+                DXGI_ADAPTER_DESC1 desc;
+                CHECK_HRCMD(dxgiAdapter->GetDesc1(&desc));
+                if (!memcmp(&desc.AdapterLuid, &adapterLuid, sizeof(LUID))) {
+                    std::string deviceName;
+                    const std::wstring wadapterDescription(desc.Description);
+                    std::transform(wadapterDescription.begin(),
+                                   wadapterDescription.end(),
+                                   std::back_inserter(deviceName),
+                                   [](wchar_t c) { return (char)c; });
+
+                    TraceLoggingWrite(g_traceProvider,
+                                      "xrCreateSession",
+                                      TLArg("D3D12", "Api"),
+                                      TLArg(deviceName.c_str(), "AdapterName"));
+                    Log("Using Direct3D 12 on adapter: %s\n", deviceName.c_str());
+                    break;
+                }
+            }
+
+            if (memcmp(&adapterLuid, &m_adapterLuid, sizeof(LUID))) {
+                return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+            }
+
+            m_d3d12Device = d3dBindings.device;
+            m_d3d12CommandQueue = d3dBindings.queue;
+
+            // Create the interop device that PVR will be using.
+            ComPtr<ID3D11Device> device;
+            ComPtr<ID3D11DeviceContext> deviceContext;
+            D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;
+            UINT flags = 0;
+#ifdef _DEBUG
+            flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+            CHECK_HRCMD(D3D11CreateDevice(dxgiAdapter.Get(),
+                                          D3D_DRIVER_TYPE_UNKNOWN,
+                                          0,
+                                          flags,
+                                          &featureLevel,
+                                          1,
+                                          D3D11_SDK_VERSION,
+                                          device.ReleaseAndGetAddressOf(),
+                                          nullptr,
+                                          deviceContext.ReleaseAndGetAddressOf()));
+
+            ComPtr<ID3D11Device5> device5;
+            CHECK_HRCMD(device->QueryInterface(m_d3d11Device.ReleaseAndGetAddressOf()));
+
+            // Create the Direct3D 11 resources.
+            XrGraphicsBindingD3D11KHR d3d11Bindings{};
+            d3d11Bindings.device = device.Get();
+            const auto result = initializeD3D11(d3d11Bindings, true);
+            if (XR_FAILED(result)) {
+                return result;
+            }
+
+            // We will use a shared fence to synchronize between the D3D12 queue and the D3D11
+            // context.
+            CHECK_HRCMD(m_d3d12Device->CreateFence(
+                0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d12Fence.ReleaseAndGetAddressOf())));
+            wil::unique_handle fenceHandle = nullptr;
+            CHECK_HRCMD(m_d3d12Device->CreateSharedHandle(
+                m_d3d12Fence.Get(), nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
+            m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf()));
+            m_fenceValue = 0;
+
+            return XR_SUCCESS;
+        }
+
+        void cleanupD3D12() {
+            // Wait for all the queued work to complete.
+            if (m_d3d12CommandQueue && m_d3d12Fence) {
+                wil::unique_handle eventHandle;
+                m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), ++m_fenceValue);
+                *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
+                CHECK_HRCMD(m_d3d12Fence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
+                WaitForSingleObject(eventHandle.get(), INFINITE);
+                ResetEvent(eventHandle.get());
+            }
+
+            m_d3d12Fence.Reset();
+            m_d3d11Fence.Reset();
+            m_d3d12CommandQueue.Reset();
+            m_d3d12Device.Reset();
+        }
+
+        XrResult getSwapchainImagesD3D12(Swapchain& xrSwapchain,
+                                         XrSwapchainImageD3D12KHR* d3d12Images,
+                                         uint32_t count) {
+            // Detect whether this is the first call for this swapchain.
+            const bool initialized = !xrSwapchain.slices[0].empty();
+
+            std::vector<XrSwapchainImageD3D11KHR> d3d11Images(count, {XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR});
+            if (!initialized) {
+                // Query the D3D11 textures.
+                const auto result = getSwapchainImagesD3D11(xrSwapchain, d3d11Images.data(), count, true);
+                if (XR_FAILED(result)) {
+                    return result;
+                }
+            }
+
+            // Export each D3D11 texture to D3D12.
+            for (uint32_t i = 0; i < count; i++) {
+                if (d3d12Images[i].type != XR_TYPE_SWAPCHAIN_IMAGE_D3D12_KHR) {
+                    return XR_ERROR_VALIDATION_FAILURE;
+                }
+
+                if (!initialized) {
+                    // Create an imported texture on the D3D12 device.
+                    HANDLE textureHandle;
+                    ComPtr<IDXGIResource1> dxgiResource;
+                    CHECK_HRCMD(
+                        d3d11Images[i].texture->QueryInterface(IID_PPV_ARGS(dxgiResource.ReleaseAndGetAddressOf())));
+                    CHECK_HRCMD(dxgiResource->GetSharedHandle(&textureHandle));
+
+                    ComPtr<ID3D12Resource> d3d12Resource;
+                    CHECK_HRCMD(m_d3d12Device->OpenSharedHandle(textureHandle,
+                                                                IID_PPV_ARGS(d3d12Resource.ReleaseAndGetAddressOf())));
+                    setDebugName(d3d12Resource.Get(),
+                                 fmt::format("App Interop Texture[{}, {}]", i, (void*)&xrSwapchain));
+
+                    xrSwapchain.d3d12Images.push_back(d3d12Resource);
+                }
+
+                d3d12Images[i].texture = xrSwapchain.d3d12Images[i].Get();
+
+                if (i == 0) {
+                    const auto& desc = d3d12Images[i].texture->GetDesc();
+
+                    TraceLoggingWrite(g_traceProvider,
+                                      "xrEnumerateSwapchainImages",
+                                      TLArg("D3D12", "Api"),
+                                      TLArg("Runtime", "Type"),
+                                      TLArg(desc.Width, "Width"),
+                                      TLArg(desc.Height, "Height"),
+                                      TLArg(desc.DepthOrArraySize, "ArraySize"),
+                                      TLArg(desc.MipLevels, "MipCount"),
+                                      TLArg(desc.SampleDesc.Count, "SampleCount"),
+                                      TLArg((int)desc.Format, "Format"),
+                                      TLArg((int)desc.Flags, "Flags"));
+                }
+
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrEnumerateSwapchainImages",
+                                  TLArg("D3D12", "Api"),
+                                  TLPArg(d3d12Images[i].texture, "Texture"));
+            }
+
+            return XR_SUCCESS;
         }
 
         void prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
@@ -2946,14 +3232,12 @@ void main(uint2 pos : SV_DispatchThreadID)
                         throw std::runtime_error("Swapchain image count mismatch");
                     }
 
-                    // FIXME: Here we assume D3D11 since it's the only API supported for now.
-
                     // Query the textures for the swapchain.
                     for (int i = 0; i < count; i++) {
                         ID3D11Texture2D* texture = nullptr;
                         CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
                             m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(&texture)));
-                        SetDebugName(texture,
+                        setDebugName(texture,
                                      fmt::format("Runtime Sliced Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
 
                         xrSwapchain.slices[slice].push_back(texture);
@@ -2998,7 +3282,7 @@ void main(uint2 pos : SV_DispatchThreadID)
                             xrSwapchain.images[xrSwapchain.currentIndex].Get(),
                             &desc,
                             xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].ReleaseAndGetAddressOf()));
-                        SetDebugName(
+                        setDebugName(
                             xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].Get(),
                             fmt::format(
                                 "DepthResolve SRV[{}, {}, {}]", slice, xrSwapchain.currentIndex, (void*)&xrSwapchain));
@@ -3014,7 +3298,7 @@ void main(uint2 pos : SV_DispatchThreadID)
                             xrSwapchain.resolved.Get(),
                             &desc,
                             xrSwapchain.resolvedAccessView.ReleaseAndGetAddressOf()));
-                        SetDebugName(xrSwapchain.resolvedAccessView.Get(),
+                        setDebugName(xrSwapchain.resolvedAccessView.Get(),
                                      fmt::format("DepthResolve UAV[{}]", (void*)&xrSwapchain));
                     }
 
@@ -3110,6 +3394,7 @@ void main(uint2 pos : SV_DispatchThreadID)
         bool m_systemCreated{false};
         bool m_isVisibilityMaskSupported{false};
         bool m_isD3D11Supported{false};
+        bool m_isD3D12Supported{false};
         bool m_isDepthSupported{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
@@ -3121,9 +3406,9 @@ void main(uint2 pos : SV_DispatchThreadID)
         XrPath m_stringIndex{0};
         std::map<XrPath, std::string> m_strings;
 
-        // Session state.
-        ComPtr<ID3D11Device> m_d3d11Device;
-        ComPtr<ID3D11DeviceContext> m_d3d11DeviceContext;
+        // Session state
+        ComPtr<ID3D11Device5> m_d3d11Device;
+        ComPtr<ID3D11DeviceContext4> m_d3d11DeviceContext;
         ComPtr<ID3D11ComputeShader> m_resolveShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
@@ -3134,6 +3419,13 @@ void main(uint2 pos : SV_DispatchThreadID)
         std::set<XrSpace> m_spaces;
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
+
+        // Graphics API interop.
+        ComPtr<ID3D12Device> m_d3d12Device;
+        ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
+        ComPtr<ID3D11Fence> m_d3d11Fence;
+        ComPtr<ID3D12Fence> m_d3d12Fence;
+        UINT64 m_fenceValue{0};
 
         // Frame state.
         std::mutex m_frameLock;
@@ -3162,6 +3454,28 @@ void main(uint2 pos : SV_DispatchThreadID)
 
             TraceLoggingWrite(
                 g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+            return result;
+        }
+
+        static XrResult _xrGetD3D12GraphicsRequirementsKHR(XrInstance instance,
+                                                           XrSystemId systemId,
+                                                           XrGraphicsRequirementsD3D12KHR* graphicsRequirements) {
+            TraceLoggingWrite(g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR");
+
+            XrResult result;
+            try {
+                result = dynamic_cast<OpenXrRuntime*>(GetInstance())
+                             ->xrGetD3D12GraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
+            } catch (std::exception& exc) {
+                TraceLoggingWrite(
+                    g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
+                Log("xrGetD3D12GraphicsRequirementsKHR: %s\n", exc.what());
+                result = XR_ERROR_RUNTIME_FAILURE;
+            }
+
+            TraceLoggingWrite(
+                g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR_Result", TLArg(xr::ToCString(result), "Result"));
 
             return result;
         }

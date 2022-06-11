@@ -15,9 +15,7 @@ For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr.l
 ## Limitations
 
 - Windows OS support only.
-- Direct3D support only.
-  - Direct3D 11 is supported out-of-the-box.
-  - Direct3D 12 is supported via [OpenXR-D3D12on11](https://github.com/mbucchia/OpenXR-D3D12on11).
+- Graphics support: Direct3D 11, Direct3D 12.
 - No motion controller support.
 - No parallel projection support.
 
