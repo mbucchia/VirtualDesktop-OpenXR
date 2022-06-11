@@ -397,11 +397,6 @@
             "AssemblyAsmDisplayName" = "8:System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
                 "ScatterAssemblies"
                 {
-                    "_CFD2063A9588D4E85037FA0DACAF5F69"
-                    {
-                    "Name" = "8:System.Net.Http.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
             "SourcePath" = "8:System.Net.Http.dll"
             "TargetName" = "8:"
@@ -557,15 +552,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PimaxXR"
-        "ProductCode" = "8:{187465D0-0715-4126-8552-F58B2B8BA05D}"
-        "PackageCode" = "8:{57786BD8-130D-4CA6-90AE-DC4CF5833A05}"
+        "ProductCode" = "8:{08AABA33-B381-4BAD-9148-E2C6AA7AE974}"
+        "PackageCode" = "8:{389F5E2F-8FA6-4E85-BA79-5B440A7902B5}"
         "UpgradeCode" = "8:{462D4BAE-C6F9-4917-94BB-AF4A019B92E2}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:0.1.2"
+        "ProductVersion" = "8:0.1.3"
         "Manufacturer" = "8:mbucchia@gmail.com"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:https://github.com/mbucchia/Pimax-OpenXR"

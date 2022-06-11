@@ -10,6 +10,10 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 
 Download the latest version from the [Releases page](https://github.com/mbucchia/Pimax-OpenXR/releases). Find the installer program under **Assets**, file `PimaxXR-X.Y.Z.msi`.
 
+Once installed, the _PimaxXR Control Center_ application (shortcut on the Desktop, or available from the Start Menu) can be used to switch between PimaxXR and the StreamVR runtime.
+
+![PimaxXR Control Center](control-center.png)
+
 For troubleshooting, the log file can be found at `%LocalAppData%\pimax-openxr\pimax-openxr.log`.
 
 ## Limitations
@@ -42,6 +46,10 @@ Tested with the following applications with a Pimax 8KX:
 - Applications hosted in a secure app container will fail to start: the Pimax SDK does not seem to support RPC in this configuration.
 
 If you are having issues, please visit the [Issues page](https://github.com/mbucchia/Pimax-OpenXR/issues) to look at existing support requests or to file a new one.
+
+**IMPORTANT**: When filing issues, please make sure to include the `pimax-openxr.log` log file. It can be opened from the _PimaxXR Control Center_ application (shortcut on the Desktop, or available from the Start Menu). Additionally, providing a full capture trace (see below) is greatly helpful.
+
+Capturing a trace can be initiated from the _PimaxXR Control Center_, by clicking _Capture trace_, then reproduce the crash/issue. When done, click _Stop capture_. The folder containing the trace file (`%LocalAppData%\pimax-openxr`) will be opened, and the file is named `PimaxXR.etl`.
 
 ## Contributors
 
