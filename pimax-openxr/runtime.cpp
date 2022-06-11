@@ -2865,7 +2865,7 @@ void main(uint2 pos : SV_DispatchThreadID)
             TraceLoggingWrite(
                 g_traceProvider, "xrStringToPath", TLPArg(instance, "Instance"), TLArg(pathString, "String"));
 
-            if (!m_instanceCreated || instance != (XrInstance)1) {
+            if (instance != XR_NULL_PATH && (!m_instanceCreated || instance != (XrInstance)1)) {
                 return XR_ERROR_HANDLE_INVALID;
             }
 
@@ -2901,7 +2901,7 @@ void main(uint2 pos : SV_DispatchThreadID)
                               TLArg(path, "Path"),
                               TLArg(bufferCapacityInput, "BufferCapacityInput"));
 
-            if (!m_instanceCreated || instance != (XrInstance)1) {
+            if (instance != XR_NULL_PATH && (!m_instanceCreated || instance != (XrInstance)1)) {
                 return XR_ERROR_HANDLE_INVALID;
             }
 
