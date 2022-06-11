@@ -782,6 +782,8 @@ void main(uint2 pos : SV_DispatchThreadID)
             }
 
             // Get the graphics device.
+            ComPtr<IDXGIDevice> dxgiDevice;
+            ComPtr<IDXGIAdapter> dxgiAdapter;
             bool hasGraphicsBindings = false;
             const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
             while (entry) {
@@ -790,14 +792,11 @@ void main(uint2 pos : SV_DispatchThreadID)
                         reinterpret_cast<const XrGraphicsBindingD3D11KHR*>(entry);
 
                     // Check that this is the correct adapter for the HMD.
-                    ComPtr<IDXGIDevice> dxgiDevice;
                     CHECK_HRCMD(d3dBindings->device->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
-
-                    ComPtr<IDXGIAdapter> adapter;
-                    CHECK_HRCMD(dxgiDevice->GetAdapter(adapter.ReleaseAndGetAddressOf()));
+                    CHECK_HRCMD(dxgiDevice->GetAdapter(dxgiAdapter.ReleaseAndGetAddressOf()));
 
                     DXGI_ADAPTER_DESC desc;
-                    CHECK_HRCMD(adapter->GetDesc(&desc));
+                    CHECK_HRCMD(dxgiAdapter->GetDesc(&desc));
 
                     std::string deviceName;
                     const std::wstring wadapterDescription(desc.Description);
@@ -848,6 +847,25 @@ void main(uint2 pos : SV_DispatchThreadID)
                                                                        nullptr,
                                                                        m_resolveShader[i].ReleaseAndGetAddressOf()));
                         SetDebugName(m_resolveShader[i].Get(), "DepthResolve CS");
+                    }
+
+                    // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
+                    // not see our OpenXR frames.
+                    if (GetModuleHandleA("renderdoc.dll")) {
+                        DXGI_SWAP_CHAIN_DESC1 swapchainDesc{};
+                        swapchainDesc.Width = 8;
+                        swapchainDesc.Height = 8;
+                        swapchainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                        swapchainDesc.SampleDesc.Count = 1;
+                        swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+                        swapchainDesc.BufferCount = 3;
+                        swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+                        swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+                        ComPtr<IDXGIFactory2> dxgiFactory;
+                        CHECK_HRCMD(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
+                        CHECK_HRCMD(dxgiFactory->CreateSwapChainForComposition(
+                            dxgiDevice.Get(), &swapchainDesc, nullptr, m_dxgiSwapchain.ReleaseAndGetAddressOf()));
                     }
 
                     hasGraphicsBindings = true;
@@ -912,6 +930,7 @@ void main(uint2 pos : SV_DispatchThreadID)
             for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {
                 m_resolveShader[i].Reset();
             }
+            m_dxgiSwapchain.Reset();
             m_d3d11DeviceContext.Reset();
             m_d3d11Device.Reset();
             m_sessionState = XR_SESSION_STATE_UNKNOWN;
@@ -2160,6 +2179,12 @@ void main(uint2 pos : SV_DispatchThreadID)
                     TraceLoggingWrite(g_traceProvider, "PVR_SubmitFrame_End");
                 }
 
+                // When using RenderDoc, signal a frame through the dummy swapchain.
+                if (m_dxgiSwapchain) {
+                    m_dxgiSwapchain->Present(0, 0);
+                    m_d3d11DeviceContext->Flush();
+                }
+
                 m_frameBegun = false;
 
                 // Signal xrWaitFrame().
@@ -3100,6 +3125,7 @@ void main(uint2 pos : SV_DispatchThreadID)
         ComPtr<ID3D11Device> m_d3d11Device;
         ComPtr<ID3D11DeviceContext> m_d3d11DeviceContext;
         ComPtr<ID3D11ComputeShader> m_resolveShader[2];
+        ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         bool m_sessionStateDirty{false};
