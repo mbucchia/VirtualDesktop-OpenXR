@@ -74,7 +74,7 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
         return XR_ERROR_INITIALIZATION_FAILED;
     }
 
-    // This is it! Tell the loader to use our API.
+    // This is it! Tell the loader to use our API implementation.
     runtimeRequest->getInstanceProcAddr = xrGetInstanceProcAddr;
     runtimeRequest->runtimeInterfaceVersion = XR_CURRENT_LOADER_API_LAYER_VERSION;
     runtimeRequest->runtimeApiVersion = XR_CURRENT_API_VERSION;
@@ -82,7 +82,4 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
     return XR_SUCCESS;
 }
 
-__declspec(dllexport) const char* WINAPI getVersionString() {
-    return RuntimePrettyName.c_str();
-}
 }

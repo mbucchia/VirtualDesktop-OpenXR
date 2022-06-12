@@ -39,8 +39,7 @@ namespace pimax_openxr::log {
             const std::time_t now = std::time(nullptr);
 
             char buf[1024];
-            size_t offset =
-                std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %z: ", std::localtime(&now));
+            size_t offset = std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %z: ", std::localtime(&now));
             vsnprintf_s(buf + offset, sizeof(buf) - offset, _TRUNCATE, fmt, va);
             OutputDebugStringA(buf);
             if (logStream.is_open()) {
