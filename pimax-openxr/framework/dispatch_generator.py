@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import os
+import re
 import sys
 
 # Import dependencies from the OpenXR SDK.
@@ -35,7 +36,10 @@ from reg import Registry
 from generator import write
 from xrconventions import OpenXRConventions
 
+# Things we can configure.
 EXCLUDED_API = ['xrGetInstanceProcAddr', 'xrEnumerateApiLayerProperties']
+EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enable', 'XR_KHR_vulkan_enable2',
+              'XR_KHR_composition_layer_depth', 'XR_KHR_visibility_mask', 'XR_KHR_win32_convert_performance_counter_time']
 
 class DispatchGenOutputGenerator(AutomaticSourceOutputGenerator):
     '''Common generator utilities and formatting.'''
@@ -132,7 +136,7 @@ namespace RUNTIME_NAMESPACE
     def genWrappers(self):
         generated = ''
 
-        for cur_cmd in self.core_commands:
+        for cur_cmd in self.core_commands + self.ext_commands:
             if cur_cmd.name not in EXCLUDED_API + ['xrDestroyInstance']:
                 parameters_list = self.makeParametersList(cur_cmd)
                 arguments_list = self.makeArgumentsList(cur_cmd)
@@ -193,7 +197,7 @@ namespace RUNTIME_NAMESPACE
 		}
 '''
 
-        for cur_cmd in self.core_commands:
+        for cur_cmd in self.core_commands + self.ext_commands:
             if cur_cmd.name not in EXCLUDED_API:
                 generated += f'''		else if (apiName == "{cur_cmd.name}")
 		{{
@@ -260,7 +264,7 @@ namespace RUNTIME_NAMESPACE
     def genVirtualMethods(self):
         generated = ''
 
-        for cur_cmd in self.core_commands:
+        for cur_cmd in self.core_commands + self.ext_commands:
             if cur_cmd.name not in EXCLUDED_API:
                 parameters_list = self.makeParametersList(cur_cmd)
                 arguments_list = self.makeArgumentsList(cur_cmd)
@@ -274,13 +278,19 @@ namespace RUNTIME_NAMESPACE
 
         return generated
 
+def makeREstring(strings, default=None):
+    """Turn a list of strings into a regexp string matching exactly those strings."""
+    if strings or default is None:
+        return '^(' + '|'.join((re.escape(s) for s in strings)) + ')$'
+    return default
 
 if __name__ == '__main__':
     registry = Registry()
     registry.loadFile(os.path.join(sdk_dir, 'specification', 'registry', 'xr.xml'))
 
     conventions = OpenXRConventions()
-    featuresPat = "XR_VERSION_1_0"
+    featuresPat = '.*'
+    extensionsPat = makeREstring(EXTENSIONS)
 
     registry.setGenerator(DispatchGenCppOutputGenerator(diagFile=None))
     registry.apiGen(AutomaticSourceGeneratorOptions(
@@ -294,7 +304,7 @@ if __name__ == '__main__':
             defaultExtensions = 'openxr',
             addExtensions     = None,
             removeExtensions  = None,
-            emitExtensions    = None))
+            emitExtensions    = extensionsPat))
 
     registry.setGenerator(DispatchGenHOutputGenerator(diagFile=None))
     registry.apiGen(AutomaticSourceGeneratorOptions(
@@ -308,4 +318,4 @@ if __name__ == '__main__':
             defaultExtensions = 'openxr',
             addExtensions     = None,
             removeExtensions  = None,
-            emitExtensions    = None))
+            emitExtensions    = extensionsPat))

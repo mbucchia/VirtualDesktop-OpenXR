@@ -1131,6 +1131,279 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
+	XrResult xrGetVulkanInstanceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanInstanceExtensionsKHR(instance, systemId, bufferCapacityInput, bufferCountOutput, buffer);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVulkanInstanceExtensionsKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetVulkanDeviceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanDeviceExtensionsKHR(instance, systemId, bufferCapacityInput, bufferCountOutput, buffer);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVulkanDeviceExtensionsKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetVulkanGraphicsDeviceKHR(XrInstance instance, XrSystemId systemId, VkInstance vkInstance, VkPhysicalDevice* vkPhysicalDevice)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDeviceKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsDeviceKHR(instance, systemId, vkInstance, vkPhysicalDevice);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDeviceKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVulkanGraphicsDeviceKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDeviceKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetVulkanGraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirementsKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVulkanGraphicsRequirementsKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirementsKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetD3D11GraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D11KHR* graphicsRequirements)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetD3D11GraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetD3D11GraphicsRequirementsKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetD3D12GraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D12KHR* graphicsRequirements)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetD3D12GraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetD3D12GraphicsRequirementsKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetVisibilityMaskKHR(XrSession session, XrViewConfigurationType viewConfigurationType, uint32_t viewIndex, XrVisibilityMaskTypeKHR visibilityMaskType, XrVisibilityMaskKHR* visibilityMask)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVisibilityMaskKHR(session, viewConfigurationType, viewIndex, visibilityMaskType, visibilityMask);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVisibilityMaskKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance, const LARGE_INTEGER* performanceCounter, XrTime* time)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrConvertWin32PerformanceCounterToTimeKHR(instance, performanceCounter, time);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrConvertWin32PerformanceCounterToTimeKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER* performanceCounter)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrConvertTimeToWin32PerformanceCounterKHR(instance, time, performanceCounter);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrConvertTimeToWin32PerformanceCounterKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrCreateVulkanInstanceKHR(XrInstance instance, const XrVulkanInstanceCreateInfoKHR* createInfo, VkInstance* vulkanInstance, VkResult* vulkanResult)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrCreateVulkanInstanceKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateVulkanInstanceKHR(instance, createInfo, vulkanInstance, vulkanResult);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateVulkanInstanceKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrCreateVulkanInstanceKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrCreateVulkanInstanceKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreateInfoKHR* createInfo, VkDevice* vulkanDevice, VkResult* vulkanResult)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateVulkanDeviceKHR(instance, createInfo, vulkanDevice, vulkanResult);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrCreateVulkanDeviceKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetVulkanGraphicsDevice2KHR(XrInstance instance, const XrVulkanGraphicsDeviceGetInfoKHR* getInfo, VkPhysicalDevice* vulkanPhysicalDevice)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDevice2KHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsDevice2KHR(instance, getInfo, vulkanPhysicalDevice);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDevice2KHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVulkanGraphicsDevice2KHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDevice2KHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
+	XrResult xrGetVulkanGraphicsRequirements2KHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
+	{
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirements2KHR");
+
+		XrResult result;
+		try
+		{
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsRequirements2KHR(instance, systemId, graphicsRequirements);
+		}
+		catch (std::exception exc)
+		{
+			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirements2KHR_Error", TLArg(exc.what(), "Error"));
+			Log("xrGetVulkanGraphicsRequirements2KHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirements2KHR_Result", TLArg(xr::ToCString(result), "Result"));
+
+		return result;
+	}
+
 
 	// Auto-generated dispatcher handler.
 	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function)
@@ -1352,6 +1625,58 @@ namespace RUNTIME_NAMESPACE
 		else if (apiName == "xrStopHapticFeedback")
 		{
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStopHapticFeedback);
+		}
+		else if (apiName == "xrGetVulkanInstanceExtensionsKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanInstanceExtensionsKHR);
+		}
+		else if (apiName == "xrGetVulkanDeviceExtensionsKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanDeviceExtensionsKHR);
+		}
+		else if (apiName == "xrGetVulkanGraphicsDeviceKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsDeviceKHR);
+		}
+		else if (apiName == "xrGetVulkanGraphicsRequirementsKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirementsKHR);
+		}
+		else if (apiName == "xrGetD3D11GraphicsRequirementsKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetD3D11GraphicsRequirementsKHR);
+		}
+		else if (apiName == "xrGetD3D12GraphicsRequirementsKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetD3D12GraphicsRequirementsKHR);
+		}
+		else if (apiName == "xrGetVisibilityMaskKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVisibilityMaskKHR);
+		}
+		else if (apiName == "xrConvertWin32PerformanceCounterToTimeKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertWin32PerformanceCounterToTimeKHR);
+		}
+		else if (apiName == "xrConvertTimeToWin32PerformanceCounterKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertTimeToWin32PerformanceCounterKHR);
+		}
+		else if (apiName == "xrCreateVulkanInstanceKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateVulkanInstanceKHR);
+		}
+		else if (apiName == "xrCreateVulkanDeviceKHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateVulkanDeviceKHR);
+		}
+		else if (apiName == "xrGetVulkanGraphicsDevice2KHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsDevice2KHR);
+		}
+		else if (apiName == "xrGetVulkanGraphicsRequirements2KHR")
+		{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirements2KHR);
 		}
 		else
 		{
