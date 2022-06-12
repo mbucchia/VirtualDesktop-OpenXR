@@ -504,12 +504,6 @@ void main(uint2 pos : SV_DispatchThreadID)
                 createInfo->applicationInfo.applicationName,
                 createInfo->applicationInfo.engineName);
 
-            m_isOpenComposite =
-                std::string_view(createInfo->applicationInfo.applicationName).find("OpenComposite_") == 0;
-            if (m_isOpenComposite) {
-                Log("Detected OpenComposite\n");
-            }
-
             for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
                 TraceLoggingWrite(
                     g_traceProvider, "xrCreateInstance", TLArg(createInfo->enabledApiLayerNames[i], "ApiLayerName"));
@@ -2330,11 +2324,14 @@ void main(uint2 pos : SV_DispatchThreadID)
                 }
 
                 m_currentFrameIndex = m_nextFrameIndex;
-                TraceLoggingWrite(g_traceProvider, "BeginFrame", TLArg(m_nextFrameIndex, "CurrentFrameIndex"));
 
-                // TODO: I don't understand this issue... Works with all apps so far but crashes with OpenComposite.
-                if (!m_isOpenComposite) {
+                // TODO: Not sure why we need this workaround. The very first call to pvr_beginFrame() crashes inside
+                // PVR unless there is a call to pvr_endFrame() first...
+                if (m_canBeginFrame) {
+                    TraceLoggingWrite(
+                        g_traceProvider, "PVR_BeginFrame_Begin", TLArg(m_currentFrameIndex, "CurrentFrameIndex"));
                     CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, m_currentFrameIndex));
+                    TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End");
                 }
 
                 m_frameWaited = false;
@@ -2602,12 +2599,14 @@ void main(uint2 pos : SV_DispatchThreadID)
                 // Submit the layers to PVR.
                 if (!layers.empty()) {
                     TraceLoggingWrite(g_traceProvider,
-                                      "PVR_SubmitFrame_Begin",
+                                      "PVR_EndFrame_Begin",
                                       TLArg(m_nextFrameIndex, "CurrentFrameIndex"),
                                       TLArg(layers.size(), "NumLayers"));
                     CHECK_PVRCMD(
                         pvr_endFrame(m_pvrSession, m_currentFrameIndex, layers.data(), (unsigned int)layers.size()));
-                    TraceLoggingWrite(g_traceProvider, "PVR_SubmitFrame_End");
+                    TraceLoggingWrite(g_traceProvider, "PVR_EndFrame_End");
+
+                    m_canBeginFrame = true;
                 }
 
                 // When using RenderDoc, signal a frame through the dummy swapchain.
@@ -4259,7 +4258,6 @@ void main(uint2 pos : SV_DispatchThreadID)
         bool m_isVulkanSupported{false};
         bool m_isVulkan2Supported{false};
         bool m_isDepthSupported{false};
-        bool m_isOpenComposite{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
         double m_frameDuration{0};
@@ -4283,6 +4281,7 @@ void main(uint2 pos : SV_DispatchThreadID)
         std::set<XrSpace> m_spaces;
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
+        bool m_canBeginFrame{false};
 
         // Graphics API interop.
         ComPtr<ID3D12Device> m_d3d12Device;
