@@ -110,8 +110,14 @@ namespace pimax_openxr {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
         }
 
+        // Read configuration and set up the session accordingly.
+        if (getSetting("recenter_on_startup").value_or(1)) {
+            CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+        }
+        m_useParallelProjection = getSetting("use_parallel_projection").value_or(0);
+        m_isVisibilityMaskEnabled = !m_useParallelProjection ? m_isVisibilityMaskSupported : false;
+
         m_sessionCreated = true;
-        *session = (XrSession)1;
 
         // FIXME: Reset the session and frame state here.
         m_sessionState = XR_SESSION_STATE_IDLE;
@@ -121,19 +127,26 @@ namespace pimax_openxr {
         m_frameWaited = m_frameBegun = false;
         m_lastFrameWaitedTime.reset();
 
-        // Create a reference space with the origin and the HMD pose.
-        {
-            XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
-            spaceInfo.poseInReferenceSpace = Pose::Identity();
-            spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-            CHECK_XRCMD(xrCreateReferenceSpace(*session, &spaceInfo, &m_originSpace));
+        try {
+            // Create a reference space with the origin and the HMD pose.
+            {
+                XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+                spaceInfo.poseInReferenceSpace = Pose::Identity();
+                spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+                CHECK_XRCMD(xrCreateReferenceSpace((XrSession)1, &spaceInfo, &m_originSpace));
+            }
+            {
+                XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+                spaceInfo.poseInReferenceSpace = Pose::Identity();
+                spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
+                CHECK_XRCMD(xrCreateReferenceSpace((XrSession)1, &spaceInfo, &m_viewSpace));
+            }
+        } catch (std::exception& exc) {
+            m_sessionCreated = false;
+            throw exc;
         }
-        {
-            XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
-            spaceInfo.poseInReferenceSpace = Pose::Identity();
-            spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
-            CHECK_XRCMD(xrCreateReferenceSpace(*session, &spaceInfo, &m_viewSpace));
-        }
+
+        *session = (XrSession)1;
 
         TraceLoggingWrite(g_traceProvider, "xrCreateSession", TLPArg(*session, "Session"));
 

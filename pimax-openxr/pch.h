@@ -65,6 +65,7 @@ using Microsoft::WRL::ComPtr;
 // Pimax SDK
 #include <PVR.h>
 #include <PVR_API_D3D.h>
+#include <PVR_Math.h>
 
 // OpenXR + Windows-specific definitions.
 #define XR_NO_PROTOTYPES

@@ -81,9 +81,6 @@ namespace pimax_openxr {
 
         // Setup common parameters.
         CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
-        if (getSetting("recenter_on_startup").value_or(1)) {
-            CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
-        }
 
         m_systemCreated = true;
         *systemId = (XrSystemId)1;

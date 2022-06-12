@@ -45,6 +45,7 @@ namespace companion
             this.label2 = new System.Windows.Forms.Label();
             this.versionString = new System.Windows.Forms.Label();
             this.recenterMode = new System.Windows.Forms.CheckBox();
+            this.parallelProjection = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel3.SuspendLayout();
@@ -82,7 +83,7 @@ namespace companion
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
-            this.flowLayoutPanel1.TabIndex = 0;
+            this.flowLayoutPanel1.TabIndex = 7;
             // 
             // openLogs
             // 
@@ -90,7 +91,7 @@ namespace companion
             this.openLogs.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.openLogs.Name = "openLogs";
             this.openLogs.Size = new System.Drawing.Size(130, 42);
-            this.openLogs.TabIndex = 0;
+            this.openLogs.TabIndex = 7;
             this.openLogs.Text = "Open logs";
             this.openLogs.UseVisualStyleBackColor = true;
             this.openLogs.Click += new System.EventHandler(this.openLogs_Click);
@@ -101,7 +102,7 @@ namespace companion
             this.startTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.startTrace.Name = "startTrace";
             this.startTrace.Size = new System.Drawing.Size(130, 42);
-            this.startTrace.TabIndex = 1;
+            this.startTrace.TabIndex = 8;
             this.startTrace.Text = "Capture trace";
             this.startTrace.UseVisualStyleBackColor = true;
             this.startTrace.Click += new System.EventHandler(this.startTrace_Click);
@@ -113,7 +114,7 @@ namespace companion
             this.stopTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.stopTrace.Name = "stopTrace";
             this.stopTrace.Size = new System.Drawing.Size(130, 42);
-            this.stopTrace.TabIndex = 2;
+            this.stopTrace.TabIndex = 9;
             this.stopTrace.Text = "Stop capture";
             this.stopTrace.UseVisualStyleBackColor = true;
             this.stopTrace.Click += new System.EventHandler(this.stopTrace_Click);
@@ -128,7 +129,7 @@ namespace companion
             this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.flowLayoutPanel3.Name = "flowLayoutPanel3";
             this.flowLayoutPanel3.Size = new System.Drawing.Size(402, 27);
-            this.flowLayoutPanel3.TabIndex = 2;
+            this.flowLayoutPanel3.TabIndex = 0;
             // 
             // label1
             // 
@@ -177,7 +178,7 @@ namespace companion
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 17);
-            this.flowLayoutPanel2.TabIndex = 4;
+            this.flowLayoutPanel2.TabIndex = 10;
             // 
             // gotoDownloads
             // 
@@ -186,7 +187,7 @@ namespace companion
             this.gotoDownloads.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.gotoDownloads.Name = "gotoDownloads";
             this.gotoDownloads.Size = new System.Drawing.Size(87, 13);
-            this.gotoDownloads.TabIndex = 0;
+            this.gotoDownloads.TabIndex = 10;
             this.gotoDownloads.TabStop = true;
             this.gotoDownloads.Text = "Go to downloads";
             this.gotoDownloads.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.gotoDownloads_LinkClicked);
@@ -198,7 +199,7 @@ namespace companion
             this.reportIssues.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.reportIssues.Name = "reportIssues";
             this.reportIssues.Size = new System.Drawing.Size(71, 13);
-            this.reportIssues.TabIndex = 1;
+            this.reportIssues.TabIndex = 11;
             this.reportIssues.TabStop = true;
             this.reportIssues.Text = "Report issues";
             this.reportIssues.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.reportIssues_LinkClicked);
@@ -208,12 +209,13 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.label2);
             this.flowLayoutPanel4.Controls.Add(this.versionString);
             this.flowLayoutPanel4.Controls.Add(this.recenterMode);
+            this.flowLayoutPanel4.Controls.Add(this.parallelProjection);
             this.flowLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 33);
             this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
             this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 134);
-            this.flowLayoutPanel4.TabIndex = 5;
+            this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
             // 
@@ -222,7 +224,7 @@ namespace companion
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(90, 13);
-            this.label2.TabIndex = 0;
+            this.label2.TabIndex = 3;
             this.label2.Text = "PimaxXR version:";
             // 
             // versionString
@@ -233,21 +235,36 @@ namespace companion
             this.versionString.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.versionString.Name = "versionString";
             this.versionString.Size = new System.Drawing.Size(53, 13);
-            this.versionString.TabIndex = 1;
+            this.versionString.TabIndex = 4;
             this.versionString.Text = "Unknown";
             // 
             // recenterMode
             // 
             this.recenterMode.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.recenterMode, true);
             this.recenterMode.Location = new System.Drawing.Point(2, 15);
             this.recenterMode.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.recenterMode.Name = "recenterMode";
-            this.recenterMode.Padding = new System.Windows.Forms.Padding(2, 6, 0, 0);
-            this.recenterMode.Size = new System.Drawing.Size(163, 23);
-            this.recenterMode.TabIndex = 2;
+            this.recenterMode.Padding = new System.Windows.Forms.Padding(3, 10, 0, 0);
+            this.recenterMode.Size = new System.Drawing.Size(164, 27);
+            this.recenterMode.TabIndex = 5;
             this.recenterMode.Text = "Recenter headset on startup";
             this.recenterMode.UseVisualStyleBackColor = true;
             this.recenterMode.CheckedChanged += new System.EventHandler(this.recenterMode_CheckedChanged);
+            // 
+            // parallelProjection
+            // 
+            this.parallelProjection.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.parallelProjection, true);
+            this.parallelProjection.Location = new System.Drawing.Point(2, 46);
+            this.parallelProjection.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.parallelProjection.Name = "parallelProjection";
+            this.parallelProjection.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
+            this.parallelProjection.Size = new System.Drawing.Size(141, 23);
+            this.parallelProjection.TabIndex = 6;
+            this.parallelProjection.Text = "Force parallel projection";
+            this.parallelProjection.UseVisualStyleBackColor = true;
+            this.parallelProjection.CheckedChanged += new System.EventHandler(this.parallelProjection_CheckedChanged);
             // 
             // MainForm
             // 
@@ -290,6 +307,7 @@ namespace companion
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label versionString;
         private System.Windows.Forms.CheckBox recenterMode;
+        private System.Windows.Forms.CheckBox parallelProjection;
     }
 }
 

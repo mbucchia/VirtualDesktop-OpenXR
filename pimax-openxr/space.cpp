@@ -250,6 +250,11 @@ namespace pimax_openxr {
                 pvrPosef hmdToEyePose[xr::StereoView::Count];
                 hmdToEyePose[0] = m_cachedEyeInfo[0].HmdToEyePose;
                 hmdToEyePose[1] = m_cachedEyeInfo[1].HmdToEyePose;
+                if (m_useParallelProjection) {
+                    // Eliminate canting.
+                    hmdToEyePose[0].Orientation = PVR::Quatf::Identity();
+                    hmdToEyePose[1].Orientation = PVR::Quatf::Identity();
+                }
 
                 pvrPosef eyePoses[xr::StereoView::Count]{{}, {}};
                 pvr_calcEyePoses(m_pvr, xrPoseToPvrPose(location.pose), hmdToEyePose, eyePoses);
@@ -264,6 +269,13 @@ namespace pimax_openxr {
                     views[i].fov.angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
                     views[i].fov.angleLeft = -atan(m_cachedEyeInfo[i].Fov.LeftTan);
                     views[i].fov.angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
+
+                    if (m_useParallelProjection) {
+                        // Shift FOV by 10 degree. All Pimax headsets have a 10 degree canting.
+                        const float angle = i == 0 ? -PVR::DegreeToRad(10.f) : PVR::DegreeToRad(10.f);
+                        views[i].fov.angleLeft += angle;
+                        views[i].fov.angleRight += angle;
+                    }
 
                     TraceLoggingWrite(
                         g_traceProvider, "xrLocateViews", TLArg(viewState->viewStateFlags, "ViewStateFlags"));

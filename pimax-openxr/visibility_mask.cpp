@@ -70,8 +70,8 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR) {
-            // We only support the hidden area mesh.
+        if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR || !m_isVisibilityMaskEnabled) {
+            // We only support the hidden area mesh and we don't return a mask with parallel projection.
             visibilityMask->vertexCountOutput = 0;
             visibilityMask->indexCountOutput = 0;
             return XR_SUCCESS;

@@ -336,6 +336,8 @@ namespace pimax_openxr {
         std::set<XrSpace> m_spaces;
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
+        bool m_isVisibilityMaskEnabled{false};
+        bool m_useParallelProjection{false};
         bool m_canBeginFrame{false};
 
         // Graphics API interop.
