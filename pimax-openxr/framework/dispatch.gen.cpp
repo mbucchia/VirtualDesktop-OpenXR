@@ -48,7 +48,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateInstanceExtensionProperties(layerName, propertyCapacityInput, propertyCountOutput, properties);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateInstanceExtensionProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateInstanceExtensionProperties: %s\n", exc.what());
@@ -69,7 +69,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateInstance(createInfo, instance);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateInstance_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateInstance: %s\n", exc.what());
@@ -90,7 +90,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetInstanceProperties(instance, instanceProperties);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetInstanceProperties: %s\n", exc.what());
@@ -111,7 +111,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrPollEvent(instance, eventData);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrPollEvent_Error", TLArg(exc.what(), "Error"));
 			Log("xrPollEvent: %s\n", exc.what());
@@ -132,7 +132,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrResultToString(instance, value, buffer);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrResultToString_Error", TLArg(exc.what(), "Error"));
 			Log("xrResultToString: %s\n", exc.what());
@@ -153,7 +153,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrStructureTypeToString(instance, value, buffer);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrStructureTypeToString_Error", TLArg(exc.what(), "Error"));
 			Log("xrStructureTypeToString: %s\n", exc.what());
@@ -174,7 +174,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetSystem(instance, getInfo, systemId);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetSystem_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetSystem: %s\n", exc.what());
@@ -195,7 +195,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetSystemProperties(instance, systemId, properties);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetSystemProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetSystemProperties: %s\n", exc.what());
@@ -216,7 +216,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateEnvironmentBlendModes(instance, systemId, viewConfigurationType, environmentBlendModeCapacityInput, environmentBlendModeCountOutput, environmentBlendModes);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateEnvironmentBlendModes_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateEnvironmentBlendModes: %s\n", exc.what());
@@ -237,7 +237,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateSession(instance, createInfo, session);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateSession: %s\n", exc.what());
@@ -258,7 +258,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroySession(session);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrDestroySession_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroySession: %s\n", exc.what());
@@ -279,7 +279,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateReferenceSpaces(session, spaceCapacityInput, spaceCountOutput, spaces);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateReferenceSpaces: %s\n", exc.what());
@@ -300,7 +300,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateReferenceSpace(session, createInfo, space);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateReferenceSpace: %s\n", exc.what());
@@ -321,7 +321,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetReferenceSpaceBoundsRect(session, referenceSpaceType, bounds);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetReferenceSpaceBoundsRect_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetReferenceSpaceBoundsRect: %s\n", exc.what());
@@ -342,7 +342,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateActionSpace(session, createInfo, space);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateActionSpace: %s\n", exc.what());
@@ -363,7 +363,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrLocateSpace(space, baseSpace, time, location);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrLocateSpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrLocateSpace: %s\n", exc.what());
@@ -384,7 +384,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroySpace(space);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrDestroySpace_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroySpace: %s\n", exc.what());
@@ -405,7 +405,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateViewConfigurations(instance, systemId, viewConfigurationTypeCapacityInput, viewConfigurationTypeCountOutput, viewConfigurationTypes);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurations_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateViewConfigurations: %s\n", exc.what());
@@ -426,7 +426,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetViewConfigurationProperties(instance, systemId, viewConfigurationType, configurationProperties);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetViewConfigurationProperties_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetViewConfigurationProperties: %s\n", exc.what());
@@ -447,7 +447,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateViewConfigurationViews(instance, systemId, viewConfigurationType, viewCapacityInput, viewCountOutput, views);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurationViews_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateViewConfigurationViews: %s\n", exc.what());
@@ -468,7 +468,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateSwapchainFormats(session, formatCapacityInput, formatCountOutput, formats);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainFormats_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateSwapchainFormats: %s\n", exc.what());
@@ -489,7 +489,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateSwapchain(session, createInfo, swapchain);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateSwapchain: %s\n", exc.what());
@@ -510,7 +510,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroySwapchain(swapchain);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroySwapchain: %s\n", exc.what());
@@ -531,7 +531,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateSwapchainImages(swapchain, imageCapacityInput, imageCountOutput, images);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateSwapchainImages: %s\n", exc.what());
@@ -552,7 +552,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrAcquireSwapchainImage(swapchain, acquireInfo, index);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage_Error", TLArg(exc.what(), "Error"));
 			Log("xrAcquireSwapchainImage: %s\n", exc.what());
@@ -573,7 +573,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrWaitSwapchainImage(swapchain, waitInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrWaitSwapchainImage_Error", TLArg(exc.what(), "Error"));
 			Log("xrWaitSwapchainImage: %s\n", exc.what());
@@ -594,7 +594,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrReleaseSwapchainImage(swapchain, releaseInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage_Error", TLArg(exc.what(), "Error"));
 			Log("xrReleaseSwapchainImage: %s\n", exc.what());
@@ -615,7 +615,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrBeginSession(session, beginInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrBeginSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrBeginSession: %s\n", exc.what());
@@ -636,7 +636,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEndSession(session);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEndSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrEndSession: %s\n", exc.what());
@@ -657,7 +657,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrRequestExitSession(session);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrRequestExitSession_Error", TLArg(exc.what(), "Error"));
 			Log("xrRequestExitSession: %s\n", exc.what());
@@ -678,7 +678,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrWaitFrame(session, frameWaitInfo, frameState);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrWaitFrame_Error", TLArg(exc.what(), "Error"));
 			Log("xrWaitFrame: %s\n", exc.what());
@@ -699,7 +699,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrBeginFrame(session, frameBeginInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrBeginFrame_Error", TLArg(exc.what(), "Error"));
 			Log("xrBeginFrame: %s\n", exc.what());
@@ -720,7 +720,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEndFrame(session, frameEndInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEndFrame_Error", TLArg(exc.what(), "Error"));
 			Log("xrEndFrame: %s\n", exc.what());
@@ -741,7 +741,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrLocateViews(session, viewLocateInfo, viewState, viewCapacityInput, viewCountOutput, views);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrLocateViews_Error", TLArg(exc.what(), "Error"));
 			Log("xrLocateViews: %s\n", exc.what());
@@ -762,7 +762,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrStringToPath(instance, pathString, path);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrStringToPath_Error", TLArg(exc.what(), "Error"));
 			Log("xrStringToPath: %s\n", exc.what());
@@ -783,7 +783,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrPathToString(instance, path, bufferCapacityInput, bufferCountOutput, buffer);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrPathToString_Error", TLArg(exc.what(), "Error"));
 			Log("xrPathToString: %s\n", exc.what());
@@ -804,7 +804,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateActionSet(instance, createInfo, actionSet);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateActionSet_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateActionSet: %s\n", exc.what());
@@ -825,7 +825,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyActionSet(actionSet);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroyActionSet: %s\n", exc.what());
@@ -846,7 +846,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateAction(actionSet, createInfo, action);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateAction_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateAction: %s\n", exc.what());
@@ -867,7 +867,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyAction(action);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrDestroyAction_Error", TLArg(exc.what(), "Error"));
 			Log("xrDestroyAction: %s\n", exc.what());
@@ -888,7 +888,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrSuggestInteractionProfileBindings(instance, suggestedBindings);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrSuggestInteractionProfileBindings_Error", TLArg(exc.what(), "Error"));
 			Log("xrSuggestInteractionProfileBindings: %s\n", exc.what());
@@ -909,7 +909,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrAttachSessionActionSets(session, attachInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets_Error", TLArg(exc.what(), "Error"));
 			Log("xrAttachSessionActionSets: %s\n", exc.what());
@@ -930,7 +930,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetCurrentInteractionProfile(session, topLevelUserPath, interactionProfile);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetCurrentInteractionProfile_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetCurrentInteractionProfile: %s\n", exc.what());
@@ -951,7 +951,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetActionStateBoolean(session, getInfo, state);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStateBoolean: %s\n", exc.what());
@@ -972,7 +972,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetActionStateFloat(session, getInfo, state);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStateFloat: %s\n", exc.what());
@@ -993,7 +993,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetActionStateVector2f(session, getInfo, state);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStateVector2f: %s\n", exc.what());
@@ -1014,7 +1014,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetActionStatePose(session, getInfo, state);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetActionStatePose: %s\n", exc.what());
@@ -1035,7 +1035,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrSyncActions(session, syncInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrSyncActions_Error", TLArg(exc.what(), "Error"));
 			Log("xrSyncActions: %s\n", exc.what());
@@ -1056,7 +1056,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateBoundSourcesForAction(session, enumerateInfo, sourceCapacityInput, sourceCountOutput, sources);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrEnumerateBoundSourcesForAction_Error", TLArg(exc.what(), "Error"));
 			Log("xrEnumerateBoundSourcesForAction: %s\n", exc.what());
@@ -1077,7 +1077,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetInputSourceLocalizedName(session, getInfo, bufferCapacityInput, bufferCountOutput, buffer);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetInputSourceLocalizedName: %s\n", exc.what());
@@ -1098,7 +1098,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrApplyHapticFeedback(session, hapticActionInfo, hapticFeedback);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback_Error", TLArg(exc.what(), "Error"));
 			Log("xrApplyHapticFeedback: %s\n", exc.what());
@@ -1119,7 +1119,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrStopHapticFeedback(session, hapticActionInfo);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback_Error", TLArg(exc.what(), "Error"));
 			Log("xrStopHapticFeedback: %s\n", exc.what());
@@ -1140,7 +1140,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanInstanceExtensionsKHR(instance, systemId, bufferCapacityInput, bufferCountOutput, buffer);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVulkanInstanceExtensionsKHR: %s\n", exc.what());
@@ -1161,7 +1161,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanDeviceExtensionsKHR(instance, systemId, bufferCapacityInput, bufferCountOutput, buffer);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVulkanDeviceExtensionsKHR: %s\n", exc.what());
@@ -1182,7 +1182,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsDeviceKHR(instance, systemId, vkInstance, vkPhysicalDevice);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDeviceKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVulkanGraphicsDeviceKHR: %s\n", exc.what());
@@ -1203,7 +1203,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVulkanGraphicsRequirementsKHR: %s\n", exc.what());
@@ -1224,7 +1224,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetD3D11GraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetD3D11GraphicsRequirementsKHR: %s\n", exc.what());
@@ -1245,7 +1245,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetD3D12GraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetD3D12GraphicsRequirementsKHR: %s\n", exc.what());
@@ -1266,7 +1266,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVisibilityMaskKHR(session, viewConfigurationType, viewIndex, visibilityMaskType, visibilityMask);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVisibilityMaskKHR: %s\n", exc.what());
@@ -1287,7 +1287,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrConvertWin32PerformanceCounterToTimeKHR(instance, performanceCounter, time);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrConvertWin32PerformanceCounterToTimeKHR: %s\n", exc.what());
@@ -1308,7 +1308,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrConvertTimeToWin32PerformanceCounterKHR(instance, time, performanceCounter);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrConvertTimeToWin32PerformanceCounterKHR: %s\n", exc.what());
@@ -1329,7 +1329,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateVulkanInstanceKHR(instance, createInfo, vulkanInstance, vulkanResult);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateVulkanInstanceKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateVulkanInstanceKHR: %s\n", exc.what());
@@ -1350,7 +1350,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateVulkanDeviceKHR(instance, createInfo, vulkanDevice, vulkanResult);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrCreateVulkanDeviceKHR: %s\n", exc.what());
@@ -1371,7 +1371,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsDevice2KHR(instance, getInfo, vulkanPhysicalDevice);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDevice2KHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVulkanGraphicsDevice2KHR: %s\n", exc.what());
@@ -1392,7 +1392,7 @@ namespace RUNTIME_NAMESPACE
 		{
 			result = RUNTIME_NAMESPACE::GetInstance()->xrGetVulkanGraphicsRequirements2KHR(instance, systemId, graphicsRequirements);
 		}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{
 			TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirements2KHR_Error", TLArg(exc.what(), "Error"));
 			Log("xrGetVulkanGraphicsRequirements2KHR: %s\n", exc.what());

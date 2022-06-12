@@ -152,7 +152,7 @@ namespace RUNTIME_NAMESPACE
 		{{
 			result = RUNTIME_NAMESPACE::GetInstance()->{cur_cmd.name}({arguments_list});
 		}}
-		catch (std::exception exc)
+		catch (std::exception& exc)
 		{{
 			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
 			Log("{cur_cmd.name}: %s\\n", exc.what());
@@ -174,7 +174,7 @@ namespace RUNTIME_NAMESPACE
 		{{
 			RUNTIME_NAMESPACE::GetInstance()->{cur_cmd.name}({arguments_list});
 		}}
-		catch (std::runtime_error exc)
+		catch (std::exception& exc)
 		{{
 			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
 			Log("{cur_cmd.name}: %s\\n", exc.what());
