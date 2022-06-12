@@ -71,7 +71,7 @@ namespace xr {
         [[noreturn]] inline void _ThrowPVRResult(pvrResult pvr,
                                                  const char* originator = nullptr,
                                                  const char* sourceLocation = nullptr) {
-            xr::detail::_Throw(xr::detail::_Fmt("pvrResult failure [%x]", pvr), originator, sourceLocation);
+            xr::detail::_Throw(xr::detail::_Fmt("pvrResult failure [%d]", pvr), originator, sourceLocation);
         }
 
         inline HRESULT _CheckPVRResult(pvrResult pvr,
@@ -87,7 +87,7 @@ namespace xr {
         [[noreturn]] inline void _ThrowVKResult(VkResult vks,
                                                 const char* originator = nullptr,
                                                 const char* sourceLocation = nullptr) {
-            xr::detail::_Throw(xr::detail::_Fmt("VkStatus failure [%x]", vks), originator, sourceLocation);
+            xr::detail::_Throw(xr::detail::_Fmt("VkStatus failure [%d]", vks), originator, sourceLocation);
         }
 
         inline HRESULT _CheckVKResult(VkResult vks,
@@ -2324,12 +2324,13 @@ void main(uint2 pos : SV_DispatchThreadID)
                 m_currentFrameIndex = m_nextFrameIndex;
 
                 // TODO: Not sure why we need this workaround. The very first call to pvr_beginFrame() crashes inside
-                // PVR unless there is a call to pvr_endFrame() first...
+                // PVR unless there is a call to pvr_endFrame() first... Also unclear why the call occasionally fails
+                // with error code -1 (undocumented).
                 if (m_canBeginFrame) {
                     TraceLoggingWrite(
                         g_traceProvider, "PVR_BeginFrame_Begin", TLArg(m_currentFrameIndex, "CurrentFrameIndex"));
-                    CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, m_currentFrameIndex));
-                    TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End");
+                    const auto result = pvr_beginFrame(m_pvrSession, m_currentFrameIndex);
+                    TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End", TLArg((int)result, "Result"));
                 }
 
                 m_frameWaited = false;
