@@ -1152,8 +1152,6 @@ void main(uint2 pos : SV_DispatchThreadID)
                 TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR", TLArg(extensions[i], "Extension"));
             }
 
-            VkPhysicalDeviceFeatures features = *createInfo->vulkanCreateInfo->pEnabledFeatures;
-
             // Enable timeline semaphores.
             VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES};
@@ -1162,7 +1160,7 @@ void main(uint2 pos : SV_DispatchThreadID)
             VkDeviceCreateInfo deviceInfo = *createInfo->vulkanCreateInfo;
             timelineSemaphoreFeatures.pNext = (void*)deviceInfo.pNext;
             deviceInfo.pNext = &timelineSemaphoreFeatures;
-            deviceInfo.pEnabledFeatures = &features;
+            deviceInfo.pEnabledFeatures = createInfo->vulkanCreateInfo->pEnabledFeatures;
             deviceInfo.enabledExtensionCount = (uint32_t)extensions.size();
             deviceInfo.ppEnabledExtensionNames = extensions.empty() ? nullptr : extensions.data();
 
