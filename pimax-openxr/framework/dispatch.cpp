@@ -36,7 +36,7 @@ using namespace RUNTIME_NAMESPACE::log;
 namespace RUNTIME_NAMESPACE {
 
     // Handle cleanup of the layer's singleton.
-    XrResult xrDestroyInstance(XrInstance instance) {
+    XrResult XRAPI_CALL xrDestroyInstance(XrInstance instance) {
         XrResult result;
         try {
             result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyInstance(instance);
@@ -52,7 +52,7 @@ namespace RUNTIME_NAMESPACE {
     }
 
     // Forward the xrGetInstanceProcAddr() call to the dispatcher.
-    XrResult xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
+    XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
         try {
             return RUNTIME_NAMESPACE::GetInstance()->xrGetInstanceProcAddr(instance, name, function);
         } catch (std::runtime_error exc) {

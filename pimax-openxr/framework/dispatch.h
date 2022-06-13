@@ -28,8 +28,8 @@
 
 namespace RUNTIME_NAMESPACE {
 
-    XrResult xrDestroyInstance(XrInstance instance);
-    XrResult xrGetInstanceProcAddr(XrInstance instance,
+    XrResult XRAPI_CALL xrDestroyInstance(XrInstance instance);
+    XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance instance,
                                    const char* name,
                                    PFN_xrVoidFunction* function);
 

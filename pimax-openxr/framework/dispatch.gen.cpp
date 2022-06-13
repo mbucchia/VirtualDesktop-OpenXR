@@ -39,7 +39,7 @@ namespace RUNTIME_NAMESPACE
 
 	// Auto-generated wrappers for the APIs.
 
-	XrResult xrEnumerateInstanceExtensionProperties(const char* layerName, uint32_t propertyCapacityInput, uint32_t* propertyCountOutput, XrExtensionProperties* properties)
+	XrResult XRAPI_CALL xrEnumerateInstanceExtensionProperties(const char* layerName, uint32_t propertyCapacityInput, uint32_t* propertyCountOutput, XrExtensionProperties* properties)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateInstanceExtensionProperties");
 
@@ -60,7 +60,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateInstance(const XrInstanceCreateInfo* createInfo, XrInstance* instance)
+	XrResult XRAPI_CALL xrCreateInstance(const XrInstanceCreateInfo* createInfo, XrInstance* instance)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateInstance");
 
@@ -81,7 +81,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties)
+	XrResult XRAPI_CALL xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties");
 
@@ -102,7 +102,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData)
+	XrResult XRAPI_CALL xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrPollEvent");
 
@@ -123,7 +123,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE])
+	XrResult XRAPI_CALL xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE])
 	{
 		TraceLoggingWrite(g_traceProvider, "xrResultToString");
 
@@ -144,7 +144,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
+	XrResult XRAPI_CALL xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
 	{
 		TraceLoggingWrite(g_traceProvider, "xrStructureTypeToString");
 
@@ -165,7 +165,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetSystem(XrInstance instance, const XrSystemGetInfo* getInfo, XrSystemId* systemId)
+	XrResult XRAPI_CALL xrGetSystem(XrInstance instance, const XrSystemGetInfo* getInfo, XrSystemId* systemId)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetSystem");
 
@@ -186,7 +186,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProperties* properties)
+	XrResult XRAPI_CALL xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProperties* properties)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetSystemProperties");
 
@@ -207,7 +207,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateEnvironmentBlendModes(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t environmentBlendModeCapacityInput, uint32_t* environmentBlendModeCountOutput, XrEnvironmentBlendMode* environmentBlendModes)
+	XrResult XRAPI_CALL xrEnumerateEnvironmentBlendModes(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t environmentBlendModeCapacityInput, uint32_t* environmentBlendModeCountOutput, XrEnvironmentBlendMode* environmentBlendModes)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateEnvironmentBlendModes");
 
@@ -228,7 +228,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateSession(XrInstance instance, const XrSessionCreateInfo* createInfo, XrSession* session)
+	XrResult XRAPI_CALL xrCreateSession(XrInstance instance, const XrSessionCreateInfo* createInfo, XrSession* session)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateSession");
 
@@ -249,7 +249,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrDestroySession(XrSession session)
+	XrResult XRAPI_CALL xrDestroySession(XrSession session)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrDestroySession");
 
@@ -270,7 +270,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateReferenceSpaces(XrSession session, uint32_t spaceCapacityInput, uint32_t* spaceCountOutput, XrReferenceSpaceType* spaces)
+	XrResult XRAPI_CALL xrEnumerateReferenceSpaces(XrSession session, uint32_t spaceCapacityInput, uint32_t* spaceCountOutput, XrReferenceSpaceType* spaces)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces");
 
@@ -291,7 +291,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo* createInfo, XrSpace* space)
+	XrResult XRAPI_CALL xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo* createInfo, XrSpace* space)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace");
 
@@ -312,7 +312,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df* bounds)
+	XrResult XRAPI_CALL xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df* bounds)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetReferenceSpaceBoundsRect");
 
@@ -333,7 +333,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo* createInfo, XrSpace* space)
+	XrResult XRAPI_CALL xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo* createInfo, XrSpace* space)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace");
 
@@ -354,7 +354,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation* location)
+	XrResult XRAPI_CALL xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation* location)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrLocateSpace");
 
@@ -375,7 +375,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrDestroySpace(XrSpace space)
+	XrResult XRAPI_CALL xrDestroySpace(XrSpace space)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrDestroySpace");
 
@@ -396,7 +396,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateViewConfigurations(XrInstance instance, XrSystemId systemId, uint32_t viewConfigurationTypeCapacityInput, uint32_t* viewConfigurationTypeCountOutput, XrViewConfigurationType* viewConfigurationTypes)
+	XrResult XRAPI_CALL xrEnumerateViewConfigurations(XrInstance instance, XrSystemId systemId, uint32_t viewConfigurationTypeCapacityInput, uint32_t* viewConfigurationTypeCountOutput, XrViewConfigurationType* viewConfigurationTypes)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurations");
 
@@ -417,7 +417,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetViewConfigurationProperties(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, XrViewConfigurationProperties* configurationProperties)
+	XrResult XRAPI_CALL xrGetViewConfigurationProperties(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, XrViewConfigurationProperties* configurationProperties)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetViewConfigurationProperties");
 
@@ -438,7 +438,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateViewConfigurationViews(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t viewCapacityInput, uint32_t* viewCountOutput, XrViewConfigurationView* views)
+	XrResult XRAPI_CALL xrEnumerateViewConfigurationViews(XrInstance instance, XrSystemId systemId, XrViewConfigurationType viewConfigurationType, uint32_t viewCapacityInput, uint32_t* viewCountOutput, XrViewConfigurationView* views)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateViewConfigurationViews");
 
@@ -459,7 +459,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateSwapchainFormats(XrSession session, uint32_t formatCapacityInput, uint32_t* formatCountOutput, int64_t* formats)
+	XrResult XRAPI_CALL xrEnumerateSwapchainFormats(XrSession session, uint32_t formatCapacityInput, uint32_t* formatCountOutput, int64_t* formats)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainFormats");
 
@@ -480,7 +480,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo* createInfo, XrSwapchain* swapchain)
+	XrResult XRAPI_CALL xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo* createInfo, XrSwapchain* swapchain)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain");
 
@@ -501,7 +501,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrDestroySwapchain(XrSwapchain swapchain)
+	XrResult XRAPI_CALL xrDestroySwapchain(XrSwapchain swapchain)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain");
 
@@ -522,7 +522,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateSwapchainImages(XrSwapchain swapchain, uint32_t imageCapacityInput, uint32_t* imageCountOutput, XrSwapchainImageBaseHeader* images)
+	XrResult XRAPI_CALL xrEnumerateSwapchainImages(XrSwapchain swapchain, uint32_t imageCapacityInput, uint32_t* imageCountOutput, XrSwapchainImageBaseHeader* images)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages");
 
@@ -543,7 +543,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquireInfo* acquireInfo, uint32_t* index)
+	XrResult XRAPI_CALL xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquireInfo* acquireInfo, uint32_t* index)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage");
 
@@ -564,7 +564,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo* waitInfo)
+	XrResult XRAPI_CALL xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo* waitInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrWaitSwapchainImage");
 
@@ -585,7 +585,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrReleaseSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageReleaseInfo* releaseInfo)
+	XrResult XRAPI_CALL xrReleaseSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageReleaseInfo* releaseInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage");
 
@@ -606,7 +606,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrBeginSession(XrSession session, const XrSessionBeginInfo* beginInfo)
+	XrResult XRAPI_CALL xrBeginSession(XrSession session, const XrSessionBeginInfo* beginInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrBeginSession");
 
@@ -627,7 +627,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEndSession(XrSession session)
+	XrResult XRAPI_CALL xrEndSession(XrSession session)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEndSession");
 
@@ -648,7 +648,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrRequestExitSession(XrSession session)
+	XrResult XRAPI_CALL xrRequestExitSession(XrSession session)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrRequestExitSession");
 
@@ -669,7 +669,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrWaitFrame(XrSession session, const XrFrameWaitInfo* frameWaitInfo, XrFrameState* frameState)
+	XrResult XRAPI_CALL xrWaitFrame(XrSession session, const XrFrameWaitInfo* frameWaitInfo, XrFrameState* frameState)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrWaitFrame");
 
@@ -690,7 +690,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo)
+	XrResult XRAPI_CALL xrBeginFrame(XrSession session, const XrFrameBeginInfo* frameBeginInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrBeginFrame");
 
@@ -711,7 +711,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo)
+	XrResult XRAPI_CALL xrEndFrame(XrSession session, const XrFrameEndInfo* frameEndInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEndFrame");
 
@@ -732,7 +732,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrLocateViews(XrSession session, const XrViewLocateInfo* viewLocateInfo, XrViewState* viewState, uint32_t viewCapacityInput, uint32_t* viewCountOutput, XrView* views)
+	XrResult XRAPI_CALL xrLocateViews(XrSession session, const XrViewLocateInfo* viewLocateInfo, XrViewState* viewState, uint32_t viewCapacityInput, uint32_t* viewCountOutput, XrView* views)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrLocateViews");
 
@@ -753,7 +753,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrStringToPath(XrInstance instance, const char* pathString, XrPath* path)
+	XrResult XRAPI_CALL xrStringToPath(XrInstance instance, const char* pathString, XrPath* path)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrStringToPath");
 
@@ -774,7 +774,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrPathToString(XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
+	XrResult XRAPI_CALL xrPathToString(XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrPathToString");
 
@@ -795,7 +795,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo* createInfo, XrActionSet* actionSet)
+	XrResult XRAPI_CALL xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo* createInfo, XrActionSet* actionSet)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateActionSet");
 
@@ -816,7 +816,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrDestroyActionSet(XrActionSet actionSet)
+	XrResult XRAPI_CALL xrDestroyActionSet(XrActionSet actionSet)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet");
 
@@ -837,7 +837,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo* createInfo, XrAction* action)
+	XrResult XRAPI_CALL xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo* createInfo, XrAction* action)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateAction");
 
@@ -858,7 +858,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrDestroyAction(XrAction action)
+	XrResult XRAPI_CALL xrDestroyAction(XrAction action)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrDestroyAction");
 
@@ -879,7 +879,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrSuggestInteractionProfileBindings(XrInstance instance, const XrInteractionProfileSuggestedBinding* suggestedBindings)
+	XrResult XRAPI_CALL xrSuggestInteractionProfileBindings(XrInstance instance, const XrInteractionProfileSuggestedBinding* suggestedBindings)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrSuggestInteractionProfileBindings");
 
@@ -900,7 +900,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttachInfo* attachInfo)
+	XrResult XRAPI_CALL xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttachInfo* attachInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets");
 
@@ -921,7 +921,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetCurrentInteractionProfile(XrSession session, XrPath topLevelUserPath, XrInteractionProfileState* interactionProfile)
+	XrResult XRAPI_CALL xrGetCurrentInteractionProfile(XrSession session, XrPath topLevelUserPath, XrInteractionProfileState* interactionProfile)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetCurrentInteractionProfile");
 
@@ -942,7 +942,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateBoolean* state)
+	XrResult XRAPI_CALL xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateBoolean* state)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean");
 
@@ -963,7 +963,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateFloat* state)
+	XrResult XRAPI_CALL xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateFloat* state)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat");
 
@@ -984,7 +984,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateVector2f* state)
+	XrResult XRAPI_CALL xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStateVector2f* state)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f");
 
@@ -1005,7 +1005,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetActionStatePose(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStatePose* state)
+	XrResult XRAPI_CALL xrGetActionStatePose(XrSession session, const XrActionStateGetInfo* getInfo, XrActionStatePose* state)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose");
 
@@ -1026,7 +1026,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrSyncActions(XrSession session, const XrActionsSyncInfo* syncInfo)
+	XrResult XRAPI_CALL xrSyncActions(XrSession session, const XrActionsSyncInfo* syncInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrSyncActions");
 
@@ -1047,7 +1047,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrEnumerateBoundSourcesForAction(XrSession session, const XrBoundSourcesForActionEnumerateInfo* enumerateInfo, uint32_t sourceCapacityInput, uint32_t* sourceCountOutput, XrPath* sources)
+	XrResult XRAPI_CALL xrEnumerateBoundSourcesForAction(XrSession session, const XrBoundSourcesForActionEnumerateInfo* enumerateInfo, uint32_t sourceCapacityInput, uint32_t* sourceCountOutput, XrPath* sources)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrEnumerateBoundSourcesForAction");
 
@@ -1068,7 +1068,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetInputSourceLocalizedName(XrSession session, const XrInputSourceLocalizedNameGetInfo* getInfo, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
+	XrResult XRAPI_CALL xrGetInputSourceLocalizedName(XrSession session, const XrInputSourceLocalizedNameGetInfo* getInfo, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName");
 
@@ -1089,7 +1089,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrApplyHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo, const XrHapticBaseHeader* hapticFeedback)
+	XrResult XRAPI_CALL xrApplyHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo, const XrHapticBaseHeader* hapticFeedback)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback");
 
@@ -1110,7 +1110,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrStopHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo)
+	XrResult XRAPI_CALL xrStopHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback");
 
@@ -1131,7 +1131,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVulkanInstanceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
+	XrResult XRAPI_CALL xrGetVulkanInstanceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR");
 
@@ -1152,7 +1152,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVulkanDeviceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
+	XrResult XRAPI_CALL xrGetVulkanDeviceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR");
 
@@ -1173,7 +1173,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVulkanGraphicsDeviceKHR(XrInstance instance, XrSystemId systemId, VkInstance vkInstance, VkPhysicalDevice* vkPhysicalDevice)
+	XrResult XRAPI_CALL xrGetVulkanGraphicsDeviceKHR(XrInstance instance, XrSystemId systemId, VkInstance vkInstance, VkPhysicalDevice* vkPhysicalDevice)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDeviceKHR");
 
@@ -1194,7 +1194,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVulkanGraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
+	XrResult XRAPI_CALL xrGetVulkanGraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirementsKHR");
 
@@ -1215,7 +1215,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetD3D11GraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D11KHR* graphicsRequirements)
+	XrResult XRAPI_CALL xrGetD3D11GraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D11KHR* graphicsRequirements)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetD3D11GraphicsRequirementsKHR");
 
@@ -1236,7 +1236,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetD3D12GraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D12KHR* graphicsRequirements)
+	XrResult XRAPI_CALL xrGetD3D12GraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsD3D12KHR* graphicsRequirements)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetD3D12GraphicsRequirementsKHR");
 
@@ -1257,7 +1257,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVisibilityMaskKHR(XrSession session, XrViewConfigurationType viewConfigurationType, uint32_t viewIndex, XrVisibilityMaskTypeKHR visibilityMaskType, XrVisibilityMaskKHR* visibilityMask)
+	XrResult XRAPI_CALL xrGetVisibilityMaskKHR(XrSession session, XrViewConfigurationType viewConfigurationType, uint32_t viewIndex, XrVisibilityMaskTypeKHR visibilityMaskType, XrVisibilityMaskKHR* visibilityMask)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVisibilityMaskKHR");
 
@@ -1278,7 +1278,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance, const LARGE_INTEGER* performanceCounter, XrTime* time)
+	XrResult XRAPI_CALL xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance, const LARGE_INTEGER* performanceCounter, XrTime* time)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR");
 
@@ -1299,7 +1299,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER* performanceCounter)
+	XrResult XRAPI_CALL xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER* performanceCounter)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrConvertTimeToWin32PerformanceCounterKHR");
 
@@ -1320,7 +1320,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateVulkanInstanceKHR(XrInstance instance, const XrVulkanInstanceCreateInfoKHR* createInfo, VkInstance* vulkanInstance, VkResult* vulkanResult)
+	XrResult XRAPI_CALL xrCreateVulkanInstanceKHR(XrInstance instance, const XrVulkanInstanceCreateInfoKHR* createInfo, VkInstance* vulkanInstance, VkResult* vulkanResult)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateVulkanInstanceKHR");
 
@@ -1341,7 +1341,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreateInfoKHR* createInfo, VkDevice* vulkanDevice, VkResult* vulkanResult)
+	XrResult XRAPI_CALL xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreateInfoKHR* createInfo, VkDevice* vulkanDevice, VkResult* vulkanResult)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR");
 
@@ -1362,7 +1362,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVulkanGraphicsDevice2KHR(XrInstance instance, const XrVulkanGraphicsDeviceGetInfoKHR* getInfo, VkPhysicalDevice* vulkanPhysicalDevice)
+	XrResult XRAPI_CALL xrGetVulkanGraphicsDevice2KHR(XrInstance instance, const XrVulkanGraphicsDeviceGetInfoKHR* getInfo, VkPhysicalDevice* vulkanPhysicalDevice)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsDevice2KHR");
 
@@ -1383,7 +1383,7 @@ namespace RUNTIME_NAMESPACE
 		return result;
 	}
 
-	XrResult xrGetVulkanGraphicsRequirements2KHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
+	XrResult XRAPI_CALL xrGetVulkanGraphicsRequirements2KHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements)
 	{
 		TraceLoggingWrite(g_traceProvider, "xrGetVulkanGraphicsRequirements2KHR");
 

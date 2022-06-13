@@ -143,7 +143,7 @@ namespace RUNTIME_NAMESPACE
 
                 if cur_cmd.return_type is not None:
                     generated += f'''
-	XrResult {cur_cmd.name}({parameters_list})
+	XrResult XRAPI_CALL {cur_cmd.name}({parameters_list})
 	{{
 		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
 
