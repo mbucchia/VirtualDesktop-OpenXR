@@ -13,3 +13,4 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 Special thanks to the following individuals for their contributions:
 
 - Vladimir Dranyonkov
+- Pavel Skakov
