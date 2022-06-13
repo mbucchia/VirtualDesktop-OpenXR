@@ -48,7 +48,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVulkanInstanceExtensionsKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLArg(bufferCapacityInput, "BufferCapacityInput"));
 
@@ -95,7 +95,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVulkanDeviceExtensionsKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLArg(bufferCapacityInput, "BufferCapacityInput"));
 
@@ -135,7 +135,7 @@ namespace pimax_openxr {
                                                          VkPhysicalDevice* vkPhysicalDevice) {
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVulkanGraphicsDeviceKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLPArg(vkInstance, "VkInstance"));
 
@@ -195,7 +195,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateVulkanInstanceKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)createInfo->systemId, "SystemId"),
                           TLArg((int)createInfo->createFlags, "CreateFlags"),
                           TLPArg(createInfo->pfnGetInstanceProcAddr, "GetInstanceProcAddr"));
@@ -260,7 +260,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "XrVulkanDeviceCreateInfoKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)createInfo->systemId, "SystemId"),
                           TLArg((int)createInfo->createFlags, "CreateFlags"),
                           TLPArg(createInfo->pfnGetInstanceProcAddr, "GetInstanceProcAddr"),
@@ -339,7 +339,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVulkanGraphicsDevice2KHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)getInfo->systemId, "SystemId"),
                           TLPArg(getInfo->vulkanInstance, "VkInstance"));
 
@@ -376,7 +376,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVulkanGraphicsRequirementsKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
@@ -702,7 +702,7 @@ namespace pimax_openxr {
             TraceLoggingWrite(g_traceProvider,
                               "xrEnumerateSwapchainImages",
                               TLArg("Vulkan", "Api"),
-                              TLPArg(vkImages[i].image, "Texture"));
+                              TLXArg(vkImages[i].image, "Texture"));
         }
 
         return XR_SUCCESS;

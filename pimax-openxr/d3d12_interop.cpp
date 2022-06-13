@@ -44,7 +44,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetD3D12GraphicsRequirementsKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {

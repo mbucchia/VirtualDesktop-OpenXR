@@ -44,7 +44,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrConvertWin32PerformanceCounterToTimeKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg(performanceCounter->QuadPart, "PerformanceCounter"));
 
         double pvrTime = (double)performanceCounter->QuadPart / m_qpcFrequency.QuadPart;
@@ -67,7 +67,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrConvertTimeToWin32PerformanceCounterKHR",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg(time, "Time"));
 
         double pvrTime = xrTimeToPvrTime(time);

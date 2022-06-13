@@ -36,6 +36,11 @@ namespace pimax_openxr::log {
 
 #define TLArg(var, ...) TraceLoggingValue(var, ##__VA_ARGS__)
 #define TLPArg(var, ...) TraceLoggingPointer(var, ##__VA_ARGS__)
+#ifdef _M_IX86
+#define TLXArg TLArg
+#else
+#define TLXArg TLPArg
+#endif
 #define TLPArray(var, count, ...) TraceLoggingCodePointerArray((void**)var, (UINT16)count, ##__VA_ARGS__)
 
     // General logging function.

@@ -36,7 +36,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrStringToPath
     XrResult OpenXrRuntime::xrStringToPath(XrInstance instance, const char* pathString, XrPath* path) {
-        TraceLoggingWrite(g_traceProvider, "xrStringToPath", TLPArg(instance, "Instance"), TLArg(pathString, "String"));
+        TraceLoggingWrite(g_traceProvider, "xrStringToPath", TLXArg(instance, "Instance"), TLArg(pathString, "String"));
 
         if (instance != XR_NULL_PATH && (!m_instanceCreated || instance != (XrInstance)1)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -68,7 +68,7 @@ namespace pimax_openxr {
         XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer) {
         TraceLoggingWrite(g_traceProvider,
                           "xrPathToString",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg(path, "Path"),
                           TLArg(bufferCapacityInput, "BufferCapacityInput"));
 
@@ -107,7 +107,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateActionSet",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg(createInfo->actionSetName, "Name"),
                           TLArg(createInfo->localizedActionSetName, "LocalizedName"),
                           TLArg(xr::ToCString(createInfo->type), "Type"),
@@ -120,14 +120,14 @@ namespace pimax_openxr {
         // We don't support action sets. Return a non-null handle to make the application happy.
         *actionSet = (XrActionSet)1;
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateActionSet", TLPArg(*actionSet, "ActionSet"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateActionSet", TLXArg(*actionSet, "ActionSet"));
 
         return XR_SUCCESS;
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroyActionSet
     XrResult OpenXrRuntime::xrDestroyActionSet(XrActionSet actionSet) {
-        TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet", TLPArg(actionSet, "ActionSet"));
+        TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet", TLXArg(actionSet, "ActionSet"));
 
         if (actionSet != (XrActionSet)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -146,7 +146,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateAction",
-                          TLPArg(actionSet, "ActionSet"),
+                          TLXArg(actionSet, "ActionSet"),
                           TLArg(createInfo->actionName, "Name"),
                           TLArg(createInfo->localizedActionName, "LocalizedName"),
                           TLArg(xr::ToCString(createInfo->actionType), "Type"));
@@ -163,14 +163,14 @@ namespace pimax_openxr {
         // We don't support actions. Return a non-null handle to make the application happy.
         *action = (XrAction)1;
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateAction", TLPArg(*action, "Action"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateAction", TLXArg(*action, "Action"));
 
         return XR_SUCCESS;
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroyAction
     XrResult OpenXrRuntime::xrDestroyAction(XrAction action) {
-        TraceLoggingWrite(g_traceProvider, "xrDestroyAction", TLPArg(action, "Action"));
+        TraceLoggingWrite(g_traceProvider, "xrDestroyAction", TLXArg(action, "Action"));
 
         if (action != (XrAction)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -189,8 +189,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateActionSpace",
-                          TLPArg(session, "Session"),
-                          TLPArg(createInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(createInfo->action, "Action"),
                           TLArg(getXrPath(createInfo->subactionPath).c_str(), "SubactionPath"),
                           TLArg(xr::ToString(createInfo->poseInActionSpace).c_str(), "PoseInActionSpace"));
 
@@ -201,7 +201,7 @@ namespace pimax_openxr {
         // We don't support action spaces. Return a non-null handle to make the application happy.
         *space = (XrSpace)1;
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace", TLPArg(*space, "Space"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateActionSpace", TLXArg(*space, "Space"));
 
         return XR_SUCCESS;
     }
@@ -215,7 +215,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrSuggestInteractionProfileBindings",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg(getXrPath(suggestedBindings->interactionProfile).c_str(), "interactionProfile"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
@@ -225,7 +225,7 @@ namespace pimax_openxr {
         for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
             TraceLoggingWrite(g_traceProvider,
                               "xrSuggestInteractionProfileBindings",
-                              TLPArg(suggestedBindings->suggestedBindings[i].action, "Action"),
+                              TLXArg(suggestedBindings->suggestedBindings[i].action, "Action"),
                               TLArg(getXrPath(suggestedBindings->suggestedBindings[i].binding).c_str(), "Path"));
         }
 
@@ -239,10 +239,10 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets", TLPArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrAttachSessionActionSets", TLXArg(session, "Session"));
         for (uint32_t i = 0; i < attachInfo->countActionSets; i++) {
             TraceLoggingWrite(
-                g_traceProvider, "xrAttachSessionActionSets", TLPArg(attachInfo->actionSets[i], "ActionSet"));
+                g_traceProvider, "xrAttachSessionActionSets", TLXArg(attachInfo->actionSets[i], "ActionSet"));
         }
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -262,7 +262,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetCurrentInteractionProfile",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(getXrPath(topLevelUserPath).c_str(), "TopLevelUserPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -289,8 +289,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateBoolean",
-                          TLPArg(session, "Session"),
-                          TLPArg(getInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(getInfo->action, "Action"),
                           TLArg(getXrPath(getInfo->subactionPath).c_str(), "SubactionPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -314,8 +314,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateFloat",
-                          TLPArg(session, "Session"),
-                          TLPArg(getInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(getInfo->action, "Action"),
                           TLArg(getXrPath(getInfo->subactionPath).c_str(), "SubactionPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -339,8 +339,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateVector2f",
-                          TLPArg(session, "Session"),
-                          TLPArg(getInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(getInfo->action, "Action"),
                           TLArg(getXrPath(getInfo->subactionPath).c_str(), "SubactionPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -364,8 +364,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStatePose",
-                          TLPArg(session, "Session"),
-                          TLPArg(getInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(getInfo->action, "Action"),
                           TLArg(getXrPath(getInfo->subactionPath).c_str(), "SubactionPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -385,11 +385,11 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrSyncActions", TLPArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrSyncActions", TLXArg(session, "Session"));
         for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
             TraceLoggingWrite(g_traceProvider,
                               "xrSyncActions",
-                              TLPArg(syncInfo->activeActionSets[i].actionSet, "ActionSet"),
+                              TLXArg(syncInfo->activeActionSets[i].actionSet, "ActionSet"),
                               TLArg(syncInfo->activeActionSets[i].subactionPath, "SubactionPath"));
         }
 
@@ -412,8 +412,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateBoundSourcesForAction",
-                          TLPArg(session, "Session"),
-                          TLPArg(enumerateInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(enumerateInfo->action, "Action"),
                           TLArg(sourceCapacityInput, "SourceCapacityInput"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -439,7 +439,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetInputSourceLocalizedName",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(getXrPath(getInfo->sourcePath).c_str(), "SourcePath"),
                           TLArg(getInfo->whichComponents, "WhichComponents"));
 
@@ -464,8 +464,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrApplyHapticFeedback",
-                          TLPArg(session, "Session"),
-                          TLPArg(hapticActionInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(hapticActionInfo->action, "Action"),
                           TLArg(getXrPath(hapticActionInfo->subactionPath).c_str(), "SubactionPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -483,8 +483,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrStopHapticFeedback",
-                          TLPArg(session, "Session"),
-                          TLPArg(hapticActionInfo->action, "Action"),
+                          TLXArg(session, "Session"),
+                          TLXArg(hapticActionInfo->action, "Action"),
                           TLArg(getXrPath(hapticActionInfo->subactionPath).c_str(), "SubactionPath"));
 
         if (!m_sessionCreated || session != (XrSession)1) {

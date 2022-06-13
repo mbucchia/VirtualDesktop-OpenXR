@@ -42,7 +42,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateSession",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)createInfo->systemId, "SystemId"),
                           TLArg(createInfo->createFlags, "CreateFlags"));
 
@@ -148,14 +148,14 @@ namespace pimax_openxr {
 
         *session = (XrSession)1;
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateSession", TLPArg(*session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateSession", TLXArg(*session, "Session"));
 
         return XR_SUCCESS;
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroySession
     XrResult OpenXrRuntime::xrDestroySession(XrSession session) {
-        TraceLoggingWrite(g_traceProvider, "xrDestroySession", TLPArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrDestroySession", TLXArg(session, "Session"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -192,7 +192,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(
             g_traceProvider,
             "xrBeginSession",
-            TLPArg(session, "Session"),
+            TLXArg(session, "Session"),
             TLArg(xr::ToCString(beginInfo->primaryViewConfigurationType), "PrimaryViewConfigurationType"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -216,7 +216,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrEndSession
     XrResult OpenXrRuntime::xrEndSession(XrSession session) {
-        TraceLoggingWrite(g_traceProvider, "xrEndSession", TLPArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrEndSession", TLXArg(session, "Session"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -235,7 +235,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrRequestExitSession
     XrResult OpenXrRuntime::xrRequestExitSession(XrSession session) {
-        TraceLoggingWrite(g_traceProvider, "xrRequestExitSession", TLPArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrRequestExitSession", TLXArg(session, "Session"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;

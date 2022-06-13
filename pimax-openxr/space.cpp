@@ -42,7 +42,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateReferenceSpaces",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(spaceCapacityInput, "SpaceCapacityInput"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -77,7 +77,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateReferenceSpace",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(xr::ToCString(createInfo->referenceSpaceType), "ReferenceSpaceType"),
                           TLArg(xr::ToString(createInfo->poseInReferenceSpace).c_str(), "PoseInReferenceSpace"));
 
@@ -101,7 +101,7 @@ namespace pimax_openxr {
         // Maintain a list of known spaces for validation and cleanup.
         m_spaces.insert(*space);
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace", TLPArg(*space, "Space"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateReferenceSpace", TLXArg(*space, "Space"));
 
         return XR_SUCCESS;
     }
@@ -112,7 +112,7 @@ namespace pimax_openxr {
                                                           XrExtent2Df* bounds) {
         TraceLoggingWrite(g_traceProvider,
                           "xrGetReferenceSpaceBoundsRect",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(xr::ToCString(referenceSpaceType), "ReferenceSpaceType"));
 
         bounds->width = bounds->height = 0.f;
@@ -128,8 +128,8 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrLocateSpace",
-                          TLPArg(space, "Space"),
-                          TLPArg(baseSpace, "BaseSpace"),
+                          TLXArg(space, "Space"),
+                          TLXArg(baseSpace, "BaseSpace"),
                           TLArg(time, "Time"));
 
         location->locationFlags = 0;
@@ -218,10 +218,10 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrLocateViews",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(xr::ToCString(viewLocateInfo->viewConfigurationType), "ViewConfigurationType"),
                           TLArg(viewLocateInfo->displayTime, "DisplayTime"),
-                          TLPArg(viewLocateInfo->space, "Space"),
+                          TLXArg(viewLocateInfo->space, "Space"),
                           TLArg(viewCapacityInput, "ViewCapacityInput"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -296,7 +296,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroySpace
     XrResult OpenXrRuntime::xrDestroySpace(XrSpace space) {
-        TraceLoggingWrite(g_traceProvider, "xrDestroySpace", TLPArg(space, "Space"));
+        TraceLoggingWrite(g_traceProvider, "xrDestroySpace", TLXArg(space, "Space"));
 
         // TODO: Do nothing for action spaces.
         if (space == (XrSpace)1) {

@@ -42,7 +42,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateViewConfigurations",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLArg(viewConfigurationTypeCapacityInput, "ViewConfigurationTypeCapacityInput"));
 
@@ -86,7 +86,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetViewConfigurationProperties",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLArg(xr::ToCString(viewConfigurationType), "ViewConfigurationType"));
 
@@ -122,7 +122,7 @@ namespace pimax_openxr {
                                                               XrViewConfigurationView* views) {
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateViewConfigurationViews",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLArg(viewCapacityInput, "ViewCapacityInput"),
                           TLArg(xr::ToCString(viewConfigurationType), "ViewConfigurationType"));
@@ -240,7 +240,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateSwapchainFormats",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(formatCapacityInput, "FormatCapacityInput"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
@@ -281,7 +281,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateSwapchain",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(createInfo->arraySize, "ArraySize"),
                           TLArg(createInfo->width, "Width"),
                           TLArg(createInfo->height, "Height"),
@@ -375,7 +375,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateSwapchain",
-                          TLPArg(*swapchain, "Swapchain"),
+                          TLXArg(*swapchain, "Swapchain"),
                           TLArg(needDepthResolve, "NeedDepthResolve"));
 
         return XR_SUCCESS;
@@ -383,7 +383,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroySwapchain
     XrResult OpenXrRuntime::xrDestroySwapchain(XrSwapchain swapchain) {
-        TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain", TLPArg(swapchain, "Swapchain"));
+        TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain", TLXArg(swapchain, "Swapchain"));
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -421,7 +421,7 @@ namespace pimax_openxr {
                                                        XrSwapchainImageBaseHeader* images) {
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateSwapchainImages",
-                          TLPArg(swapchain, "Swapchain"),
+                          TLXArg(swapchain, "Swapchain"),
                           TLArg(imageCapacityInput, "ImageCapacityInput"));
 
         if (!m_swapchains.count(swapchain)) {
@@ -464,7 +464,7 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage", TLPArg(swapchain, "Swapchain"));
+        TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage", TLXArg(swapchain, "Swapchain"));
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -498,7 +498,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrWaitSwapchainImage",
-                          TLPArg(swapchain, "Swapchain"),
+                          TLXArg(swapchain, "Swapchain"),
                           TLArg(waitInfo->timeout, "Timeout"));
 
         if (!m_swapchains.count(swapchain)) {
@@ -517,7 +517,7 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage", TLPArg(swapchain, "Swapchain"));
+        TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage", TLXArg(swapchain, "Swapchain"));
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;

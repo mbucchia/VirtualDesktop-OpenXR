@@ -47,7 +47,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVisibilityMaskKHR",
-                          TLPArg(session, "Session"),
+                          TLXArg(session, "Session"),
                           TLArg(xr::ToCString(viewConfigurationType), "ViewConfigurationType"),
                           TLArg(viewIndex, "ViewIndex"),
                           TLArg(xr::ToCString(visibilityMaskType), "VisibilityMaskType"),

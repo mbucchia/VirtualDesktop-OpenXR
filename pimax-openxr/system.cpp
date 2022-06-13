@@ -39,7 +39,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetSystem",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg(xr::ToCString(getInfo->formFactor), "FormFactor"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
@@ -99,7 +99,7 @@ namespace pimax_openxr {
         }
 
         TraceLoggingWrite(
-            g_traceProvider, "xrGetSystemProperties", TLPArg(instance, "Instance"), TLArg((int)systemId, "SystemId"));
+            g_traceProvider, "xrGetSystemProperties", TLXArg(instance, "Instance"), TLArg((int)systemId, "SystemId"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -164,7 +164,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateEnvironmentBlendModes",
-                          TLPArg(instance, "Instance"),
+                          TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"),
                           TLArg(xr::ToCString(viewConfigurationType), "ViewConfigurationType"),
                           TLArg(environmentBlendModeCapacityInput, "EnvironmentBlendModeCapacityInput"));

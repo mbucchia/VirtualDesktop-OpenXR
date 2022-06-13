@@ -76,7 +76,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr
     XrResult OpenXrRuntime::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
-        TraceLoggingWrite(g_traceProvider, "xrGetInstanceProcAddr", TLPArg(instance, "Instance"), TLArg(name, "Name"));
+        TraceLoggingWrite(g_traceProvider, "xrGetInstanceProcAddr", TLXArg(instance, "Instance"), TLArg(name, "Name"));
 
         const auto result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
 
@@ -215,14 +215,14 @@ namespace pimax_openxr {
         m_instanceCreated = true;
         *instance = (XrInstance)1;
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateInstance", TLPArg(*instance, "Instance"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateInstance", TLXArg(*instance, "Instance"));
 
         return XR_SUCCESS;
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroyInstance
     XrResult OpenXrRuntime::xrDestroyInstance(XrInstance instance) {
-        TraceLoggingWrite(g_traceProvider, "xrDestroyInstance", TLPArg(instance, "Instance"));
+        TraceLoggingWrite(g_traceProvider, "xrDestroyInstance", TLXArg(instance, "Instance"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -239,7 +239,7 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties", TLPArg(instance, "Instance"));
+        TraceLoggingWrite(g_traceProvider, "xrGetInstanceProperties", TLXArg(instance, "Instance"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -263,7 +263,7 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrPollEvent
     XrResult OpenXrRuntime::xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData) {
-        TraceLoggingWrite(g_traceProvider, "xrPollEvent", TLPArg(instance, "Instance"));
+        TraceLoggingWrite(g_traceProvider, "xrPollEvent", TLXArg(instance, "Instance"));
 
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -280,7 +280,7 @@ namespace pimax_openxr {
 
             TraceLoggingWrite(g_traceProvider,
                               "xrPollEvent",
-                              TLPArg(buffer->session, "Session"),
+                              TLXArg(buffer->session, "Session"),
                               TLArg(xr::ToCString(buffer->state), "State"),
                               TLArg(buffer->time, "Time"));
 
