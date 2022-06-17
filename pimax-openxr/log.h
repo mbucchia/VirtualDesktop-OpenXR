@@ -49,4 +49,7 @@ namespace pimax_openxr::log {
     // Debug logging function. Can make things very slow (only enabled on Debug builds).
     void DebugLog(const char* fmt, ...);
 
+    // Error logging function. Goes silent after too many errors.
+    void ErrorLog(const char* fmt, ...);
+
 } // namespace pimax_openxr::log

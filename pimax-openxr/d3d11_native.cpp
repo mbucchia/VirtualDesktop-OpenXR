@@ -165,7 +165,7 @@ namespace pimax_openxr {
                                     errMsgs.ReleaseAndGetAddressOf());
             if (FAILED(hr)) {
                 std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
-                Log("D3DCompile failed %X: %s", hr, errMsg.c_str());
+                Log("D3DCompile failed %X: %s\n", hr, errMsg.c_str());
                 CHECK_HRESULT(hr, "D3DCompile failed");
             }
             CHECK_HRCMD(m_d3d11Device->CreateComputeShader(shaderBytes->GetBufferPointer(),
@@ -178,6 +178,9 @@ namespace pimax_openxr {
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
         // not see our OpenXR frames.
         if (GetModuleHandleA("renderdoc.dll")) {
+            TraceLoggingWrite(g_traceProvider, "xrCreateSession", TLArg("True", "RenderDoc"));
+            Log("Detected RenderDoc\n");
+
             DXGI_SWAP_CHAIN_DESC1 swapchainDesc{};
             swapchainDesc.Width = 8;
             swapchainDesc.Height = 8;

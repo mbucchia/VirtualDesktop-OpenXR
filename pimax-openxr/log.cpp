@@ -22,6 +22,11 @@
 
 #include "pch.h"
 
+namespace {
+    constexpr uint32_t k_maxLoggedErrors = 100;
+    uint32_t g_globalErrorCount = 0;
+}
+
 namespace pimax_openxr::log {
     extern std::ofstream logStream;
 
@@ -54,6 +59,18 @@ namespace pimax_openxr::log {
         va_start(va, fmt);
         InternalLog(fmt, va);
         va_end(va);
+    }
+
+    void ErrorLog(const char* fmt, ...) {
+        if (g_globalErrorCount++ < k_maxLoggedErrors) {
+            va_list va;
+            va_start(va, fmt);
+            InternalLog(fmt, va);
+            va_end(va);
+            if (g_globalErrorCount == k_maxLoggedErrors) {
+                Log("Maximum number of errors logged. Going silent.");
+            }
+        }
     }
 
     void DebugLog(const char* fmt, ...) {

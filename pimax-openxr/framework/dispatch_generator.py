@@ -108,10 +108,9 @@ class DispatchGenCppOutputGenerator(DispatchGenOutputGenerator):
 #error Must define RUNTIME_NAMESPACE
 #endif
 
-using namespace RUNTIME_NAMESPACE::log;
-
-namespace RUNTIME_NAMESPACE
-{'''
+namespace RUNTIME_NAMESPACE {
+    using namespace RUNTIME_NAMESPACE::log;
+'''
         write(preamble, file=self.outFile)
 
     def endFile(self):
@@ -143,41 +142,36 @@ namespace RUNTIME_NAMESPACE
 
                 if cur_cmd.return_type is not None:
                     generated += f'''
-	XrResult XRAPI_CALL {cur_cmd.name}({parameters_list})
-	{{
+	XrResult XRAPI_CALL {cur_cmd.name}({parameters_list}) {{
 		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
 
 		XrResult result;
-		try
-		{{
+		try {{
 			result = RUNTIME_NAMESPACE::GetInstance()->{cur_cmd.name}({arguments_list});
-		}}
-		catch (std::exception& exc)
-		{{
+		}} catch (std::exception& exc) {{
 			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
-			Log("{cur_cmd.name}: %s\\n", exc.what());
+			ErrorLog("{cur_cmd.name}: %s\\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}}
 
 		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Result", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {{
+			ErrorLog("{cur_cmd.name} failed with %s\\n", xr::ToCString(result));
+		}}
 
 		return result;
 	}}
 '''
                 else:
                     generated += f'''
-	void {cur_cmd.name}({parameters_list})
-	{{
+	void XRAPI_CALL {cur_cmd.name}({parameters_list}) {{
 		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
 
-		try
-		{{
+		try {{
 			RUNTIME_NAMESPACE::GetInstance()->{cur_cmd.name}({arguments_list});
-		}}
-		catch (std::exception& exc)
-		{{
+		}} catch (std::exception& exc) {{
 			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
-			Log("{cur_cmd.name}: %s\\n", exc.what());
+			ErrorLog("{cur_cmd.name}: %s\\n", exc.what());
 		}}
 
 		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Complete");
@@ -187,26 +181,22 @@ namespace RUNTIME_NAMESPACE
         return generated
 
     def genGetInstanceProcAddr(self):
-        generated = '''	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function)
-	{
+        generated = '''	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
 		const std::string apiName(name);
 
-		if (apiName == "xrGetInstanceProcAddr")
-		{
+		if (apiName == "xrGetInstanceProcAddr") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetInstanceProcAddr);
 		}
 '''
 
         for cur_cmd in self.core_commands + self.ext_commands:
             if cur_cmd.name not in EXCLUDED_API:
-                generated += f'''		else if (apiName == "{cur_cmd.name}")
-		{{
+                generated += f'''		else if (apiName == "{cur_cmd.name}") {{
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::{cur_cmd.name});
 		}}
 '''
 
-        generated += f'''		else
-		{{
+        generated += f'''		else {{
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
 		}}
 
@@ -226,11 +216,9 @@ class DispatchGenHOutputGenerator(DispatchGenOutputGenerator):
 #error Must define RUNTIME_NAMESPACE
 #endif
 
-namespace RUNTIME_NAMESPACE
-{
+namespace RUNTIME_NAMESPACE {
 
-	class OpenXrApi
-	{
+	class OpenXrApi {
 	protected:
 		OpenXrApi() = default;
 

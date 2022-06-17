@@ -27,11 +27,9 @@
 #error Must define RUNTIME_NAMESPACE
 #endif
 
-namespace RUNTIME_NAMESPACE
-{
+namespace RUNTIME_NAMESPACE {
 
-	class OpenXrApi
-	{
+	class OpenXrApi {
 	protected:
 		OpenXrApi() = default;
 
