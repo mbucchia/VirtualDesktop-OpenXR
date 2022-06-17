@@ -234,6 +234,9 @@ namespace pimax_openxr {
             m_frameWaited = false;
             m_frameBegun = true;
 
+            m_isControllerActive[0] = m_isControllerActive[1] = false;
+            m_frameLatchedActionSets.clear();
+
             m_currentTimeIndex ^= 1;
 
             // Signal xrWaitFrame().

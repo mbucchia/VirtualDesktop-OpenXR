@@ -286,6 +286,7 @@ namespace pimax_openxr {
 
             TraceLoggingWrite(g_traceProvider,
                               "xrPollEvent",
+                              TLArg("SessionStateChanged", "Type"),
                               TLXArg(buffer->session, "Session"),
                               TLArg(xr::ToCString(buffer->state), "State"),
                               TLArg(buffer->time, "Time"));
@@ -297,6 +298,23 @@ namespace pimax_openxr {
                 m_sessionStateDirty = true;
                 m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
             }
+
+            return XR_SUCCESS;
+        }
+
+        if (m_currentInteractionProfileDirty) {
+            XrEventDataInteractionProfileChanged* const buffer =
+                reinterpret_cast<XrEventDataInteractionProfileChanged*>(eventData);
+            buffer->type = XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED;
+            buffer->next = nullptr;
+            buffer->session = (XrSession)1;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrPollEvent",
+                              TLArg("InteractionProfileChanged", "Type"),
+                              TLXArg(buffer->session, "Session"));
+
+            m_currentInteractionProfileDirty = false;
 
             return XR_SUCCESS;
         }

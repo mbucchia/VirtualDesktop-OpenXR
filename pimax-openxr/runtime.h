@@ -262,7 +262,28 @@ namespace pimax_openxr {
         struct Space {
             // Information recorded at creation.
             XrReferenceSpaceType referenceType;
+            XrAction action{XR_NULL_HANDLE};
+            XrPath subActionPath{XR_NULL_PATH};
             XrPosef poseInSpace;
+        };
+
+        struct Action {
+            std::string path;
+            XrActionSet actionSet{XR_NULL_HANDLE};
+
+            const float* floatValue{nullptr};
+            float lastFloatValue{0.f};
+            XrTime lastFloatValueChangedTime{0};
+
+            const pvrVector2f* vector2fValue{nullptr};
+            int vector2fIndex{-1};
+            XrVector2f lastVector2fValue{0.f, 0.f};
+            XrTime lastVector2fValueChangedTime{0};
+
+            const uint32_t* buttonMap{nullptr};
+            pvrButton buttonType;
+            bool lastBoolValue{false};
+            XrTime lastBoolValueChangedTime{0};
         };
 
         // instance.cpp
@@ -272,7 +293,17 @@ namespace pimax_openxr {
         void fillDisplayDeviceInfo();
 
         // action.cpp
+        void rebindControllerActions(int side);
+        void mapPathToViveControllerInputState(Action& xrAction, XrPath binding) const;
+        void mapPathToIndexControllerInputState(Action& xrAction, XrPath binding) const;
+        void mapPathToSimpleControllerInputState(Action& xrAction, XrPath binding) const;
         std::string getXrPath(XrPath path) const;
+        std::string getActionPath(const Action& action, XrPath subActionPath) const;
+        int getActionSide(const std::string& fullPath) const;
+
+        // space.cpp
+        XrSpaceLocationFlags getHmdPose(XrTime time, bool addFloorHeight, XrPosef& pose) const;
+        XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose) const;
 
         // d3d11_native.cpp
         XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings, bool interop = false);
@@ -326,6 +357,9 @@ namespace pimax_openxr {
         double m_pvrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
         std::map<XrPath, std::string> m_strings;
+        uint64_t m_actionSetIndex{0};
+        std::set<XrActionSet> m_actionSets;
+        std::set<XrAction> m_actions;
 
         // Session state.
         ComPtr<ID3D11Device5> m_d3d11Device;
@@ -343,6 +377,11 @@ namespace pimax_openxr {
         bool m_isVisibilityMaskEnabled{false};
         bool m_useParallelProjection{false};
         bool m_canBeginFrame{false};
+        std::set<XrActionSet> m_activeActionSets;
+        std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
+        std::string m_cachedControllerType[2];
+        XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
+        bool m_currentInteractionProfileDirty{false};
 
         // Graphics API interop.
         ComPtr<ID3D12Device> m_d3d12Device;
@@ -389,6 +428,9 @@ namespace pimax_openxr {
         long long m_nextFrameIndex{0};
         long long m_currentFrameIndex;
         std::optional<double> m_lastFrameWaitedTime;
+        pvrInputState m_cachedInputState;
+        bool m_isControllerActive[2]{false, false};
+        std::set<XrActionSet> m_frameLatchedActionSets;
 
         // Statistics.
         std::deque<double> m_frameTimes;

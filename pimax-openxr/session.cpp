@@ -139,6 +139,11 @@ namespace pimax_openxr {
 
         m_frameTimes.clear();
 
+        m_isControllerActive[0] = m_isControllerActive[1] = false;
+        rebindControllerActions(0);
+        rebindControllerActions(1);
+        m_activeActionSets.clear();
+
         try {
             // Create a reference space with the origin and the HMD pose.
             {

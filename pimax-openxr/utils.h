@@ -377,4 +377,13 @@ namespace pimax_openxr::utils {
             resource->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(name.size()), name.data());
         }
     }
+
+    static inline bool startsWith(const std::string& str, const std::string& substr) {
+        return str.find(substr) == 0;
+    }
+
+    static inline bool endsWith(const std::string& str, const std::string& substr) {
+        return str.find(substr) == str.size() - substr.size();
+    }
+
 } // namespace pimax_openxr::utils
