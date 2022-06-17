@@ -93,7 +93,7 @@ namespace pimax_openxr {
         fillDisplayDeviceInfo();
 
         memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
-        graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_11_1;
+        graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetD3D11GraphicsRequirementsKHR",

@@ -464,7 +464,7 @@ namespace pimax_openxr {
         // Create the interop device that PVR will be using.
         ComPtr<ID3D11Device> device;
         ComPtr<ID3D11DeviceContext> deviceContext;
-        D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_1;
+        D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
         UINT flags = 0;
 #ifdef _DEBUG
         flags |= D3D11_CREATE_DEVICE_DEBUG;
