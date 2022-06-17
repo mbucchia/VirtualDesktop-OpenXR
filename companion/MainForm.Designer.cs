@@ -45,7 +45,7 @@ namespace companion
             this.label2 = new System.Windows.Forms.Label();
             this.versionString = new System.Windows.Forms.Label();
             this.recenterMode = new System.Windows.Forms.CheckBox();
-            this.parallelProjection = new System.Windows.Forms.CheckBox();
+            this.label3 = new System.Windows.Forms.Label();
             this.tableLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel3.SuspendLayout();
@@ -63,7 +63,7 @@ namespace companion
             this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel4, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 4;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 18.60465F));
@@ -80,7 +80,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 171);
-            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
             this.flowLayoutPanel1.TabIndex = 7;
@@ -88,7 +88,7 @@ namespace companion
             // openLogs
             // 
             this.openLogs.Location = new System.Drawing.Point(2, 2);
-            this.openLogs.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.openLogs.Margin = new System.Windows.Forms.Padding(2);
             this.openLogs.Name = "openLogs";
             this.openLogs.Size = new System.Drawing.Size(130, 42);
             this.openLogs.TabIndex = 7;
@@ -99,7 +99,7 @@ namespace companion
             // startTrace
             // 
             this.startTrace.Location = new System.Drawing.Point(136, 2);
-            this.startTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.startTrace.Margin = new System.Windows.Forms.Padding(2);
             this.startTrace.Name = "startTrace";
             this.startTrace.Size = new System.Drawing.Size(130, 42);
             this.startTrace.TabIndex = 8;
@@ -111,7 +111,7 @@ namespace companion
             // 
             this.stopTrace.Enabled = false;
             this.stopTrace.Location = new System.Drawing.Point(270, 2);
-            this.stopTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.stopTrace.Margin = new System.Windows.Forms.Padding(2);
             this.stopTrace.Name = "stopTrace";
             this.stopTrace.Size = new System.Drawing.Size(130, 42);
             this.stopTrace.TabIndex = 9;
@@ -126,7 +126,7 @@ namespace companion
             this.flowLayoutPanel3.Controls.Add(this.runtimeSteam);
             this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel3.Location = new System.Drawing.Point(2, 2);
-            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel3.Name = "flowLayoutPanel3";
             this.flowLayoutPanel3.Size = new System.Drawing.Size(402, 27);
             this.flowLayoutPanel3.TabIndex = 0;
@@ -147,7 +147,7 @@ namespace companion
             // 
             this.runtimePimax.AutoSize = true;
             this.runtimePimax.Location = new System.Drawing.Point(159, 2);
-            this.runtimePimax.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.runtimePimax.Margin = new System.Windows.Forms.Padding(2);
             this.runtimePimax.Name = "runtimePimax";
             this.runtimePimax.Size = new System.Drawing.Size(68, 17);
             this.runtimePimax.TabIndex = 1;
@@ -160,7 +160,7 @@ namespace companion
             // 
             this.runtimeSteam.AutoSize = true;
             this.runtimeSteam.Location = new System.Drawing.Point(231, 2);
-            this.runtimeSteam.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.runtimeSteam.Margin = new System.Windows.Forms.Padding(2);
             this.runtimeSteam.Name = "runtimeSteam";
             this.runtimeSteam.Size = new System.Drawing.Size(70, 17);
             this.runtimeSteam.TabIndex = 2;
@@ -175,7 +175,7 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 227);
-            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 17);
             this.flowLayoutPanel2.TabIndex = 10;
@@ -208,11 +208,11 @@ namespace companion
             // 
             this.flowLayoutPanel4.Controls.Add(this.label2);
             this.flowLayoutPanel4.Controls.Add(this.versionString);
+            this.flowLayoutPanel4.Controls.Add(this.label3);
             this.flowLayoutPanel4.Controls.Add(this.recenterMode);
-            this.flowLayoutPanel4.Controls.Add(this.parallelProjection);
             this.flowLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 33);
-            this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
             this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 134);
             this.flowLayoutPanel4.TabIndex = 3;
@@ -242,29 +242,27 @@ namespace companion
             // 
             this.recenterMode.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.recenterMode, true);
-            this.recenterMode.Location = new System.Drawing.Point(2, 15);
-            this.recenterMode.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.recenterMode.Location = new System.Drawing.Point(2, 51);
+            this.recenterMode.Margin = new System.Windows.Forms.Padding(2);
             this.recenterMode.Name = "recenterMode";
-            this.recenterMode.Padding = new System.Windows.Forms.Padding(3, 10, 0, 0);
-            this.recenterMode.Size = new System.Drawing.Size(164, 27);
-            this.recenterMode.TabIndex = 5;
+            this.recenterMode.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
+            this.recenterMode.Size = new System.Drawing.Size(164, 20);
+            this.recenterMode.TabIndex = 6;
             this.recenterMode.Text = "Recenter headset on startup";
             this.recenterMode.UseVisualStyleBackColor = true;
             this.recenterMode.CheckedChanged += new System.EventHandler(this.recenterMode_CheckedChanged);
             // 
-            // parallelProjection
+            // label3
             // 
-            this.parallelProjection.AutoSize = true;
-            this.flowLayoutPanel4.SetFlowBreak(this.parallelProjection, true);
-            this.parallelProjection.Location = new System.Drawing.Point(2, 46);
-            this.parallelProjection.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.parallelProjection.Name = "parallelProjection";
-            this.parallelProjection.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
-            this.parallelProjection.Size = new System.Drawing.Size(141, 23);
-            this.parallelProjection.TabIndex = 6;
-            this.parallelProjection.Text = "Force parallel projection";
-            this.parallelProjection.UseVisualStyleBackColor = true;
-            this.parallelProjection.CheckedChanged += new System.EventHandler(this.parallelProjection_CheckedChanged);
+            this.label3.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.label3, true);
+            this.label3.Location = new System.Drawing.Point(3, 13);
+            this.label3.Name = "label3";
+            this.label3.Padding = new System.Windows.Forms.Padding(3, 10, 0, 0);
+            this.label3.Size = new System.Drawing.Size(389, 36);
+            this.label3.TabIndex = 5;
+            this.label3.Text = "Use PiTool to set refresh rate, resolution, FOV, enable Smart Smoothing, Parallel" +
+    " Projection, etc...";
             // 
             // MainForm
             // 
@@ -307,7 +305,7 @@ namespace companion
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label versionString;
         private System.Windows.Forms.CheckBox recenterMode;
-        private System.Windows.Forms.CheckBox parallelProjection;
+        private System.Windows.Forms.Label label3;
     }
 }
 

@@ -132,7 +132,6 @@ namespace companion
 
                 // Must match the defaults in the layer!
                 recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
-                parallelProjection.Checked = (int)key.GetValue("use_parallel_projection", 0) == 1 ? true : false;
             }
             catch (Exception)
             {
@@ -224,16 +223,6 @@ namespace companion
             }
 
             WriteSetting("recenter_on_startup", recenterMode.Checked ? 1 : 0);
-        }
-
-        private void parallelProjection_CheckedChanged(object sender, EventArgs e)
-        {
-            if (loading)
-            {
-                return;
-            }
-
-            WriteSetting("use_parallel_projection", parallelProjection.Checked ? 1 : 0);
         }
 
         private void openLogs_Click(object sender, EventArgs e)
