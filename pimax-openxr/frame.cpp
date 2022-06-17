@@ -107,6 +107,11 @@ namespace pimax_openxr {
 
         // Critical section.
         {
+            CpuTimer waitTimer;
+            if (IsTraceEnabled()) {
+                waitTimer.start();
+            }
+
             std::unique_lock lock(m_frameLock);
 
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
@@ -136,6 +141,10 @@ namespace pimax_openxr {
             const bool timedOut = !m_frameCondVar.wait_for(lock, timeout, [&] { return !m_frameBegun; });
             TraceLoggingWrite(g_traceProvider, "WaitFrame2_End", TLArg(timedOut, "TimedOut"));
 
+            if (IsTraceEnabled()) {
+                waitTimer.stop();
+            }
+
             const double now = pvr_getTimeSeconds(m_pvr);
             double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, m_nextFrameIndex);
             TraceLoggingWrite(g_traceProvider,
@@ -143,7 +152,8 @@ namespace pimax_openxr {
                               TLArg(m_nextFrameIndex, "ThisFrameIndex"),
                               TLArg(now, "Now"),
                               TLArg(predictedDisplayTime, "PredictedDisplayTime"),
-                              TLArg(predictedDisplayTime - now, "PhotonTime"));
+                              TLArg(predictedDisplayTime - now, "PhotonTime"),
+                              TLArg(waitTimer.query(), "WaitDurationUs"));
 
             // When behind too much (200ms is arbitrary), we skip rendering and provide an ideal frame time.
             if (predictedDisplayTime < now - 0.2) {
@@ -188,6 +198,11 @@ namespace pimax_openxr {
 
         // Critical section.
         {
+            CpuTimer waitTimer;
+            if (IsTraceEnabled()) {
+                waitTimer.start();
+            }
+
             std::unique_lock lock(m_frameLock);
 
             if (!m_frameWaited) {
@@ -210,8 +225,16 @@ namespace pimax_openxr {
                 TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End", TLArg((int)result, "Result"));
             }
 
+            if (IsTraceEnabled()) {
+                waitTimer.stop();
+            }
+
+            TraceLoggingWrite(g_traceProvider, "BeginFrame", TLArg(waitTimer.query(), "WaitDurationUs"));
+
             m_frameWaited = false;
             m_frameBegun = true;
+
+            m_currentTimeIndex ^= 1;
 
             // Signal xrWaitFrame().
             TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
@@ -258,6 +281,11 @@ namespace pimax_openxr {
                 serializeD3D12Frame();
             } else if (isVulkanSession()) {
                 serializeVulkanFrame();
+            }
+
+            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimeIndex ^ 1]->query();
+            if (IsTraceEnabled()) {
+                m_gpuTimerPrecomposition[m_currentTimeIndex]->start();
             }
 
             std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
@@ -454,15 +482,39 @@ namespace pimax_openxr {
                 layers.push_back(&layer.Header);
             }
 
+            if (IsTraceEnabled()) {
+                m_gpuTimerPrecomposition[m_currentTimeIndex]->stop();
+            }
+
+            // Update the FPS counter.
+            const auto now = pvr_getTimeSeconds(m_pvr);
+            m_frameTimes.push_back(now);
+            while (now - m_frameTimes.front() >= 1.0) {
+                m_frameTimes.pop_front();
+            }
+
             // Submit the layers to PVR.
             if (!layers.empty()) {
+                // TODO: This time does not seem to work. Perhaps because PVR is doing composition out-of-proc?
+                const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimeIndex ^ 1]->query();
+                if (IsTraceEnabled()) {
+                    m_gpuTimerPvrComposition[m_currentTimeIndex]->start();
+                }
+
                 TraceLoggingWrite(g_traceProvider,
                                   "PVR_EndFrame_Begin",
                                   TLArg(m_nextFrameIndex, "CurrentFrameIndex"),
-                                  TLArg(layers.size(), "NumLayers"));
+                                  TLArg(layers.size(), "NumLayers"),
+                                  TLArg(m_frameTimes.size(), "Fps"),
+                                  TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"),
+                                  TLArg(lastCompositionTime, "LastCompositionTimeUs"));
                 CHECK_PVRCMD(
                     pvr_endFrame(m_pvrSession, m_currentFrameIndex, layers.data(), (unsigned int)layers.size()));
                 TraceLoggingWrite(g_traceProvider, "PVR_EndFrame_End");
+
+                if (IsTraceEnabled()) {
+                    m_gpuTimerPvrComposition[m_currentTimeIndex]->stop();
+                }
 
                 m_canBeginFrame = true;
             }

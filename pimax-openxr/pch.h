@@ -28,6 +28,7 @@
 #include <condition_variable>
 #include <cstdarg>
 #include <ctime>
+#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <filesystem>

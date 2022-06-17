@@ -712,7 +712,11 @@ namespace pimax_openxr {
     void OpenXrRuntime::serializeVulkanFrame() {
         m_fenceValue++;
         TraceLoggingWrite(
-            g_traceProvider, "xrEndFrame_Sync", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
+            g_traceProvider,
+            "xrEndFrame_Sync",
+            TLArg("Vulkan", "Api"),
+            TLArg(m_fenceValue, "FenceValue"),
+            TLArg(m_gpuTimerSynchronizationDuration[m_currentTimeIndex ^ 1]->query(), "LastSyncDurationUs"));
         VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
         timelineInfo.signalSemaphoreValueCount = 1;
         timelineInfo.pSignalSemaphoreValues = &m_fenceValue;
@@ -720,7 +724,14 @@ namespace pimax_openxr {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &m_vkTimelineSemaphore;
         CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
+
+        if (IsTraceEnabled()) {
+            m_gpuTimerSynchronizationDuration[m_currentTimeIndex]->start();
+        }
         CHECK_HRCMD(m_d3d11DeviceContext->Wait(m_d3d11Fence.Get(), m_fenceValue));
+        if (IsTraceEnabled()) {
+            m_gpuTimerSynchronizationDuration[m_currentTimeIndex]->stop();
+        }
     }
 
 } // namespace pimax_openxr

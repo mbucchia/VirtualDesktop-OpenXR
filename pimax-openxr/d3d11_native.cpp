@@ -31,6 +31,7 @@
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_D3D11_enable
 
 namespace {
+
     // Compute shaders for converting D32_S8 to D32 depth formats.
     const std::string_view ResolveShaderHlsl[] = {
         R"_(
@@ -55,6 +56,7 @@ void main(uint2 pos : SV_DispatchThreadID)
     out_texture[pos] = in_texture[float3(pos, 0)].x;
 }
     )_"};
+
 } // namespace
 
 namespace pimax_openxr {
@@ -175,6 +177,13 @@ namespace pimax_openxr {
             setDebugName(m_resolveShader[i].Get(), "DepthResolve CS");
         }
 
+        for (uint32_t i = 0; i < 2; i++) {
+            m_gpuTimerSynchronizationDuration[i] =
+                std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
+            m_gpuTimerPrecomposition[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
+            m_gpuTimerPvrComposition[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
+        }
+
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
         // not see our OpenXR frames.
         if (GetModuleHandleA("renderdoc.dll")) {
@@ -205,6 +214,12 @@ namespace pimax_openxr {
         wil::unique_handle eventHandle;
         m_d3d11DeviceContext->Flush1(D3D11_CONTEXT_TYPE_ALL, eventHandle.get());
         WaitForSingleObject(eventHandle.get(), INFINITE);
+
+        for (uint32_t i = 0; i < 2; i++) {
+            m_gpuTimerSynchronizationDuration[i].reset();
+            m_gpuTimerPrecomposition[i].reset();
+            m_gpuTimerPvrComposition[i].reset();
+        }
 
         m_dxgiSwapchain.Reset();
         for (int i = 0; i < ARRAYSIZE(m_resolveShader); i++) {

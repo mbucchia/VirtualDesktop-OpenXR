@@ -24,7 +24,11 @@
 
 #include "framework/dispatch.gen.h"
 
+#include "utils.h"
+
 namespace pimax_openxr {
+
+    using namespace pimax_openxr::utils;
 
     const unsigned int RuntimeVersionMajor = 0;
     const unsigned int RuntimeVersionMinor = 1;
@@ -385,6 +389,13 @@ namespace pimax_openxr {
         long long m_nextFrameIndex{0};
         long long m_currentFrameIndex;
         std::optional<double> m_lastFrameWaitedTime;
+
+        // Statistics.
+        std::deque<double> m_frameTimes;
+        std::unique_ptr<GpuTimer> m_gpuTimerSynchronizationDuration[2];
+        std::unique_ptr<GpuTimer> m_gpuTimerPrecomposition[2];
+        std::unique_ptr<GpuTimer> m_gpuTimerPvrComposition[2];
+        uint32_t m_currentTimeIndex{0};
     };
 
     // Singleton accessor.

@@ -102,8 +102,97 @@ namespace xr {
 
 namespace pimax_openxr::utils {
 
+    // A generic timer.
+    struct ITimer {
+        virtual ~ITimer() = default;
+
+        virtual void start() = 0;
+        virtual void stop() = 0;
+
+        virtual uint64_t query(bool reset = true) const = 0;
+    };
+
+    // A CPU synchronous timer.
+    class CpuTimer : public ITimer {
+        using clock = std::chrono::high_resolution_clock;
+
+      public:
+        void start() override {
+            m_timeStart = clock::now();
+        }
+
+        void stop() override {
+            m_duration = clock::now() - m_timeStart;
+        }
+
+        uint64_t query(bool reset = true) const override {
+            const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(m_duration);
+            if (reset)
+                m_duration = clock::duration::zero();
+            return duration.count();
+        }
+
+      private:
+        clock::time_point m_timeStart;
+        mutable clock::duration m_duration{0};
+    };
+
+    // A GPU asynchronous timer.
+    struct GpuTimer : public ITimer {
+        GpuTimer(ID3D11Device* device, ID3D11DeviceContext* context) : m_context(context) {
+            D3D11_QUERY_DESC queryDesc;
+            ZeroMemory(&queryDesc, sizeof(D3D11_QUERY_DESC));
+            queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+            CHECK_HRCMD(device->CreateQuery(&queryDesc, m_timeStampDis.ReleaseAndGetAddressOf()));
+            queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+            CHECK_HRCMD(device->CreateQuery(&queryDesc, m_timeStampStart.ReleaseAndGetAddressOf()));
+            CHECK_HRCMD(device->CreateQuery(&queryDesc, m_timeStampEnd.ReleaseAndGetAddressOf()));
+        }
+
+        void start() override {
+            assert(!m_valid);
+            m_context->Begin(m_timeStampDis.Get());
+            m_context->End(m_timeStampStart.Get());
+        }
+
+        void stop() override {
+            assert(!m_valid);
+            m_context->End(m_timeStampEnd.Get());
+            m_context->End(m_timeStampDis.Get());
+            m_valid = true;
+        }
+
+        uint64_t query(bool reset = true) const override {
+            uint64_t duration = 0;
+            if (m_valid) {
+                UINT64 startime = 0, endtime = 0;
+                D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disData = {0};
+
+                if (m_context->GetData(m_timeStampStart.Get(), &startime, sizeof(UINT64), 0) == S_OK &&
+                    m_context->GetData(m_timeStampEnd.Get(), &endtime, sizeof(UINT64), 0) == S_OK &&
+                    m_context->GetData(
+                        m_timeStampDis.Get(), &disData, sizeof(D3D11_QUERY_DATA_TIMESTAMP_DISJOINT), 0) == S_OK &&
+                    !disData.Disjoint) {
+                    duration = static_cast<uint64_t>(((endtime - startime) * 1e6) / disData.Frequency);
+                }
+                m_valid = !reset;
+            }
+            return duration;
+        }
+
+      private:
+        const ComPtr<ID3D11DeviceContext> m_context;
+        ComPtr<ID3D11Query> m_timeStampDis;
+        ComPtr<ID3D11Query> m_timeStampStart;
+        ComPtr<ID3D11Query> m_timeStampEnd;
+
+        // Can the timer be queried (it might still only read 0).
+        mutable bool m_valid{false};
+    };
+
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2017/may/c-use-modern-c-to-access-the-windows-registry
-    static std::optional<int> RegGetDword(HKEY hKey, const std::string& subKey, const std::string& value) {
+    static std::optional<int>
+    RegGetDword(HKEY hKey, const std::string& subKey, const std::string& value) {
         DWORD data{};
         DWORD dataSize = sizeof(data);
         LONG retCode = ::RegGetValue(hKey,

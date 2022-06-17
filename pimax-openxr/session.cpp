@@ -127,6 +127,8 @@ namespace pimax_openxr {
         m_frameWaited = m_frameBegun = false;
         m_lastFrameWaitedTime.reset();
 
+        m_frameTimes.clear();
+
         try {
             // Create a reference space with the origin and the HMD pose.
             {
