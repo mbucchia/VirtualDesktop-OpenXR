@@ -108,7 +108,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(g_traceProvider,
                           "xrGetViewConfigurationProperties",
                           TLArg(xr::ToCString(configurationProperties->viewConfigurationType), "ViewConfigurationType"),
-                          TLArg(configurationProperties->fovMutable, "FovMutable"));
+                          TLArg(!!configurationProperties->fovMutable, "FovMutable"));
 
         return XR_SUCCESS;
     }

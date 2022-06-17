@@ -115,7 +115,17 @@ namespace pimax_openxr {
             CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
         }
         m_useParallelProjection = getSetting("use_parallel_projection").value_or(0);
+        if (m_useParallelProjection) {
+            Log("Parallel projection is enabled\n");
+        }
         m_isVisibilityMaskEnabled = !m_useParallelProjection ? m_isVisibilityMaskSupported : false;
+
+        TraceLoggingWrite(g_traceProvider,
+                          "PVR_Config",
+                          TLArg(!!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0), "EnableLighthouse"),
+                          TLArg(pvr_getIntConfig(m_pvrSession, "fov_level", 1), "FovLevel"),
+                          TLArg(m_useParallelProjection, "UseParallelProjection"),
+                          TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"));
 
         m_sessionCreated = true;
 

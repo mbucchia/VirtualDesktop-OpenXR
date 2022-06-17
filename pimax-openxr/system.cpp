@@ -60,12 +60,12 @@ namespace pimax_openxr {
         CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
         TraceLoggingWrite(g_traceProvider,
                           "PVR_HmdStatus",
-                          TLArg(status.ServiceReady, "ServiceReady"),
-                          TLArg(status.HmdPresent, "HmdPresent"),
-                          TLArg(status.HmdMounted, "HmdMounted"),
-                          TLArg(status.IsVisible, "IsVisible"),
-                          TLArg(status.DisplayLost, "DisplayLost"),
-                          TLArg(status.ShouldQuit, "ShouldQuit"));
+                          TLArg(!!status.ServiceReady, "ServiceReady"),
+                          TLArg(!!status.HmdPresent, "HmdPresent"),
+                          TLArg(!!status.HmdMounted, "HmdMounted"),
+                          TLArg(!!status.IsVisible, "IsVisible"),
+                          TLArg(!!status.DisplayLost, "DisplayLost"),
+                          TLArg(!!status.ShouldQuit, "ShouldQuit"));
         if (!(status.ServiceReady && status.HmdPresent)) {
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
@@ -143,8 +143,8 @@ namespace pimax_openxr {
                           TLArg((int)properties->systemId, "SystemId"),
                           TLArg(properties->vendorId, "VendorId"),
                           TLArg(properties->systemName, "SystemName"),
-                          TLArg(properties->trackingProperties.positionTracking, "PositionTracking"),
-                          TLArg(properties->trackingProperties.orientationTracking, "OrientationTracking"),
+                          TLArg(!!properties->trackingProperties.positionTracking, "PositionTracking"),
+                          TLArg(!!properties->trackingProperties.orientationTracking, "OrientationTracking"),
                           TLArg(properties->graphicsProperties.maxLayerCount, "MaxLayerCount"),
                           TLArg(properties->graphicsProperties.maxSwapchainImageWidth, "MaxSwapchainImageWidth"),
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));

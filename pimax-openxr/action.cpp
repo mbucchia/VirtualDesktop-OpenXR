@@ -299,7 +299,7 @@ namespace pimax_openxr {
 
         state->isActive = XR_FALSE;
 
-        TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean", TLArg(state->isActive, "Active"));
+        TraceLoggingWrite(g_traceProvider, "xrGetActionStateBoolean", TLArg(!!state->isActive, "Active"));
 
         return XR_SUCCESS;
     }
@@ -324,7 +324,7 @@ namespace pimax_openxr {
 
         state->isActive = XR_FALSE;
 
-        TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat", TLArg(state->isActive, "Active"));
+        TraceLoggingWrite(g_traceProvider, "xrGetActionStateFloat", TLArg(!!state->isActive, "Active"));
 
         return XR_SUCCESS;
     }
@@ -349,7 +349,7 @@ namespace pimax_openxr {
 
         state->isActive = XR_FALSE;
 
-        TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f", TLArg(state->isActive, "Active"));
+        TraceLoggingWrite(g_traceProvider, "xrGetActionStateVector2f", TLArg(!!state->isActive, "Active"));
 
         return XR_SUCCESS;
     }
@@ -374,7 +374,7 @@ namespace pimax_openxr {
 
         state->isActive = XR_TRUE;
 
-        TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose", TLArg(state->isActive, "Active"));
+        TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose", TLArg(!!state->isActive, "Active"));
 
         return XR_SUCCESS;
     }

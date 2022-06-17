@@ -53,12 +53,12 @@ namespace pimax_openxr {
         CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
         TraceLoggingWrite(g_traceProvider,
                           "PVR_HmdStatus",
-                          TLArg(status.ServiceReady, "ServiceReady"),
-                          TLArg(status.HmdPresent, "HmdPresent"),
-                          TLArg(status.HmdMounted, "HmdMounted"),
-                          TLArg(status.IsVisible, "IsVisible"),
-                          TLArg(status.DisplayLost, "DisplayLost"),
-                          TLArg(status.ShouldQuit, "ShouldQuit"));
+                          TLArg(!!status.ServiceReady, "ServiceReady"),
+                          TLArg(!!status.HmdPresent, "HmdPresent"),
+                          TLArg(!!status.HmdMounted, "HmdMounted"),
+                          TLArg(!!status.IsVisible, "IsVisible"),
+                          TLArg(!!status.DisplayLost, "DisplayLost"),
+                          TLArg(!!status.ShouldQuit, "ShouldQuit"));
         if (!(status.ServiceReady && status.HmdPresent) || status.DisplayLost || status.ShouldQuit) {
             m_sessionState = XR_SESSION_STATE_LOSS_PENDING;
             m_sessionStateDirty = true;
@@ -175,7 +175,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrWaitFrame",
-                          TLArg(frameState->shouldRender, "ShouldRender"),
+                          TLArg(!!frameState->shouldRender, "ShouldRender"),
                           TLArg(frameState->predictedDisplayTime, "PredictedDisplayTime"),
                           TLArg(frameState->predictedDisplayPeriod, "PredictedDisplayPeriod"));
 
@@ -239,6 +239,11 @@ namespace pimax_openxr {
             // Signal xrWaitFrame().
             TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
             m_frameCondVar.notify_one();
+
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_Status",
+                              TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_available", 0), "SmartSmoothingAvailable"),
+                              TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_active", 0), "SmartSmoothingActive"));
         }
 
         return !frameDiscarded ? XR_SUCCESS : XR_FRAME_DISCARDED;

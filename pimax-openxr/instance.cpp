@@ -32,6 +32,12 @@ namespace pimax_openxr {
     using namespace pimax_openxr::log;
 
     OpenXrRuntime::OpenXrRuntime() {
+        TraceLoggingWrite(
+            g_traceProvider,
+            "PimaxXR",
+            TLArg(xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch)).c_str(),
+                  "Version"));
+
         CHECK_PVRCMD(pvr_initialise(&m_pvr));
 
         std::string_view versionString(pvr_getVersionString(m_pvr));
