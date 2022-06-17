@@ -14,3 +14,7 @@ Special thanks to the following individuals for their contributions:
 
 - Vladimir Dranyonkov
 - Pavel Skakov
+
+# Very special thanks
+
+Very special thanks to Pimax for providing me with a Pimax 8KX for development.
