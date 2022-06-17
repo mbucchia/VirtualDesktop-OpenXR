@@ -409,6 +409,7 @@ namespace pimax_openxr {
             xrSwapchain.vkDeviceMemory.pop_back();
         }
 
+        delete &xrSwapchain;
         m_swapchains.erase(swapchain);
 
         return XR_SUCCESS;
