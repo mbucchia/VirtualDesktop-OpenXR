@@ -310,6 +310,10 @@ namespace pimax_openxr {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
+        if (createInfo->arraySize > 1) {
+            LOG_TELEMETRY_ONCE(logFeature("TextureArray"));
+        }
+
         pvrTextureSwapChainDesc desc{};
 
         desc.Format = isVulkanSession() ? vkToPvrTextureFormat((VkFormat)createInfo->format)

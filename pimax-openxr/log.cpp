@@ -22,10 +22,12 @@
 
 #include "pch.h"
 
+#include "runtime.h"
+
 namespace {
     constexpr uint32_t k_maxLoggedErrors = 100;
     uint32_t g_globalErrorCount = 0;
-}
+} // namespace
 
 namespace pimax_openxr::log {
     extern std::ofstream logStream;
@@ -40,7 +42,7 @@ namespace pimax_openxr::log {
     namespace {
 
         // Utility logging function.
-        void InternalLog(const char* fmt, va_list va) {
+        void InternalLog(const char* fmt, va_list va, bool logTelemetry = false) {
             const std::time_t now = std::time(nullptr);
 
             char buf[1024];
@@ -50,6 +52,12 @@ namespace pimax_openxr::log {
             if (logStream.is_open()) {
                 logStream << buf;
                 logStream.flush();
+            }
+
+            if (logTelemetry) {
+                if (auto telemetry = pimax_openxr::GetTelemetry()) {
+                    telemetry->logError(buf);
+                }
             }
         }
     } // namespace
@@ -65,7 +73,7 @@ namespace pimax_openxr::log {
         if (g_globalErrorCount++ < k_maxLoggedErrors) {
             va_list va;
             va_start(va, fmt);
-            InternalLog(fmt, va);
+            InternalLog(fmt, va, true);
             va_end(va);
             if (g_globalErrorCount == k_maxLoggedErrors) {
                 Log("Maximum number of errors logged. Going silent.");

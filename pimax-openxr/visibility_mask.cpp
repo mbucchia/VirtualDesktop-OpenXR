@@ -53,6 +53,7 @@ namespace pimax_openxr {
                           TLArg(xr::ToCString(visibilityMaskType), "VisibilityMaskType"),
                           TLArg(visibilityMask->vertexCapacityInput, "VertexCapacityInput"),
                           TLArg(visibilityMask->indexCapacityInput, "IndexCapacityInput"));
+        LOG_TELEMETRY_ONCE(logFeature("VisibilityMask"));
 
         if (!m_isVisibilityMaskSupported) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
@@ -71,6 +72,10 @@ namespace pimax_openxr {
         }
 
         if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR || !m_isVisibilityMaskEnabled) {
+            if (m_isVisibilityMaskEnabled) {
+                LOG_TELEMETRY_ONCE(logUnimplemented("VisibilityMaskTypeNotSupported"));
+            }
+
             // We only support the hidden area mesh and we don't return a mask with parallel projection.
             visibilityMask->vertexCountOutput = 0;
             visibilityMask->indexCountOutput = 0;

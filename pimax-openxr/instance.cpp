@@ -32,11 +32,10 @@ namespace pimax_openxr {
     using namespace pimax_openxr::log;
 
     OpenXrRuntime::OpenXrRuntime() {
-        TraceLoggingWrite(
-            g_traceProvider,
-            "PimaxXR",
-            TLArg(xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch)).c_str(),
-                  "Version"));
+        const auto runtimeVersion =
+            xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
+        TraceLoggingWrite(g_traceProvider, "PimaxXR", TLArg(runtimeVersion.c_str(), "Version"));
+        m_telemetry.logVersion(runtimeVersion);
 
         CHECK_PVRCMD(pvr_initialise(&m_pvr));
 
@@ -183,6 +182,8 @@ namespace pimax_openxr {
         Log("Application: %s; Engine: %s\n",
             createInfo->applicationInfo.applicationName,
             createInfo->applicationInfo.engineName);
+        m_telemetry.logApplicationInfo(createInfo->applicationInfo.applicationName,
+                                       createInfo->applicationInfo.engineName);
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
             TraceLoggingWrite(
@@ -384,6 +385,13 @@ namespace pimax_openxr {
 
     void ResetInstance() {
         g_instance.reset();
+    }
+
+    AppInsights* GetTelemetry() {
+        if (g_instance) {
+            return &g_instance->m_telemetry;
+        }
+        return nullptr;
     }
 
 } // namespace pimax_openxr

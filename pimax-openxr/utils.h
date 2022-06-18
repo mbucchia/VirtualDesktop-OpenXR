@@ -24,6 +24,17 @@
 
 #include "pch.h"
 
+// clang-format off
+#define LOG_TELEMETRY_ONCE(call)        \
+    {                                   \
+        static bool logged = false;     \
+        if (!logged) {                  \
+            m_telemetry.call;           \
+            logged = true;              \
+        }                               \
+    }
+// clang-format on
+
 #define CHECK_PVRCMD(cmd) xr::detail::_CheckPVRResult(cmd, #cmd, FILE_AND_LINE)
 #define CHECK_VKCMD(cmd) xr::detail::_CheckVKResult(cmd, #cmd, FILE_AND_LINE)
 
@@ -191,8 +202,7 @@ namespace pimax_openxr::utils {
     };
 
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2017/may/c-use-modern-c-to-access-the-windows-registry
-    static std::optional<int>
-    RegGetDword(HKEY hKey, const std::string& subKey, const std::string& value) {
+    static std::optional<int> RegGetDword(HKEY hKey, const std::string& subKey, const std::string& value) {
         DWORD data{};
         DWORD dataSize = sizeof(data);
         LONG retCode = ::RegGetValue(hKey,
@@ -384,6 +394,129 @@ namespace pimax_openxr::utils {
 
     static inline bool endsWith(const std::string& str, const std::string& substr) {
         return str.find(substr) == str.size() - substr.size();
+    }
+
+    // https://stackoverflow.com/questions/60700302/win32-api-to-get-machine-uuid
+    static std::string getMachineUuid() {
+        typedef struct _dmi_header {
+            BYTE type;
+            BYTE length;
+            WORD handle;
+        } dmi_header;
+
+        typedef struct _RawSMBIOSData {
+            BYTE Used20CallingMethod;
+            BYTE SMBIOSMajorVersion;
+            BYTE SMBIOSMinorVersion;
+            BYTE DmiRevision;
+            DWORD Length;
+#pragma warning(push)
+#pragma warning(disable : 4200)
+            BYTE SMBIOSTableData[];
+#pragma warning(pop)
+        } RawSMBIOSData;
+
+        DWORD bufsize = 0;
+        static BYTE buf[65536] = {0};
+        int ret = 0;
+        RawSMBIOSData* Smbios;
+        dmi_header* h = NULL;
+        int flag = 1;
+
+        ret = GetSystemFirmwareTable('RSMB', 0, 0, 0);
+        if (!ret) {
+            return "";
+        }
+
+        bufsize = ret;
+
+        ret = GetSystemFirmwareTable('RSMB', 0, buf, bufsize);
+        if (!ret) {
+            return "";
+        }
+
+        Smbios = (RawSMBIOSData*)buf;
+        BYTE* p = Smbios->SMBIOSTableData;
+
+        if (Smbios->Length != bufsize - 8) {
+            return "";
+        }
+
+        for (DWORD i = 0; i < Smbios->Length; i++) {
+            h = (dmi_header*)p;
+            if (h->type == 1) {
+                const BYTE* p2 = p + 0x8;
+                short ver = Smbios->SMBIOSMajorVersion * 0x100 + Smbios->SMBIOSMinorVersion;
+
+                int only0xFF = 1, only0x00 = 1;
+                int i;
+
+                for (i = 0; i < 16 && (only0x00 || only0xFF); i++) {
+                    if (p2[i] != 0x00)
+                        only0x00 = 0;
+                    if (p2[i] != 0xFF)
+                        only0xFF = 0;
+                }
+
+                if (only0xFF) {
+                    return "";
+                }
+
+                if (only0x00) {
+                    return "";
+                }
+
+                char buf[128];
+                if (ver >= 0x0206) {
+                    sprintf_s(buf,
+                              sizeof(buf),
+                              "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X\n",
+                              p2[3],
+                              p2[2],
+                              p2[1],
+                              p2[0],
+                              p2[5],
+                              p2[4],
+                              p2[7],
+                              p2[6],
+                              p2[8],
+                              p2[9],
+                              p2[10],
+                              p2[11],
+                              p2[12],
+                              p2[13],
+                              p2[14],
+                              p2[15]);
+                } else {
+                    sprintf_s(buf,
+                              sizeof(buf),
+                              "-%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X\n",
+                              p2[0],
+                              p2[1],
+                              p2[2],
+                              p2[3],
+                              p2[4],
+                              p2[5],
+                              p2[6],
+                              p2[7],
+                              p2[8],
+                              p2[9],
+                              p2[10],
+                              p2[11],
+                              p2[12],
+                              p2[13],
+                              p2[14],
+                              p2[15]);
+                }
+                return buf;
+            }
+
+            p += h->length;
+            while ((*(WORD*)p) != 0) {
+                p++;
+            }
+            p += 2;
+        }
     }
 
 } // namespace pimax_openxr::utils

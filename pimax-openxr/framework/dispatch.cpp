@@ -44,8 +44,13 @@ namespace RUNTIME_NAMESPACE {
                 RUNTIME_NAMESPACE::ResetInstance();
             }
         } catch (std::runtime_error& exc) {
-            Log("xrDestroyInstance: %s\n", exc.what());
+            ErrorLog("xrDestroyInstance: %s\n", exc.what());
             result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWrite(g_traceProvider, "xrDestroyInstance_Result", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrDestroyInstance failed with %s\n", xr::ToCString(result));
         }
 
         return result;
@@ -56,7 +61,7 @@ namespace RUNTIME_NAMESPACE {
         try {
             return RUNTIME_NAMESPACE::GetInstance()->xrGetInstanceProcAddr(instance, name, function);
         } catch (std::runtime_error exc) {
-            Log("xrGetInstanceProcAddr: %s\n", exc.what());
+            ErrorLog("xrGetInstanceProcAddr: %s\n", exc.what());
             return XR_ERROR_RUNTIME_FAILURE;
         }
     }

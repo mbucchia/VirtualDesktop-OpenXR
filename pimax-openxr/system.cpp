@@ -123,6 +123,7 @@ namespace pimax_openxr {
                           TLArg(info.FirmwareMajor, "FirmwareMajor"),
                           TLArg(info.Resolution.w, "ResolutionWidth"),
                           TLArg(info.Resolution.h, "ResolutionHeight"));
+        m_telemetry.logProduct(info.ProductName);
 
         properties->vendorId = info.VendorId;
 

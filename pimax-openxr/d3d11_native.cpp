@@ -167,7 +167,7 @@ namespace pimax_openxr {
                                     errMsgs.ReleaseAndGetAddressOf());
             if (FAILED(hr)) {
                 std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
-                Log("D3DCompile failed %X: %s\n", hr, errMsg.c_str());
+                ErrorLog("D3DCompile failed %X: %s\n", hr, errMsg.c_str());
                 CHECK_HRESULT(hr, "D3DCompile failed");
             }
             CHECK_HRCMD(m_d3d11Device->CreateComputeShader(shaderBytes->GetBufferPointer(),

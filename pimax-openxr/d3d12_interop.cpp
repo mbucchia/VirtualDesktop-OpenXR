@@ -253,15 +253,15 @@ namespace pimax_openxr {
             "xrEndFrame_Sync",
             TLArg("D3D12", "Api"),
             TLArg(m_fenceValue, "FenceValue"),
-            TLArg(m_gpuTimerSynchronizationDuration[m_currentTimeIndex ^ 1]->query(), "LastSyncDurationUs"));
+            TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex ^ 1]->query(), "LastSyncDurationUs"));
         CHECK_HRCMD(m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue));
 
         if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimeIndex]->start();
+            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->start();
         }
         CHECK_HRCMD(m_d3d11DeviceContext->Wait(m_d3d11Fence.Get(), m_fenceValue));
         if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimeIndex]->stop();
+            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->stop();
         }
     }
 

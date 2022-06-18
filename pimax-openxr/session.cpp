@@ -120,12 +120,25 @@ namespace pimax_openxr {
         }
         m_isVisibilityMaskEnabled = !m_useParallelProjection ? m_isVisibilityMaskSupported : false;
 
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_Config",
-                          TLArg(!!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0), "EnableLighthouse"),
-                          TLArg(pvr_getIntConfig(m_pvrSession, "fov_level", 1), "FovLevel"),
-                          TLArg(m_useParallelProjection, "UseParallelProjection"),
-                          TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"));
+        {
+            const bool enableLighthouse = !!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0);
+            const int fovLevel = pvr_getIntConfig(m_pvrSession, "fov_level", 1);
+
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_Config",
+                              TLArg(enableLighthouse, "EnableLighthouse"),
+                              TLArg(fovLevel, "FovLevel"),
+                              TLArg(m_useParallelProjection, "UseParallelProjection"),
+                              TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"));
+
+            const bool useD3D11 = !isD3D12Session() && !isVulkanSession();
+            m_telemetry.logScenario(useD3D11           ? "D3D11"
+                                    : isD3D12Session() ? "D3D12"
+                                                       : "Vulkan",
+                                    enableLighthouse,
+                                    fovLevel,
+                                    m_useParallelProjection);
+        }
 
         m_sessionCreated = true;
 
@@ -143,6 +156,9 @@ namespace pimax_openxr {
         rebindControllerActions(0);
         rebindControllerActions(1);
         m_activeActionSets.clear();
+
+        m_sessionStartTime = m_sessionStateEventTime;
+        m_sessionTotalFrameCount = 0;
 
         try {
             // Create a reference space with the origin and the HMD pose.
@@ -177,6 +193,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        m_telemetry.logUsage(pvr_getTimeSeconds(m_pvr) - m_sessionStartTime, m_sessionTotalFrameCount);
 
         // Destroy all swapchains.
         while (m_swapchains.size()) {

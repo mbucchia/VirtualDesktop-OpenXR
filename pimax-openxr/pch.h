@@ -89,3 +89,8 @@ using Microsoft::WRL::ComPtr;
 
 // FMT formatter.
 #include <fmt/format.h>
+
+#ifndef NOCURL
+// libcurl
+#include <curl/curl.h>
+#endif

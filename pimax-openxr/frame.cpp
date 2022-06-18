@@ -167,6 +167,8 @@ namespace pimax_openxr {
 
         m_lastFrameWaitedTime = pvr_getTimeSeconds(m_pvr);
 
+        m_telemetry.tick();
+
         TraceLoggingWrite(g_traceProvider,
                           "xrWaitFrame",
                           TLArg(!!frameState->shouldRender, "ShouldRender"),
@@ -230,7 +232,7 @@ namespace pimax_openxr {
             m_isControllerActive[0] = m_isControllerActive[1] = false;
             m_frameLatchedActionSets.clear();
 
-            m_currentTimeIndex ^= 1;
+            m_currentTimerIndex ^= 1;
 
             // Signal xrWaitFrame().
             TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
@@ -284,9 +286,9 @@ namespace pimax_openxr {
                 serializeVulkanFrame();
             }
 
-            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimeIndex ^ 1]->query();
+            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex ^ 1]->query();
             if (IsTraceEnabled()) {
-                m_gpuTimerPrecomposition[m_currentTimeIndex]->start();
+                m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
             std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
@@ -298,6 +300,10 @@ namespace pimax_openxr {
                 auto& layer = layersAllocator[i];
 
                 // TODO: What do we do with layerFlags?
+                // Log the most common case that will cause issue.
+                if (!(frameEndInfo->layers[i]->layerFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)) {
+                    LOG_TELEMETRY_ONCE(logUnimplemented("LayerFlagsNotSupported"));
+                }
 
                 if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
                     const XrCompositionLayerProjection* proj =
@@ -394,6 +400,7 @@ namespace pimax_openxr {
                                         TLArg(depth->farZ, "Far"),
                                         TLArg(depth->minDepth, "MinDepth"),
                                         TLArg(depth->maxDepth, "MaxDepth"));
+                                    LOG_TELEMETRY_ONCE(logFeature("Depth"));
 
                                     if (!m_swapchains.count(depth->subImage.swapchain)) {
                                         return XR_ERROR_HANDLE_INVALID;
@@ -453,6 +460,9 @@ namespace pimax_openxr {
                     Swapchain& xrSwapchain = *(Swapchain*)quad->subImage.swapchain;
 
                     // TODO: We ignore eyeVisibility as there is no equivalent.
+                    if (quad->eyeVisibility != XR_EYE_VISIBILITY_BOTH) {
+                        LOG_TELEMETRY_ONCE(logUnimplemented("QuadEyeVisibilityNotSupported"));
+                    }
 
                     // Fill out color buffer information.
                     prepareAndCommitSwapchainImage(
@@ -484,7 +494,7 @@ namespace pimax_openxr {
             }
 
             if (IsTraceEnabled()) {
-                m_gpuTimerPrecomposition[m_currentTimeIndex]->stop();
+                m_gpuTimerPrecomposition[m_currentTimerIndex]->stop();
             }
 
             // Update the FPS counter.
@@ -497,9 +507,9 @@ namespace pimax_openxr {
             // Submit the layers to PVR.
             if (!layers.empty()) {
                 // TODO: This time does not seem to work. Perhaps because PVR is doing composition out-of-proc?
-                const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimeIndex ^ 1]->query();
+                const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimerIndex ^ 1]->query();
                 if (IsTraceEnabled()) {
-                    m_gpuTimerPvrComposition[m_currentTimeIndex]->start();
+                    m_gpuTimerPvrComposition[m_currentTimerIndex]->start();
                 }
 
                 TraceLoggingWrite(g_traceProvider,
@@ -512,7 +522,7 @@ namespace pimax_openxr {
                 TraceLoggingWrite(g_traceProvider, "PVR_EndFrame_End");
 
                 if (IsTraceEnabled()) {
-                    m_gpuTimerPvrComposition[m_currentTimeIndex]->stop();
+                    m_gpuTimerPvrComposition[m_currentTimerIndex]->stop();
                 }
 
                 m_canBeginFrame = true;
