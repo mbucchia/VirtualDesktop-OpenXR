@@ -323,6 +323,7 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
     <ClCompile Include="framework\entry.cpp" />
     <ClCompile Include="instance.cpp" />
     <ClCompile Include="log.cpp" />
+    <ClCompile Include="mappings.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

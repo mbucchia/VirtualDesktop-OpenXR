@@ -268,6 +268,8 @@ namespace pimax_openxr {
         };
 
         struct Action {
+            XrActionType type;
+
             std::string path;
             XrActionSet actionSet{XR_NULL_HANDLE};
 
@@ -294,12 +296,17 @@ namespace pimax_openxr {
 
         // action.cpp
         void rebindControllerActions(int side);
-        void mapPathToViveControllerInputState(Action& xrAction, XrPath binding) const;
-        void mapPathToIndexControllerInputState(Action& xrAction, XrPath binding) const;
-        void mapPathToSimpleControllerInputState(Action& xrAction, XrPath binding) const;
         std::string getXrPath(XrPath path) const;
         std::string getActionPath(const Action& action, XrPath subActionPath) const;
         int getActionSide(const std::string& fullPath) const;
+
+        // mappings.cpp
+        void mapPathToViveControllerInputState(Action& xrAction, XrPath binding) const;
+        void mapPathToIndexControllerInputState(Action& xrAction, XrPath binding) const;
+        void mapPathToSimpleControllerInputState(Action& xrAction, XrPath binding) const;
+        std::string getViveControllerLocalizedSourceName(const std::string& path) const;
+        std::string getIndexControllerLocalizedSourceName(const std::string& path) const;
+        std::string getSimpleControllerLocalizedSourceName(const std::string& path) const;
 
         // space.cpp
         XrSpaceLocationFlags getHmdPose(XrTime time, bool addFloorHeight, XrPosef& pose) const;
@@ -380,6 +387,7 @@ namespace pimax_openxr {
         std::set<XrActionSet> m_activeActionSets;
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
         std::string m_cachedControllerType[2];
+        std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
 

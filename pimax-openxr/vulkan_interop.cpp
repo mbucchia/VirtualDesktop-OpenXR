@@ -73,7 +73,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(
             g_traceProvider, "xrGetVulkanInstanceExtensionsKHR", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
-        if (bufferCapacityInput) {
+        if (bufferCapacityInput && buffer) {
             sprintf_s(buffer, bufferCapacityInput, "%s", instanceExtensions.data());
             TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR", TLArg(buffer, "Extension"));
         }
@@ -120,7 +120,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(
             g_traceProvider, "xrGetVulkanDeviceExtensionsKHR", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
-        if (bufferCapacityInput) {
+        if (bufferCapacityInput && buffer) {
             sprintf_s(buffer, bufferCapacityInput, "%s", deviceExtensions.data());
             TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR", TLArg(buffer, "Extension"));
         }

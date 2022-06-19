@@ -86,7 +86,7 @@ namespace pimax_openxr {
         *bufferCountOutput = (uint32_t)str.length();
         TraceLoggingWrite(g_traceProvider, "xrPathToString", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
-        if (bufferCapacityInput) {
+        if (bufferCapacityInput && buffer) {
             sprintf_s(buffer, bufferCapacityInput, "%s", str.c_str());
             TraceLoggingWrite(g_traceProvider, "xrPathToString", TLArg(buffer, "String"));
         }
@@ -113,7 +113,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // TODO: We do not support the notion of priority.
+        // COMPLIANCE: Check for invalid/duplicate name.
+        // COMPLIANCE: We do not support the notion of priority.
 
         *actionSet = (XrActionSet)++m_actionSetIndex;
 
@@ -162,11 +163,14 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        // COMPLIANCE: Check for invalid/duplicate name.
+
         // Create the internal struct.
         Action& xrAction = *new Action;
+        xrAction.type = createInfo->actionType;
         xrAction.actionSet = actionSet;
 
-        // TODO: We do nothing about subActionPaths validation, or actionType.
+        // COMPLIANCE: We do nothing about subActionPaths validation, or actionType.
 
         *action = (XrAction)&xrAction;
 
@@ -182,9 +186,16 @@ namespace pimax_openxr {
     XrResult OpenXrRuntime::xrDestroyAction(XrAction action) {
         TraceLoggingWrite(g_traceProvider, "xrDestroyAction", TLXArg(action, "Action"));
 
-        if (action != (XrAction)1) {
+        if (!m_actions.count(action)) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        // COMPLIANCE: Deleting actions is supposed to be deferred.
+
+        Action* xrAction = (Action*)action;
+
+        delete xrAction;
+        m_actions.erase(action);
 
         return XR_SUCCESS;
     }
@@ -218,6 +229,7 @@ namespace pimax_openxr {
 
         std::vector<XrActionSuggestedBinding> bindings;
         for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
+            // COMPLIANCE: There is no validation of supported/unsupported paths.
             bindings.push_back(suggestedBindings->suggestedBindings[i]);
         }
 
@@ -276,8 +288,13 @@ namespace pimax_openxr {
         }
 
         // If no side is specified, we use left.
-        const int side = max(0, getActionSide(getXrPath(topLevelUserPath)));
-        interactionProfile->interactionProfile = m_currentInteractionProfile[side];
+        const int side = topLevelUserPath != XR_NULL_PATH ? getActionSide(getXrPath(topLevelUserPath)) : 0;
+        if (side >= 0) {
+            interactionProfile->interactionProfile = m_currentInteractionProfile[side];
+        } else {
+            // Paths we don't support (eg: gamepad).
+            interactionProfile->interactionProfile = XR_NULL_PATH;
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetCurrentInteractionProfile",
@@ -310,6 +327,10 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)getInfo->action;
 
+        if (xrAction.type != XR_ACTION_TYPE_BOOLEAN_INPUT) {
+            return XR_ERROR_ACTION_TYPE_MISMATCH;
+        }
+
         if (!m_activeActionSets.count(xrAction.actionSet)) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
@@ -318,22 +339,24 @@ namespace pimax_openxr {
         state->currentState = xrAction.lastBoolValue;
 
         if (!xrAction.path.empty()) {
-            if (xrAction.buttonMap == nullptr && xrAction.floatValue == nullptr) {
-                return XR_ERROR_ACTION_TYPE_MISMATCH;
-            }
-
             const std::string fullPath = getActionPath(xrAction, getInfo->subactionPath);
-            const int side = getActionSide(fullPath);
-            if (side < 0) {
-                return XR_ERROR_PATH_INVALID;
-            }
+            const bool isBound = xrAction.buttonMap != nullptr || xrAction.floatValue != nullptr;
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetActionStateBoolean",
+                              TLArg(fullPath.c_str(), "ActionPath"),
+                              TLArg(isBound, "Bound"));
 
-            state->isActive = m_isControllerActive[side];
-            if (state->isActive && m_frameLatchedActionSets.count(xrAction.actionSet)) {
-                if (xrAction.buttonMap) {
-                    state->currentState = xrAction.buttonMap[side] & xrAction.buttonType;
-                } else {
-                    state->currentState = xrAction.floatValue[side] > 0.99f;
+            const int side = getActionSide(fullPath);
+
+            // We only support hands paths, not gamepad etc.
+            if (isBound && side >= 0) {
+                state->isActive = m_isControllerActive[side];
+                if (state->isActive && m_frameLatchedActionSets.count(xrAction.actionSet)) {
+                    if (xrAction.buttonMap) {
+                        state->currentState = xrAction.buttonMap[side] & xrAction.buttonType;
+                    } else {
+                        state->currentState = xrAction.floatValue[side] > 0.99f;
+                    }
                 }
             }
         }
@@ -379,6 +402,10 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)getInfo->action;
 
+        if (xrAction.type != XR_ACTION_TYPE_FLOAT_INPUT) {
+            return XR_ERROR_ACTION_TYPE_MISMATCH;
+        }
+
         if (!m_activeActionSets.count(xrAction.actionSet)) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
@@ -387,26 +414,29 @@ namespace pimax_openxr {
         state->currentState = xrAction.lastFloatValue;
 
         if (!xrAction.path.empty()) {
-            if (xrAction.floatValue == nullptr && (xrAction.vector2fValue == nullptr || xrAction.vector2fIndex == -1) &&
-                xrAction.buttonMap == nullptr) {
-                return XR_ERROR_ACTION_TYPE_MISMATCH;
-            }
-
             const std::string fullPath = getActionPath(xrAction, getInfo->subactionPath);
-            const int side = getActionSide(fullPath);
-            if (side < 0) {
-                return XR_ERROR_PATH_INVALID;
-            }
+            const bool isBound = xrAction.floatValue != nullptr ||
+                                 (xrAction.vector2fValue != nullptr && xrAction.vector2fIndex >= 0) ||
+                                 xrAction.buttonMap == nullptr;
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetActionStateFloat",
+                              TLArg(fullPath.c_str(), "ActionPath"),
+                              TLArg(isBound, "Bound"));
 
-            state->isActive = m_isControllerActive[side];
-            if (state->isActive && m_frameLatchedActionSets.count(xrAction.actionSet)) {
-                if (xrAction.floatValue) {
-                    state->currentState = xrAction.floatValue[side];
-                } else if (xrAction.buttonMap) {
-                    state->currentState = xrAction.buttonMap[side] & xrAction.buttonType ? 1.f : 0.f;
-                } else {
-                    state->currentState =
-                        xrAction.vector2fIndex == 0 ? xrAction.vector2fValue[side].x : xrAction.vector2fValue[side].y;
+            const int side = getActionSide(fullPath);
+
+            // We only support hands paths, not gamepad etc.
+            if (isBound && side >= 0) {
+                state->isActive = m_isControllerActive[side];
+                if (state->isActive && m_frameLatchedActionSets.count(xrAction.actionSet)) {
+                    if (xrAction.floatValue) {
+                        state->currentState = xrAction.floatValue[side];
+                    } else if (xrAction.buttonMap) {
+                        state->currentState = xrAction.buttonMap[side] & xrAction.buttonType ? 1.f : 0.f;
+                    } else {
+                        state->currentState = xrAction.vector2fIndex == 0 ? xrAction.vector2fValue[side].x
+                                                                          : xrAction.vector2fValue[side].y;
+                    }
                 }
             }
         }
@@ -452,6 +482,10 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)getInfo->action;
 
+        if (xrAction.type != XR_ACTION_TYPE_VECTOR2F_INPUT) {
+            return XR_ERROR_ACTION_TYPE_MISMATCH;
+        }
+
         if (!m_activeActionSets.count(xrAction.actionSet)) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
@@ -460,20 +494,22 @@ namespace pimax_openxr {
         state->currentState = xrAction.lastVector2fValue;
 
         if (!xrAction.path.empty()) {
-            if (xrAction.vector2fValue == nullptr) {
-                return XR_ERROR_ACTION_TYPE_MISMATCH;
-            }
-
+            const bool isBound = xrAction.vector2fValue != nullptr;
             const std::string fullPath = getActionPath(xrAction, getInfo->subactionPath);
-            const int side = getActionSide(fullPath);
-            if (side < 0) {
-                return XR_ERROR_PATH_INVALID;
-            }
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetActionStateVector2f",
+                              TLArg(fullPath.c_str(), "ActionPath"),
+                              TLArg(isBound, "Bound"));
 
-            state->isActive = m_isControllerActive[side];
-            if (state->isActive && m_frameLatchedActionSets.count(xrAction.actionSet)) {
-                state->currentState.x = xrAction.vector2fValue[side].x;
-                state->currentState.y = xrAction.vector2fValue[side].y;
+            const int side = getActionSide(fullPath);
+
+            // We only support hands paths, not gamepad etc.
+            if (isBound && side >= 0) {
+                state->isActive = m_isControllerActive[side];
+                if (state->isActive && m_frameLatchedActionSets.count(xrAction.actionSet)) {
+                    state->currentState.x = xrAction.vector2fValue[side].x;
+                    state->currentState.y = xrAction.vector2fValue[side].y;
+                }
             }
         }
 
@@ -520,23 +556,25 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)getInfo->action;
 
+        if (xrAction.type != XR_ACTION_TYPE_POSE_INPUT) {
+            return XR_ERROR_ACTION_TYPE_MISMATCH;
+        }
+
         if (!m_activeActionSets.count(xrAction.actionSet)) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
         state->isActive = XR_FALSE;
         if (!xrAction.path.empty()) {
-            if (xrAction.buttonMap || xrAction.floatValue || xrAction.vector2fValue) {
-                return XR_ERROR_ACTION_TYPE_MISMATCH;
-            }
-
             const std::string fullPath = getActionPath(xrAction, getInfo->subactionPath);
-            const int side = getActionSide(fullPath);
-            if (side < 0) {
-                return XR_ERROR_PATH_INVALID;
-            }
+            TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose", TLArg(fullPath.c_str(), "ActionPath"));
 
-            state->isActive = m_isControllerActive[side];
+            const int side = getActionSide(fullPath);
+
+            // We only support hands paths, not gamepad etc.
+            if (side >= 0) {
+                state->isActive = m_isControllerActive[side];
+            }
         }
 
         TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose", TLArg(!!state->isActive, "Active"));
@@ -569,7 +607,7 @@ namespace pimax_openxr {
 
             m_frameLatchedActionSets.insert(syncInfo->activeActionSets[i].actionSet);
 
-            // TODO: We do nothing with subActionPath.
+            // COMPLIANCE: We do nothing with subActionPath.
         }
 
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
@@ -618,6 +656,10 @@ namespace pimax_openxr {
             }
 
             if (lastControllerType != m_cachedControllerType[side]) {
+                TraceLoggingWrite(g_traceProvider,
+                                  "PVR_ControllerType",
+                                  TLArg(side == 0 ? "Left" : "Right", "Side"),
+                                  TLArg(m_cachedControllerType[side].c_str(), "Type"));
                 rebindControllerActions(side);
             }
         }
@@ -645,7 +687,28 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        *sourceCountOutput = 0;
+        if (!m_actions.count(enumerateInfo->action)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        Action& xrAction = *(Action*)enumerateInfo->action;
+
+        if (sourceCapacityInput && sourceCapacityInput < (xrAction.path.empty() ? 0u : 1u)) {
+            return XR_ERROR_SIZE_INSUFFICIENT;
+        }
+
+        *sourceCountOutput = xrAction.path.empty() ? 0 : 1;
+        TraceLoggingWrite(
+            g_traceProvider, "xrEnumerateBoundSourcesForAction", TLArg(*sourceCountOutput, "SourceCountOutput"));
+
+        if (sourceCapacityInput && sources && !xrAction.path.empty()) {
+            CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, xrAction.path.c_str(), &sources[0]));
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEnumerateBoundSourcesForAction",
+                              TLArg(sources[0], "Source"),
+                              TLArg(xrAction.path.c_str(), "Path"));
+        }
+
         TraceLoggingWrite(
             g_traceProvider, "xrEnumerateBoundSourcesForAction", TLArg(*sourceCountOutput, "SourceCountOutput"));
 
@@ -672,9 +735,45 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        *bufferCountOutput = 0;
+        // Build the string.
+        std::string localizedName;
+
+        const std::string path = getXrPath(getInfo->sourcePath);
+
+        const int side = getActionSide(path);
+        if (side >= 0) {
+            if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT)) {
+                localizedName += side == 0 ? "Left Hand " : "Right Hand ";
+            }
+
+            if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT)) {
+                localizedName += m_localizedControllerType[side] + " ";
+            }
+
+            if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT)) {
+                const std::string& interactionProfile = getXrPath(m_currentInteractionProfile[side]);
+                if (interactionProfile == "/interaction_profiles/htc/vive_controller") {
+                    localizedName += getViveControllerLocalizedSourceName(path);
+                } else if (interactionProfile == "/interaction_profiles/valve/index_controller") {
+                    localizedName += getIndexControllerLocalizedSourceName(path);
+                } else if (interactionProfile == "/interaction_profiles/khr/simple_controller") {
+                    localizedName += getSimpleControllerLocalizedSourceName(path);
+                }
+            }
+        }
+
+        if (bufferCapacityInput && bufferCapacityInput < localizedName.length()) {
+            return XR_ERROR_SIZE_INSUFFICIENT;
+        }
+
+        *bufferCountOutput = (uint32_t)localizedName.length();
         TraceLoggingWrite(
             g_traceProvider, "xrGetInputSourceLocalizedName", TLArg(*bufferCountOutput, "BufferCountOutput"));
+
+        if (bufferCapacityInput && buffer) {
+            sprintf_s(buffer, bufferCapacityInput, "%s", localizedName.c_str());
+            TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName", TLArg(buffer, "String"));
+        }
 
         return XR_SUCCESS;
     }
@@ -703,36 +802,38 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)hapticActionInfo->action;
 
+        if (xrAction.type != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
+            return XR_ERROR_ACTION_TYPE_MISMATCH;
+        }
+
         if (!m_activeActionSets.count(xrAction.actionSet)) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
         if (!xrAction.path.empty()) {
             const std::string fullPath = getActionPath(xrAction, hapticActionInfo->subactionPath);
-
-            if (!endsWith(fullPath, "/output/haptic")) {
-                return XR_ERROR_ACTION_TYPE_MISMATCH;
-            }
+            const bool isOutput = endsWith(fullPath, "/output/haptic");
+            TraceLoggingWrite(g_traceProvider, "xrApplyHapticFeedback", TLArg(fullPath.c_str(), "ActionPath"));
 
             const int side = getActionSide(fullPath);
-            if (side < 0) {
-                return XR_ERROR_PATH_INVALID;
-            }
 
-            const XrHapticBaseHeader* entry = reinterpret_cast<const XrHapticBaseHeader*>(hapticFeedback);
-            while (entry) {
-                if (entry->type == XR_TYPE_HAPTIC_VIBRATION) {
-                    const XrHapticVibration* vibration = reinterpret_cast<const XrHapticVibration*>(entry);
+            // We only support hands paths, not gamepad etc.
+            if (isOutput && side >= 0) {
+                const XrHapticBaseHeader* entry = reinterpret_cast<const XrHapticBaseHeader*>(hapticFeedback);
+                while (entry) {
+                    if (entry->type == XR_TYPE_HAPTIC_VIBRATION) {
+                        const XrHapticVibration* vibration = reinterpret_cast<const XrHapticVibration*>(entry);
 
-                    // TODO: What to do with frequency/duration?
-                    CHECK_PVRCMD(pvr_triggerHapticPulse(m_pvrSession,
-                                                        side == 0 ? pvrTrackedDevice_LeftController
-                                                                  : pvrTrackedDevice_RightController,
-                                                        vibration->amplitude));
-                    break;
+                        // NOTE: PVR only supports pulses, so there is nothing we can do with the frequency/duration?
+                        CHECK_PVRCMD(pvr_triggerHapticPulse(m_pvrSession,
+                                                            side == 0 ? pvrTrackedDevice_LeftController
+                                                                      : pvrTrackedDevice_RightController,
+                                                            vibration->amplitude));
+                        break;
+                    }
+
+                    entry = reinterpret_cast<const XrHapticBaseHeader*>(entry->next);
                 }
-
-                entry = reinterpret_cast<const XrHapticBaseHeader*>(entry->next);
             }
         }
 
@@ -761,23 +862,25 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)hapticActionInfo->action;
 
+        if (xrAction.type != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
+            return XR_ERROR_ACTION_TYPE_MISMATCH;
+        }
+
         if (!m_activeActionSets.count(xrAction.actionSet)) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
         if (!xrAction.path.empty()) {
             const std::string fullPath = getActionPath(xrAction, hapticActionInfo->subactionPath);
-
-            if (!endsWith(fullPath, "/output/haptic")) {
-                return XR_ERROR_ACTION_TYPE_MISMATCH;
-            }
+            const bool isOutput = endsWith(fullPath, "/output/haptic");
+            TraceLoggingWrite(g_traceProvider, "xrStopHapticFeedback", TLArg(fullPath.c_str(), "ActionPath"));
 
             const int side = getActionSide(fullPath);
-            if (side < 0) {
-                return XR_ERROR_PATH_INVALID;
-            }
 
-            // Nothing to do here.
+            // We only support hands paths, not gamepad etc.
+            if (isOutput && side >= 0) {
+                // Nothing to do here.
+            }
         }
 
         return XR_SUCCESS;
@@ -793,13 +896,16 @@ namespace pimax_openxr {
         if (m_cachedControllerType[side] == "vive_controller") {
             preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, binding); };
+            m_localizedControllerType[side] = "Vive Controller";
         } else if (m_cachedControllerType[side] == "index_controller") {
             preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToIndexControllerInputState(xrAction, binding); };
+            m_localizedControllerType[side] = "Index Controller";
         } else {
             // Fallback to simple controller.
             preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToSimpleControllerInputState(xrAction, binding); };
+            m_localizedControllerType[side] = "Controller";
         }
 
         // Try to map with the preferred bindings.
@@ -810,10 +916,11 @@ namespace pimax_openxr {
             bindings = m_suggestedBindings.find(preferredInteractionProfile);
         }
 
+        // TODO: We don't support multiple bound sources for the same action.
+
         if (bindings != m_suggestedBindings.cend()) {
             for (const auto& binding : bindings->second) {
                 if (!m_actions.count(binding.action)) {
-                    // TODO: I don't think we should allow xrDestroyAction() while it's in an active actionset?
                     continue;
                 }
 
@@ -828,158 +935,19 @@ namespace pimax_openxr {
             // TODO: Create mappings for compatible bindings in case the application does not provide matching bindings.
         }
 
-        CHECK_XRCMD(
-            xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrSyncActions",
+                          TLArg(side == 0 ? "Left" : "Right", "Side"),
+                          TLArg(actualInteractionProfile.c_str(), "InteractionProfile"));
+
+        if (!actualInteractionProfile.empty()) {
+            CHECK_XRCMD(
+                xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
+        } else {
+            m_currentInteractionProfile[side] = XR_NULL_PATH;
+        }
 
         m_currentInteractionProfileDirty = true;
-    }
-
-    void OpenXrRuntime::mapPathToViveControllerInputState(Action& xrAction, XrPath binding) const {
-        const auto path = getXrPath(binding);
-
-        xrAction.buttonMap = nullptr;
-        xrAction.floatValue = nullptr;
-        xrAction.vector2fValue = nullptr;
-
-        if (endsWith(path, "/input/system/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_System;
-        } else if (endsWith(path, "/input/squeeze/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Grip;
-        } else if (endsWith(path, "/input/menu/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_ApplicationMenu;
-        } else if (endsWith(path, "/input/trigger/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Trigger;
-        } else if (endsWith(path, "/input/trigger/value")) {
-            xrAction.floatValue = m_cachedInputState.Trigger;
-        } else if (endsWith(path, "/input/trackpad")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = -1;
-        } else if (endsWith(path, "/input/trackpad/x")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 0;
-        } else if (endsWith(path, "/input/trackpad/y")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 1;
-        } else if (endsWith(path, "/input/trackpad/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_TouchPad;
-        } else if (endsWith(path, "/input/trackpad/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_TouchPad;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
-                   endsWith(path, "/output/haptic")) {
-            // Do nothing.
-        } else {
-            // No possible binding.
-            return;
-        }
-
-        xrAction.path = path;
-    }
-
-    void OpenXrRuntime::mapPathToIndexControllerInputState(Action& xrAction, XrPath binding) const {
-        const auto path = getXrPath(binding);
-
-        xrAction.buttonMap = nullptr;
-        xrAction.floatValue = nullptr;
-        xrAction.vector2fValue = nullptr;
-
-        if (endsWith(path, "/input/system/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_System;
-        } else if (endsWith(path, "/input/system/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_System;
-        } else if (endsWith(path, "/input/a/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_A;
-        } else if (endsWith(path, "/input/a/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_A;
-        } else if (endsWith(path, "/input/b/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_B;
-        } else if (endsWith(path, "/input/b/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_B;
-        } else if (endsWith(path, "/input/squeeze/value")) {
-            xrAction.floatValue = m_cachedInputState.Grip;
-        } else if (endsWith(path, "/input/squeeze/force")) {
-            xrAction.floatValue = m_cachedInputState.GripForce;
-        } else if (endsWith(path, "/input/trigger/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Trigger;
-        } else if (endsWith(path, "/input/trigger/value")) {
-            xrAction.floatValue = m_cachedInputState.Trigger;
-        } else if (endsWith(path, "/input/trigger/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_Trigger;
-        } else if (endsWith(path, "/input/thumbstick")) {
-            xrAction.vector2fValue = m_cachedInputState.JoyStick;
-            xrAction.vector2fIndex = -1;
-        } else if (endsWith(path, "/input/thumbstick/x")) {
-            xrAction.vector2fValue = m_cachedInputState.JoyStick;
-            xrAction.vector2fIndex = 0;
-        } else if (endsWith(path, "/input/thumbstick/y")) {
-            xrAction.vector2fValue = m_cachedInputState.JoyStick;
-            xrAction.vector2fIndex = 1;
-        } else if (endsWith(path, "/input/thumbstick/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_JoyStick;
-        } else if (endsWith(path, "/input/thumbstick/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_JoyStick;
-        } else if (endsWith(path, "/input/trackpad")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = -1;
-        } else if (endsWith(path, "/input/trackpad/x")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 0;
-        } else if (endsWith(path, "/input/trackpad/y")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 1;
-        } else if (endsWith(path, "/input/trackpad/force")) {
-            xrAction.floatValue = m_cachedInputState.TouchPadForce;
-        } else if (endsWith(path, "/input/trackpad/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_TouchPad;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
-                   endsWith(path, "/output/haptic")) {
-            // Do nothing.
-        } else {
-            // No possible binding.
-            return;
-        }
-
-        xrAction.path = path;
-    }
-
-    void OpenXrRuntime::mapPathToSimpleControllerInputState(Action& xrAction, XrPath binding) const {
-        const auto path = getXrPath(binding);
-
-        xrAction.buttonMap = nullptr;
-        xrAction.floatValue = nullptr;
-        xrAction.vector2fValue = nullptr;
-
-        if (endsWith(path, "/input/select/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Trigger;
-        } else if (endsWith(path, "/input/menu/click")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_ApplicationMenu;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
-                   endsWith(path, "/output/haptic")) {
-            // Do nothing.
-        } else {
-            // No possible binding.
-            return;
-        }
-
-        xrAction.path = path;
     }
 
     std::string OpenXrRuntime::getXrPath(XrPath path) const {

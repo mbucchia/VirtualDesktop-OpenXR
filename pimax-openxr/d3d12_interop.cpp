@@ -218,6 +218,8 @@ namespace pimax_openxr {
 
             d3d12Images[i].texture = xrSwapchain.d3d12Images[i].Get();
 
+            // TODO: Must transition layout accordingly.
+
             if (i == 0) {
                 const auto& desc = d3d12Images[i].texture->GetDesc();
 

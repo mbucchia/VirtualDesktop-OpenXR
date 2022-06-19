@@ -139,7 +139,7 @@ namespace pimax_openxr {
                           "xrEnumerateInstanceExtensionProperties",
                           TLArg(*propertyCountOutput, "PropertyCountOutput"));
 
-        if (properties) {
+        if (propertyCapacityInput && properties) {
             for (uint32_t i = 0; i < *propertyCountOutput; i++) {
                 if (properties[i].type != XR_TYPE_EXTENSION_PROPERTIES) {
                     return XR_ERROR_VALIDATION_FAILURE;

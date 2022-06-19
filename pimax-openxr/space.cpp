@@ -56,7 +56,7 @@ namespace pimax_openxr {
         *spaceCountOutput = ARRAYSIZE(referenceSpaces);
         TraceLoggingWrite(g_traceProvider, "xrEnumerateReferenceSpaces", TLArg(*spaceCountOutput, "SpaceCountOutput"));
 
-        if (spaces) {
+        if (spaceCapacityInput && spaces) {
             for (uint32_t i = 0; i < *spaceCountOutput; i++) {
                 spaces[i] = referenceSpaces[i];
                 TraceLoggingWrite(
@@ -271,7 +271,7 @@ namespace pimax_openxr {
         *viewCountOutput = xr::StereoView::Count;
         TraceLoggingWrite(g_traceProvider, "xrLocateViews", TLArg(*viewCountOutput, "ViewCountOutput"));
 
-        if (views) {
+        if (viewCapacityInput && views) {
             // Get the HMD pose in the base space.
             XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
             CHECK_XRCMD(xrLocateSpace(m_viewSpace, viewLocateInfo->space, viewLocateInfo->displayTime, &location));
@@ -352,11 +352,11 @@ namespace pimax_openxr {
                           TLArg(xr::ToString(state.ThePose).c_str(), "Pose"));
 
         pose = pvrPoseToXrPose(state.ThePose);
-        if (1 || state.StatusFlags & pvrStatus_OrientationTracked) {
+        if (state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT);
         }
         // For 9-axis setups, we propagate the Orientation bit to Position.
-        if (1 || state.StatusFlags & pvrStatus_PositionTracked || state.StatusFlags & pvrStatus_OrientationTracked) {
+        if (state.StatusFlags & pvrStatus_PositionTracked || state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
         }
 

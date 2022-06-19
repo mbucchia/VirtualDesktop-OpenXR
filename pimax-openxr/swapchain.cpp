@@ -63,7 +63,7 @@ namespace pimax_openxr {
                           "xrEnumerateViewConfigurations",
                           TLArg(*viewConfigurationTypeCountOutput, "ViewConfigurationTypeCountOutput"));
 
-        if (viewConfigurationTypes) {
+        if (viewConfigurationTypeCapacityInput && viewConfigurationTypes) {
             for (uint32_t i = 0; i < *viewConfigurationTypeCountOutput; i++) {
                 viewConfigurationTypes[i] = types[i];
                 TraceLoggingWrite(g_traceProvider,
@@ -147,7 +147,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(
             g_traceProvider, "xrEnumerateViewConfigurationViews", TLArg(*viewCountOutput, "ViewCountOutput"));
 
-        if (views) {
+        if (viewCapacityInput && views) {
             for (uint32_t i = 0; i < *viewCountOutput; i++) {
                 if (views[i].type != XR_TYPE_VIEW_CONFIGURATION_VIEW) {
                     return XR_ERROR_VALIDATION_FAILURE;
@@ -257,7 +257,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(
             g_traceProvider, "xrEnumerateSwapchainFormats", TLArg(*formatCountOutput, "FormatCountOutput"));
 
-        if (formats) {
+        if (formatCapacityInput && formats) {
             for (uint32_t i = 0; i < *formatCountOutput; i++) {
                 if (isVulkanSession()) {
                     formats[i] = (int64_t)vkFormats[i];
@@ -441,7 +441,7 @@ namespace pimax_openxr {
         *imageCountOutput = count;
         TraceLoggingWrite(g_traceProvider, "xrEnumerateSwapchainImages", TLArg(*imageCountOutput, "ImageCountOutput"));
 
-        if (images) {
+        if (imageCapacityInput && images) {
             if (isD3D12Session()) {
                 XrSwapchainImageD3D12KHR* d3d12Images = reinterpret_cast<XrSwapchainImageD3D12KHR*>(images);
                 return getSwapchainImagesD3D12(xrSwapchain, d3d12Images, *imageCountOutput);

@@ -85,6 +85,9 @@
     <ClCompile Include="system.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="mappings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="pimax-openxr.json" />

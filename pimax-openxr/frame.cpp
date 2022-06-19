@@ -42,7 +42,7 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrWaitFrame", TLXArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrWaitFrame", TLPArg(session, "Session"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -157,8 +157,11 @@ namespace pimax_openxr {
 
             // When behind too much (200ms is arbitrary), we skip rendering and provide an ideal frame time.
             if (predictedDisplayTime < now - 0.2) {
+                // TODO: I don't understand why PVR is returning these values.
+                const bool isRelativeTime = predictedDisplayTime < 1;
+
                 // We always render the first frame to kick off PVR.
-                frameState->shouldRender = m_nextFrameIndex == 0;
+                frameState->shouldRender = !m_canBeginFrame || isRelativeTime;
                 predictedDisplayTime = now + m_frameDuration;
             }
 
@@ -188,7 +191,7 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrBeginFrame", TLXArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider, "xrBeginFrame", TLPArg(session, "Session"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
@@ -260,7 +263,7 @@ namespace pimax_openxr {
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEndFrame",
-                          TLXArg(session, "Session"),
+                          TLPArg(session, "Session"),
                           TLArg(frameEndInfo->displayTime, "DisplayTime"),
                           TLArg(xr::ToCString(frameEndInfo->environmentBlendMode), "EnvironmentBlendMode"));
 
@@ -314,7 +317,7 @@ namespace pimax_openxr {
                                       "xrEndFrame_Layer",
                                       TLArg("Proj", "Type"),
                                       TLArg(proj->layerFlags, "Flags"),
-                                      TLXArg(proj->space, "Space"));
+                                      TLPArg(proj->space, "Space"));
 
                     // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
                     static_assert(offsetof(decltype(layer.EyeFov), ColorTexture) ==
@@ -335,7 +338,7 @@ namespace pimax_openxr {
                                           "xrEndFrame_View",
                                           TLArg("Proj", "Type"),
                                           TLArg(eye, "Index"),
-                                          TLXArg(proj->views[eye].subImage.swapchain, "Swapchain"),
+                                          TLPArg(proj->views[eye].subImage.swapchain, "Swapchain"),
                                           TLArg(proj->views[eye].subImage.imageArrayIndex, "ImageArrayIndex"),
                                           TLArg(xr::ToString(proj->views[eye].subImage.imageRect).c_str(), "ImageRect"),
                                           TLArg(xr::ToString(proj->views[eye].pose).c_str(), "Pose"),
@@ -394,7 +397,7 @@ namespace pimax_openxr {
                                         "xrEndFrame_View",
                                         TLArg("Depth", "Type"),
                                         TLArg(eye, "Index"),
-                                        TLXArg(depth->subImage.swapchain, "Swapchain"),
+                                        TLPArg(depth->subImage.swapchain, "Swapchain"),
                                         TLArg(depth->subImage.imageArrayIndex, "ImageArrayIndex"),
                                         TLArg(xr::ToString(depth->subImage.imageRect).c_str(), "ImageRect"),
                                         TLArg(depth->nearZ, "Near"),
@@ -439,11 +442,11 @@ namespace pimax_openxr {
                                       "xrEndFrame_Layer",
                                       TLArg("Quad", "Type"),
                                       TLArg(quad->layerFlags, "Flags"),
-                                      TLXArg(quad->space, "Space"));
+                                      TLPArg(quad->space, "Space"));
                     TraceLoggingWrite(g_traceProvider,
                                       "xrEndFrame_View",
                                       TLArg("Quad", "Type"),
-                                      TLXArg(quad->subImage.swapchain, "Swapchain"),
+                                      TLPArg(quad->subImage.swapchain, "Swapchain"),
                                       TLArg(quad->subImage.imageArrayIndex, "ImageArrayIndex"),
                                       TLArg(xr::ToString(quad->subImage.imageRect).c_str(), "ImageRect"),
                                       TLArg(xr::ToString(quad->pose).c_str(), "Pose"),

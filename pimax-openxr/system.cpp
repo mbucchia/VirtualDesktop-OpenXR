@@ -190,7 +190,7 @@ namespace pimax_openxr {
                           "xrEnumerateEnvironmentBlendModes",
                           TLArg(*environmentBlendModeCountOutput, "EnvironmentBlendModeCountOutput"));
 
-        if (environmentBlendModes) {
+        if (environmentBlendModeCapacityInput && environmentBlendModes) {
             for (uint32_t i = 0; i < *environmentBlendModeCountOutput; i++) {
                 environmentBlendModes[i] = blendModes[i];
                 TraceLoggingWrite(g_traceProvider,
