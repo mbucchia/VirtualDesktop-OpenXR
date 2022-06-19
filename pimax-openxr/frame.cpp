@@ -117,9 +117,13 @@ namespace pimax_openxr {
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
             if (m_frameWaited) {
                 TraceLoggingWrite(g_traceProvider, "WaitFrame1_Begin");
-                const bool timedOut = !m_frameCondVar.wait_for(lock, 10000ms, [&] { return m_frameBegun; });
+                const bool timedOut = !m_frameCondVar.wait_for(lock, 3000ms, [&] { return m_frameBegun; });
                 TraceLoggingWrite(g_traceProvider, "WaitFrame1_End", TLArg(timedOut, "TimedOut"));
+
                 // TODO: What to do if timed out? This would mean an app deadlock should have happened.
+                if (timedOut) {
+                    return XR_ERROR_RUNTIME_FAILURE;
+                }
             }
 
             // Calculate the time to the next frame.
@@ -146,32 +150,19 @@ namespace pimax_openxr {
             }
 
             const double now = pvr_getTimeSeconds(m_pvr);
-            double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, m_nextFrameIndex);
+            double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, 0);
             TraceLoggingWrite(g_traceProvider,
                               "WaitFrame",
-                              TLArg(m_nextFrameIndex, "ThisFrameIndex"),
                               TLArg(now, "Now"),
                               TLArg(predictedDisplayTime, "PredictedDisplayTime"),
                               TLArg(predictedDisplayTime - now, "PhotonTime"),
                               TLArg(waitTimer.query(), "WaitDurationUs"));
-
-            // When behind too much (200ms is arbitrary), we skip rendering and provide an ideal frame time.
-            if (predictedDisplayTime < now - 0.2) {
-                // TODO: I don't understand why PVR is returning these values.
-                const bool isRelativeTime = predictedDisplayTime < 1;
-
-                // We always render the first frame to kick off PVR.
-                frameState->shouldRender = !m_canBeginFrame || isRelativeTime;
-                predictedDisplayTime = now + m_frameDuration;
-            }
 
             // Setup the app frame for use and the next frame for this call.
             frameState->predictedDisplayTime = pvrTimeToXrTime(predictedDisplayTime);
             frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_frameDuration);
 
             m_frameWaited = true;
-            m_nextFrameIndex++;
-            TraceLoggingWrite(g_traceProvider, "WaitFrame", TLArg(m_nextFrameIndex, "NextFrameIndex"));
         }
 
         m_lastFrameWaitedTime = pvr_getTimeSeconds(m_pvr);
@@ -216,15 +207,14 @@ namespace pimax_openxr {
                 frameDiscarded = true;
             }
 
-            m_currentFrameIndex = m_nextFrameIndex;
-
             // TODO: Not sure why we need this workaround. The very first call to pvr_beginFrame() crashes inside
             // PVR unless there is a call to pvr_endFrame() first... Also unclear why the call occasionally fails
             // with error code -1 (undocumented).
             if (m_canBeginFrame) {
-                TraceLoggingWrite(
-                    g_traceProvider, "PVR_BeginFrame_Begin", TLArg(m_currentFrameIndex, "CurrentFrameIndex"));
-                const auto result = pvr_beginFrame(m_pvrSession, m_currentFrameIndex);
+                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Begin");
+                // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
+                // a monotonically increasing frame index. Let's follow the example.
+                const auto result = pvr_beginFrame(m_pvrSession, 0);
                 TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End", TLArg((int)result, "Result"));
             }
 
@@ -514,13 +504,11 @@ namespace pimax_openxr {
 
                 TraceLoggingWrite(g_traceProvider,
                                   "PVR_EndFrame_Begin",
-                                  TLArg(m_nextFrameIndex, "CurrentFrameIndex"),
                                   TLArg(layers.size(), "NumLayers"),
                                   TLArg(m_frameTimes.size(), "Fps"),
                                   TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"),
                                   TLArg(lastCompositionTime, "LastCompositionTimeUs"));
-                CHECK_PVRCMD(
-                    pvr_endFrame(m_pvrSession, m_currentFrameIndex, layers.data(), (unsigned int)layers.size()));
+                CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
                 TraceLoggingWrite(g_traceProvider, "PVR_EndFrame_End");
 
                 if (IsTraceEnabled()) {

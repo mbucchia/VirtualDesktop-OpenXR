@@ -433,8 +433,6 @@ namespace pimax_openxr {
         std::condition_variable m_frameCondVar;
         bool m_frameWaited{false};
         bool m_frameBegun{false};
-        long long m_nextFrameIndex{0};
-        long long m_currentFrameIndex;
         std::optional<double> m_lastFrameWaitedTime;
         pvrInputState m_cachedInputState;
         bool m_isControllerActive[2]{false, false};

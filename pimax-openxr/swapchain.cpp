@@ -160,8 +160,13 @@ namespace pimax_openxr {
                 views[i].recommendedSwapchainSampleCount = views[i].maxSwapchainSampleCount = 1;
 
                 // Recommend the resolution with distortion accounted for.
-                views[i].recommendedImageRectWidth = m_cachedEyeInfo[i].DistortedViewport.Size.w;
-                views[i].recommendedImageRectHeight = m_cachedEyeInfo[i].DistortedViewport.Size.h;
+                // There is a DistortedViewport in the EyeInfo struct, however the sample code uses
+                // pvr_getFovTextureSize() instead, so let's follow the example.
+                pvrSizei viewportSize;
+                CHECK_PVRCMD(pvr_getFovTextureSize(
+                    m_pvrSession, !i ? pvrEye_Left : pvrEye_Right, m_cachedEyeInfo[i].Fov, 1.0f, &viewportSize));
+                views[i].recommendedImageRectWidth = viewportSize.w;
+                views[i].recommendedImageRectHeight = viewportSize.h;
 
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateViewConfigurationViews",
