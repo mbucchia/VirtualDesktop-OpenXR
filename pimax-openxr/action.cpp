@@ -83,7 +83,7 @@ namespace pimax_openxr {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
-        *bufferCountOutput = (uint32_t)str.length();
+        *bufferCountOutput = (uint32_t)str.length() + 1;
         TraceLoggingWrite(g_traceProvider, "xrPathToString", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
         if (bufferCapacityInput && buffer) {
@@ -766,7 +766,7 @@ namespace pimax_openxr {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
-        *bufferCountOutput = (uint32_t)localizedName.length();
+        *bufferCountOutput = (uint32_t)localizedName.length() + 1;
         TraceLoggingWrite(
             g_traceProvider, "xrGetInputSourceLocalizedName", TLArg(*bufferCountOutput, "BufferCountOutput"));
 

@@ -95,7 +95,7 @@ namespace pimax_openxr::appinsights {
 
     AppInsights::~AppInsights() {
         // Wait for all transactions to complete before cleanup.
-        int tries = 30;
+        int tries = 20;
         while (tries && !m_inflight.empty()) {
             tick();
             std::this_thread::sleep_for(100ms);
@@ -248,7 +248,7 @@ namespace pimax_openxr::appinsights {
         "gfxApi": "{}",
         "useLighthouse": "{}",
         "fovLevel": "{}",
-        "useParallelProjection": "{}",
+        "useParallelProjection": "{}"
       }})_",
                                       escapeJson(m_machineUuid),
                                       escapeJson(m_applicationName),
@@ -288,28 +288,8 @@ namespace pimax_openxr::appinsights {
     }
 
     void AppInsights::logUsage(double sessionTime, uint64_t frameCount) {
-        const auto data = fmt::format(R"_(
-      "metrics": [
-        {{
-          "name": "SessionTime",
-          "value": {},
-          "count": 1
-        }},
-        {{
-          "name": "SessionFrameCount",
-          "value": {},
-          "count": 1
-        }},
-      ],
-      "properties": {{
-        "machineUuid": "{}",
-        "applicationName": "{}"
-      }})_",
-                                      sessionTime,
-                                      frameCount,
-                                      escapeJson(m_machineUuid),
-                                      escapeJson(m_applicationName));
-        transact("MetricData", data);
+        logMetric("SessionTime", sessionTime);
+        logMetric("SessionFrameCount", (double)frameCount);
     }
 
     void AppInsights::logProduct(const std::string& product) {

@@ -517,6 +517,8 @@ namespace pimax_openxr::utils {
             }
             p += 2;
         }
+
+        return "";
     }
 
 } // namespace pimax_openxr::utils
