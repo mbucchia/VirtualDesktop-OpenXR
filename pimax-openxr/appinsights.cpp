@@ -95,9 +95,11 @@ namespace pimax_openxr::appinsights {
 
     AppInsights::~AppInsights() {
         // Wait for all transactions to complete before cleanup.
-        while (!m_inflight.empty()) {
+        int tries = 30;
+        while (tries && !m_inflight.empty()) {
             tick();
             std::this_thread::sleep_for(100ms);
+            tries--;
         }
 
         while (!m_pool.empty()) {
