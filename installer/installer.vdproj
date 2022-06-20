@@ -412,6 +412,28 @@
                                             "Transitive" = "11:FALSE"
                                                 "Keys"
                                                 {
+                                                    "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_7445EEC4866C48369450078ABD4FCB76"
+                                                    {
+                                                    "Name" = "8:AvailableRuntimes"
+                                                    "Condition" = "8:"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "DeleteAtUninstall" = "11:FALSE"
+                                                    "Transitive" = "11:FALSE"
+                                                        "Keys"
+                                                        {
+                                                        }
+                                                        "Values"
+                                                        {
+                                                            "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_A4B6167DDBD7435197D546B841BD86FA"
+                                                            {
+                                                            "Name" = "8:[TARGETDIR]pimax-openxr.json"
+                                                            "Condition" = "8:"
+                                                            "Transitive" = "11:FALSE"
+                                                            "ValueTypes" = "3:3"
+                                                            "Value" = "3:0"
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                                 "Values"
                                                 {
