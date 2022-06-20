@@ -48,7 +48,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
 
-    - name: Build 64-bit
+    - name: Build
       env:
         PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
         PFX_NAME: "comodo"
@@ -61,22 +61,7 @@ jobs:
         Pop-Location
         
         # Finally, we may build the project.
-        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "${{env.BUILD_CONFIGURATION}}|x64"
-
-    - name: Build 32-bit
-      env:
-        PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
-        PFX_NAME: "comodo"
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-        # Need to build vdproj. We must invoke this tool from inside its own folder.
-        $DisableOutOfProcBuild=$(vswhere -latest -find  **\DisableOutOfProcBuild.exe)
-        Push-Location $(Split-Path $DisableOutOfProcBuild)
-        & $DisableOutOfProcBuild
-        Pop-Location
-        
-        # Finally, we may build the project.
-        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "${{env.BUILD_CONFIGURATION}}|Win32"
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build ${{env.BUILD_CONFIGURATION}}
 
     - name: Signing
       env:
