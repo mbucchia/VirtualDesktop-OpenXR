@@ -32,6 +32,10 @@ namespace pimax_openxr {
     using namespace pimax_openxr::log;
 
     OpenXrRuntime::OpenXrRuntime() {
+        if (getSetting("enable_telemetry").value_or(1)) {
+            m_telemetry.initialize();
+        }
+
         const auto runtimeVersion =
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
         TraceLoggingWrite(g_traceProvider, "PimaxXR", TLArg(runtimeVersion.c_str(), "Version"));

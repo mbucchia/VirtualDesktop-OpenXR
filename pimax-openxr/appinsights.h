@@ -31,6 +31,8 @@ namespace pimax_openxr::appinsights {
         AppInsights();
         ~AppInsights();
 
+        void initialize();
+
         void logMetric(const std::string& metric, double value);
 
         void logVersion(const std::string& version);

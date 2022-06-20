@@ -91,6 +91,32 @@ namespace pimax_openxr::appinsights {
     // https://github.com/microsoft/ApplicationInsights-dotnet-server/tree/develop/WEB/Schema/PublicSchema
     // https://github.com/microsoft/ApplicationInsights-node.js/blob/develop/Library/EnvelopeFactory.ts
     AppInsights::AppInsights() {
+    }
+
+    AppInsights::~AppInsights() {
+        // Wait for all transactions to complete before cleanup.
+        while (!m_inflight.empty()) {
+            tick();
+            std::this_thread::sleep_for(100ms);
+        }
+
+        while (!m_pool.empty()) {
+            CURL* handle = m_pool.front();
+            m_pool.pop_front();
+
+            curl_easy_cleanup(handle);
+        }
+
+        if (m_headers) {
+            curl_slist_free_all(m_headers);
+        }
+
+        if (m_multiHandle) {
+            curl_multi_cleanup(m_multiHandle);
+        }
+    }
+
+    void AppInsights::initialize() {
         m_multiHandle = curl_multi_init();
 
         m_headers = curl_slist_append(m_headers, "Expect:");
@@ -114,25 +140,6 @@ namespace pimax_openxr::appinsights {
         }
 
         m_machineUuid = getMachineUuid();
-    }
-
-    AppInsights::~AppInsights() {
-        // Wait for all transactions to complete before cleanup.
-        while (!m_inflight.empty()) {
-            tick();
-            std::this_thread::sleep_for(100ms);
-        }
-
-        while (!m_pool.empty()) {
-            CURL* handle = m_pool.front();
-            m_pool.pop_front();
-
-            curl_easy_cleanup(handle);
-        }
-
-        curl_slist_free_all(m_headers);
-
-        curl_multi_cleanup(m_multiHandle);
     }
 
     void AppInsights::transact(const std::string& messageType, const std::string& data) {
@@ -231,6 +238,23 @@ namespace pimax_openxr::appinsights {
 
     void
     AppInsights::logScenario(const std::string& gfxApi, bool useLighthouse, int fovLevel, bool useParallelProjection) {
+        const auto data = fmt::format(R"_(
+      "name": "ApplicationUserScenario",
+      "properties": {{
+        "machineUuid": "{}",
+        "applicationName": "{}",
+        "gfxApi": "{}",
+        "useLighthouse": "{}",
+        "fovLevel": "{}",
+        "useParallelProjection": "{}",
+      }})_",
+                                      escapeJson(m_machineUuid),
+                                      escapeJson(m_applicationName),
+                                      escapeJson(gfxApi),
+                                      useLighthouse ? 1 : 0,
+                                      fovLevel,
+                                      useParallelProjection ? 1 : 0);
+        transact("EventData", data);
     }
 
     void AppInsights::logFeature(const std::string& feature) {
