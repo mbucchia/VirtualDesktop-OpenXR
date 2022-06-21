@@ -536,6 +536,8 @@ namespace pimax_openxr {
 
             m_frameBegun = false;
 
+            m_sessionTotalFrameCount++;
+
             // Signal xrWaitFrame().
             TraceLoggingWrite(g_traceProvider, "EndFrame_Signal");
             m_frameCondVar.notify_one();
