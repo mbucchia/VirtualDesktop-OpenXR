@@ -506,7 +506,7 @@ namespace pimax_openxr {
         VkSemaphoreTypeCreateInfo timelineCreateInfo{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
         timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
         VkSemaphoreCreateInfo createInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo};
-        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(m_vkDevice, &createInfo, nullptr, &m_vkTimelineSemaphore));
+        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(m_vkDevice, &createInfo, m_vkAllocator, &m_vkTimelineSemaphore));
         VkImportSemaphoreWin32HandleInfoKHR importInfo{VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR};
         importInfo.semaphore = m_vkTimelineSemaphore;
         importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT;
@@ -648,7 +648,7 @@ namespace pimax_openxr {
                         createInfo.usage |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
                     }
                     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-                    CHECK_VKCMD(m_vkDispatch.vkCreateImage(m_vkDevice, &createInfo, nullptr, &image));
+                    CHECK_VKCMD(m_vkDispatch.vkCreateImage(m_vkDevice, &createInfo, m_vkAllocator, &image));
                 }
                 xrSwapchain.vkImages.push_back(image);
 
@@ -687,7 +687,7 @@ namespace pimax_openxr {
                     allocateInfo.memoryTypeIndex =
                         findMemoryType(handleProperties.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
 
-                    CHECK_VKCMD(m_vkDispatch.vkAllocateMemory(m_vkDevice, &allocateInfo, nullptr, &memory));
+                    CHECK_VKCMD(m_vkDispatch.vkAllocateMemory(m_vkDevice, &allocateInfo, m_vkAllocator, &memory));
                 }
                 xrSwapchain.vkDeviceMemory.push_back(memory);
 
