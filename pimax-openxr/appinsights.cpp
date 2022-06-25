@@ -345,6 +345,9 @@ namespace pimax_openxr::appinsights {
     AppInsights::~AppInsights() {
     }
 
+    void AppInsights::initialize() {
+    }
+
     void AppInsights::logMetric(const std::string& metric, double value) {
     }
 
