@@ -125,6 +125,11 @@
           "name": "CURL_USE_LIBSSH2",
           "value": "False",
           "type": "BOOL"
+        },
+        {
+          "name": "LIBCURL_OUTPUT_NAME",
+          "value": "pimax-openxr-curl",
+          "type": "STRING"
         }
       ]
     }
