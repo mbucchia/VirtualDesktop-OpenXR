@@ -897,7 +897,7 @@ namespace pimax_openxr {
             preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Vive Controller";
-        } else if (m_cachedControllerType[side] == "index_controller") {
+        } else if (m_cachedControllerType[side] == "knuckles") {
             preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToIndexControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Index Controller";
