@@ -30,6 +30,7 @@ namespace pimax_openxr {
 
     using namespace pimax_openxr::log;
     using namespace pimax_openxr::utils;
+    using namespace xr::math;
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrStringToPath
     XrResult OpenXrRuntime::xrStringToPath(XrInstance instance, const char* pathString, XrPath* path) {
@@ -650,7 +651,9 @@ namespace pimax_openxr {
                                                              : pvrTrackedDevice_RightController,
                                                    pvrTrackedDeviceProp_ControllerType_String,
                                                    m_cachedControllerType[side].data(),
-                                                   (int)m_cachedControllerType[side].size());
+                                                   (int)m_cachedControllerType[side].size() + 1);
+                // Remove trailing 0.
+                m_cachedControllerType[side].resize(size - 1, 0);
             } else {
                 m_cachedControllerType[side].clear();
             }
@@ -889,6 +892,7 @@ namespace pimax_openxr {
     void OpenXrRuntime::rebindControllerActions(int side) {
         std::string preferredInteractionProfile;
         std::string actualInteractionProfile;
+        XrPosef aimPose = Pose::Identity();
 
         std::function<void(Action&, XrPath)> mapping;
 
@@ -897,10 +901,12 @@ namespace pimax_openxr {
             preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Vive Controller";
+            // TODO: Aim pose for Vive controller.
         } else if (m_cachedControllerType[side] == "knuckles") {
             preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToIndexControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Index Controller";
+            // TODO: Aim pose for Index controller.
         } else {
             // Fallback to simple controller.
             preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
@@ -943,8 +949,10 @@ namespace pimax_openxr {
         if (!actualInteractionProfile.empty()) {
             CHECK_XRCMD(
                 xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
+            m_controllerAimPose[side] = aimPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
+            m_controllerAimPose[side] = Pose::Identity();
         }
 
         m_currentInteractionProfileDirty = true;

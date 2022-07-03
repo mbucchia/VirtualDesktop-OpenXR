@@ -203,7 +203,10 @@ namespace pimax_openxr {
             if ((isGripPose || isAimPose) && side >= 0) {
                 location->locationFlags = getControllerPose(side, time, pose);
 
-                // TODO: P0: Apply grip/aim pose offset.
+                // Apply the aim pose offset.
+                if (isAimPose) {
+                    location->pose = Pose::Multiply(location->pose, m_controllerAimPose[side]);
+                }
 
                 // If the action is the reference, then we need the inverted pose.
                 if (xrBaseSpace.action != XR_NULL_HANDLE) {

@@ -389,6 +389,7 @@ namespace pimax_openxr {
         std::set<XrActionSet> m_activeActionSets;
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
         std::string m_cachedControllerType[2];
+        XrPosef m_controllerAimPose[2];
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
