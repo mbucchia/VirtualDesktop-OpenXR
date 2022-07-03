@@ -191,7 +191,7 @@ namespace pimax_openxr {
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
             TraceLoggingWrite(
-                g_traceProvider, "xrreateInstance", TLArg(createInfo->enabledApiLayerNames[i], "ApiLayerName"));
+                g_traceProvider, "xrCreateInstance", TLArg(createInfo->enabledApiLayerNames[i], "ApiLayerName"));
             Log("Requested API layer: %s\n", createInfo->enabledApiLayerNames[i]);
         }
 
