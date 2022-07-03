@@ -446,6 +446,8 @@ namespace pimax_openxr {
         double m_sessionStartTime{0.0};
         uint64_t m_sessionTotalFrameCount{0};
         std::deque<double> m_frameTimes;
+        CpuTimer m_cpuTimerApp;
+        std::unique_ptr<GpuTimer> m_gpuTimerApp[2];
         std::unique_ptr<GpuTimer> m_gpuTimerSynchronizationDuration[2];
         std::unique_ptr<GpuTimer> m_gpuTimerPrecomposition[2];
         std::unique_ptr<GpuTimer> m_gpuTimerPvrComposition[2];

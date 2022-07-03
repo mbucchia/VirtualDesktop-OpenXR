@@ -161,13 +161,11 @@ namespace pimax_openxr::utils {
         }
 
         void start() override {
-            assert(!m_valid);
             m_context->Begin(m_timeStampDis.Get());
             m_context->End(m_timeStampStart.Get());
         }
 
         void stop() override {
-            assert(!m_valid);
             m_context->End(m_timeStampEnd.Get());
             m_context->End(m_timeStampDis.Get());
             m_valid = true;

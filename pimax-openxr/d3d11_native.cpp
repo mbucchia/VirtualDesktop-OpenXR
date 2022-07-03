@@ -178,6 +178,8 @@ namespace pimax_openxr {
         }
 
         for (uint32_t i = 0; i < 2; i++) {
+            m_gpuTimerApp[i] =
+                std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
             m_gpuTimerSynchronizationDuration[i] =
                 std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
             m_gpuTimerPrecomposition[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());

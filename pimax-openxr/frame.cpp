@@ -232,7 +232,21 @@ namespace pimax_openxr {
             m_isControllerActive[0] = m_isControllerActive[1] = false;
             m_frameLatchedActionSets.clear();
 
+            if (IsTraceEnabled()) {
+                // Statistics for the previous frame.
+                TraceLoggingWrite(g_traceProvider,
+                                  "App_Statistics",
+                                  TLArg(m_cpuTimerApp.query(), "AppCpuTime"),
+                                  TLArg(m_gpuTimerApp[m_currentTimerIndex]->query(), "AppGpuTime"));
+            }
+
             m_currentTimerIndex ^= 1;
+
+            // Start app timers.
+            if (IsTraceEnabled()) {
+                m_cpuTimerApp.start();
+                m_gpuTimerApp[m_currentTimerIndex]->start();
+            }
 
             // Signal xrWaitFrame().
             TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
@@ -288,6 +302,8 @@ namespace pimax_openxr {
 
             const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex ^ 1]->query();
             if (IsTraceEnabled()) {
+                m_cpuTimerApp.stop();
+                m_gpuTimerApp[m_currentTimerIndex]->stop();
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
