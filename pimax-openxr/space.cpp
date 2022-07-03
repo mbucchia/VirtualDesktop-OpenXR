@@ -205,7 +205,7 @@ namespace pimax_openxr {
 
                 // Apply the aim pose offset.
                 if (isAimPose) {
-                    location->pose = Pose::Multiply(location->pose, m_controllerAimPose[side]);
+                    pose = Pose::Multiply(m_controllerAimPose[side], pose);
                 }
 
                 // If the action is the reference, then we need the inverted pose.

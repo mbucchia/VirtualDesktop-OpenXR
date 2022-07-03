@@ -901,12 +901,14 @@ namespace pimax_openxr {
             preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Vive Controller";
-            // TODO: Aim pose for Vive controller.
+            aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-45.f), 0, 0}),
+                                     XrVector3f{0, 0, -0.05f});
         } else if (m_cachedControllerType[side] == "knuckles") {
             preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
             mapping = [&](Action& xrAction, XrPath binding) { mapPathToIndexControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Index Controller";
-            // TODO: Aim pose for Index controller.
+            aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-70.f), 0, 0}),
+                                     XrVector3f{0, 0, -0.05f});
         } else {
             // Fallback to simple controller.
             preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
@@ -919,6 +921,7 @@ namespace pimax_openxr {
         if (bindings == m_suggestedBindings.cend()) {
             // Fallback to simple controller.
             preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
+            mapping = [&](Action& xrAction, XrPath binding) { mapPathToSimpleControllerInputState(xrAction, binding); };
             bindings = m_suggestedBindings.find(preferredInteractionProfile);
         }
 
