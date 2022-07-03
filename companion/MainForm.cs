@@ -347,7 +347,7 @@ namespace companion
             processInfo = new ProcessStartInfo();
             processInfo.Verb = "Open";
             processInfo.UseShellExecute = true;
-            processInfo.FileName = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            processInfo.FileName = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\pimax-openxr";
             try
             {
                 Process.Start(processInfo);
