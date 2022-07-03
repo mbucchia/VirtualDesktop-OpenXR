@@ -129,7 +129,8 @@ namespace pimax_openxr {
                               TLArg(enableLighthouse, "EnableLighthouse"),
                               TLArg(fovLevel, "FovLevel"),
                               TLArg(m_useParallelProjection, "UseParallelProjection"),
-                              TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"));
+                              TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
+                              TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"));
 
             const bool useD3D11 = !isD3D12Session() && !isVulkanSession();
             m_telemetry.logScenario(useD3D11           ? "D3D11"
