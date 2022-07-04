@@ -533,8 +533,11 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly. Nothing
-        // to do here.
+        Swapchain& xrSwapchain = *(Swapchain*)swapchain;
+
+        // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.
+        CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(
+            m_pvrSession, xrSwapchain.pvrSwapchain[0], &xrSwapchain.pvrLastReleasedIndex));
 
         return XR_SUCCESS;
     }

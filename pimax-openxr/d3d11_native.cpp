@@ -178,8 +178,7 @@ namespace pimax_openxr {
         }
 
         for (uint32_t i = 0; i < 2; i++) {
-            m_gpuTimerApp[i] =
-                std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
+            m_gpuTimerApp[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
             m_gpuTimerSynchronizationDuration[i] =
                 std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
             m_gpuTimerPrecomposition[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
@@ -394,10 +393,7 @@ namespace pimax_openxr {
                 pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &pvrDestIndex));
 
             if (!xrSwapchain.needDepthResolve) {
-                int pvrSourceIndex = -1;
-                CHECK_PVRCMD(
-                    pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrSourceIndex));
-
+                int pvrSourceIndex = xrSwapchain.pvrLastReleasedIndex;
                 m_d3d11DeviceContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex],
                                                             0,
                                                             0,
@@ -466,6 +462,22 @@ namespace pimax_openxr {
                 // Final copy into the PVR texture.
                 m_d3d11DeviceContext->CopySubresourceRegion(
                     xrSwapchain.slices[slice][pvrDestIndex], 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
+            }
+        } else {
+            // The app may render to certain swapchains (eg: quad layers) at a lower frame rate. We must perform a copy
+            // to the current PVR swapchain image.
+            int pvrCurrentIndex = -1;
+            CHECK_PVRCMD(
+                pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrCurrentIndex));
+            if (pvrCurrentIndex != xrSwapchain.pvrLastReleasedIndex) {
+                m_d3d11DeviceContext->CopySubresourceRegion(xrSwapchain.slices[0][pvrCurrentIndex],
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            xrSwapchain.slices[0][xrSwapchain.pvrLastReleasedIndex],
+                                                            0,
+                                                            nullptr);
             }
         }
 

@@ -240,6 +240,9 @@ namespace pimax_openxr {
             // The cached textures used for copy between swapchains.
             std::vector<std::vector<ID3D11Texture2D*>> slices;
 
+            // The last released swapchain image index.
+            int pvrLastReleasedIndex{0};
+
             // Certain depth formats require use to go through an intermediate texture and resolve (copy, convert) the
             // texture later. We manage our own set of textures and image index.
             bool needDepthResolve{false};
