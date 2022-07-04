@@ -990,9 +990,9 @@ namespace pimax_openxr {
     }
 
     int OpenXrRuntime::getActionSide(const std::string& fullPath) const {
-        if (startsWith(fullPath, "/user/hand/left/")) {
+        if (startsWith(fullPath, "/user/hand/left")) {
             return 0;
-        } else if (startsWith(fullPath, "/user/hand/right/")) {
+        } else if (startsWith(fullPath, "/user/hand/right")) {
             return 1;
         }
 
