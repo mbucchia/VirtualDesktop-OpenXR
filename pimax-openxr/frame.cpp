@@ -213,10 +213,12 @@ namespace pimax_openxr {
             // PVR unless there is a call to pvr_endFrame() first... Also unclear why the call occasionally fails
             // with error code -1 (undocumented).
             if (m_canBeginFrame) {
-                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Begin");
+                const bool doBegin = getSetting("do_frame_begin").value_or(0);
+
+                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Begin", TLArg(doBegin, "DoFrameBegin"));
                 // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
                 // a monotonically increasing frame index. Let's follow the example.
-                const auto result = pvr_beginFrame(m_pvrSession, 0);
+                const auto result = doBegin ? pvr_beginFrame(m_pvrSession, 0) : XR_SUCCESS;
                 TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End", TLArg((int)result, "Result"));
             }
 
