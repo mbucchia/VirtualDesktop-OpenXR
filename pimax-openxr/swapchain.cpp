@@ -418,6 +418,10 @@ namespace pimax_openxr {
             xrSwapchain.vkDeviceMemory.pop_back();
         }
 
+        if (xrSwapchain.vkCmdBuffer != VK_NULL_HANDLE) {
+            m_vkDispatch.vkFreeCommandBuffers(m_vkDevice, m_vkCmdPool, 1, &xrSwapchain.vkCmdBuffer);
+        }
+
         delete &xrSwapchain;
         m_swapchains.erase(swapchain);
 
@@ -483,17 +487,24 @@ namespace pimax_openxr {
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
         // Query the image index from PVR.
-        int pvrIndex = -1;
+        int imageIndex = -1;
         if (!xrSwapchain.needDepthResolve) {
-            CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrIndex));
+            CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &imageIndex));
         } else {
-            pvrIndex = xrSwapchain.currentIndex++;
-            if (xrSwapchain.currentIndex >= xrSwapchain.images.size()) {
-                xrSwapchain.currentIndex = 0;
+            imageIndex = xrSwapchain.nextIndex++;
+            if (xrSwapchain.nextIndex >= xrSwapchain.images.size()) {
+                xrSwapchain.nextIndex = 0;
             }
         }
 
-        *index = pvrIndex;
+        if (isD3D12Session()) {
+            transitionImageD3D12(xrSwapchain, imageIndex, true);
+        } else if (isVulkanSession()) {
+            transitionImageVulkan(xrSwapchain, imageIndex, true);
+        }
+
+        xrSwapchain.currentAcquiredIndex = imageIndex;
+        *index = imageIndex;
 
         TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage", TLArg(*index, "Index"));
 
@@ -538,6 +549,12 @@ namespace pimax_openxr {
         // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.
         CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(
             m_pvrSession, xrSwapchain.pvrSwapchain[0], &xrSwapchain.pvrLastReleasedIndex));
+
+        if (isD3D12Session()) {
+            transitionImageD3D12(xrSwapchain, xrSwapchain.currentAcquiredIndex, false);
+        } else if (isVulkanSession()) {
+            transitionImageVulkan(xrSwapchain, xrSwapchain.currentAcquiredIndex, false);
+        }
 
         return XR_SUCCESS;
     }

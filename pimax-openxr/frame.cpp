@@ -315,8 +315,8 @@ namespace pimax_openxr {
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 auto& layer = layersAllocator[i];
 
-                // TODO: What do we do with layerFlags?
-                // Log the most common case that will cause issue.
+                // COMPLIANCE: We ignore layerFlags, since there is no equivalent.
+                // Log the most common case that might cause issue.
                 if (!(frameEndInfo->layers[i]->layerFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)) {
                     LOG_TELEMETRY_ONCE(logUnimplemented("LayerFlagsNotSupported"));
                 }
@@ -475,7 +475,7 @@ namespace pimax_openxr {
 
                     Swapchain& xrSwapchain = *(Swapchain*)quad->subImage.swapchain;
 
-                    // TODO: We ignore eyeVisibility as there is no equivalent.
+                    // COMPLIANCE: We ignore eyeVisibility, since there is no equivalent.
                     if (quad->eyeVisibility != XR_EYE_VISIBILITY_BOTH) {
                         LOG_TELEMETRY_ONCE(logUnimplemented("QuadEyeVisibilityNotSupported"));
                     }
@@ -522,7 +522,7 @@ namespace pimax_openxr {
 
             // Submit the layers to PVR.
             if (!layers.empty()) {
-                // TODO: This time does not seem to work. Perhaps because PVR is doing composition out-of-proc?
+                // TODO: This timer does not seem to work. Perhaps because PVR is doing composition out-of-proc?
                 const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimerIndex ^ 1]->query();
                 if (IsTraceEnabled()) {
                     m_gpuTimerPvrComposition[m_currentTimerIndex]->start();

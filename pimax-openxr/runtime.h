@@ -240,14 +240,15 @@ namespace pimax_openxr {
             // The cached textures used for copy between swapchains.
             std::vector<std::vector<ID3D11Texture2D*>> slices;
 
-            // The last released swapchain image index.
+            // The last acquired/released swapchain image index.
+            int currentAcquiredIndex{0};
             int pvrLastReleasedIndex{0};
 
             // Certain depth formats require use to go through an intermediate texture and resolve (copy, convert) the
             // texture later. We manage our own set of textures and image index.
             bool needDepthResolve{false};
             std::vector<ComPtr<ID3D11Texture2D>> images;
-            uint32_t currentIndex{0};
+            uint32_t nextIndex{0};
 
             // Resources needed to run the resolve shader.
             std::vector<std::vector<ComPtr<ID3D11ShaderResourceView>>> imagesResourceView;
@@ -256,8 +257,10 @@ namespace pimax_openxr {
 
             // Resources needed for interop.
             std::vector<ComPtr<ID3D12Resource>> d3d12Images;
+            ComPtr<ID3D12GraphicsCommandList> d3d12CommandList;
             std::vector<VkDeviceMemory> vkDeviceMemory;
             std::vector<VkImage> vkImages;
+            VkCommandBuffer vkCmdBuffer{VK_NULL_HANDLE};
 
             // Information recorded at creation.
             XrSwapchainCreateInfo xrDesc;
@@ -333,6 +336,7 @@ namespace pimax_openxr {
         void cleanupD3D12();
         bool isD3D12Session() const;
         XrResult getSwapchainImagesD3D12(Swapchain& xrSwapchain, XrSwapchainImageD3D12KHR* d3d12Images, uint32_t count);
+        void transitionImageD3D12(Swapchain& xrSwapchain, uint32_t index, bool acquire);
         void serializeD3D12Frame();
 
         // vulkan_interop.cpp
@@ -341,6 +345,7 @@ namespace pimax_openxr {
         void cleanupVulkan();
         bool isVulkanSession() const;
         XrResult getSwapchainImagesVulkan(Swapchain& xrSwapchain, XrSwapchainImageVulkanKHR* vkImages, uint32_t count);
+        void transitionImageVulkan(Swapchain& xrSwapchain, uint32_t index, bool acquire);
         void serializeVulkanFrame();
 
         // visibility_mask.cpp
@@ -400,10 +405,12 @@ namespace pimax_openxr {
         // Graphics API interop.
         ComPtr<ID3D12Device> m_d3d12Device;
         ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
+        ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator;
         VkInstance m_vkBootstrapInstance{VK_NULL_HANDLE};
         VkPhysicalDevice m_vkBootstrapPhysicalDevice{VK_NULL_HANDLE};
         VkInstance m_vkInstance{VK_NULL_HANDLE};
         VkDevice m_vkDevice{VK_NULL_HANDLE};
+        VkCommandPool m_vkCmdPool{VK_NULL_HANDLE};
         struct {
             PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr{nullptr};
 
@@ -417,6 +424,13 @@ namespace pimax_openxr {
             PFN_vkDestroyImage vkDestroyImage{nullptr};
             PFN_vkAllocateMemory vkAllocateMemory{nullptr};
             PFN_vkFreeMemory vkFreeMemory{nullptr};
+            PFN_vkCreateCommandPool vkCreateCommandPool{nullptr};
+            PFN_vkDestroyCommandPool vkDestroyCommandPool{nullptr};
+            PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers{nullptr};
+            PFN_vkFreeCommandBuffers vkFreeCommandBuffers{nullptr};
+            PFN_vkBeginCommandBuffer vkBeginCommandBuffer{nullptr};
+            PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier{nullptr};
+            PFN_vkEndCommandBuffer vkEndCommandBuffer{nullptr};
             PFN_vkGetMemoryWin32HandlePropertiesKHR vkGetMemoryWin32HandlePropertiesKHR{nullptr};
             PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR{nullptr};
             PFN_vkCreateSemaphore vkCreateSemaphore{nullptr};

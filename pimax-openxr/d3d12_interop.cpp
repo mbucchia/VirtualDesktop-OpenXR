@@ -154,6 +154,10 @@ namespace pimax_openxr {
         m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf()));
         m_fenceValue = 0;
 
+        // We will need command lists to perform layout transitions.
+        CHECK_HRCMD(m_d3d12Device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_d3d12CommandAllocator.ReleaseAndGetAddressOf())));
+
         return XR_SUCCESS;
     }
 
@@ -168,6 +172,7 @@ namespace pimax_openxr {
             ResetEvent(eventHandle.get());
         }
 
+        m_d3d12CommandAllocator.Reset();
         m_d3d12Fence.Reset();
         m_d3d11Fence.Reset();
         m_d3d12CommandQueue.Reset();
@@ -192,6 +197,15 @@ namespace pimax_openxr {
             if (XR_FAILED(result)) {
                 return result;
             }
+
+            // Create the command list needed for transitioning the resources.
+            CHECK_HRCMD(
+                m_d3d12Device->CreateCommandList(0,
+                                                 D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                 m_d3d12CommandAllocator.Get(),
+                                                 nullptr,
+                                                 IID_PPV_ARGS(xrSwapchain.d3d12CommandList.ReleaseAndGetAddressOf())));
+            CHECK_HRCMD(xrSwapchain.d3d12CommandList->Close());
         }
 
         // Export each D3D11 texture to D3D12.
@@ -218,8 +232,6 @@ namespace pimax_openxr {
 
             d3d12Images[i].texture = xrSwapchain.d3d12Images[i].Get();
 
-            // TODO: Must transition layout accordingly.
-
             if (i == 0) {
                 const auto& desc = d3d12Images[i].texture->GetDesc();
 
@@ -243,6 +255,29 @@ namespace pimax_openxr {
         }
 
         return XR_SUCCESS;
+    }
+
+    // Transition a swapchain image to the appropriate layout.
+    void OpenXrRuntime::transitionImageD3D12(Swapchain& xrSwapchain, uint32_t index, bool acquire) {
+        if (!(xrSwapchain.xrDesc.usageFlags &
+              (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT))) {
+            return;
+        }
+
+        CHECK_HRCMD(xrSwapchain.d3d12CommandList->Reset(m_d3d12CommandAllocator.Get(), nullptr));
+        D3D12_RESOURCE_BARRIER barrier{};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = xrSwapchain.d3d12Images[index].Get();
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+        barrier.Transition.StateAfter = xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
+                                            ? D3D12_RESOURCE_STATE_RENDER_TARGET
+                                            : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        xrSwapchain.d3d12CommandList->ResourceBarrier(1, &barrier);
+        CHECK_HRCMD(xrSwapchain.d3d12CommandList->Close());
+
+        m_d3d12CommandQueue->ExecuteCommandLists(
+            1, reinterpret_cast<ID3D12CommandList**>(xrSwapchain.d3d12CommandList.GetAddressOf()));
     }
 
     // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.

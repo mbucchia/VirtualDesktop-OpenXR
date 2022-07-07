@@ -514,6 +514,12 @@ namespace pimax_openxr {
         CHECK_VKCMD(m_vkDispatch.vkImportSemaphoreWin32HandleKHR(m_vkDevice, &importInfo));
         m_fenceValue = 0;
 
+        // We will need command buffers to perform layout transitions.
+        VkCommandPoolCreateInfo poolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+        poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        poolCreateInfo.queueFamilyIndex = vkBindings.queueFamilyIndex;
+        CHECK_VKCMD(m_vkDispatch.vkCreateCommandPool(m_vkDevice, &poolCreateInfo, m_vkAllocator, &m_vkCmdPool));
+
         return XR_SUCCESS;
     }
 
@@ -533,6 +539,13 @@ namespace pimax_openxr {
         VK_GET_PTR(vkDestroyImage);
         VK_GET_PTR(vkAllocateMemory);
         VK_GET_PTR(vkFreeMemory);
+        VK_GET_PTR(vkCreateCommandPool);
+        VK_GET_PTR(vkDestroyCommandPool);
+        VK_GET_PTR(vkAllocateCommandBuffers);
+        VK_GET_PTR(vkFreeCommandBuffers);
+        VK_GET_PTR(vkBeginCommandBuffer);
+        VK_GET_PTR(vkCmdPipelineBarrier);
+        VK_GET_PTR(vkEndCommandBuffer);
         VK_GET_PTR(vkGetMemoryWin32HandlePropertiesKHR);
         VK_GET_PTR(vkBindImageMemory2KHR);
         VK_GET_PTR(vkCreateSemaphore);
@@ -549,6 +562,11 @@ namespace pimax_openxr {
         }
         if (m_vkDispatch.vkDestroySemaphore) {
             m_vkDispatch.vkDestroySemaphore(m_vkDevice, m_vkTimelineSemaphore, m_vkAllocator);
+            m_vkTimelineSemaphore = VK_NULL_HANDLE;
+        }
+        if (m_vkDispatch.vkDestroyCommandPool) {
+            m_vkDispatch.vkDestroyCommandPool(m_vkDevice, m_vkCmdPool, m_vkAllocator);
+            m_vkCmdPool = VK_NULL_HANDLE;
         }
 
         // The runtime does not own any of these. Just clear the handles.
@@ -580,6 +598,14 @@ namespace pimax_openxr {
             if (XR_FAILED(result)) {
                 return result;
             }
+
+            // Create the command list needed for transitioning the resources.
+            VkCommandBufferAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+            allocateInfo.commandPool = m_vkCmdPool;
+            allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocateInfo.commandBufferCount = 1;
+
+            CHECK_VKCMD(m_vkDispatch.vkAllocateCommandBuffers(m_vkDevice, &allocateInfo, &xrSwapchain.vkCmdBuffer));
         }
 
         // Helper to select the memory type.
@@ -626,11 +652,9 @@ namespace pimax_openxr {
                     createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                     if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
                         createInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                        // TODO: Must transition to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL.
                     }
                     if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                         createInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-                        // TODO: Must transition to VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL.
                     }
                     if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_SAMPLED_BIT) {
                         createInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -706,6 +730,54 @@ namespace pimax_openxr {
         }
 
         return XR_SUCCESS;
+    }
+
+    // Transition a swapchain image to the appropriate layout.
+    void OpenXrRuntime::transitionImageVulkan(Swapchain& xrSwapchain, uint32_t index, bool acquire) {
+        if (!(xrSwapchain.xrDesc.usageFlags &
+              (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT))) {
+            return;
+        }
+
+        VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
+            barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = xrSwapchain.vkImages[index];
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+        VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        CHECK_VKCMD(m_vkDispatch.vkBeginCommandBuffer(xrSwapchain.vkCmdBuffer, &beginInfo));
+
+        m_vkDispatch.vkCmdPipelineBarrier(xrSwapchain.vkCmdBuffer,
+                                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                                          0,
+                                          0,
+                                          (VkMemoryBarrier*)nullptr,
+                                          0,
+                                          (VkBufferMemoryBarrier*)nullptr,
+                                          1,
+                                          &barrier);
+
+        m_vkDispatch.vkEndCommandBuffer(xrSwapchain.vkCmdBuffer);
+
+        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &xrSwapchain.vkCmdBuffer;
+        CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
     }
 
     // Serialize commands from the Vulkan queue to the D3D11 context used by PVR.

@@ -407,7 +407,7 @@ namespace pimax_openxr {
                 // corresponding formats below.
 
                 // Lazily create SRV/UAV.
-                if (!xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex]) {
+                if (!xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex]) {
                     D3D11_SHADER_RESOURCE_VIEW_DESC desc{};
 
                     desc.ViewDimension = xrSwapchain.xrDesc.arraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D
@@ -418,13 +418,16 @@ namespace pimax_openxr {
                     desc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, slice, desc.Texture2DArray.MipLevels);
 
                     CHECK_HRCMD(m_d3d11Device->CreateShaderResourceView(
-                        xrSwapchain.images[xrSwapchain.currentIndex].Get(),
+                        xrSwapchain.images[xrSwapchain.currentAcquiredIndex].Get(),
                         &desc,
-                        xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].ReleaseAndGetAddressOf()));
+                        xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex]
+                            .ReleaseAndGetAddressOf()));
                     setDebugName(
-                        xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].Get(),
-                        fmt::format(
-                            "DepthResolve SRV[{}, {}, {}]", slice, xrSwapchain.currentIndex, (void*)&xrSwapchain));
+                        xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex].Get(),
+                        fmt::format("DepthResolve SRV[{}, {}, {}]",
+                                             slice,
+                                             xrSwapchain.currentAcquiredIndex,
+                                             (void*)&xrSwapchain));
                 }
                 if (!xrSwapchain.resolvedAccessView) {
                     D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
@@ -444,7 +447,7 @@ namespace pimax_openxr {
                 m_d3d11DeviceContext->CSSetShader(m_resolveShader[shaderToUse].Get(), nullptr, 0);
 
                 m_d3d11DeviceContext->CSSetShaderResources(
-                    0, 1, xrSwapchain.imagesResourceView[slice][xrSwapchain.currentIndex].GetAddressOf());
+                    0, 1, xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex].GetAddressOf());
                 m_d3d11DeviceContext->CSSetUnorderedAccessViews(
                     0, 1, xrSwapchain.resolvedAccessView.GetAddressOf(), nullptr);
 
