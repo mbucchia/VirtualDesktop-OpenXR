@@ -26,14 +26,114 @@
 #include "runtime.h"
 #include "utils.h"
 
+namespace {
+    std::string rreplace(const std::string& str, const std::string& from, const std::string& to) {
+        std::string copy(str);
+        const size_t start_pos = str.rfind(from);
+        copy.replace(start_pos, from.length(), to);
+
+        return copy;
+    }
+} // namespace
+
 namespace pimax_openxr {
 
     using namespace pimax_openxr::log;
     using namespace pimax_openxr::utils;
 
-    void OpenXrRuntime::mapPathToViveControllerInputState(Action& xrAction, XrPath binding) const {
-        const auto path = getXrPath(binding);
+    void OpenXrRuntime::initializeRemappingTables() {
+        // 1:1 mappings.
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/htc/vive_controller", "/interaction_profiles/htc/vive_controller"),
+            [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, getXrPath(binding)); });
+        m_controllerMappingTable.insert_or_assign(std::make_pair("/interaction_profiles/valve/index_controller",
+                                                                 "/interaction_profiles/valve/index_controller"),
+                                                  [&](Action& xrAction, XrPath binding) {
+                                                      mapPathToIndexControllerInputState(xrAction, getXrPath(binding));
+                                                  });
+        m_controllerMappingTable.insert_or_assign(std::make_pair("/interaction_profiles/khr/simple_controller",
+                                                                 "/interaction_profiles/khr/simple_controller"),
+                                                  [&](Action& xrAction, XrPath binding) {
+                                                      mapPathToSimpleControllerInputState(xrAction, getXrPath(binding));
+                                                  });
 
+        // Virtual mappings to Vive controller.
+        m_controllerMappingTable.insert_or_assign(std::make_pair("/interaction_profiles/oculus/touch_controller",
+                                                                 "/interaction_profiles/htc/vive_controller"),
+                                                  [&](Action& xrAction, XrPath binding) {
+                                                      const auto remapped = remapOculusTouchControllerToViveController(
+                                                          getXrPath(binding));
+                                                      if (remapped.has_value()) {
+                                                          mapPathToViveControllerInputState(xrAction, remapped.value());
+                                                      }
+                                                  });
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("", "/interaction_profiles/htc/vive_controller"), [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapMicrosoftMotionControllerToViveController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToViveControllerInputState(xrAction, remapped.value());
+                }
+            });
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/khr/simple_controller", "/interaction_profiles/htc/vive_controller"),
+            [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapSimpleControllerToViveController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToViveControllerInputState(xrAction, remapped.value());
+                }
+            });
+
+        // Virtual mappings to Index controller.
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/oculus/touch_controller",
+                           "/interaction_profiles/valve/index_controller"),
+            [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapOculusTouchControllerToIndexController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToIndexControllerInputState(xrAction, remapped.value());
+                }
+            });
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/microsoft/motion_controller",
+                           "/interaction_profiles/valve/index_controller"),
+            [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapMicrosoftMotionControllerToIndexController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToIndexControllerInputState(xrAction, remapped.value());
+                }
+            });
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/khr/simple_controller",
+                           "/interaction_profiles/valve/index_controller"),
+            [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapSimpleControllerToIndexController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToIndexControllerInputState(xrAction, remapped.value());
+                }
+            });
+
+        // Virtual mappings to Simple controller.
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/oculus/touch_controller",
+                           "/interaction_profiles/khr/simple_controller"),
+            [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapOculusTouchControllerToSimpleController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToSimpleControllerInputState(xrAction, remapped.value());
+                }
+            });
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("/interaction_profiles/microsoft/motion_controller",
+                           "/interaction_profiles/khr/simple_controller"),
+            [&](Action& xrAction, XrPath binding) {
+                const auto remapped = remapMicrosoftMotionControllerToSimpleController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    mapPathToSimpleControllerInputState(xrAction, remapped.value());
+                }
+            });
+    }
+
+    void OpenXrRuntime::mapPathToViveControllerInputState(Action& xrAction, const std::string& path) const {
         xrAction.buttonMap = nullptr;
         xrAction.floatValue = nullptr;
         xrAction.vector2fValue = nullptr;
@@ -80,9 +180,7 @@ namespace pimax_openxr {
         xrAction.path = path;
     }
 
-    void OpenXrRuntime::mapPathToIndexControllerInputState(Action& xrAction, XrPath binding) const {
-        const auto path = getXrPath(binding);
-
+    void OpenXrRuntime::mapPathToIndexControllerInputState(Action& xrAction, const std::string& path) const {
         xrAction.buttonMap = nullptr;
         xrAction.floatValue = nullptr;
         xrAction.vector2fValue = nullptr;
@@ -159,9 +257,7 @@ namespace pimax_openxr {
         xrAction.path = path;
     }
 
-    void OpenXrRuntime::mapPathToSimpleControllerInputState(Action& xrAction, XrPath binding) const {
-        const auto path = getXrPath(binding);
-
+    void OpenXrRuntime::mapPathToSimpleControllerInputState(Action& xrAction, const std::string& path) const {
         xrAction.buttonMap = nullptr;
         xrAction.floatValue = nullptr;
         xrAction.vector2fValue = nullptr;
@@ -283,6 +379,153 @@ namespace pimax_openxr {
         }
 
         return "<Unknown>";
+    }
+
+    std::optional<std::string> OpenXrRuntime::remapSimpleControllerToViveController(const std::string& path) const {
+        if (endsWith(path, "/input/select/click") || endsWith(path, "/input/select")) {
+            return rreplace(path, "/input/select", "/input/trigger");
+        } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string>
+    OpenXrRuntime::remapOculusTouchControllerToViveController(const std::string& path) const {
+        if (endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+            endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+            endsWith(path, "/input/thumbstick/touch")) {
+            return rreplace(path, "/input/thumbstick", "/input/trackpad");
+        } else if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
+                   endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                   endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                   endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
+                   endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string>
+    OpenXrRuntime::remapMicrosoftMotionControllerToViveController(const std::string& path) const {
+        if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+            endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+            endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
+            endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger") ||
+            endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
+            endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
+            endsWith(path, "/input/trackpad/touch")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string> OpenXrRuntime::remapSimpleControllerToIndexController(const std::string& path) const {
+        if (endsWith(path, "/input/select/click") || endsWith(path, "/input/select")) {
+            return rreplace(path, "/input/select", "/input/trigger");
+        } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
+            return rreplace(path, "/input/menu", "/input/a");
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string>
+    OpenXrRuntime::remapOculusTouchControllerToIndexController(const std::string& path) const {
+        if (endsWith(path, "/input/x/click") || endsWith(path, "/input/x")) {
+            return rreplace(path, "/input/x", "/input/a");
+        } else if (endsWith(path, "/input/y/click") || endsWith(path, "/input/y")) {
+            return rreplace(path, "/input/y", "/input/b");
+        } else if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
+                   endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                   endsWith(path, "/input/a/click") || endsWith(path, "/input/a") || endsWith(path, "/input/b/click") ||
+                   endsWith(path, "/input/b") || endsWith(path, "/input/squeeze/click") ||
+                   endsWith(path, "/input/squeeze/value") || endsWith(path, "/input/squeeze") ||
+                   endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                   endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                   endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                   endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string>
+    OpenXrRuntime::remapMicrosoftMotionControllerToIndexController(const std::string& path) const {
+        if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+            endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
+            endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger") ||
+            endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
+            endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
+            endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/thumbstick") ||
+            endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+            endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string>
+    OpenXrRuntime::remapOculusTouchControllerToSimpleController(const std::string& path) const {
+        if (endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger")) {
+            return rreplace(path, "/input/trigger", "/input/select");
+        } else if (endsWith(path, "/input/trigger/value")) {
+            return rreplace(path, "/input/trigger/value", "/input/select/click");
+        } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
+    }
+
+    std::optional<std::string>
+    OpenXrRuntime::remapMicrosoftMotionControllerToSimpleController(const std::string& path) const {
+        if (endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger")) {
+            return rreplace(path, "/input/trigger", "/input/select");
+        } else if (endsWith(path, "/input/trigger/value")) {
+            return rreplace(path, "/input/trigger/value", "/input/select/click");
+        } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
+            return path;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                   endsWith(path, "/output/haptic")) {
+            return path;
+        }
+
+        // No possible binding.
+        return {};
     }
 
 } // namespace pimax_openxr

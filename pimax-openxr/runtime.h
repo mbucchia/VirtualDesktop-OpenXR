@@ -309,12 +309,21 @@ namespace pimax_openxr {
         int getActionSide(const std::string& fullPath) const;
 
         // mappings.cpp
-        void mapPathToViveControllerInputState(Action& xrAction, XrPath binding) const;
-        void mapPathToIndexControllerInputState(Action& xrAction, XrPath binding) const;
-        void mapPathToSimpleControllerInputState(Action& xrAction, XrPath binding) const;
+        void initializeRemappingTables();
+        void mapPathToViveControllerInputState(Action& xrAction, const std::string& path) const;
+        void mapPathToIndexControllerInputState(Action& xrAction, const std::string& path) const;
+        void mapPathToSimpleControllerInputState(Action& xrAction, const std::string& path) const;
         std::string getViveControllerLocalizedSourceName(const std::string& path) const;
         std::string getIndexControllerLocalizedSourceName(const std::string& path) const;
         std::string getSimpleControllerLocalizedSourceName(const std::string& path) const;
+        std::optional<std::string> remapSimpleControllerToViveController(const std::string& path) const;
+        std::optional<std::string> remapOculusTouchControllerToViveController(const std::string& path) const;
+        std::optional<std::string> remapMicrosoftMotionControllerToViveController(const std::string& path) const;
+        std::optional<std::string> remapSimpleControllerToIndexController(const std::string& path) const;
+        std::optional<std::string> remapOculusTouchControllerToIndexController(const std::string& path) const;
+        std::optional<std::string> remapMicrosoftMotionControllerToIndexController(const std::string& path) const;
+        std::optional<std::string> remapOculusTouchControllerToSimpleController(const std::string& path) const;
+        std::optional<std::string> remapMicrosoftMotionControllerToSimpleController(const std::string& path) const;
 
         // space.cpp
         XrSpaceLocationFlags getHmdPose(XrTime time, bool addFloorHeight, XrPosef& pose) const;
@@ -377,6 +386,7 @@ namespace pimax_openxr {
         uint64_t m_actionSetIndex{0};
         std::set<XrActionSet> m_actionSets;
         std::set<XrAction> m_actions;
+        std::map<std::pair<std::string, std::string>, std::function<void(Action&, XrPath)>> m_controllerMappingTable;
 
         // Session state.
         ComPtr<ID3D11Device5> m_d3d11Device;

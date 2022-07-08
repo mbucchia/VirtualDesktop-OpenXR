@@ -70,6 +70,8 @@ namespace pimax_openxr {
         }
         TraceLoggingWrite(
             g_traceProvider, "ConvertTime", TLArg(m_pvrTimeFromQpcTimeOffset, "PvrTimeFromQpcTimeOffset"));
+
+        initializeRemappingTables();
     }
 
     OpenXrRuntime::~OpenXrRuntime() {

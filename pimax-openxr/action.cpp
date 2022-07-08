@@ -894,40 +894,49 @@ namespace pimax_openxr {
         std::string actualInteractionProfile;
         XrPosef aimPose = Pose::Identity();
 
-        std::function<void(Action&, XrPath)> mapping;
-
-        // Identified the physical controller type.
+        // Identify the physical controller type.
         if (m_cachedControllerType[side] == "vive_controller") {
             preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
-            mapping = [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Vive Controller";
             aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-45.f), 0, 0}),
                                      XrVector3f{0, 0, -0.05f});
         } else if (m_cachedControllerType[side] == "knuckles") {
             preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
-            mapping = [&](Action& xrAction, XrPath binding) { mapPathToIndexControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Index Controller";
             aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-70.f), 0, 0}),
                                      XrVector3f{0, 0, -0.05f});
         } else {
             // Fallback to simple controller.
             preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
-            mapping = [&](Action& xrAction, XrPath binding) { mapPathToSimpleControllerInputState(xrAction, binding); };
             m_localizedControllerType[side] = "Controller";
         }
 
         // Try to map with the preferred bindings.
         auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
-        if (bindings == m_suggestedBindings.cend()) {
-            // Fallback to simple controller.
-            preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
-            mapping = [&](Action& xrAction, XrPath binding) { mapPathToSimpleControllerInputState(xrAction, binding); };
-            bindings = m_suggestedBindings.find(preferredInteractionProfile);
+        if (bindings != m_suggestedBindings.cend()) {
+            actualInteractionProfile = preferredInteractionProfile;
+        } else {
+            // In order of preference.
+            static const std::string fallbacks[] = {
+                "/interaction_profiles/oculus/touch_controller",
+                "/interaction_profiles/microsoft/motion_controller",
+                "/interaction_profiles/khr/simple_controller",
+            };
+            for (int i = 0; i < ARRAYSIZE(fallbacks); i++) {
+                bindings = m_suggestedBindings.find(fallbacks[i]);
+                if (bindings != m_suggestedBindings.cend()) {
+                    actualInteractionProfile = fallbacks[i];
+                    break;
+                }
+            }
         }
 
         // TODO: We don't support multiple bound sources for the same action.
 
         if (bindings != m_suggestedBindings.cend()) {
+            const auto& mapping =
+                m_controllerMappingTable.find(std::make_pair(actualInteractionProfile, preferredInteractionProfile))
+                    ->second;
             for (const auto& binding : bindings->second) {
                 if (!m_actions.count(binding.action)) {
                     continue;
@@ -938,10 +947,6 @@ namespace pimax_openxr {
                 // Map to the PVR input state.
                 mapping(xrAction, binding.binding);
             }
-
-            actualInteractionProfile = preferredInteractionProfile;
-        } else {
-            // TODO: Create mappings for compatible bindings in case the application does not provide matching bindings.
         }
 
         TraceLoggingWrite(g_traceProvider,
