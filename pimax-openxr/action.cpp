@@ -827,11 +827,20 @@ namespace pimax_openxr {
                     if (entry->type == XR_TYPE_HAPTIC_VIBRATION) {
                         const XrHapticVibration* vibration = reinterpret_cast<const XrHapticVibration*>(entry);
 
+                        TraceLoggingWrite(g_traceProvider,
+                                          "xrApplyHapticFeedback",
+                                          TLArg(vibration->amplitude, "Amplitude"),
+                                          TLArg(vibration->frequency, "Frequency"),
+                                          TLArg(vibration->duration, "Duration"));
+
                         // NOTE: PVR only supports pulses, so there is nothing we can do with the frequency/duration?
-                        CHECK_PVRCMD(pvr_triggerHapticPulse(m_pvrSession,
-                                                            side == 0 ? pvrTrackedDevice_LeftController
-                                                                      : pvrTrackedDevice_RightController,
-                                                            vibration->amplitude));
+                        // OpenComposite seems to pass an amplitude of 0 sometimes, which is not supported.
+                        if (vibration->amplitude > 0) {
+                            CHECK_PVRCMD(pvr_triggerHapticPulse(m_pvrSession,
+                                                                side == 0 ? pvrTrackedDevice_LeftController
+                                                                          : pvrTrackedDevice_RightController,
+                                                                vibration->amplitude));
+                        }
                         break;
                     }
 
