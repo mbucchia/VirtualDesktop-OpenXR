@@ -71,12 +71,12 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR || !m_isVisibilityMaskEnabled) {
-            if (m_isVisibilityMaskEnabled) {
+        // We only support the hidden area mesh and we don't return a mask with parallel projection.
+        if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR || m_useParallelProjection) {
+            if (!m_useParallelProjection) {
                 LOG_TELEMETRY_ONCE(logUnimplemented("VisibilityMaskTypeNotSupported"));
             }
 
-            // We only support the hidden area mesh and we don't return a mask with parallel projection.
             visibilityMask->vertexCountOutput = 0;
             visibilityMask->indexCountOutput = 0;
             return XR_SUCCESS;
@@ -85,6 +85,13 @@ namespace pimax_openxr {
         const auto verticesCount =
             pvr_getEyeHiddenAreaMesh(m_pvrSession, !viewIndex ? pvrEye_Left : pvrEye_Right, nullptr, 0);
         TraceLoggingWrite(g_traceProvider, "PVR_EyeHiddenAreaMesh", TLArg(verticesCount, "VerticesCount"));
+
+        // The hidden area mesh is disabled by the platform.
+        if (!verticesCount) {
+            visibilityMask->vertexCountOutput = 0;
+            visibilityMask->indexCountOutput = 0;
+            return XR_SUCCESS;
+        }
 
         if (visibilityMask->vertexCapacityInput == 0) {
             visibilityMask->vertexCountOutput = verticesCount;

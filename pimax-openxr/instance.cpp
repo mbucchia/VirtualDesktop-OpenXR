@@ -51,9 +51,7 @@ namespace pimax_openxr {
         // xrGetSystem(). This is to allow the application to create the instance and query its properties even if
         // pi_server is not available.
         if (pvr_createSession(m_pvr, &m_pvrSession) == pvr_success) {
-            // Check if the hidden area mask is available.
-            m_isVisibilityMaskSupported = pvr_getEyeHiddenAreaMesh(m_pvrSession, pvrEye_Left, nullptr, 0) != 0;
-            if (!m_isVisibilityMaskSupported) {
+            if (pvr_getEyeHiddenAreaMesh(m_pvrSession, pvrEye_Left, nullptr, 0) == 0) {
                 Log("Hidden area mesh is not enabled\n");
             }
         }
@@ -123,10 +121,10 @@ namespace pimax_openxr {
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
 
-        if (m_isVisibilityMaskSupported) {
-            extensions.push_back( // Hidden area mesh.
-                {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
-        }
+        // This was originally protected with m_isVisibilityMaskSupported, however certain apps like FS 2020 have bugs
+        // that rely on the extension being present.
+        extensions.push_back( // Hidden area mesh.
+            {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
 
         // FIXME: Add new extensions here.
 
@@ -197,7 +195,6 @@ namespace pimax_openxr {
             Log("Requested API layer: %s\n", createInfo->enabledApiLayerNames[i]);
         }
 
-        bool isVisibilityMaskSupported = false;
         for (uint32_t i = 0; i < createInfo->enabledExtensionCount; i++) {
             const std::string_view extensionName(createInfo->enabledExtensionNames[i]);
 
@@ -215,15 +212,14 @@ namespace pimax_openxr {
                 m_isVulkan2Supported = true;
             } else if (extensionName == XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME) {
                 m_isDepthSupported = true;
-            } else if (m_isVisibilityMaskSupported && extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
-                isVisibilityMaskSupported = true;
+            } else if (extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
+                m_isVisibilityMaskSupported = true;
             } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
                 // Do nothing.
             } else {
                 return XR_ERROR_EXTENSION_NOT_PRESENT;
             }
         }
-        m_isVisibilityMaskSupported = isVisibilityMaskSupported;
 
         m_instanceCreated = true;
         *instance = (XrInstance)1;

@@ -118,7 +118,6 @@ namespace pimax_openxr {
         if (m_useParallelProjection) {
             Log("Parallel projection is enabled\n");
         }
-        m_isVisibilityMaskEnabled = !m_useParallelProjection ? m_isVisibilityMaskSupported : false;
 
         {
             const bool enableLighthouse = !!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0);
