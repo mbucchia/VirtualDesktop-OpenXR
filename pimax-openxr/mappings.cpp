@@ -45,238 +45,257 @@ namespace pimax_openxr {
         // 1:1 mappings.
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/htc/vive_controller", "/interaction_profiles/htc/vive_controller"),
-            [&](Action& xrAction, XrPath binding) { mapPathToViveControllerInputState(xrAction, getXrPath(binding)); });
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
+                return mapPathToViveControllerInputState(xrAction, getXrPath(binding), source);
+            });
         m_controllerMappingTable.insert_or_assign(std::make_pair("/interaction_profiles/valve/index_controller",
                                                                  "/interaction_profiles/valve/index_controller"),
-                                                  [&](Action& xrAction, XrPath binding) {
-                                                      mapPathToIndexControllerInputState(xrAction, getXrPath(binding));
+                                                  [&](const Action& xrAction, XrPath binding, ActionSource& source) {
+                                                      return mapPathToIndexControllerInputState(
+                                                          xrAction, getXrPath(binding), source);
                                                   });
         m_controllerMappingTable.insert_or_assign(std::make_pair("/interaction_profiles/khr/simple_controller",
                                                                  "/interaction_profiles/khr/simple_controller"),
-                                                  [&](Action& xrAction, XrPath binding) {
-                                                      mapPathToSimpleControllerInputState(xrAction, getXrPath(binding));
+                                                  [&](const Action& xrAction, XrPath binding, ActionSource& source) {
+                                                      return mapPathToSimpleControllerInputState(
+                                                          xrAction, getXrPath(binding), source);
                                                   });
 
         // Virtual mappings to Vive controller.
-        m_controllerMappingTable.insert_or_assign(std::make_pair("/interaction_profiles/oculus/touch_controller",
-                                                                 "/interaction_profiles/htc/vive_controller"),
-                                                  [&](Action& xrAction, XrPath binding) {
-                                                      const auto remapped = remapOculusTouchControllerToViveController(
-                                                          getXrPath(binding));
-                                                      if (remapped.has_value()) {
-                                                          mapPathToViveControllerInputState(xrAction, remapped.value());
-                                                      }
-                                                  });
         m_controllerMappingTable.insert_or_assign(
-            std::make_pair("", "/interaction_profiles/htc/vive_controller"), [&](Action& xrAction, XrPath binding) {
+            std::make_pair("/interaction_profiles/oculus/touch_controller",
+                           "/interaction_profiles/htc/vive_controller"),
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
+                const auto remapped = remapOculusTouchControllerToViveController(getXrPath(binding));
+                if (remapped.has_value()) {
+                    return mapPathToViveControllerInputState(xrAction, remapped.value(), source);
+                }
+                return false;
+            });
+        m_controllerMappingTable.insert_or_assign(
+            std::make_pair("", "/interaction_profiles/htc/vive_controller"),
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapMicrosoftMotionControllerToViveController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToViveControllerInputState(xrAction, remapped.value());
+                    return mapPathToViveControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/khr/simple_controller", "/interaction_profiles/htc/vive_controller"),
-            [&](Action& xrAction, XrPath binding) {
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapSimpleControllerToViveController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToViveControllerInputState(xrAction, remapped.value());
+                    return mapPathToViveControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
 
         // Virtual mappings to Index controller.
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/oculus/touch_controller",
                            "/interaction_profiles/valve/index_controller"),
-            [&](Action& xrAction, XrPath binding) {
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapOculusTouchControllerToIndexController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToIndexControllerInputState(xrAction, remapped.value());
+                    return mapPathToIndexControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/microsoft/motion_controller",
                            "/interaction_profiles/valve/index_controller"),
-            [&](Action& xrAction, XrPath binding) {
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapMicrosoftMotionControllerToIndexController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToIndexControllerInputState(xrAction, remapped.value());
+                    return mapPathToIndexControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/khr/simple_controller",
                            "/interaction_profiles/valve/index_controller"),
-            [&](Action& xrAction, XrPath binding) {
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapSimpleControllerToIndexController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToIndexControllerInputState(xrAction, remapped.value());
+                    return mapPathToIndexControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
 
         // Virtual mappings to Simple controller.
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/oculus/touch_controller",
                            "/interaction_profiles/khr/simple_controller"),
-            [&](Action& xrAction, XrPath binding) {
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapOculusTouchControllerToSimpleController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToSimpleControllerInputState(xrAction, remapped.value());
+                    return mapPathToSimpleControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
         m_controllerMappingTable.insert_or_assign(
             std::make_pair("/interaction_profiles/microsoft/motion_controller",
                            "/interaction_profiles/khr/simple_controller"),
-            [&](Action& xrAction, XrPath binding) {
+            [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapMicrosoftMotionControllerToSimpleController(getXrPath(binding));
                 if (remapped.has_value()) {
-                    mapPathToSimpleControllerInputState(xrAction, remapped.value());
+                    return mapPathToSimpleControllerInputState(xrAction, remapped.value(), source);
                 }
+                return false;
             });
     }
 
-    void OpenXrRuntime::mapPathToViveControllerInputState(Action& xrAction, const std::string& path) const {
-        xrAction.buttonMap = nullptr;
-        xrAction.floatValue = nullptr;
-        xrAction.vector2fValue = nullptr;
+    bool OpenXrRuntime::mapPathToViveControllerInputState(const Action& xrAction,
+                                                          const std::string& path,
+                                                          ActionSource& source) const {
+        source.buttonMap = nullptr;
+        source.floatValue = nullptr;
+        source.vector2fValue = nullptr;
 
         if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_System;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_System;
         } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Grip;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_Grip;
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_ApplicationMenu;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_ApplicationMenu;
         } else if (endsWith(path, "/input/trigger/click") ||
                    (xrAction.type == XR_ACTION_TYPE_BOOLEAN_INPUT && endsWith(path, "/input/trigger"))) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Trigger;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_Trigger;
         } else if (endsWith(path, "/input/trigger/value") ||
                    (xrAction.type == XR_ACTION_TYPE_FLOAT_INPUT && endsWith(path, "/input/trigger"))) {
-            xrAction.floatValue = m_cachedInputState.Trigger;
+            source.floatValue = m_cachedInputState.Trigger;
         } else if (endsWith(path, "/input/trackpad")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = -1;
+            source.vector2fValue = m_cachedInputState.TouchPad;
+            source.vector2fIndex = -1;
         } else if (endsWith(path, "/input/trackpad/x")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 0;
+            source.vector2fValue = m_cachedInputState.TouchPad;
+            source.vector2fIndex = 0;
         } else if (endsWith(path, "/input/trackpad/y")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 1;
+            source.vector2fValue = m_cachedInputState.TouchPad;
+            source.vector2fIndex = 1;
         } else if (endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_TouchPad;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_TouchPad;
         } else if (endsWith(path, "/input/trackpad/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_TouchPad;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_TouchPad;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
             // No possible binding.
-            return;
+            return false;
         }
 
-        xrAction.path = path;
+        return true;
     }
 
-    void OpenXrRuntime::mapPathToIndexControllerInputState(Action& xrAction, const std::string& path) const {
-        xrAction.buttonMap = nullptr;
-        xrAction.floatValue = nullptr;
-        xrAction.vector2fValue = nullptr;
+    bool OpenXrRuntime::mapPathToIndexControllerInputState(const Action& xrAction,
+                                                           const std::string& path,
+                                                           ActionSource& source) const {
+        source.buttonMap = nullptr;
+        source.floatValue = nullptr;
+        source.vector2fValue = nullptr;
 
         if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_System;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_System;
         } else if (endsWith(path, "/input/system/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_System;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_System;
         } else if (endsWith(path, "/input/a/click") || endsWith(path, "/input/a")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_A;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_A;
         } else if (endsWith(path, "/input/a/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_A;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_A;
         } else if (endsWith(path, "/input/b/click") || endsWith(path, "/input/b")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_B;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_B;
         } else if (endsWith(path, "/input/b/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_B;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_B;
         } else if (endsWith(path, "/input/squeeze/value") || endsWith(path, "/input/squeeze")) {
-            xrAction.floatValue = m_cachedInputState.Grip;
+            source.floatValue = m_cachedInputState.Grip;
         } else if (endsWith(path, "/input/squeeze/force")) {
-            xrAction.floatValue = m_cachedInputState.GripForce;
+            source.floatValue = m_cachedInputState.GripForce;
         } else if (endsWith(path, "/input/trigger/click") ||
                    (xrAction.type == XR_ACTION_TYPE_BOOLEAN_INPUT && endsWith(path, "/input/trigger"))) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Trigger;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_Trigger;
         } else if (endsWith(path, "/input/trigger/value") ||
                    (xrAction.type == XR_ACTION_TYPE_FLOAT_INPUT && endsWith(path, "/input/trigger"))) {
-            xrAction.floatValue = m_cachedInputState.Trigger;
+            source.floatValue = m_cachedInputState.Trigger;
         } else if (endsWith(path, "/input/trigger/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_Trigger;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_Trigger;
         } else if (endsWith(path, "/input/thumbstick")) {
-            xrAction.vector2fValue = m_cachedInputState.JoyStick;
-            xrAction.vector2fIndex = -1;
+            source.vector2fValue = m_cachedInputState.JoyStick;
+            source.vector2fIndex = -1;
         } else if (endsWith(path, "/input/thumbstick/x")) {
-            xrAction.vector2fValue = m_cachedInputState.JoyStick;
-            xrAction.vector2fIndex = 0;
+            source.vector2fValue = m_cachedInputState.JoyStick;
+            source.vector2fIndex = 0;
         } else if (endsWith(path, "/input/thumbstick/y")) {
-            xrAction.vector2fValue = m_cachedInputState.JoyStick;
-            xrAction.vector2fIndex = 1;
+            source.vector2fValue = m_cachedInputState.JoyStick;
+            source.vector2fIndex = 1;
         } else if (endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_JoyStick;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_JoyStick;
         } else if (endsWith(path, "/input/thumbstick/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_JoyStick;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_JoyStick;
         } else if (endsWith(path, "/input/trackpad")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = -1;
+            source.vector2fValue = m_cachedInputState.TouchPad;
+            source.vector2fIndex = -1;
         } else if (endsWith(path, "/input/trackpad/x")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 0;
+            source.vector2fValue = m_cachedInputState.TouchPad;
+            source.vector2fIndex = 0;
         } else if (endsWith(path, "/input/trackpad/y")) {
-            xrAction.vector2fValue = m_cachedInputState.TouchPad;
-            xrAction.vector2fIndex = 1;
+            source.vector2fValue = m_cachedInputState.TouchPad;
+            source.vector2fIndex = 1;
         } else if (endsWith(path, "/input/trackpad/force")) {
-            xrAction.floatValue = m_cachedInputState.TouchPadForce;
+            source.floatValue = m_cachedInputState.TouchPadForce;
         } else if (endsWith(path, "/input/trackpad/touch")) {
-            xrAction.buttonMap = m_cachedInputState.HandTouches;
-            xrAction.buttonType = pvrButton_TouchPad;
+            source.buttonMap = m_cachedInputState.HandTouches;
+            source.buttonType = pvrButton_TouchPad;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
             // No possible binding.
-            return;
+            return false;
         }
 
-        xrAction.path = path;
+        return true;
     }
 
-    void OpenXrRuntime::mapPathToSimpleControllerInputState(Action& xrAction, const std::string& path) const {
-        xrAction.buttonMap = nullptr;
-        xrAction.floatValue = nullptr;
-        xrAction.vector2fValue = nullptr;
+    bool OpenXrRuntime::mapPathToSimpleControllerInputState(const Action& xrAction,
+                                                            const std::string& path,
+                                                            ActionSource& source) const {
+        source.buttonMap = nullptr;
+        source.floatValue = nullptr;
+        source.vector2fValue = nullptr;
 
         if (endsWith(path, "/input/select/click") || endsWith(path, "/input/select")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_Trigger;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_Trigger;
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
-            xrAction.buttonMap = m_cachedInputState.HandButtons;
-            xrAction.buttonType = pvrButton_ApplicationMenu;
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_ApplicationMenu;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
             // No possible binding.
-            return;
+            return false;
         }
 
-        xrAction.path = path;
+        return true;
     }
 
     std::string OpenXrRuntime::getViveControllerLocalizedSourceName(const std::string& path) const {

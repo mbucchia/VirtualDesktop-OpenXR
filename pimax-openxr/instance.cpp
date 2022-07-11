@@ -31,6 +31,8 @@ namespace pimax_openxr {
     using namespace pimax_openxr::utils;
     using namespace pimax_openxr::log;
 
+    // COMPLIANCE: We do not handle multithreading properly. All functions must be thread-safe.
+
     OpenXrRuntime::OpenXrRuntime() {
         if (getSetting("enable_telemetry").value_or(1)) {
             m_telemetry.initialize();

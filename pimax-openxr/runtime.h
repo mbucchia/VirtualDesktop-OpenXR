@@ -275,25 +275,31 @@ namespace pimax_openxr {
             XrPosef poseInSpace;
         };
 
-        struct Action {
-            XrActionType type;
-
-            std::string path;
-            XrActionSet actionSet{XR_NULL_HANDLE};
-
+        struct ActionSource {
             const float* floatValue{nullptr};
-            float lastFloatValue{0.f};
-            XrTime lastFloatValueChangedTime{0};
 
             const pvrVector2f* vector2fValue{nullptr};
             int vector2fIndex{-1};
-            XrVector2f lastVector2fValue{0.f, 0.f};
-            XrTime lastVector2fValueChangedTime{0};
 
             const uint32_t* buttonMap{nullptr};
             pvrButton buttonType;
+        };
+
+        struct Action {
+            XrActionType type;
+
+            XrActionSet actionSet{XR_NULL_HANDLE};
+
+            float lastFloatValue{0.f};
+            XrTime lastFloatValueChangedTime{0};
+
+            XrVector2f lastVector2fValue{0.f, 0.f};
+            XrTime lastVector2fValueChangedTime{0};
+
             bool lastBoolValue{false};
             XrTime lastBoolValueChangedTime{0};
+
+            std::map<std::string, ActionSource> actionSources;
         };
 
         // instance.cpp
@@ -305,14 +311,19 @@ namespace pimax_openxr {
         // action.cpp
         void rebindControllerActions(int side);
         std::string getXrPath(XrPath path) const;
-        std::string getActionPath(const Action& action, XrPath subActionPath) const;
         int getActionSide(const std::string& fullPath) const;
 
         // mappings.cpp
         void initializeRemappingTables();
-        void mapPathToViveControllerInputState(Action& xrAction, const std::string& path) const;
-        void mapPathToIndexControllerInputState(Action& xrAction, const std::string& path) const;
-        void mapPathToSimpleControllerInputState(Action& xrAction, const std::string& path) const;
+        bool mapPathToViveControllerInputState(const Action& xrAction,
+                                               const std::string& path,
+                                               ActionSource& source) const;
+        bool mapPathToIndexControllerInputState(const Action& xrAction,
+                                                const std::string& path,
+                                                ActionSource& source) const;
+        bool mapPathToSimpleControllerInputState(const Action& xrAction,
+                                                 const std::string& path,
+                                                 ActionSource& source) const;
         std::string getViveControllerLocalizedSourceName(const std::string& path) const;
         std::string getIndexControllerLocalizedSourceName(const std::string& path) const;
         std::string getSimpleControllerLocalizedSourceName(const std::string& path) const;
@@ -387,7 +398,8 @@ namespace pimax_openxr {
         uint64_t m_actionSetIndex{0};
         std::set<XrActionSet> m_actionSets;
         std::set<XrAction> m_actions;
-        std::map<std::pair<std::string, std::string>, std::function<void(Action&, XrPath)>> m_controllerMappingTable;
+        using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
+        std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
 
         // Session state.
         ComPtr<ID3D11Device5> m_d3d11Device;

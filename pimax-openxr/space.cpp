@@ -330,17 +330,29 @@ namespace pimax_openxr {
         } else if (xrSpace.action != XR_NULL_HANDLE) {
             // Action spaces for motion controllers.
             Action& xrAction = *(Action*)xrSpace.action;
-            const std::string fullPath = getActionPath(xrAction, xrSpace.subActionPath);
 
-            const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
-            const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
-            const int side = getActionSide(fullPath);
-            if ((isGripPose || isAimPose) && side >= 0) {
-                result = getControllerPose(side, time, pose);
+            const std::string subActionPath = getXrPath(xrSpace.subActionPath);
+            for (const auto& source : xrAction.actionSources) {
+                if (!startsWith(source.first, subActionPath)) {
+                    continue;
+                }
 
-                // Apply the aim pose offset.
-                if (isAimPose) {
-                    pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                const std::string& fullPath = source.first;
+                TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(fullPath.c_str(), "ActionSourcePath"));
+
+                const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
+                const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
+                const int side = getActionSide(fullPath);
+                if ((isGripPose || isAimPose) && side >= 0) {
+                    result = getControllerPose(side, time, pose);
+
+                    // Apply the aim pose offset.
+                    if (isAimPose) {
+                        pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                    }
+
+                    // Per spec we must consistently pick one source. We pick the first one.
+                    break;
                 }
             }
         }
