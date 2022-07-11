@@ -176,61 +176,27 @@ namespace pimax_openxr {
         Space& xrSpace = *(Space*)space;
         Space& xrBaseSpace = *(Space*)baseSpace;
 
-        // Locate the HMD for view poses, controller for action poses, otherwise use the origin.
-        // TODO: P0: We do not support location HMD relative to controller, controller relative to controller, etc. Need to
-        // add intermediate space.
-        XrPosef pose = Pose::Identity();
-        if ((xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW ||
-             xrBaseSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) &&
-            xrSpace.referenceType != xrBaseSpace.referenceType) {
-            const bool addFloorHeight = (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE ||
-                                         xrBaseSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE);
-            location->locationFlags = getHmdPose(time, addFloorHeight, pose);
+        XrPosef spaceToVirtual = Pose::Identity();
+        XrPosef baseSpaceToVirtual = Pose::Identity();
+        const auto flags1 = locateSpaceToOrigin(xrSpace, time, spaceToVirtual);
+        const auto flags2 = locateSpaceToOrigin(xrBaseSpace, time, baseSpaceToVirtual);
 
-            // If the view is the reference, then we need the inverted pose.
-            if (xrBaseSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
-                StoreXrPose(&pose, LoadInvertedXrPose(pose));
-            }
-        } else if ((xrSpace.action != XR_NULL_HANDLE || xrBaseSpace.action != XR_NULL_HANDLE) &&
-                   xrSpace.action != xrBaseSpace.action) {
-            Action& xrAction = *(Action*)(xrSpace.action != XR_NULL_HANDLE ? xrSpace.action : xrBaseSpace.action);
-            const std::string fullPath = getActionPath(
-                xrAction, xrSpace.action != XR_NULL_HANDLE ? xrSpace.subActionPath : xrBaseSpace.subActionPath);
-
-            const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
-            const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
-            const int side = getActionSide(fullPath);
-            if ((isGripPose || isAimPose) && side >= 0) {
-                location->locationFlags = getControllerPose(side, time, pose);
-
-                // Apply the aim pose offset.
-                if (isAimPose) {
-                    pose = Pose::Multiply(m_controllerAimPose[side], pose);
-                }
-
-                // If the action is the reference, then we need the inverted pose.
-                if (xrBaseSpace.action != XR_NULL_HANDLE) {
-                    StoreXrPose(&pose, LoadInvertedXrPose(pose));
-                }
-            } else {
-                location->locationFlags = 0;
-            }
-        } else {
-            location->locationFlags =
-                (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
-                 XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
-
-            // If the space is stage and not local, add the height.
-            if ((xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE ||
-                 xrBaseSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE)) {
-                pose.position.y -= m_floorHeight;
-            }
+        // If either pose is not valid, we cannot locate.
+        if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags1))) {
+            TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(0, "LocationFlags"));
+            return XR_SUCCESS;
         }
 
-        // Apply the offset transforms.
-        StoreXrPose(&location->pose,
-                    XMMatrixMultiply(LoadXrPose(xrSpace.poseInSpace),
-                                     XMMatrixMultiply(LoadXrPose(pose), LoadInvertedXrPose(xrBaseSpace.poseInSpace))));
+        location->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+
+        // Both poses need to be tracked for the location to be tracked.
+        if (Pose::IsPoseTracked(flags1) && Pose::IsPoseTracked(flags1)) {
+            location->locationFlags |=
+                XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+        }
+
+        // Combine the poses.
+        location->pose = Pose::Multiply(spaceToVirtual, Pose::Invert(baseSpaceToVirtual));
 
         TraceLoggingWrite(g_traceProvider,
                           "xrLocateSpace",
@@ -345,7 +311,47 @@ namespace pimax_openxr {
         return XR_SUCCESS;
     }
 
-    XrSpaceLocationFlags OpenXrRuntime::getHmdPose(XrTime time, bool addFloorHeight, XrPosef& pose) const {
+    XrSpaceLocationFlags OpenXrRuntime::locateSpaceToOrigin(const Space& xrSpace, XrTime time, XrPosef& pose) const {
+        XrSpaceLocationFlags result = 0;
+
+        if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
+            // VIEW space if the headset pose.
+            result = getHmdPose(time, pose);
+        } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+            // LOCAL space is the origin reference.
+            pose = Pose::Identity();
+            result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
+                      XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+        } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
+            // STAGE space is the origin reference at eye level.
+            pose = Pose::Translation({0, -m_floorHeight, 0});
+            result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
+                      XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+        } else if (xrSpace.action != XR_NULL_HANDLE) {
+            // Action spaces for motion controllers.
+            Action& xrAction = *(Action*)xrSpace.action;
+            const std::string fullPath = getActionPath(xrAction, xrSpace.subActionPath);
+
+            const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
+            const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
+            const int side = getActionSide(fullPath);
+            if ((isGripPose || isAimPose) && side >= 0) {
+                result = getControllerPose(side, time, pose);
+
+                // Apply the aim pose offset.
+                if (isAimPose) {
+                    pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                }
+            }
+        }
+
+        // Apply the offset transform.
+        pose = Pose::Multiply(xrSpace.poseInSpace, pose);
+
+        return result;
+    }
+
+    XrSpaceLocationFlags OpenXrRuntime::getHmdPose(XrTime time, XrPosef& pose) const {
         XrSpaceLocationFlags locationFlags = 0;
         pvrPoseStatef state{};
         CHECK_PVRCMD(pvr_getTrackedDevicePoseState(m_pvrSession, pvrTrackedDevice_HMD, xrTimeToPvrTime(time), &state));
@@ -357,15 +363,14 @@ namespace pimax_openxr {
         pose = pvrPoseToXrPose(state.ThePose);
         if (state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT);
+        } else {
+            pose.orientation = Quaternion::Identity();
         }
         // For 9-axis setups, we propagate the Orientation bit to Position.
         if (state.StatusFlags & pvrStatus_PositionTracked || state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
-        }
-
-        // If the space is stage and not local, add the height.
-        if (addFloorHeight) {
-            pose.position.y += m_floorHeight;
+        } else {
+            pose.position = {};
         }
 
         return locationFlags;
@@ -388,9 +393,13 @@ namespace pimax_openxr {
         pose = pvrPoseToXrPose(state.ThePose);
         if (state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+        } else {
+            pose.orientation = Quaternion::Identity();
         }
         if (state.StatusFlags & pvrStatus_PositionTracked) {
             locationFlags |= XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+        } else {
+            pose.position = {};
         }
 
         return locationFlags;

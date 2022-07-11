@@ -379,10 +379,8 @@ namespace pimax_openxr {
                         // Fill out pose and FOV information.
                         XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
                         CHECK_XRCMD(xrLocateSpace(proj->space, m_originSpace, frameEndInfo->displayTime, &location));
-                        XrPosef transformed;
-                        StoreXrPose(&transformed,
-                                    XMMatrixMultiply(LoadXrPose(proj->views[eye].pose), LoadXrPose(location.pose)));
-                        layer.EyeFov.RenderPose[eye] = xrPoseToPvrPose(transformed);
+                        layer.EyeFov.RenderPose[eye] =
+                            xrPoseToPvrPose(Pose::Multiply(proj->views[eye].pose, location.pose));
 
                         layer.EyeFov.Fov[eye].DownTan = -tan(proj->views[eye].fov.angleDown);
                         layer.EyeFov.Fov[eye].UpTan = tan(proj->views[eye].fov.angleUp);
@@ -496,9 +494,7 @@ namespace pimax_openxr {
                     // Fill out pose and quad information.
                     XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
                     CHECK_XRCMD(xrLocateSpace(quad->space, m_originSpace, frameEndInfo->displayTime, &location));
-                    XrPosef transformed;
-                    StoreXrPose(&transformed, XMMatrixMultiply(LoadXrPose(quad->pose), LoadXrPose(location.pose)));
-                    layer.Quad.QuadPoseCenter = xrPoseToPvrPose(transformed);
+                    layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, location.pose));
 
                     layer.Quad.QuadSize.x = quad->size.width;
                     layer.Quad.QuadSize.y = quad->size.height;

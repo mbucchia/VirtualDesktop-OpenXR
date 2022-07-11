@@ -326,7 +326,8 @@ namespace pimax_openxr {
         std::optional<std::string> remapMicrosoftMotionControllerToSimpleController(const std::string& path) const;
 
         // space.cpp
-        XrSpaceLocationFlags getHmdPose(XrTime time, bool addFloorHeight, XrPosef& pose) const;
+        XrSpaceLocationFlags locateSpaceToOrigin(const Space& xrSpace, XrTime time, XrPosef& pose) const;
+        XrSpaceLocationFlags getHmdPose(XrTime time, XrPosef& pose) const;
         XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose) const;
 
         // d3d11_native.cpp
