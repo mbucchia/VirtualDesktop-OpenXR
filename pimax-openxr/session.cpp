@@ -214,6 +214,7 @@ namespace pimax_openxr {
         m_sessionState = XR_SESSION_STATE_UNKNOWN;
         m_sessionStateDirty = false;
         m_sessionCreated = false;
+        m_sessionExiting = false;
 
         return XR_SUCCESS;
     }
@@ -260,6 +261,8 @@ namespace pimax_openxr {
         if (m_sessionState != XR_SESSION_STATE_STOPPING) {
             return XR_ERROR_SESSION_NOT_STOPPING;
         }
+
+        m_sessionExiting = true;
 
         m_sessionState = XR_SESSION_STATE_IDLE;
         m_sessionStateDirty = true;

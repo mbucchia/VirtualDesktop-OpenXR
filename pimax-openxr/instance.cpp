@@ -299,7 +299,7 @@ namespace pimax_openxr {
             m_sessionStateDirty = false;
 
             if (m_sessionState == XR_SESSION_STATE_IDLE) {
-                m_sessionState = XR_SESSION_STATE_READY;
+                m_sessionState = !m_sessionExiting ? XR_SESSION_STATE_READY : XR_SESSION_STATE_EXITING;
                 m_sessionStateDirty = true;
                 m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
             }

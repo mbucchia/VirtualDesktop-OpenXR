@@ -71,7 +71,7 @@ namespace pimax_openxr {
         // that it sees every single state.
 
         bool wasSessionStateDirty = m_sessionStateDirty;
-        if (!wasSessionStateDirty && status.IsVisible) {
+        if (!wasSessionStateDirty && status.IsVisible && !m_sessionExiting) {
             if (m_sessionState == XR_SESSION_STATE_SYNCHRONIZED) {
                 m_sessionState = XR_SESSION_STATE_VISIBLE;
                 m_sessionStateDirty = true;
@@ -93,7 +93,8 @@ namespace pimax_openxr {
 
             frameState->shouldRender = XR_TRUE;
         } else {
-            if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED) {
+            if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_STOPPING &&
+                !m_sessionExiting) {
                 m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
                 m_sessionStateDirty = true;
             }

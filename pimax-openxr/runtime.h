@@ -409,6 +409,7 @@ namespace pimax_openxr {
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         bool m_sessionStateDirty{false};
+        bool m_sessionExiting{false};
         double m_sessionStateEventTime{0.0};
         std::set<XrSwapchain> m_swapchains;
         std::set<XrSpace> m_spaces;
