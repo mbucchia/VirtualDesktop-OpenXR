@@ -202,7 +202,7 @@ namespace pimax_openxr {
 
             std::unique_lock lock(m_frameLock);
 
-            if (!m_frameWaited) {
+            if (!m_frameWaited && !m_frameBegun) {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
