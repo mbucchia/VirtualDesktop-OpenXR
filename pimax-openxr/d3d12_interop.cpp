@@ -264,6 +264,7 @@ namespace pimax_openxr {
             return;
         }
 
+        CHECK_HRCMD(m_d3d12CommandAllocator.Reset());
         CHECK_HRCMD(xrSwapchain.d3d12CommandList->Reset(m_d3d12CommandAllocator.Get(), nullptr));
         D3D12_RESOURCE_BARRIER barrier{};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
