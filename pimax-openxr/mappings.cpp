@@ -73,7 +73,8 @@ namespace pimax_openxr {
                 return false;
             });
         m_controllerMappingTable.insert_or_assign(
-            std::make_pair("", "/interaction_profiles/htc/vive_controller"),
+            std::make_pair("/interaction_profiles/microsoft/motion_controller",
+                           "/interaction_profiles/htc/vive_controller"),
             [&](const Action& xrAction, XrPath binding, ActionSource& source) {
                 const auto remapped = remapMicrosoftMotionControllerToViveController(getXrPath(binding));
                 if (remapped.has_value()) {
