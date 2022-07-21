@@ -389,9 +389,9 @@ namespace pimax_openxr {
                         layer.EyeFov.Fov[eye].LeftTan = -tan(proj->views[eye].fov.angleLeft);
                         layer.EyeFov.Fov[eye].RightTan = tan(proj->views[eye].fov.angleRight);
 
-                        // This looks incorrect (because "sensor time" should be different from "display time"), but
-                        // this is what the PVR sample code does.
-                        layer.EyeFov.SensorSampleTime = xrTimeToPvrTime(frameEndInfo->displayTime);
+                        // Other applications (eg: SteamVR) always pass 0, and I am observing strange flickering when
+                        // passing any other value. Let's follow what SteamVR does.
+                        layer.EyeFov.SensorSampleTime = 0;
 
                         // Submit depth.
                         if (m_isDepthSupported) {
