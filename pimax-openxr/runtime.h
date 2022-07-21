@@ -257,7 +257,6 @@ namespace pimax_openxr {
 
             // Resources needed for interop.
             std::vector<ComPtr<ID3D12Resource>> d3d12Images;
-            ComPtr<ID3D12GraphicsCommandList> d3d12CommandList;
             std::vector<VkDeviceMemory> vkDeviceMemory;
             std::vector<VkImage> vkImages;
             VkCommandBuffer vkCmdBuffer{VK_NULL_HANDLE};
@@ -425,10 +424,16 @@ namespace pimax_openxr {
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
 
+        // Synchronization. Locks must be acquired in this order.
+        std::mutex m_swapchainsLock;
+        std::mutex m_frameLock;
+
         // Graphics API interop.
         ComPtr<ID3D12Device> m_d3d12Device;
         ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
-        ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator;
+        ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator[2];
+        ComPtr<ID3D12GraphicsCommandList> m_d3d12CommandList[2];
+        uint32_t m_currentAllocatorIndex{0};
         VkInstance m_vkBootstrapInstance{VK_NULL_HANDLE};
         VkPhysicalDevice m_vkBootstrapPhysicalDevice{VK_NULL_HANDLE};
         VkInstance m_vkInstance{VK_NULL_HANDLE};
@@ -472,7 +477,6 @@ namespace pimax_openxr {
         UINT64 m_fenceValue{0};
 
         // Frame state.
-        std::mutex m_frameLock;
         std::condition_variable m_frameCondVar;
         bool m_frameWaited{false};
         bool m_frameBegun{false};

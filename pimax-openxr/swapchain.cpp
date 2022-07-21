@@ -284,6 +284,8 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        std::unique_lock lock(m_swapchainsLock);
+
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateSwapchain",
                           TLXArg(session, "Session"),
@@ -392,6 +394,8 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroySwapchain
     XrResult OpenXrRuntime::xrDestroySwapchain(XrSwapchain swapchain) {
+        std::unique_lock lock(m_swapchainsLock);
+
         TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain", TLXArg(swapchain, "Swapchain"));
 
         if (!m_swapchains.count(swapchain)) {
@@ -433,6 +437,8 @@ namespace pimax_openxr {
                                                        uint32_t imageCapacityInput,
                                                        uint32_t* imageCountOutput,
                                                        XrSwapchainImageBaseHeader* images) {
+        std::unique_lock lock(m_swapchainsLock);
+
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateSwapchainImages",
                           TLXArg(swapchain, "Swapchain"),
@@ -478,6 +484,8 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        std::unique_lock lock(m_swapchainsLock);
+
         TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage", TLXArg(swapchain, "Swapchain"));
 
         if (!m_swapchains.count(swapchain)) {
@@ -517,6 +525,8 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        std::unique_lock lock(m_swapchainsLock);
+
         TraceLoggingWrite(g_traceProvider,
                           "xrWaitSwapchainImage",
                           TLXArg(swapchain, "Swapchain"),
@@ -537,6 +547,8 @@ namespace pimax_openxr {
         if (releaseInfo && releaseInfo->type != XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO) {
             return XR_ERROR_VALIDATION_FAILURE;
         }
+
+        std::unique_lock lock(m_swapchainsLock);
 
         TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage", TLXArg(swapchain, "Swapchain"));
 

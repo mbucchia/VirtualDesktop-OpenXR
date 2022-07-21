@@ -288,7 +288,8 @@ namespace pimax_openxr {
 
         // Critical section.
         {
-            std::unique_lock lock(m_frameLock);
+            std::unique_lock lock1(m_swapchainsLock);
+            std::unique_lock lock2(m_frameLock);
 
             if (!m_frameBegun) {
                 return XR_ERROR_CALL_ORDER_INVALID;

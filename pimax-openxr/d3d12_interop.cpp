@@ -155,8 +155,16 @@ namespace pimax_openxr {
         m_fenceValue = 0;
 
         // We will need command lists to perform layout transitions.
-        CHECK_HRCMD(m_d3d12Device->CreateCommandAllocator(
-            D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_d3d12CommandAllocator.ReleaseAndGetAddressOf())));
+        for (uint32_t i = 0; i < 2; i++) {
+            CHECK_HRCMD(m_d3d12Device->CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_d3d12CommandAllocator[i].ReleaseAndGetAddressOf())));
+            CHECK_HRCMD(m_d3d12Device->CreateCommandList(0,
+                                                         D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                         m_d3d12CommandAllocator[i].Get(),
+                                                         nullptr,
+                                                         IID_PPV_ARGS(m_d3d12CommandList[i].ReleaseAndGetAddressOf())));
+            CHECK_HRCMD(m_d3d12CommandList[i]->Close());
+        }
 
         return XR_SUCCESS;
     }
@@ -172,7 +180,10 @@ namespace pimax_openxr {
             ResetEvent(eventHandle.get());
         }
 
-        m_d3d12CommandAllocator.Reset();
+        for (uint32_t i = 0; i < 2; i++) {
+            m_d3d12CommandList[i].Reset();
+            m_d3d12CommandAllocator[i].Reset();
+        }
         m_d3d12Fence.Reset();
         m_d3d11Fence.Reset();
         m_d3d12CommandQueue.Reset();
@@ -197,15 +208,6 @@ namespace pimax_openxr {
             if (XR_FAILED(result)) {
                 return result;
             }
-
-            // Create the command list needed for transitioning the resources.
-            CHECK_HRCMD(
-                m_d3d12Device->CreateCommandList(0,
-                                                 D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                                 m_d3d12CommandAllocator.Get(),
-                                                 nullptr,
-                                                 IID_PPV_ARGS(xrSwapchain.d3d12CommandList.ReleaseAndGetAddressOf())));
-            CHECK_HRCMD(xrSwapchain.d3d12CommandList->Close());
         }
 
         // Export each D3D11 texture to D3D12.
@@ -264,8 +266,8 @@ namespace pimax_openxr {
             return;
         }
 
-        CHECK_HRCMD(m_d3d12CommandAllocator.Reset());
-        CHECK_HRCMD(xrSwapchain.d3d12CommandList->Reset(m_d3d12CommandAllocator.Get(), nullptr));
+        CHECK_HRCMD(m_d3d12CommandList[m_currentAllocatorIndex]->Reset(
+            m_d3d12CommandAllocator[m_currentAllocatorIndex].Get(), nullptr));
         D3D12_RESOURCE_BARRIER barrier{};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         barrier.Transition.pResource = xrSwapchain.d3d12Images[index].Get();
@@ -274,11 +276,11 @@ namespace pimax_openxr {
         barrier.Transition.StateAfter = xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
                                             ? D3D12_RESOURCE_STATE_RENDER_TARGET
                                             : D3D12_RESOURCE_STATE_DEPTH_WRITE;
-        xrSwapchain.d3d12CommandList->ResourceBarrier(1, &barrier);
-        CHECK_HRCMD(xrSwapchain.d3d12CommandList->Close());
+        m_d3d12CommandList[m_currentAllocatorIndex]->ResourceBarrier(1, &barrier);
+        CHECK_HRCMD(m_d3d12CommandList[m_currentAllocatorIndex]->Close());
 
         m_d3d12CommandQueue->ExecuteCommandLists(
-            1, reinterpret_cast<ID3D12CommandList**>(xrSwapchain.d3d12CommandList.GetAddressOf()));
+            1, reinterpret_cast<ID3D12CommandList**>(m_d3d12CommandList[m_currentAllocatorIndex].GetAddressOf()));
     }
 
     // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.
@@ -299,6 +301,10 @@ namespace pimax_openxr {
         if (IsTraceEnabled()) {
             m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->stop();
         }
+
+        // We also use this opportunity to switch command list.
+        m_currentAllocatorIndex ^= 1;
+        m_d3d12CommandAllocator[m_currentAllocatorIndex]->Reset();
     }
 
 } // namespace pimax_openxr
