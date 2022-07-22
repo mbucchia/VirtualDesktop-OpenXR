@@ -143,18 +143,19 @@ namespace RUNTIME_NAMESPACE {
                 if cur_cmd.return_type is not None:
                     generated += f'''
 	XrResult XRAPI_CALL {cur_cmd.name}({parameters_list}) {{
-		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "{cur_cmd.name}");
 
 		XrResult result;
 		try {{
 			result = RUNTIME_NAMESPACE::GetInstance()->{cur_cmd.name}({arguments_list});
 		}} catch (std::exception& exc) {{
-			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
+			TraceLoggingWriteTagged(local, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
 			ErrorLog("{cur_cmd.name}: %s\\n", exc.what());
 			result = XR_ERROR_RUNTIME_FAILURE;
 		}}
 
-		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Result", TLArg(xr::ToCString(result), "Result"));
+		TraceLoggingWriteStop(local, "{cur_cmd.name}", TLArg(xr::ToCString(result), "Result"));
 		if (XR_FAILED(result)) {{
 			ErrorLog("{cur_cmd.name} failed with %s\\n", xr::ToCString(result));
 		}}
@@ -165,16 +166,17 @@ namespace RUNTIME_NAMESPACE {
                 else:
                     generated += f'''
 	void XRAPI_CALL {cur_cmd.name}({parameters_list}) {{
-		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}");
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "{cur_cmd.name}");
 
 		try {{
 			RUNTIME_NAMESPACE::GetInstance()->{cur_cmd.name}({arguments_list});
 		}} catch (std::exception& exc) {{
-			TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
+			TraceLoggingWriteTagged(local, "{cur_cmd.name}_Error", TLArg(exc.what(), "Error"));
 			ErrorLog("{cur_cmd.name}: %s\\n", exc.what());
 		}}
 
-		TraceLoggingWrite(g_traceProvider, "{cur_cmd.name}_Complete");
+		TraceLoggingWriteStop(local, "{cur_cmd.name}");
 	}}
 '''
                 
