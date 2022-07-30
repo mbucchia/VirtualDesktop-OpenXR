@@ -10,10 +10,13 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 
 # Contributors
 
+Logo and icons designed by Smitty.
+
 Special thanks to the following individuals for their contributions:
 
 - Vladimir Dranyonkov
 - Pavel Skakov
+- DJSlane
 
 # Very special thanks
 
