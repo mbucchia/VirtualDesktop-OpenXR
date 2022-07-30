@@ -193,6 +193,8 @@ namespace pimax_openxr {
             return false;
         }
 
+        source.realPath = path;
+
         return true;
     }
 
@@ -272,6 +274,8 @@ namespace pimax_openxr {
             return false;
         }
 
+        source.realPath = path;
+
         return true;
     }
 
@@ -295,6 +299,8 @@ namespace pimax_openxr {
             // No possible binding.
             return false;
         }
+
+        source.realPath = path;
 
         return true;
     }
@@ -421,11 +427,13 @@ namespace pimax_openxr {
             endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
             endsWith(path, "/input/thumbstick/touch")) {
             return rreplace(path, "/input/thumbstick", "/input/trackpad");
+        } else if (endsWith(path, "/input/squeeze/value")) {
+            return rreplace(path, "/input/squeeze/value", "/input/squeeze/click");
         } else if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
                    endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
-                   endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
-                   endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
-                   endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger")) {
+                   endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze") ||
+                   endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                   endsWith(path, "/input/trigger")) {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {
@@ -438,13 +446,14 @@ namespace pimax_openxr {
 
     std::optional<std::string>
     OpenXrRuntime::remapMicrosoftMotionControllerToViveController(const std::string& path) const {
-        if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
-            endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
-            endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
-            endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger") ||
-            endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
-            endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
-            endsWith(path, "/input/trackpad/touch")) {
+        if (endsWith(path, "/input/squeeze/value")) {
+            return rreplace(path, "/input/squeeze/value", "/input/squeeze/click");
+        } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                   endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze") ||
+                   endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                   endsWith(path, "/input/trigger") || endsWith(path, "/input/trackpad") ||
+                   endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
+                   endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/touch")) {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {

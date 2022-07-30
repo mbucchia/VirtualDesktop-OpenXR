@@ -282,6 +282,8 @@ namespace pimax_openxr {
 
             const uint32_t* buttonMap{nullptr};
             pvrButton buttonType;
+
+            std::string realPath;
         };
 
         struct Action {

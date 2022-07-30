@@ -428,7 +428,7 @@ namespace pimax_openxr {
             const auto& value = source.second;
             const bool isBound = value.floatValue != nullptr ||
                                  (value.vector2fValue != nullptr && value.vector2fIndex >= 0) ||
-                                 value.buttonMap == nullptr;
+                                 value.buttonMap != nullptr;
             TraceLoggingWrite(g_traceProvider,
                               "xrGetActionStateFloat",
                               TLArg(fullPath.c_str(), "ActionSourcePath"),
@@ -440,13 +440,14 @@ namespace pimax_openxr {
                 if (m_isControllerActive[side] && m_frameLatchedActionSets.count(xrAction.actionSet)) {
                     // Per spec, the combined state is the absolute maximum of all values.
                     if (value.floatValue) {
-                        combinedState = max(combinedState.value_or(0.f), value.floatValue[side]);
+                        combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
+                                            value.floatValue[side]);
                     } else if (value.buttonMap) {
-                        combinedState =
-                            max(combinedState.value_or(0.f), value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
+                        combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
+                                            value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
                     } else {
                         combinedState =
-                            max(combinedState.value_or(0.f),
+                            max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
                                 value.vector2fIndex == 0 ? value.vector2fValue[side].x : value.vector2fValue[side].y);
                     }
                 }
@@ -627,13 +628,14 @@ namespace pimax_openxr {
             TraceLoggingWrite(g_traceProvider,
                               "xrSyncActions",
                               TLXArg(syncInfo->activeActionSets[i].actionSet, "ActionSet"),
-                              TLArg(syncInfo->activeActionSets[i].subactionPath, "SubactionPath"));
+                              TLArg(getXrPath(syncInfo->activeActionSets[i].subactionPath).c_str(), "SubactionPath"));
         }
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        bool doSide[2] = {false, false};
         for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
             if (!m_activeActionSets.count(syncInfo->activeActionSets[i].actionSet)) {
                 return XR_ERROR_ACTIONSET_NOT_ATTACHED;
@@ -641,12 +643,25 @@ namespace pimax_openxr {
 
             m_frameLatchedActionSets.insert(syncInfo->activeActionSets[i].actionSet);
 
-            // COMPLIANCE: We do nothing with subActionPath.
+            // COMPLIANCE: We do not precisely honor subActionPath with multiple action sets.
+
+            if (syncInfo->activeActionSets[i].subactionPath == XR_NULL_PATH) {
+                doSide[0] = doSide[1] = true;
+            } else {
+                const int side = getActionSide(getXrPath(syncInfo->activeActionSets[i].subactionPath));
+                if (side >= 0) {
+                    doSide[side] = true;
+                }
+            }
         }
 
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
         CHECK_PVRCMD(pvr_getInputState(m_pvrSession, &m_cachedInputState));
         for (uint32_t side = 0; side < 2; side++) {
+            if (!doSide[side]) {
+                continue;
+            }
+
             TraceLoggingWrite(
                 g_traceProvider,
                 "PVR_InputState",
@@ -740,7 +755,7 @@ namespace pimax_openxr {
         if (sourceCapacityInput && sources) {
             uint32_t i = 0;
             for (const auto& source : xrAction.actionSources) {
-                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, source.first.c_str(), &sources[i]));
+                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, source.second.realPath.c_str(), &sources[i]));
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateBoundSourcesForAction",
                                   TLArg(source.first.c_str(), "Source"),
@@ -782,23 +797,33 @@ namespace pimax_openxr {
 
         const int side = getActionSide(path);
         if (side >= 0) {
+            bool needSpace = false;
+
             if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT)) {
-                localizedName += side == 0 ? "Left Hand " : "Right Hand ";
+                localizedName += side == 0 ? "Left Hand" : "Right Hand";
+                needSpace = true;
             }
 
             if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT)) {
-                localizedName += m_localizedControllerType[side] + " ";
+                if (needSpace) {
+                    localizedName += " ";
+                }
+                localizedName += m_localizedControllerType[side];
+                needSpace = true;
             }
 
             if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT)) {
-                const std::string& interactionProfile = getXrPath(m_currentInteractionProfile[side]);
-                if (interactionProfile == "/interaction_profiles/htc/vive_controller") {
+                if (needSpace) {
+                    localizedName += " ";
+                }
+                if (m_cachedControllerType[side] == "vive_controller") {
                     localizedName += getViveControllerLocalizedSourceName(path);
-                } else if (interactionProfile == "/interaction_profiles/valve/index_controller") {
+                } else if (m_cachedControllerType[side] == "knuckles") {
                     localizedName += getIndexControllerLocalizedSourceName(path);
-                } else if (interactionProfile == "/interaction_profiles/khr/simple_controller") {
+                } else {
                     localizedName += getSimpleControllerLocalizedSourceName(path);
                 }
+                needSpace = true;
             }
         }
 
@@ -1020,7 +1045,25 @@ namespace pimax_openxr {
                     // Map to the PVR input state.
                     ActionSource newSource{};
                     if (mapping(xrAction, binding.binding, newSource)) {
-                        xrAction.actionSources.insert_or_assign(sourcePath, newSource);
+                        // Avoid duplicates. This is because we (lazily) don't handle subActionPath properly.
+                        bool duplicated = false;
+                        for (const auto& source : xrAction.actionSources) {
+                            if (source.second.realPath == newSource.realPath) {
+                                duplicated = true;
+                                break;
+                            }
+                        }
+
+                        if (!duplicated) {
+                            TraceLoggingWrite(g_traceProvider,
+                                              "xrSyncActions_MapActionSource",
+                                              TLArg(sourcePath.c_str(), "ActionPath"),
+                                              TLArg(newSource.realPath.c_str(), "SourcePath"),
+                                              TLArg(!!newSource.buttonMap, "IsButton"),
+                                              TLArg(!!newSource.floatValue, "IsFloat"),
+                                              TLArg(!!newSource.vector2fValue, "IsVector2"));
+                            xrAction.actionSources.insert_or_assign(sourcePath, newSource);
+                        }
                     }
                 }
             }
