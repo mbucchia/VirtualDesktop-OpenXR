@@ -318,21 +318,19 @@ namespace pimax_openxr::appinsights {
     }
 
     void AppInsights::tick() {
+        // Process completion of transactions.
+        std::unique_lock lock(m_poolLock);
+
         int running;
         curl_multi_perform(m_multiHandle, &running);
         curl_multi_poll(m_multiHandle, NULL, 0, 0, NULL);
 
-        // Process completion of transactions.
-        {
-            std::unique_lock lock(m_poolLock);
-
-            int msgLeft;
-            while (auto m = curl_multi_info_read(m_multiHandle, &msgLeft)) {
-                if (m && (m->msg == CURLMSG_DONE)) {
-                    DebugLog("Application Insight transaction result: %d\n", m->data.result);
-                    m_inflight.erase(m->easy_handle);
-                    m_pool.push_back(m->easy_handle);
-                }
+        int msgLeft;
+        while (auto m = curl_multi_info_read(m_multiHandle, &msgLeft)) {
+            if (m && (m->msg == CURLMSG_DONE)) {
+                DebugLog("Application Insight transaction result: %d\n", m->data.result);
+                m_inflight.erase(m->easy_handle);
+                m_pool.push_back(m->easy_handle);
             }
         }
     }
