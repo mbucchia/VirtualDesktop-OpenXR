@@ -211,10 +211,7 @@ namespace pimax_openxr {
     }
 
     void OpenXrRuntime::cleanupD3D11() {
-        // Flush any pending work.
-        wil::unique_handle eventHandle;
-        m_d3d11DeviceContext->Flush1(D3D11_CONTEXT_TYPE_ALL, eventHandle.get());
-        WaitForSingleObject(eventHandle.get(), INFINITE);
+        flushD3D11Context();
 
         for (uint32_t i = 0; i < 2; i++) {
             m_gpuTimerSynchronizationDuration[i].reset();
@@ -422,9 +419,8 @@ namespace pimax_openxr {
                         &desc,
                         xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex]
                             .ReleaseAndGetAddressOf()));
-                    setDebugName(
-                        xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex].Get(),
-                        fmt::format("DepthResolve SRV[{}, {}, {}]",
+                    setDebugName(xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex].Get(),
+                                 fmt::format("DepthResolve SRV[{}, {}, {}]",
                                              slice,
                                              xrSwapchain.currentAcquiredIndex,
                                              (void*)&xrSwapchain));
@@ -487,6 +483,13 @@ namespace pimax_openxr {
         // Commit the texture to PVR.
         CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, xrSwapchain.pvrSwapchain[slice]));
         committed.insert(std::make_pair(xrSwapchain.pvrSwapchain[0], slice));
+    }
+
+    // Flush any pending work.
+    void OpenXrRuntime::flushD3D11Context() {
+        wil::unique_handle eventHandle;
+        m_d3d11DeviceContext->Flush1(D3D11_CONTEXT_TYPE_ALL, eventHandle.get());
+        WaitForSingleObject(eventHandle.get(), INFINITE);
     }
 
 } // namespace pimax_openxr

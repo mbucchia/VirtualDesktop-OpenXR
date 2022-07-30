@@ -402,6 +402,15 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        // Make sure there are no pending operations.
+        if (isD3D12Session()) {
+            flushD3D12CommandQueue();
+        } else if (isVulkanSession()) {
+            flushVulkanCommandQueue();
+        } else {
+            flushD3D11Context();
+        }
+
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
         while (!xrSwapchain.pvrSwapchain.empty()) {

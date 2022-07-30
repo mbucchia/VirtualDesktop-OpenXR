@@ -350,6 +350,7 @@ namespace pimax_openxr {
         void prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
                                             uint32_t slice,
                                             std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const;
+        void flushD3D11Context();
 
         // d3d12_interop.cpp
         XrResult initializeD3D12(const XrGraphicsBindingD3D12KHR& d3dBindings);
@@ -357,6 +358,7 @@ namespace pimax_openxr {
         bool isD3D12Session() const;
         XrResult getSwapchainImagesD3D12(Swapchain& xrSwapchain, XrSwapchainImageD3D12KHR* d3d12Images, uint32_t count);
         void transitionImageD3D12(Swapchain& xrSwapchain, uint32_t index, bool acquire);
+        void flushD3D12CommandQueue();
         void serializeD3D12Frame();
 
         // vulkan_interop.cpp
@@ -366,6 +368,7 @@ namespace pimax_openxr {
         bool isVulkanSession() const;
         XrResult getSwapchainImagesVulkan(Swapchain& xrSwapchain, XrSwapchainImageVulkanKHR* vkImages, uint32_t count);
         void transitionImageVulkan(Swapchain& xrSwapchain, uint32_t index, bool acquire);
+        void flushVulkanCommandQueue();
         void serializeVulkanFrame();
 
         // visibility_mask.cpp
@@ -464,6 +467,7 @@ namespace pimax_openxr {
             PFN_vkCreateSemaphore vkCreateSemaphore{nullptr};
             PFN_vkDestroySemaphore vkDestroySemaphore{nullptr};
             PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR{nullptr};
+            PFN_vkWaitSemaphores vkWaitSemaphores{nullptr};
             PFN_vkDeviceWaitIdle vkDeviceWaitIdle{nullptr};
         } m_vkDispatch;
         const VkAllocationCallbacks* m_vkAllocator{nullptr};

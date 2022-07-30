@@ -170,15 +170,7 @@ namespace pimax_openxr {
     }
 
     void OpenXrRuntime::cleanupD3D12() {
-        // Wait for all the queued work to complete.
-        if (m_d3d12CommandQueue && m_d3d12Fence) {
-            wil::unique_handle eventHandle;
-            m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), ++m_fenceValue);
-            *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
-            CHECK_HRCMD(m_d3d12Fence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
-            WaitForSingleObject(eventHandle.get(), INFINITE);
-            ResetEvent(eventHandle.get());
-        }
+        flushD3D12CommandQueue();
 
         for (uint32_t i = 0; i < 2; i++) {
             m_d3d12CommandList[i].Reset();
@@ -281,6 +273,21 @@ namespace pimax_openxr {
 
         m_d3d12CommandQueue->ExecuteCommandLists(
             1, reinterpret_cast<ID3D12CommandList**>(m_d3d12CommandList[m_currentAllocatorIndex].GetAddressOf()));
+    }
+
+    // Wait for all pending commands to finish.
+    void OpenXrRuntime::flushD3D12CommandQueue() {
+        if (m_d3d12CommandQueue && m_d3d12Fence) {
+            wil::unique_handle eventHandle;
+            m_fenceValue++;
+            TraceLoggingWrite(
+                g_traceProvider, "xrDestroySwapchain_Wait", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));
+            m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue);
+            *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
+            CHECK_HRCMD(m_d3d12Fence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
+            WaitForSingleObject(eventHandle.get(), INFINITE);
+            ResetEvent(eventHandle.get());
+        }
     }
 
     // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.

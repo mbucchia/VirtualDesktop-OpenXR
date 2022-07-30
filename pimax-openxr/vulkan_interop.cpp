@@ -551,6 +551,7 @@ namespace pimax_openxr {
         VK_GET_PTR(vkCreateSemaphore);
         VK_GET_PTR(vkDestroySemaphore);
         VK_GET_PTR(vkImportSemaphoreWin32HandleKHR);
+        VK_GET_PTR(vkWaitSemaphores);
         VK_GET_PTR(vkDeviceWaitIdle);
 
 #undef VK_GET_PTR
@@ -778,6 +779,27 @@ namespace pimax_openxr {
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &xrSwapchain.vkCmdBuffer;
         CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
+    }
+
+    // Wait for all pending commands to finish.
+    void OpenXrRuntime::flushVulkanCommandQueue() {
+        if (m_vkDispatch.vkQueueSubmit && m_vkDispatch.vkWaitSemaphores) {
+            m_fenceValue++;
+            TraceLoggingWrite(
+                g_traceProvider, "xrDestroySwapchain_Wait", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
+            VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
+            timelineInfo.signalSemaphoreValueCount = 1;
+            timelineInfo.pSignalSemaphoreValues = &m_fenceValue;
+            VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo};
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = &m_vkTimelineSemaphore;
+            CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
+            VkSemaphoreWaitInfo waitInfo{VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO};
+            waitInfo.semaphoreCount = 1;
+            waitInfo.pSemaphores = &m_vkTimelineSemaphore;
+            waitInfo.pValues = &m_fenceValue;
+            CHECK_VKCMD(m_vkDispatch.vkWaitSemaphores(m_vkDevice, &waitInfo, -1));
+        }
     }
 
     // Serialize commands from the Vulkan queue to the D3D11 context used by PVR.
