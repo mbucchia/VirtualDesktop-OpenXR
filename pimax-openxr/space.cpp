@@ -127,6 +127,7 @@ namespace pimax_openxr {
 
         // Create the internal struct.
         Space& xrSpace = *new Space;
+        xrSpace.referenceType = XR_REFERENCE_SPACE_TYPE_MAX_ENUM;
         xrSpace.action = createInfo->action;
         xrSpace.subActionPath = createInfo->subactionPath;
         xrSpace.poseInSpace = createInfo->poseInActionSpace;
