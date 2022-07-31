@@ -174,13 +174,25 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        XrSpaceVelocity* velocity = reinterpret_cast<XrSpaceVelocity*>(location->next);
+        while (velocity) {
+            if (velocity->type == XR_TYPE_SPACE_VELOCITY) {
+                break;
+            }
+            velocity = reinterpret_cast<XrSpaceVelocity*>(velocity->next);
+        }
+
         Space& xrSpace = *(Space*)space;
         Space& xrBaseSpace = *(Space*)baseSpace;
 
         XrPosef spaceToVirtual = Pose::Identity();
+        XrSpaceVelocity spaceToVirtualVelocity{};
         XrPosef baseSpaceToVirtual = Pose::Identity();
-        const auto flags1 = locateSpaceToOrigin(xrSpace, time, spaceToVirtual);
-        const auto flags2 = locateSpaceToOrigin(xrBaseSpace, time, baseSpaceToVirtual);
+        XrSpaceVelocity baseSpaceToVirtualVelocity{};
+        const auto flags1 =
+            locateSpaceToOrigin(xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr);
+        const auto flags2 = locateSpaceToOrigin(
+            xrBaseSpace, time, baseSpaceToVirtual, velocity ? &baseSpaceToVirtualVelocity : nullptr);
 
         // If either pose is not valid, we cannot locate.
         if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags1))) {
@@ -198,11 +210,33 @@ namespace pimax_openxr {
 
         // Combine the poses.
         location->pose = Pose::Multiply(spaceToVirtual, Pose::Invert(baseSpaceToVirtual));
+        if (velocity) {
+            velocity->velocityFlags = spaceToVirtualVelocity.velocityFlags & baseSpaceToVirtualVelocity.velocityFlags;
+            if (velocity->velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT) {
+                velocity->angularVelocity =
+                    spaceToVirtualVelocity.angularVelocity - baseSpaceToVirtualVelocity.angularVelocity;
+            }
+            if (velocity->velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT) {
+                // TODO: Does not account for centripetral forces.
+                velocity->linearVelocity =
+                    spaceToVirtualVelocity.linearVelocity - baseSpaceToVirtualVelocity.linearVelocity;
+            }
+        }
 
-        TraceLoggingWrite(g_traceProvider,
-                          "xrLocateSpace",
-                          TLArg(location->locationFlags, "LocationFlags"),
-                          TLArg(xr::ToString(location->pose).c_str(), "Pose"));
+        if (!velocity) {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrLocateSpace",
+                              TLArg(location->locationFlags, "LocationFlags"),
+                              TLArg(xr::ToString(location->pose).c_str(), "Pose"));
+        } else {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrLocateSpace",
+                              TLArg(location->locationFlags, "LocationFlags"),
+                              TLArg(xr::ToString(location->pose).c_str(), "Pose"),
+                              TLArg(velocity->velocityFlags, "VelocityFlags"),
+                              TLArg(xr::ToString(velocity->angularVelocity).c_str(), "AngularVelocity"),
+                              TLArg(xr::ToString(velocity->linearVelocity).c_str(), "LinearVelocity"));
+        }
 
         return XR_SUCCESS;
     }
@@ -312,22 +346,36 @@ namespace pimax_openxr {
         return XR_SUCCESS;
     }
 
-    XrSpaceLocationFlags OpenXrRuntime::locateSpaceToOrigin(const Space& xrSpace, XrTime time, XrPosef& pose) const {
+    XrSpaceLocationFlags OpenXrRuntime::locateSpaceToOrigin(const Space& xrSpace,
+                                                            XrTime time,
+                                                            XrPosef& pose,
+                                                            XrSpaceVelocity* velocity) const {
         XrSpaceLocationFlags result = 0;
+
+        if (velocity) {
+            velocity->angularVelocity = velocity->linearVelocity = {0, 0, 0};
+            velocity->velocityFlags = 0;
+        }
 
         if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
             // VIEW space if the headset pose.
-            result = getHmdPose(time, pose);
+            result = getHmdPose(time, pose, velocity);
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_LOCAL) {
             // LOCAL space is the origin reference.
             pose = Pose::Identity();
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+            if (velocity) {
+                velocity->velocityFlags = XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            }
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
             // STAGE space is the origin reference at eye level.
             pose = Pose::Translation({0, -m_floorHeight, 0});
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+            if (velocity) {
+                velocity->velocityFlags = XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            }
         } else if (xrSpace.action != XR_NULL_HANDLE) {
             // Action spaces for motion controllers.
             Action& xrAction = *(Action*)xrSpace.action;
@@ -345,7 +393,7 @@ namespace pimax_openxr {
                 const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
                 const int side = getActionSide(fullPath);
                 if ((isGripPose || isAimPose) && side >= 0) {
-                    result = getControllerPose(side, time, pose);
+                    result = getControllerPose(side, time, pose, velocity);
 
                     // Apply the aim pose offset.
                     if (isAimPose) {
@@ -364,14 +412,16 @@ namespace pimax_openxr {
         return result;
     }
 
-    XrSpaceLocationFlags OpenXrRuntime::getHmdPose(XrTime time, XrPosef& pose) const {
+    XrSpaceLocationFlags OpenXrRuntime::getHmdPose(XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const {
         XrSpaceLocationFlags locationFlags = 0;
         pvrPoseStatef state{};
         CHECK_PVRCMD(pvr_getTrackedDevicePoseState(m_pvrSession, pvrTrackedDevice_HMD, xrTimeToPvrTime(time), &state));
         TraceLoggingWrite(g_traceProvider,
                           "PVR_HmdPoseState",
                           TLArg(state.StatusFlags, "StatusFlags"),
-                          TLArg(xr::ToString(state.ThePose).c_str(), "Pose"));
+                          TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
+                          TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),
+                          TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
 
         pose = pvrPoseToXrPose(state.ThePose);
         if (state.StatusFlags & pvrStatus_OrientationTracked) {
@@ -386,10 +436,24 @@ namespace pimax_openxr {
             pose.position = {};
         }
 
+        if (velocity) {
+            velocity->velocityFlags = 0;
+
+            if (state.StatusFlags & pvrStatus_OrientationTracked) {
+                velocity->angularVelocity = pvrVector3dToXrVector3f(state.AngularVelocity);
+                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+            }
+            if (state.StatusFlags & pvrStatus_PositionTracked) {
+                velocity->linearVelocity = pvrVector3dToXrVector3f(state.LinearVelocity);
+                velocity->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            }
+        }
+
         return locationFlags;
     }
 
-    XrSpaceLocationFlags OpenXrRuntime::getControllerPose(int side, XrTime time, XrPosef& pose) const {
+    XrSpaceLocationFlags
+    OpenXrRuntime::getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const {
         XrSpaceLocationFlags locationFlags = 0;
         pvrPoseStatef state{};
         CHECK_PVRCMD(pvr_getTrackedDevicePoseState(m_pvrSession,
@@ -401,7 +465,9 @@ namespace pimax_openxr {
                           "PVR_ControllerPoseState",
                           TLArg(side == 0 ? "Left" : "Right", "Side"),
                           TLArg(state.StatusFlags, "StatusFlags"),
-                          TLArg(xr::ToString(state.ThePose).c_str(), "Pose"));
+                          TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
+                          TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),
+                          TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
 
         pose = pvrPoseToXrPose(state.ThePose);
         if (state.StatusFlags & pvrStatus_OrientationTracked) {
@@ -413,6 +479,19 @@ namespace pimax_openxr {
             locationFlags |= XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
         } else {
             pose.position = {};
+        }
+
+        if (velocity) {
+            velocity->velocityFlags = 0;
+
+            if (state.StatusFlags & pvrStatus_OrientationTracked) {
+                velocity->angularVelocity = pvrVector3dToXrVector3f(state.AngularVelocity);
+                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+            }
+            if (state.StatusFlags & pvrStatus_PositionTracked) {
+                velocity->linearVelocity = pvrVector3dToXrVector3f(state.LinearVelocity);
+                velocity->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            }
         }
 
         return locationFlags;

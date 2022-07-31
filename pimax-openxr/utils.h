@@ -65,6 +65,14 @@ namespace xr {
                            pose.orientation.w);
     }
 
+    static inline std::string ToString(pvrVector3f vec) {
+        return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
+    }
+
+    static inline std::string ToString(XrVector3f vec) {
+        return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
+    }
+
     static inline std::string ToString(XrFovf fov) {
         return fmt::format(
             "(l:{:.3f}, r:{:.3f}, u:{:.3f}, d:{:.3f})", fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown);
@@ -262,6 +270,15 @@ namespace pimax_openxr::utils {
         pvrPose.Orientation.w = xrPose.orientation.w;
 
         return pvrPose;
+    }
+
+    static inline XrVector3f pvrVector3dToXrVector3f(const pvrVector3f& pvrVector3f) {
+        XrVector3f xrVector3f;
+        xrVector3f.x = pvrVector3f.x;
+        xrVector3f.y = pvrVector3f.y;
+        xrVector3f.z = pvrVector3f.z;
+
+        return xrVector3f;
     }
 
     static pvrTextureFormat dxgiToPvrTextureFormat(DXGI_FORMAT format) {
