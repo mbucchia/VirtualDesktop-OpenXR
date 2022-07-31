@@ -336,6 +336,14 @@ namespace {
         const auto& result = g_realPvrInterface.beginFrame(hmdh, frameIndex);
         TraceLoggingWriteStop(local, "PVR_beginFrame", TLArg(ToString(result).c_str(), "result"));
 
+        TraceLoggingWriteTagged(
+            local,
+            "PVR_status",
+            TLArg(!!g_realPvrInterface.getIntConfig(hmdh, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
+            TLArg(g_realPvrInterface.getIntConfig(hmdh, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"),
+            TLArg(!!g_realPvrInterface.getIntConfig(hmdh, "asw_available", 0), "SmartSmoothingAvailable"),
+            TLArg(!!g_realPvrInterface.getIntConfig(hmdh, "asw_active", 0), "SmartSmoothingActive"));
+
         return result;
     }
 
