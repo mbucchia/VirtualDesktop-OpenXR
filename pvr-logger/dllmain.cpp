@@ -50,6 +50,14 @@ namespace util {
         return fmt::format("({:.3f}, {:.3f})", vec.x, vec.y);
     }
 
+    static inline std::string ToString(const pvrVector3f& vec) {
+        return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
+    }
+
+    static inline std::string ToString(const pvrQuatf& quat) {
+        return fmt::format("({:.3f}, {:.3f}, {:.3f}, {:.3f})", quat.w, quat.x, quat.y, quat.z);
+    }
+
     static inline std::string ToString(const pvrViewPort& viewport) {
         return fmt::format("p: ({}, {}), s: ({}, {})", viewport.x, viewport.y, viewport.width, viewport.height);
     }
@@ -76,6 +84,55 @@ namespace util {
             return "RightController";
         default:
             return fmt::format("pvrTrackedDeviceType_{}", type);
+        }
+    }
+
+    static inline std::string ToString(pvrTrackedDeviceProp prop) {
+        switch (prop) {
+#define _ENTRY(name, type)                                                                                             \
+    case pvrTrackedDeviceProp_##name##_##type:                                                                         \
+        return #name;
+
+            _ENTRY(RenderModelTranslation, Vector3f);
+            _ENTRY(RenderModelRotation, Quatf);
+            _ENTRY(BatteryLevel, int);
+            _ENTRY(BatteryPercent, int);
+            _ENTRY(PoseRefreshRate, Float);
+            _ENTRY(TrackerHFovInRadians, Float);
+            _ENTRY(TrackerVFovInRadians, Float);
+            _ENTRY(TrackerNearZInMeters, Float);
+            _ENTRY(TrackerFarZInMeters, Float);
+            _ENTRY(Product, String);
+            _ENTRY(Manufacturer, String);
+            _ENTRY(VenderId, int);
+            _ENTRY(ProductId, int);
+            _ENTRY(RenderModelName, String);
+            _ENTRY(InputProfilePath, String);
+            _ENTRY(ControllerType, String);
+            _ENTRY(Serial, String);
+            _ENTRY(ModeLabel, String);
+            _ENTRY(Firmware_UpdateAvailable, Bool);
+            _ENTRY(Firmware_ForceUpdateRequired, Bool);
+            _ENTRY(Firmware_ManualUpdate, Bool);
+            _ENTRY(Firmware_ManualUpdateURL, String);
+            _ENTRY(Firmware_ProgrammingTarget, String);
+            _ENTRY(TrackingFirmwareVersion, String);
+            _ENTRY(FirmwareVersion, Uint64);
+            _ENTRY(RegisteredDeviceType, String);
+            _ENTRY(HardwareRevision, Uint64);
+            _ENTRY(HardwareRevision, String);
+            _ENTRY(ResourceRoot, String);
+            _ENTRY(FPGAVersion, Uint64);
+            _ENTRY(VRCVersion, Uint64);
+            _ENTRY(RadioVersion, Uint64);
+            _ENTRY(DongleVersion, Uint64);
+            _ENTRY(Identifiable, Bool);
+            _ENTRY(ConnectedWirelessDongle, String);
+            _ENTRY(InputButtons, Uint64);
+#undef _ENTRY
+
+        default:
+            return fmt::format("pvrTrackedDeviceProp_{}", prop);
         }
     }
 
@@ -361,6 +418,225 @@ namespace {
         return result;
     }
 
+    float wrapper_getFloatConfig(pvrHmdHandle hmdh, const char* key, float def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_getFloatConfig", TLArg(key), TLArg(def_val));
+        const auto& result = g_realPvrInterface.getFloatConfig(hmdh, key, def_val);
+        TraceLoggingWriteStop(local, "PVR_getFloatConfig", TLArg(result));
+
+        return result;
+    }
+
+    pvrResult wrapper_setFloatConfig(pvrHmdHandle hmdh, const char* key, float val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_setFloatConfig", TLArg(key), TLArg(val));
+        const auto& result = g_realPvrInterface.setFloatConfig(hmdh, key, val);
+        TraceLoggingWriteStop(local, "PVR_setFloatConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    int wrapper_getIntConfig(pvrHmdHandle hmdh, const char* key, int def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_getIntConfig", TLArg(key), TLArg(def_val));
+        const auto& result = g_realPvrInterface.getIntConfig(hmdh, key, def_val);
+        TraceLoggingWriteStop(local, "PVR_getIntConfig", TLArg(result));
+
+        return result;
+    }
+
+    pvrResult wrapper_setIntConfig(pvrHmdHandle hmdh, const char* key, int val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_setIntConfig", TLArg(key), TLArg(val));
+        const auto& result = g_realPvrInterface.setIntConfig(hmdh, key, val);
+        TraceLoggingWriteStop(local, "PVR_setIntConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    int wrapper_getStringConfig(pvrHmdHandle hmdh, const char* key, char* val, int size) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_getStringConfig", TLArg(key));
+        const auto& result = g_realPvrInterface.getStringConfig(hmdh, key, val, size);
+        TraceLoggingWriteStop(local, "PVR_getStringConfig", TLArg(val), TLArg(result));
+
+        return result;
+    }
+
+    pvrResult wrapper_setStringConfig(pvrHmdHandle hmdh, const char* key, const char* val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_setStringConfig", TLArg(key), TLArg(val));
+        const auto& result = g_realPvrInterface.setStringConfig(hmdh, key, val);
+        TraceLoggingWriteStop(local, "PVR_setStringConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    pvrVector3f wrapper_getVector3fConfig(pvrHmdHandle hmdh, const char* key, pvrVector3f def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_getVector3fConfig", TLArg(key), TLArg(ToString(def_val).c_str()));
+        const auto& result = g_realPvrInterface.getVector3fConfig(hmdh, key, def_val);
+        TraceLoggingWriteStop(local, "PVR_getVector3fConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    pvrResult wrapper_setVector3fConfig(pvrHmdHandle hmdh, const char* key, pvrVector3f val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_setVector3fConfig", TLArg(key), TLArg(ToString(val).c_str(), "val"));
+        const auto& result = g_realPvrInterface.setVector3fConfig(hmdh, key, val);
+        TraceLoggingWriteStop(local, "PVR_setVector3fConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    pvrQuatf wrapper_getQuatfConfig(pvrHmdHandle hmdh, const char* key, pvrQuatf def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_getQuatfConfig", TLArg(key), TLArg(ToString(def_val).c_str()));
+        const auto& result = g_realPvrInterface.getQuatfConfig(hmdh, key, def_val);
+        TraceLoggingWriteStop(local, "PVR_getQuatfConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    pvrResult wrapper_setQuatfConfig(pvrHmdHandle hmdh, const char* key, pvrQuatf val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_setQuatfConfig", TLArg(key), TLArg(ToString(val).c_str(), "val"));
+        const auto& result = g_realPvrInterface.setQuatfConfig(hmdh, key, val);
+        TraceLoggingWriteStop(local, "PVR_setQuatfConfig", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    int64_t wrapper_getInt64Config(pvrHmdHandle hmdh, const char* key, int64_t def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_getInt64Config", TLArg(key), TLArg(def_val));
+        const auto& result = g_realPvrInterface.getInt64Config(hmdh, key, def_val);
+        TraceLoggingWriteStop(local, "PVR_getInt64Config", TLArg(result));
+
+        return result;
+    }
+
+    pvrResult wrapper_setInt64Config(pvrHmdHandle hmdh, const char* key, int64_t val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_setInt64Config", TLArg(key), TLArg(val));
+        const auto& result = g_realPvrInterface.setInt64Config(hmdh, key, val);
+        TraceLoggingWriteStop(local, "PVR_setInt64Config", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    float wrapper_getTrackedDeviceFloatProperty(pvrHmdHandle hmdh,
+                                                pvrTrackedDeviceType device,
+                                                pvrTrackedDeviceProp prop,
+                                                float def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local,
+                               "PVR_getTrackedDeviceFloatProperty",
+                               TLArg(ToString(device).c_str(), "device"),
+                               TLArg(ToString(prop).c_str(), "prop"),
+                               TLArg(def_val));
+        const auto& result = g_realPvrInterface.getTrackedDeviceFloatProperty(hmdh, device, prop, def_val);
+        TraceLoggingWriteStop(local, "PVR_getTrackedDeviceFloatProperty", TLArg(result));
+
+        return result;
+    }
+
+    int wrapper_getTrackedDeviceIntProperty(pvrHmdHandle hmdh,
+                                            pvrTrackedDeviceType device,
+                                            pvrTrackedDeviceProp prop,
+                                            int def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local,
+                               "PVR_getTrackedDeviceIntProperty",
+                               TLArg(ToString(device).c_str(), "device"),
+                               TLArg(ToString(prop).c_str(), "prop"),
+                               TLArg(def_val));
+        const auto& result = g_realPvrInterface.getTrackedDeviceIntProperty(hmdh, device, prop, def_val);
+        TraceLoggingWriteStop(local, "PVR_getTrackedDeviceIntProperty", TLArg(result));
+
+        return result;
+    }
+
+    int wrapper_getTrackedDeviceStringProperty(
+        pvrHmdHandle hmdh, pvrTrackedDeviceType device, pvrTrackedDeviceProp prop, char* val, int size) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local,
+                               "PVR_getTrackedDeviceStringProperty",
+                               TLArg(ToString(device).c_str(), "device"),
+                               TLArg(ToString(prop).c_str(), "prop"));
+        const auto& result = g_realPvrInterface.getTrackedDeviceStringProperty(hmdh, device, prop, val, size);
+        TraceLoggingWriteStop(local, "PVR_getTrackedDeviceStringProperty", TLArg(val), TLArg(result));
+
+        return result;
+    }
+
+    pvrVector3f wrapper_getTrackedDeviceVector3fProperty(pvrHmdHandle hmdh,
+                                                         pvrTrackedDeviceType device,
+                                                         pvrTrackedDeviceProp prop,
+                                                         pvrVector3f def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local,
+                               "PVR_getTrackedDeviceVector3fProperty",
+                               TLArg(ToString(device).c_str(), "device"),
+                               TLArg(ToString(prop).c_str(), "prop"),
+                               TLArg(ToString(def_val).c_str()));
+        const auto& result = g_realPvrInterface.getTrackedDeviceVector3fProperty(hmdh, device, prop, def_val);
+        TraceLoggingWriteStop(local, "PVR_getTrackedDeviceVector3fProperty", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    pvrQuatf wrapper_getTrackedDeviceQuatfProperty(pvrHmdHandle hmdh,
+                                                   pvrTrackedDeviceType device,
+                                                   pvrTrackedDeviceProp prop,
+                                                   pvrQuatf def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local,
+                               "PVR_getTrackedDeviceQuatfProperty",
+                               TLArg(ToString(device).c_str(), "device"),
+                               TLArg(ToString(prop).c_str(), "prop"),
+                               TLArg(ToString(def_val).c_str()));
+        const auto& result = g_realPvrInterface.getTrackedDeviceQuatfProperty(hmdh, device, prop, def_val);
+        TraceLoggingWriteStop(local, "PVR_getTrackedDeviceQuatfProperty", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    int64_t wrapper_getTrackedDeviceInt64Property(pvrHmdHandle hmdh,
+                                                  pvrTrackedDeviceType device,
+                                                  pvrTrackedDeviceProp prop,
+                                                  int64_t def_val) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local,
+                               "PVR_getTrackedDeviceInt64Property",
+                               TLArg(ToString(device).c_str(), "device"),
+                               TLArg(ToString(prop).c_str(), "prop"),
+                               TLArg(def_val));
+        const auto& result = g_realPvrInterface.getTrackedDeviceInt64Property(hmdh, device, prop, def_val);
+        TraceLoggingWriteStop(local, "PVR_getTrackedDeviceInt64Property", TLArg(result));
+
+        return result;
+    }
+
     void wrapper_logMessage(pvrLogLevel level, const char* message) {
         TraceLocalActivity(local);
 
@@ -436,6 +712,24 @@ namespace {
                     result->getPredictedDisplayTime = wrapper_getPredictedDisplayTime;
                     result->beginFrame = wrapper_beginFrame;
                     result->endFrame = wrapper_endFrame;
+                    result->getFloatConfig = wrapper_getFloatConfig;
+                    result->setFloatConfig = wrapper_setFloatConfig;
+                    result->getIntConfig = wrapper_getIntConfig;
+                    result->setIntConfig = wrapper_setIntConfig;
+                    result->getStringConfig = wrapper_getStringConfig;
+                    result->setStringConfig = wrapper_setStringConfig;
+                    result->getVector3fConfig = wrapper_getVector3fConfig;
+                    result->setVector3fConfig = wrapper_setVector3fConfig;
+                    result->getQuatfConfig = wrapper_getQuatfConfig;
+                    result->setQuatfConfig = wrapper_setQuatfConfig;
+                    result->getInt64Config = wrapper_getInt64Config;
+                    result->setInt64Config = wrapper_setInt64Config;
+                    result->getTrackedDeviceFloatProperty = wrapper_getTrackedDeviceFloatProperty;
+                    result->getTrackedDeviceIntProperty = wrapper_getTrackedDeviceIntProperty;
+                    result->getTrackedDeviceStringProperty = wrapper_getTrackedDeviceStringProperty;
+                    result->getTrackedDeviceVector3fProperty = wrapper_getTrackedDeviceVector3fProperty;
+                    result->getTrackedDeviceQuatfProperty = wrapper_getTrackedDeviceQuatfProperty;
+                    result->getTrackedDeviceInt64Property = wrapper_getTrackedDeviceInt64Property;
                     result->logMessage = wrapper_logMessage;
 
                     // result->getDxGlInterface = wrapper_getDxGlInterface;
@@ -485,24 +779,6 @@ namespace {
     }
 
     pvrResult wrapper_getInputState(pvrHmdHandle hmdh, pvrInputState* inputState) {
-    }
-
-    float wrapper_getFloatConfig(pvrHmdHandle hmdh, const char* key, float def_val) {
-    }
-
-    pvrResult wrapper_setFloatConfig(pvrHmdHandle hmdh, const char* key, float val) {
-    }
-
-    int wrapper_getIntConfig(pvrHmdHandle hmdh, const char* key, int def_val) {
-    }
-
-    pvrResult wrapper_setIntConfig(pvrHmdHandle hmdh, const char* key, int val) {
-    }
-
-    int wrapper_getStringConfig(pvrHmdHandle hmdh, const char* key, char* val, int size) {
-    }
-
-    pvrResult wrapper_setStringConfig(pvrHmdHandle hmdh, const char* key, const char* val) {
     }
 
     pvrResult wrapper_getFovTextureSize(
@@ -561,59 +837,13 @@ namespace {
     pvrResult wrapper_triggerHapticPulse(pvrHmdHandle hmdh, pvrTrackedDeviceType device, float intensity) {
     }
 
-    pvrVector3f wrapper_getVector3fConfig(pvrHmdHandle hmdh, const char* key, pvrVector3f def_val) {
-    }
-
-    pvrResult wrapper_setVector3fConfig(pvrHmdHandle hmdh, const char* key, pvrVector3f val) {
-    }
-
-    pvrQuatf wrapper_getQuatfConfig(pvrHmdHandle hmdh, const char* key, pvrQuatf def_val) {
-    }
-
-    pvrResult wrapper_setQuatfConfig(pvrHmdHandle hmdh, const char* key, pvrQuatf val) {
-    }
-
     pvrResult wrapper_getConnectedDevices(pvrHmdHandle hmdh, uint32_t* pDevices) {
-    }
-
-    float wrapper_getTrackedDeviceFloatProperty(pvrHmdHandle hmdh,
-                                                pvrTrackedDeviceType device,
-                                                pvrTrackedDeviceProp prop,
-                                                float def_val) {
-    }
-
-    int wrapper_getTrackedDeviceIntProperty(pvrHmdHandle hmdh,
-                                            pvrTrackedDeviceType device,
-                                            pvrTrackedDeviceProp prop,
-                                            int def_val) {
-    }
-
-    int wrapper_getTrackedDeviceStringProperty(
-        pvrHmdHandle hmdh, pvrTrackedDeviceType device, pvrTrackedDeviceProp prop, char* val, int size) {
-    }
-
-    pvrVector3f wrapper_getTrackedDeviceVector3fProperty(pvrHmdHandle hmdh,
-                                                         pvrTrackedDeviceType device,
-                                                         pvrTrackedDeviceProp prop,
-                                                         pvrVector3f def_val) {
-    }
-
-    pvrQuatf wrapper_getTrackedDeviceQuatfProperty(pvrHmdHandle hmdh,
-                                                   pvrTrackedDeviceType device,
-                                                   pvrTrackedDeviceProp prop,
-                                                   pvrQuatf def_val) {
     }
 
     unsigned int wrapper_getEyeHiddenAreaMesh(pvrHmdHandle hmdh,
                                               pvrEyeType eye,
                                               pvrVector2f* outVertexBuffer,
                                               unsigned int bufferCount) {
-    }
-
-    int64_t wrapper_getInt64Config(pvrHmdHandle hmdh, const char* key, int64_t def_val) {
-    }
-
-    pvrResult wrapper_setInt64Config(pvrHmdHandle hmdh, const char* key, int64_t val) {
     }
 
     pvrResult wrapper_getSkeletalData(pvrHmdHandle hmdh,
@@ -623,12 +853,6 @@ namespace {
     }
 
     pvrResult wrapper_getGripLimitSkeletalData(pvrHmdHandle hmdh, pvrTrackedDeviceType device, pvrSkeletalData* data) {
-    }
-
-    int64_t wrapper_getTrackedDeviceInt64Property(pvrHmdHandle hmdh,
-                                                  pvrTrackedDeviceType device,
-                                                  pvrTrackedDeviceProp prop,
-                                                  int64_t def_val) {
     }
 
     pvrResult wrapper_getEyeTrackingInfo(pvrHmdHandle hmdh, double absTime, pvrEyeTrackingInfo* outInfo) {
