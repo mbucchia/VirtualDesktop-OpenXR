@@ -429,6 +429,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/thumbstick", "/input/trackpad");
         } else if (endsWith(path, "/input/squeeze/value")) {
             return rreplace(path, "/input/squeeze/value", "/input/squeeze/click");
+        } else if (path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a") {
+            return "/user/hand/right/input/menu/click";
         } else if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
                    endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
                    endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze") ||
