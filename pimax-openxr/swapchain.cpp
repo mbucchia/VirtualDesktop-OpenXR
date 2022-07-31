@@ -156,8 +156,11 @@ namespace pimax_openxr {
                 views[i].maxImageRectWidth = 16384;
                 views[i].maxImageRectHeight = 16384;
 
-                // TODO: Do we support multisampling?
-                views[i].recommendedSwapchainSampleCount = views[i].maxSwapchainSampleCount = 1;
+                // Per Direct3D 11 standard, "devices are required to support 4x MSAA for all render target formats, and
+                // 8x MSAA for all render target formats except R32G32B32A32 formats.".
+                // We could go and check every supported render target formats to find a possibly higher count, but we
+                // do not bother.
+                views[i].recommendedSwapchainSampleCount = views[i].maxSwapchainSampleCount = 8;
 
                 // Recommend the resolution with distortion accounted for.
                 // There is a DistortedViewport in the EyeInfo struct, however the sample code uses
