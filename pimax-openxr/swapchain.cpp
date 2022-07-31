@@ -160,7 +160,8 @@ namespace pimax_openxr {
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".
                 // We could go and check every supported render target formats to find a possibly higher count, but we
                 // do not bother.
-                views[i].recommendedSwapchainSampleCount = views[i].maxSwapchainSampleCount = 8;
+                views[i].maxSwapchainSampleCount = 8;
+                views[i].recommendedSwapchainSampleCount = 1;
 
                 // Recommend the resolution with distortion accounted for.
                 // There is a DistortedViewport in the EyeInfo struct, however the sample code uses
