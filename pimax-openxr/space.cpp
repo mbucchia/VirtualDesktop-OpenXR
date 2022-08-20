@@ -195,7 +195,7 @@ namespace pimax_openxr {
             xrBaseSpace, time, baseSpaceToVirtual, velocity ? &baseSpaceToVirtualVelocity : nullptr);
 
         // If either pose is not valid, we cannot locate.
-        if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags1))) {
+        if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags2))) {
             TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(0, "LocationFlags"));
             return XR_SUCCESS;
         }
@@ -203,7 +203,7 @@ namespace pimax_openxr {
         location->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
 
         // Both poses need to be tracked for the location to be tracked.
-        if (Pose::IsPoseTracked(flags1) && Pose::IsPoseTracked(flags1)) {
+        if (Pose::IsPoseTracked(flags1) && Pose::IsPoseTracked(flags2)) {
             location->locationFlags |=
                 XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
         }
