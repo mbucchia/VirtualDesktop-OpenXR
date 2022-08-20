@@ -313,6 +313,7 @@ namespace pimax_openxr {
         void rebindControllerActions(int side);
         std::string getXrPath(XrPath path) const;
         int getActionSide(const std::string& fullPath) const;
+        XrVector2f handleJoystickDeadzone(pvrVector2f raw) const;
 
         // mappings.cpp
         void initializeRemappingTables();
@@ -421,6 +422,7 @@ namespace pimax_openxr {
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
         bool m_useParallelProjection{false};
+        float m_joystickDeadzone{0.f};
         bool m_canBeginFrame{false};
         std::set<XrActionSet> m_activeActionSets;
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;

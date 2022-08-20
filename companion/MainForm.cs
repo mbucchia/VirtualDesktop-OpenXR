@@ -132,6 +132,7 @@ namespace companion
 
                 // Must match the defaults in the layer!
                 recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
+                joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
                 enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 1) == 1 ? true : false;
             }
             catch (Exception)
@@ -145,6 +146,8 @@ namespace companion
                     key.Close();
                 }
             }
+
+            joystickDeadzone_Scroll(null, null);
 
             ResumeLayout();
 
@@ -224,6 +227,18 @@ namespace companion
             }
 
             WriteSetting("recenter_on_startup", recenterMode.Checked ? 1 : 0);
+        }
+
+        private void joystickDeadzone_Scroll(object sender, EventArgs e)
+        {
+            joystickDeadzoneValue.Text = joystickDeadzone.Value > 0 ? (joystickDeadzone.Value / 100.0f).ToString("#.##") : "0";
+
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("joystick_deadzone", joystickDeadzone.Value);
         }
 
         private void enableTelemetry_CheckedChanged(object sender, EventArgs e)

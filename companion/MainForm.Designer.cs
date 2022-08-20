@@ -47,6 +47,9 @@ namespace companion
             this.versionString = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.recenterMode = new System.Windows.Forms.CheckBox();
+            this.joystickDeadzoneValue = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.joystickDeadzone = new System.Windows.Forms.TrackBar();
             this.label4 = new System.Windows.Forms.Label();
             this.enableTelemetry = new System.Windows.Forms.CheckBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -55,6 +58,7 @@ namespace companion
             this.flowLayoutPanel3.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
             this.flowLayoutPanel4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.joystickDeadzone)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -69,7 +73,7 @@ namespace companion
             this.tableLayoutPanel1.Controls.Add(this.pictureBox1, 0, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 5;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 121F));
@@ -77,7 +81,7 @@ namespace companion
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 81.39535F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 373);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 428);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -86,8 +90,8 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.startTrace);
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 298);
-            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 353);
+            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
             this.flowLayoutPanel1.TabIndex = 7;
@@ -95,7 +99,7 @@ namespace companion
             // openLogs
             // 
             this.openLogs.Location = new System.Drawing.Point(2, 2);
-            this.openLogs.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.openLogs.Margin = new System.Windows.Forms.Padding(2);
             this.openLogs.Name = "openLogs";
             this.openLogs.Size = new System.Drawing.Size(130, 42);
             this.openLogs.TabIndex = 7;
@@ -106,7 +110,7 @@ namespace companion
             // startTrace
             // 
             this.startTrace.Location = new System.Drawing.Point(136, 2);
-            this.startTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.startTrace.Margin = new System.Windows.Forms.Padding(2);
             this.startTrace.Name = "startTrace";
             this.startTrace.Size = new System.Drawing.Size(130, 42);
             this.startTrace.TabIndex = 8;
@@ -118,7 +122,7 @@ namespace companion
             // 
             this.stopTrace.Enabled = false;
             this.stopTrace.Location = new System.Drawing.Point(270, 2);
-            this.stopTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.stopTrace.Margin = new System.Windows.Forms.Padding(2);
             this.stopTrace.Name = "stopTrace";
             this.stopTrace.Size = new System.Drawing.Size(130, 42);
             this.stopTrace.TabIndex = 9;
@@ -133,9 +137,9 @@ namespace companion
             this.flowLayoutPanel3.Controls.Add(this.runtimeSteam);
             this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel3.Location = new System.Drawing.Point(2, 123);
-            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel3.Name = "flowLayoutPanel3";
-            this.flowLayoutPanel3.Size = new System.Drawing.Size(402, 28);
+            this.flowLayoutPanel3.Size = new System.Drawing.Size(402, 38);
             this.flowLayoutPanel3.TabIndex = 0;
             // 
             // label1
@@ -154,7 +158,7 @@ namespace companion
             // 
             this.runtimePimax.AutoSize = true;
             this.runtimePimax.Location = new System.Drawing.Point(159, 2);
-            this.runtimePimax.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.runtimePimax.Margin = new System.Windows.Forms.Padding(2);
             this.runtimePimax.Name = "runtimePimax";
             this.runtimePimax.Size = new System.Drawing.Size(68, 17);
             this.runtimePimax.TabIndex = 1;
@@ -167,7 +171,7 @@ namespace companion
             // 
             this.runtimeSteam.AutoSize = true;
             this.runtimeSteam.Location = new System.Drawing.Point(231, 2);
-            this.runtimeSteam.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.runtimeSteam.Margin = new System.Windows.Forms.Padding(2);
             this.runtimeSteam.Name = "runtimeSteam";
             this.runtimeSteam.Size = new System.Drawing.Size(70, 17);
             this.runtimeSteam.TabIndex = 2;
@@ -181,8 +185,8 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.gotoDownloads);
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 354);
-            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 409);
+            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 17);
             this.flowLayoutPanel2.TabIndex = 10;
@@ -217,13 +221,16 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.versionString);
             this.flowLayoutPanel4.Controls.Add(this.label3);
             this.flowLayoutPanel4.Controls.Add(this.recenterMode);
+            this.flowLayoutPanel4.Controls.Add(this.joystickDeadzoneValue);
+            this.flowLayoutPanel4.Controls.Add(this.label5);
+            this.flowLayoutPanel4.Controls.Add(this.joystickDeadzone);
             this.flowLayoutPanel4.Controls.Add(this.label4);
             this.flowLayoutPanel4.Controls.Add(this.enableTelemetry);
             this.flowLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 155);
-            this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 165);
+            this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
-            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 139);
+            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 184);
             this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
@@ -264,24 +271,55 @@ namespace companion
             this.recenterMode.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.recenterMode, true);
             this.recenterMode.Location = new System.Drawing.Point(2, 51);
-            this.recenterMode.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.recenterMode.Margin = new System.Windows.Forms.Padding(2);
             this.recenterMode.Name = "recenterMode";
-            this.recenterMode.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
-            this.recenterMode.Size = new System.Drawing.Size(164, 20);
+            this.recenterMode.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
+            this.recenterMode.Size = new System.Drawing.Size(164, 23);
             this.recenterMode.TabIndex = 6;
             this.recenterMode.Text = "Recenter headset on startup";
             this.recenterMode.UseVisualStyleBackColor = true;
             this.recenterMode.CheckedChanged += new System.EventHandler(this.recenterMode_CheckedChanged);
             // 
+            // joystickDeadzoneValue
+            // 
+            this.joystickDeadzoneValue.AccessibleDescription = "Value for joystick deadzone";
+            this.joystickDeadzoneValue.Location = new System.Drawing.Point(3, 84);
+            this.joystickDeadzoneValue.Margin = new System.Windows.Forms.Padding(3, 6, 3, 3);
+            this.joystickDeadzoneValue.Name = "joystickDeadzoneValue";
+            this.joystickDeadzoneValue.ReadOnly = true;
+            this.joystickDeadzoneValue.Size = new System.Drawing.Size(26, 20);
+            this.joystickDeadzoneValue.TabIndex = 7;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(35, 78);
+            this.label5.Name = "label5";
+            this.label5.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
+            this.label5.Size = new System.Drawing.Size(98, 22);
+            this.label5.TabIndex = 8;
+            this.label5.Text = "Joystick deadzone:";
+            // 
+            // joystickDeadzone
+            // 
+            this.joystickDeadzone.AccessibleDescription = "Slider for joystick deadzone";
+            this.joystickDeadzone.Location = new System.Drawing.Point(139, 81);
+            this.joystickDeadzone.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.joystickDeadzone.Maximum = 100;
+            this.joystickDeadzone.Name = "joystickDeadzone";
+            this.joystickDeadzone.Size = new System.Drawing.Size(104, 45);
+            this.joystickDeadzone.TabIndex = 9;
+            this.joystickDeadzone.Scroll += new System.EventHandler(this.joystickDeadzone_Scroll);
+            // 
             // label4
             // 
             this.label4.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.label4, true);
-            this.label4.Location = new System.Drawing.Point(3, 73);
+            this.label4.Location = new System.Drawing.Point(3, 126);
             this.label4.Name = "label4";
-            this.label4.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
-            this.label4.Size = new System.Drawing.Size(395, 32);
-            this.label4.TabIndex = 7;
+            this.label4.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.label4.Size = new System.Drawing.Size(395, 26);
+            this.label4.TabIndex = 10;
             this.label4.Text = "Our telemetry does not affect performance, is anonymous and helps the developer w" +
     "ith application support.";
             // 
@@ -289,12 +327,12 @@ namespace companion
             // 
             this.enableTelemetry.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableTelemetry, true);
-            this.enableTelemetry.Location = new System.Drawing.Point(2, 107);
-            this.enableTelemetry.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.enableTelemetry.Location = new System.Drawing.Point(2, 154);
+            this.enableTelemetry.Margin = new System.Windows.Forms.Padding(2);
             this.enableTelemetry.Name = "enableTelemetry";
-            this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
-            this.enableTelemetry.Size = new System.Drawing.Size(139, 20);
-            this.enableTelemetry.TabIndex = 8;
+            this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
+            this.enableTelemetry.Size = new System.Drawing.Size(139, 23);
+            this.enableTelemetry.TabIndex = 11;
             this.enableTelemetry.Text = "Enable usage telemetry";
             this.enableTelemetry.UseVisualStyleBackColor = true;
             this.enableTelemetry.CheckedChanged += new System.EventHandler(this.enableTelemetry_CheckedChanged);
@@ -314,7 +352,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(406, 373);
+            this.ClientSize = new System.Drawing.Size(406, 428);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -330,6 +368,7 @@ namespace companion
             this.flowLayoutPanel2.PerformLayout();
             this.flowLayoutPanel4.ResumeLayout(false);
             this.flowLayoutPanel4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.joystickDeadzone)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
 
@@ -357,6 +396,9 @@ namespace companion
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.CheckBox enableTelemetry;
         private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.TrackBar joystickDeadzone;
+        private System.Windows.Forms.TextBox joystickDeadzoneValue;
     }
 }
 

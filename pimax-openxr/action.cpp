@@ -446,9 +446,10 @@ namespace pimax_openxr {
                         combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
                                             value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
                     } else {
-                        combinedState =
-                            max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
-                                value.vector2fIndex == 0 ? value.vector2fValue[side].x : value.vector2fValue[side].y);
+                        const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
+
+                        combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
+                                            value.vector2fIndex == 0 ? vector2fValue.x : vector2fValue.y);
                     }
                 }
             }
@@ -525,7 +526,7 @@ namespace pimax_openxr {
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
                 if (m_isControllerActive[side] && m_frameLatchedActionSets.count(xrAction.actionSet)) {
-                    const XrVector2f vector2fValue{value.vector2fValue[side].x, value.vector2fValue[side].y};
+                    const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
 
                     // Per spec, the combined state if the one of the vector with the longest length.
                     const float l1 = combinedState ? sqrt(combinedState.value().x * combinedState.value().x +
@@ -1107,6 +1108,16 @@ namespace pimax_openxr {
         }
 
         return -1;
+    }
+
+    XrVector2f OpenXrRuntime::handleJoystickDeadzone(pvrVector2f raw) const {
+        const float length = std::sqrt(raw.x * raw.x + raw.y * raw.y);
+        if (length < m_joystickDeadzone) {
+            return {0, 0};
+        }
+        XrVector2f normalizedInput{raw.x / length, raw.y / length};
+        const float scaling = (length - m_joystickDeadzone) / (1 - m_joystickDeadzone);
+        return {normalizedInput.x * scaling, normalizedInput.y * scaling};
     }
 
 } // namespace pimax_openxr

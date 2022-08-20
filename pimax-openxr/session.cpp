@@ -118,6 +118,7 @@ namespace pimax_openxr {
         if (m_useParallelProjection) {
             Log("Parallel projection is enabled\n");
         }
+        m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
 
         {
             const bool enableLighthouse = !!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0);
