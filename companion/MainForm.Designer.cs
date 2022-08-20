@@ -45,12 +45,12 @@ namespace companion
             this.flowLayoutPanel4 = new System.Windows.Forms.FlowLayoutPanel();
             this.label2 = new System.Windows.Forms.Label();
             this.versionString = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
+            this.pitoolLabel = new System.Windows.Forms.Label();
             this.recenterMode = new System.Windows.Forms.CheckBox();
             this.joystickDeadzoneValue = new System.Windows.Forms.TextBox();
-            this.label5 = new System.Windows.Forms.Label();
+            this.joystickLabel = new System.Windows.Forms.Label();
             this.joystickDeadzone = new System.Windows.Forms.TrackBar();
-            this.label4 = new System.Windows.Forms.Label();
+            this.telemetryLabel = new System.Windows.Forms.Label();
             this.enableTelemetry = new System.Windows.Forms.CheckBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel1.SuspendLayout();
@@ -219,12 +219,12 @@ namespace companion
             // 
             this.flowLayoutPanel4.Controls.Add(this.label2);
             this.flowLayoutPanel4.Controls.Add(this.versionString);
-            this.flowLayoutPanel4.Controls.Add(this.label3);
+            this.flowLayoutPanel4.Controls.Add(this.pitoolLabel);
             this.flowLayoutPanel4.Controls.Add(this.recenterMode);
             this.flowLayoutPanel4.Controls.Add(this.joystickDeadzoneValue);
-            this.flowLayoutPanel4.Controls.Add(this.label5);
+            this.flowLayoutPanel4.Controls.Add(this.joystickLabel);
             this.flowLayoutPanel4.Controls.Add(this.joystickDeadzone);
-            this.flowLayoutPanel4.Controls.Add(this.label4);
+            this.flowLayoutPanel4.Controls.Add(this.telemetryLabel);
             this.flowLayoutPanel4.Controls.Add(this.enableTelemetry);
             this.flowLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 165);
@@ -254,16 +254,16 @@ namespace companion
             this.versionString.TabIndex = 4;
             this.versionString.Text = "Unknown";
             // 
-            // label3
+            // pitoolLabel
             // 
-            this.label3.AutoSize = true;
-            this.flowLayoutPanel4.SetFlowBreak(this.label3, true);
-            this.label3.Location = new System.Drawing.Point(3, 13);
-            this.label3.Name = "label3";
-            this.label3.Padding = new System.Windows.Forms.Padding(3, 10, 0, 0);
-            this.label3.Size = new System.Drawing.Size(389, 36);
-            this.label3.TabIndex = 5;
-            this.label3.Text = "Use PiTool to set refresh rate, resolution, FOV, enable Smart Smoothing, Parallel" +
+            this.pitoolLabel.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.pitoolLabel, true);
+            this.pitoolLabel.Location = new System.Drawing.Point(3, 13);
+            this.pitoolLabel.Name = "pitoolLabel";
+            this.pitoolLabel.Padding = new System.Windows.Forms.Padding(3, 10, 0, 0);
+            this.pitoolLabel.Size = new System.Drawing.Size(389, 36);
+            this.pitoolLabel.TabIndex = 5;
+            this.pitoolLabel.Text = "Use PiTool to set refresh rate, resolution, FOV, enable Smart Smoothing, Parallel" +
     " Projection, etc...";
             // 
             // recenterMode
@@ -290,15 +290,15 @@ namespace companion
             this.joystickDeadzoneValue.Size = new System.Drawing.Size(26, 20);
             this.joystickDeadzoneValue.TabIndex = 7;
             // 
-            // label5
+            // joystickLabel
             // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(35, 78);
-            this.label5.Name = "label5";
-            this.label5.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
-            this.label5.Size = new System.Drawing.Size(98, 22);
-            this.label5.TabIndex = 8;
-            this.label5.Text = "Joystick deadzone:";
+            this.joystickLabel.AutoSize = true;
+            this.joystickLabel.Location = new System.Drawing.Point(35, 78);
+            this.joystickLabel.Name = "joystickLabel";
+            this.joystickLabel.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
+            this.joystickLabel.Size = new System.Drawing.Size(98, 22);
+            this.joystickLabel.TabIndex = 8;
+            this.joystickLabel.Text = "Joystick deadzone:";
             // 
             // joystickDeadzone
             // 
@@ -311,16 +311,16 @@ namespace companion
             this.joystickDeadzone.TabIndex = 9;
             this.joystickDeadzone.Scroll += new System.EventHandler(this.joystickDeadzone_Scroll);
             // 
-            // label4
+            // telemetryLabel
             // 
-            this.label4.AutoSize = true;
-            this.flowLayoutPanel4.SetFlowBreak(this.label4, true);
-            this.label4.Location = new System.Drawing.Point(3, 126);
-            this.label4.Name = "label4";
-            this.label4.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.label4.Size = new System.Drawing.Size(395, 26);
-            this.label4.TabIndex = 10;
-            this.label4.Text = "Our telemetry does not affect performance, is anonymous and helps the developer w" +
+            this.telemetryLabel.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.telemetryLabel, true);
+            this.telemetryLabel.Location = new System.Drawing.Point(3, 126);
+            this.telemetryLabel.Name = "telemetryLabel";
+            this.telemetryLabel.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.telemetryLabel.Size = new System.Drawing.Size(395, 26);
+            this.telemetryLabel.TabIndex = 10;
+            this.telemetryLabel.Text = "Our telemetry does not affect performance, is anonymous and helps the developer w" +
     "ith application support.";
             // 
             // enableTelemetry
@@ -392,11 +392,11 @@ namespace companion
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label versionString;
         private System.Windows.Forms.CheckBox recenterMode;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label pitoolLabel;
+        private System.Windows.Forms.Label telemetryLabel;
         private System.Windows.Forms.CheckBox enableTelemetry;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label joystickLabel;
         private System.Windows.Forms.TrackBar joystickDeadzone;
         private System.Windows.Forms.TextBox joystickDeadzoneValue;
     }

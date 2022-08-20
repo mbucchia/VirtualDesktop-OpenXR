@@ -147,6 +147,7 @@ namespace companion
                 }
             }
 
+            RefreshEnabledState();
             joystickDeadzone_Scroll(null, null);
 
             ResumeLayout();
@@ -209,14 +210,22 @@ namespace companion
             }
         }
 
+        private void RefreshEnabledState()
+        {
+            recenterMode.Enabled = joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = enableTelemetry.Enabled = 
+                pitoolLabel.Enabled = joystickLabel.Enabled = telemetryLabel.Enabled = runtimePimax.Checked;
+        }
+
         private void runtimePimax_CheckedChanged(object sender, EventArgs e)
         {
             SelectRuntime(pimaxRuntimePath);
+            RefreshEnabledState();
         }
 
         private void runtimeSteam_CheckedChanged(object sender, EventArgs e)
         {
             SelectRuntime(steamRuntimePath);
+            RefreshEnabledState();
         }
 
         private void recenterMode_CheckedChanged(object sender, EventArgs e)
