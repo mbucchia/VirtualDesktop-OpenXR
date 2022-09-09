@@ -161,10 +161,11 @@ namespace pimax_openxr {
         wil::unique_handle fenceHandle = nullptr;
         CHECK_HRCMD(m_d3d11Device->CreateFence(
             0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
-        CHECK_HRCMD(m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
+        CHECK_HRCMD(m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, m_fenceHandleForAMDWorkaround.put()));
 
         // On the OpenGL side, it is called a semaphore.
-        m_glDispatch.glImportSemaphoreWin32HandleEXT(m_glSemaphore, GL_HANDLE_TYPE_D3D12_FENCE_EXT, fenceHandle.get());
+        m_glDispatch.glImportSemaphoreWin32HandleEXT(
+            m_glSemaphore, GL_HANDLE_TYPE_D3D12_FENCE_EXT, m_fenceHandleForAMDWorkaround.get());
 
         return XR_SUCCESS;
     }
@@ -200,6 +201,7 @@ namespace pimax_openxr {
             glFinish();
 
             m_glDispatch.glDeleteSemaphoresEXT(1, &m_glSemaphore);
+            m_fenceHandleForAMDWorkaround.reset();
 
             m_glContext.valid = false;
         }

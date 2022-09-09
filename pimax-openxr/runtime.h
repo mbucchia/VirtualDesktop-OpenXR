@@ -519,6 +519,10 @@ namespace pimax_openxr {
         GLuint m_glSemaphore{0};
         UINT64 m_fenceValue{0};
 
+        // Workaround: the AMD driver does not seem to like closing the handle for the shared fence when using
+        // OpenGL. We keep it alive for the whole session.
+        wil::shared_handle m_fenceHandleForAMDWorkaround;
+
         // Frame state.
         std::condition_variable m_frameCondVar;
         bool m_frameWaited{false};
