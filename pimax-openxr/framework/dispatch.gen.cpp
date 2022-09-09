@@ -1130,6 +1130,27 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetOpenGLGraphicsRequirementsKHR");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetOpenGLGraphicsRequirementsKHR(instance, systemId, graphicsRequirements);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetOpenGLGraphicsRequirementsKHR_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetOpenGLGraphicsRequirementsKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetOpenGLGraphicsRequirementsKHR", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetOpenGLGraphicsRequirementsKHR failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 	XrResult XRAPI_CALL xrGetVulkanInstanceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrGetVulkanInstanceExtensionsKHR");
@@ -1569,6 +1590,9 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (apiName == "xrStopHapticFeedback") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStopHapticFeedback);
+		}
+		else if (apiName == "xrGetOpenGLGraphicsRequirementsKHR") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetOpenGLGraphicsRequirementsKHR);
 		}
 		else if (apiName == "xrGetVulkanInstanceExtensionsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanInstanceExtensionsKHR);

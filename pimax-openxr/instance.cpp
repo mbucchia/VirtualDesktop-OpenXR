@@ -168,6 +168,8 @@ namespace pimax_openxr {
             {XR_KHR_VULKAN_ENABLE_EXTENSION_NAME, XR_KHR_vulkan_enable_SPEC_VERSION});
         extensions.push_back( // Vulkan support.
             {XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME, XR_KHR_vulkan_enable2_SPEC_VERSION});
+        extensions.push_back( // OpenGL support.
+            {XR_KHR_OPENGL_ENABLE_EXTENSION_NAME, XR_KHR_opengl_enable_SPEC_VERSION});
 
         extensions.push_back( // Depth buffer submission.
             {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
@@ -265,6 +267,8 @@ namespace pimax_openxr {
                 m_isVulkanSupported = true;
             } else if (extensionName == XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME) {
                 m_isVulkan2Supported = true;
+            } else if (extensionName == XR_KHR_OPENGL_ENABLE_EXTENSION_NAME) {
+                m_isOpenGLSupported = true;
             } else if (extensionName == XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME) {
                 m_isDepthSupported = true;
             } else if (extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {

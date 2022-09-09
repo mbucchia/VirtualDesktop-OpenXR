@@ -230,6 +230,9 @@ namespace pimax_openxr {
         XrResult xrGetVulkanGraphicsRequirements2KHR(XrInstance instance,
                                                      XrSystemId systemId,
                                                      XrGraphicsRequirementsVulkanKHR* graphicsRequirements) override;
+        XrResult xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
+                                                    XrSystemId systemId,
+                                                    XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) override;
 
       private:
         struct Swapchain {
@@ -260,6 +263,8 @@ namespace pimax_openxr {
             std::vector<VkDeviceMemory> vkDeviceMemory;
             std::vector<VkImage> vkImages;
             VkCommandBuffer vkCmdBuffer{VK_NULL_HANDLE};
+            std::vector<GLuint> glMemory;
+            std::vector<GLuint> glImages;
 
             // Information recorded at creation.
             XrSwapchainCreateInfo xrDesc;
@@ -375,6 +380,15 @@ namespace pimax_openxr {
         void flushVulkanCommandQueue();
         void serializeVulkanFrame();
 
+        // opengl_interop.cpp
+        XrResult initializeOpenGL(const XrGraphicsBindingOpenGLWin32KHR& glBindings);
+        void initializeOpenGLDispatch();
+        void cleanupOpenGL();
+        bool isOpenGLSession() const;
+        XrResult getSwapchainImagesOpenGL(Swapchain& xrSwapchain, XrSwapchainImageOpenGLKHR* glImages, uint32_t count);
+        void flushOpenGLContext();
+        void serializeOpenGLFrame();
+
         // visibility_mask.cpp
         void convertSteamVRToOpenXRHiddenMesh(const pvrFovPort& fov,
                                               XrVector2f* vertices,
@@ -391,6 +405,7 @@ namespace pimax_openxr {
         bool m_isD3D12Supported{false};
         bool m_isVulkanSupported{false};
         bool m_isVulkan2Supported{false};
+        bool m_isOpenGLSupported{false};
         bool m_isDepthSupported{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
@@ -450,7 +465,7 @@ namespace pimax_openxr {
         struct {
             PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr{nullptr};
 
-            // Pointers below must be initialized in initializeVulkanDispatch(),
+            // Pointers below must be initialized in initializeVulkanDispatch().
             PFN_vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2{nullptr};
             PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties{nullptr};
             PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR{nullptr};
@@ -479,10 +494,29 @@ namespace pimax_openxr {
         VkPhysicalDevice m_vkPhysicalDevice{VK_NULL_HANDLE};
         VkPhysicalDeviceMemoryProperties m_vkMemoryProperties;
         VkQueue m_vkQueue{VK_NULL_HANDLE};
+        GlContext m_glContext{};
+        struct {
+            // Pointers below must be initialized in initializeOpenGLDispatch().
+            PFNGLGETUNSIGNEDBYTEVEXTPROC glGetUnsignedBytevEXT{nullptr};
+            PFNGLCREATETEXTURESPROC glCreateTextures{nullptr};
+            PFNGLCREATEMEMORYOBJECTSEXTPROC glCreateMemoryObjectsEXT{nullptr};
+            PFNGLDELETEMEMORYOBJECTSEXTPROC glDeleteMemoryObjectsEXT{nullptr};
+            PFNGLTEXTURESTORAGEMEM2DEXTPROC glTextureStorageMem2DEXT{nullptr};
+            PFNGLTEXTURESTORAGEMEM2DMULTISAMPLEEXTPROC glTextureStorageMem2DMultisampleEXT{nullptr};
+            PFNGLTEXTURESTORAGEMEM3DEXTPROC glTextureStorageMem3DEXT{nullptr};
+            PFNGLTEXTURESTORAGEMEM3DMULTISAMPLEEXTPROC glTextureStorageMem3DMultisampleEXT{nullptr};
+            PFNGLGENSEMAPHORESEXTPROC glGenSemaphoresEXT{nullptr};
+            PFNGLDELETESEMAPHORESEXTPROC glDeleteSemaphoresEXT{nullptr};
+            PFNGLSEMAPHOREPARAMETERUI64VEXTPROC glSemaphoreParameterui64vEXT{nullptr};
+            PFNGLSIGNALSEMAPHOREEXTPROC glSignalSemaphoreEXT{nullptr};
+            PFNGLIMPORTMEMORYWIN32HANDLEEXTPROC glImportMemoryWin32HandleEXT{nullptr};
+            PFNGLIMPORTSEMAPHOREWIN32HANDLEEXTPROC glImportSemaphoreWin32HandleEXT{nullptr};
+        } m_glDispatch;
 
         ComPtr<ID3D11Fence> m_d3d11Fence;
         ComPtr<ID3D12Fence> m_d3d12Fence;
         VkSemaphore m_vkTimelineSemaphore{VK_NULL_HANDLE};
+        GLuint m_glSemaphore{0};
         UINT64 m_fenceValue{0};
 
         // Frame state.

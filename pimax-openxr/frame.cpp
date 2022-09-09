@@ -300,6 +300,8 @@ namespace pimax_openxr {
                 serializeD3D12Frame();
             } else if (isVulkanSession()) {
                 serializeVulkanFrame();
+            } else if (isOpenGLSession()) {
+                serializeOpenGLFrame();
             }
 
             const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex ^ 1]->query();
@@ -316,6 +318,11 @@ namespace pimax_openxr {
             std::vector<pvrLayerHeader*> layers;
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 auto& layer = layersAllocator[i];
+
+                // OpenGL needs to flip the texture vertically, which PVR can conveniently do for us.
+                if (isOpenGLSession()) {
+                    layer.Header.Flags = pvrLayerFlag_TextureOriginAtBottomLeft;
+                }
 
                 // COMPLIANCE: We ignore layerFlags, since there is no equivalent.
                 // Log the most common case that might cause issue.

@@ -246,6 +246,20 @@ namespace pimax_openxr {
                 VK_FORMAT_B10G11R11_UFLOAT_PACK32,
             // clang-format on
         };
+        static const GLenum glFormats[] = {
+            // clang-format off
+                GL_RGBA16F, // Prefer higher bit counts.
+                GL_SRGB8_ALPHA8, // Prefer SRGB formats.
+                GL_RGBA8,
+                GL_DEPTH_COMPONENT32F, // Prefer 32-bit depth.
+                GL_DEPTH32F_STENCIL8,
+                GL_DEPTH24_STENCIL8,
+                GL_DEPTH_COMPONENT16,
+
+                GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+                GL_R11F_G11F_B10F,
+            // clang-format on
+        };
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateSwapchainFormats",
@@ -256,7 +270,9 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        const uint32_t count = isVulkanSession() ? ARRAYSIZE(vkFormats) : ARRAYSIZE(d3dFormats);
+        const uint32_t count = isVulkanSession()   ? ARRAYSIZE(vkFormats)
+                               : isOpenGLSession() ? ARRAYSIZE(glFormats)
+                                                   : ARRAYSIZE(d3dFormats);
 
         if (formatCapacityInput && formatCapacityInput < count) {
             return XR_ERROR_SIZE_INSUFFICIENT;
@@ -270,6 +286,8 @@ namespace pimax_openxr {
             for (uint32_t i = 0; i < *formatCountOutput; i++) {
                 if (isVulkanSession()) {
                     formats[i] = (int64_t)vkFormats[i];
+                } else if (isOpenGLSession()) {
+                    formats[i] = (int64_t)glFormats[i];
                 } else {
                     formats[i] = (int64_t)d3dFormats[i];
                 }
@@ -322,8 +340,9 @@ namespace pimax_openxr {
 
         pvrTextureSwapChainDesc desc{};
 
-        desc.Format = isVulkanSession() ? vkToPvrTextureFormat((VkFormat)createInfo->format)
-                                        : dxgiToPvrTextureFormat((DXGI_FORMAT)createInfo->format);
+        desc.Format = isVulkanSession()   ? vkToPvrTextureFormat((VkFormat)createInfo->format)
+                      : isOpenGLSession() ? glToPvrTextureFormat((GLenum)createInfo->format)
+                                          : dxgiToPvrTextureFormat((DXGI_FORMAT)createInfo->format);
         if (desc.Format == PVR_FORMAT_UNKNOWN) {
             return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
         }
@@ -411,6 +430,8 @@ namespace pimax_openxr {
             flushD3D12CommandQueue();
         } else if (isVulkanSession()) {
             flushVulkanCommandQueue();
+        } else if (isOpenGLSession()) {
+            flushOpenGLContext();
         } else {
             flushD3D11Context();
         }
@@ -437,6 +458,21 @@ namespace pimax_openxr {
 
         if (xrSwapchain.vkCmdBuffer != VK_NULL_HANDLE) {
             m_vkDispatch.vkFreeCommandBuffers(m_vkDevice, m_vkCmdPool, 1, &xrSwapchain.vkCmdBuffer);
+        }
+
+        // This will be a no-op if OpenGL is not used.
+        GlContextSwitch context(m_glContext);
+
+        while (!xrSwapchain.glImages.empty()) {
+            GLuint image = xrSwapchain.glImages.back();
+            glDeleteTextures(1, &image);
+            xrSwapchain.glImages.pop_back();
+        }
+
+        while (!xrSwapchain.glMemory.empty()) {
+            GLuint memory = xrSwapchain.glMemory.back();
+            m_glDispatch.glDeleteMemoryObjectsEXT(1, &memory);
+            xrSwapchain.glMemory.pop_back();
         }
 
         delete &xrSwapchain;
@@ -480,6 +516,9 @@ namespace pimax_openxr {
             } else if (isVulkanSession()) {
                 XrSwapchainImageVulkanKHR* vkImages = reinterpret_cast<XrSwapchainImageVulkanKHR*>(images);
                 return getSwapchainImagesVulkan(xrSwapchain, vkImages, *imageCountOutput);
+            } else if (isOpenGLSession()) {
+                XrSwapchainImageOpenGLKHR* glImages = reinterpret_cast<XrSwapchainImageOpenGLKHR*>(images);
+                return getSwapchainImagesOpenGL(xrSwapchain, glImages, *imageCountOutput);
             } else {
                 XrSwapchainImageD3D11KHR* d3d11Images = reinterpret_cast<XrSwapchainImageD3D11KHR*>(images);
                 return getSwapchainImagesD3D11(xrSwapchain, d3d11Images, *imageCountOutput);

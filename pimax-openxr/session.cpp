@@ -101,6 +101,17 @@ namespace pimax_openxr {
 
                 hasGraphicsBindings = true;
                 break;
+            } else if (m_isOpenGLSupported && entry->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR) {
+                const XrGraphicsBindingOpenGLWin32KHR* glBindings =
+                    reinterpret_cast<const XrGraphicsBindingOpenGLWin32KHR*>(entry);
+
+                const auto result = initializeOpenGL(*glBindings);
+                if (XR_FAILED(result)) {
+                    return result;
+                }
+
+                hasGraphicsBindings = true;
+                break;
             }
 
             entry = entry->next;
@@ -124,18 +135,19 @@ namespace pimax_openxr {
             const bool enableLighthouse = !!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0);
             const int fovLevel = pvr_getIntConfig(m_pvrSession, "fov_level", 1);
 
-            TraceLoggingWrite(g_traceProvider,
-                              "PVR_Config",
-                              TLArg(enableLighthouse, "EnableLighthouse"),
-                              TLArg(fovLevel, "FovLevel"),
-                              TLArg(m_useParallelProjection, "UseParallelProjection"),
-                              TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
-                              TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"));
+            TraceLoggingWrite(
+                g_traceProvider,
+                "PVR_Config",
+                TLArg(enableLighthouse, "EnableLighthouse"),
+                TLArg(fovLevel, "FovLevel"),
+                TLArg(m_useParallelProjection, "UseParallelProjection"),
+                TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
+                TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"));
 
-            const bool useD3D11 = !isD3D12Session() && !isVulkanSession();
-            m_telemetry.logScenario(useD3D11           ? "D3D11"
-                                    : isD3D12Session() ? "D3D12"
-                                                       : "Vulkan",
+            m_telemetry.logScenario(isD3D12Session()    ? "D3D12"
+                                    : isVulkanSession() ? "Vulkan"
+                                    : isOpenGLSession() ? "OpenGL"
+                                                        : "D3D11",
                                     enableLighthouse,
                                     fovLevel,
                                     m_useParallelProjection);
@@ -209,6 +221,7 @@ namespace pimax_openxr {
         m_viewSpace = XR_NULL_HANDLE;
 
         // FIXME: Add session and frame resource cleanup here.
+        cleanupOpenGL();
         cleanupVulkan();
         cleanupD3D12();
         cleanupD3D11();

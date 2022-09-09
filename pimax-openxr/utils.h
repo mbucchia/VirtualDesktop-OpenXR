@@ -207,6 +207,43 @@ namespace pimax_openxr::utils {
         mutable bool m_valid{false};
     };
 
+    struct GlContext {
+        HDC glDC;
+        HGLRC glRC;
+
+        bool valid{false};
+    };
+
+    class GlContextSwitch {
+      public:
+        GlContextSwitch(const GlContext& context) : m_valid(context.valid) {
+            if (m_valid) {
+                m_glDC = wglGetCurrentDC();
+                m_glRC = wglGetCurrentContext();
+
+                wglMakeCurrent(context.glDC, context.glRC);
+
+                // Reset error codes.
+                (void)glGetError();
+            }
+        }
+
+        ~GlContextSwitch() noexcept(false) {
+            if (m_valid) {
+                const auto lastError = glGetError();
+
+                wglMakeCurrent(m_glDC, m_glRC);
+
+                CHECK_MSG(lastError == GL_NO_ERROR, fmt::format("OpenGL error: 0x{:x}", lastError));
+            }
+        }
+
+      private:
+        const bool m_valid;
+        HDC m_glDC;
+        HGLRC m_glRC;
+    };
+
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2017/may/c-use-modern-c-to-access-the-windows-registry
     static std::optional<int> RegGetDword(HKEY hKey, const std::string& subKey, const std::string& value) {
         DWORD data{};
@@ -376,6 +413,50 @@ namespace pimax_openxr::utils {
             return PVR_FORMAT_R11G11B10_FLOAT;
         default:
             return PVR_FORMAT_UNKNOWN;
+        }
+    }
+
+    static pvrTextureFormat glToPvrTextureFormat(GLenum format) {
+        switch (format) {
+        case GL_RGBA8:
+            return PVR_FORMAT_R8G8B8A8_UNORM;
+        case GL_SRGB8_ALPHA8:
+            return PVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case GL_RGBA16F:
+            return PVR_FORMAT_R16G16B16A16_FLOAT;
+        case GL_DEPTH_COMPONENT16:
+            return PVR_FORMAT_D16_UNORM;
+        case GL_DEPTH24_STENCIL8:
+            return PVR_FORMAT_D24_UNORM_S8_UINT;
+        case GL_DEPTH_COMPONENT32F:
+            return PVR_FORMAT_D32_FLOAT;
+        case GL_DEPTH32F_STENCIL8:
+            return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+            return PVR_FORMAT_BC1_UNORM;
+        case GL_R11F_G11F_B10F:
+            return PVR_FORMAT_R11G11B10_FLOAT;
+        default:
+            return PVR_FORMAT_UNKNOWN;
+        }
+    }
+
+    static size_t glGetBytePerPixels(GLenum format) {
+        switch (format) {
+        case GL_DEPTH_COMPONENT16:
+            return 2;
+        case GL_RGBA8:
+        case GL_SRGB8_ALPHA8:
+        case GL_DEPTH24_STENCIL8:
+        case GL_DEPTH_COMPONENT32F:
+        case GL_R11F_G11F_B10F:
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+            return 4;
+        case GL_RGBA16F:
+        case GL_DEPTH32F_STENCIL8:
+            return 8;
+        default:
+            return 0;
         }
     }
 
