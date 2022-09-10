@@ -376,7 +376,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PimaxXR"
         "ProductCode" = "8:{2ADB0E77-3604-4222-9D75-D20C09F07128}"
-        "PackageCode" = "8:{431EBBD0-5AFF-47A4-95B8-A07B72FA97F7}"
+        "PackageCode" = "8:{61CF4329-E5D9-4D3F-9341-BA12E204A2BC}"
         "UpgradeCode" = "8:{462D4BAE-C6F9-4917-94BB-AF4A019B92E2}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
@@ -417,6 +417,20 @@
                     "Transitive" = "11:FALSE"
                         "Keys"
                         {
+                            "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_106DC14343FF4715BBD8AAD32927CC4E"
+                            {
+                            "Name" = "8:PimaxXR"
+                            "Condition" = "8:"
+                            "AlwaysCreate" = "11:FALSE"
+                            "DeleteAtUninstall" = "11:FALSE"
+                            "Transitive" = "11:FALSE"
+                                "Keys"
+                                {
+                                }
+                                "Values"
+                                {
+                                }
+                            }
                             "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_A6B06665DB4F4C7881D4AEF0D9AB6E60"
                             {
                             "Name" = "8:Khronos"

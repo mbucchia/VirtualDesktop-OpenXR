@@ -68,6 +68,15 @@ namespace companion
             loading = false;
         }
 
+        private void ExperimentalSettings_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                Hide();
+            }
+        }
+
         private void RefreshEnabledState()
         {
             forceRateLabel.Enabled = forceHalf.Enabled = forceThird.Enabled = enableFrameTiming.Checked;

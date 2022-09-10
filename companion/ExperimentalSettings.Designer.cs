@@ -201,6 +201,7 @@ namespace companion
             this.MinimizeBox = false;
             this.Name = "ExperimentalSettings";
             this.Text = "PimaxXR - Experimental Settings";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ExperimentalSettings_FormClosing);
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filterLength)).EndInit();
