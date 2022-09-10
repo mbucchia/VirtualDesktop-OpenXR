@@ -42,7 +42,7 @@ namespace companion
         public static extern IntPtr getVersionString();
 
         // Must match runtime.h.
-        public const string RegPrefix = "SOFTWARE\\PimaxXR";
+        public static readonly string RegPrefix = "SOFTWARE\\PimaxXR";
 
         private bool loading = true;
         private string pimaxRuntimePath = "";
@@ -130,7 +130,7 @@ namespace companion
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
 
-                // Must match the defaults in the layer!
+                // Must match the defaults in the runtime!
                 recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
                 joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
                 enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 1) == 1 ? true : false;
@@ -189,7 +189,7 @@ namespace companion
             }
         }
 
-        private void WriteSetting(string name, int value)
+        public static void WriteSetting(string name, int value)
         {
             Microsoft.Win32.RegistryKey key = null;
             try
@@ -199,7 +199,7 @@ namespace companion
             }
             catch (Exception)
             {
-                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -395,6 +395,19 @@ namespace companion
 
             reportIssues.LinkVisited = true;
             System.Diagnostics.Process.Start(githubIssues);
+        }
+
+        private ExperimentalSettings experimentalSettings = new ExperimentalSettings();
+        private uint secretHandshake = 0;
+
+        private void pictureBox1_DoubleClick(object sender, EventArgs e)
+        {
+            secretHandshake++;
+            if (secretHandshake >= 5)
+            {
+                experimentalSettings.Show();
+                secretHandshake = 0;
+            }
         }
     }
 }

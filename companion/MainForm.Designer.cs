@@ -347,6 +347,7 @@ namespace companion
             this.pictureBox1.Size = new System.Drawing.Size(400, 115);
             this.pictureBox1.TabIndex = 11;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.DoubleClick += new System.EventHandler(this.pictureBox1_DoubleClick);
             // 
             // MainForm
             // 
