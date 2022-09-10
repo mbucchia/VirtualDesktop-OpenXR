@@ -117,9 +117,10 @@ namespace pimax_openxr {
 
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
             if (m_frameWaited) {
-                TraceLoggingWrite(g_traceProvider, "WaitFrame1_Begin");
+                TraceLocalActivity(waitFrame1);
+                TraceLoggingWriteStart(waitFrame1, "WaitFrame1");
                 const bool timedOut = !m_frameCondVar.wait_for(lock, 3000ms, [&] { return m_frameBegun; });
-                TraceLoggingWrite(g_traceProvider, "WaitFrame1_End", TLArg(timedOut, "TimedOut"));
+                TraceLoggingWriteStop(waitFrame1, "WaitFrame1", TLArg(timedOut, "TimedOut"));
 
                 // TODO: What to do if timed out? This would mean an app deadlock should have happened.
                 if (timedOut) {
@@ -133,18 +134,20 @@ namespace pimax_openxr {
             if (m_lastFrameWaitedTime) {
                 const double now = pvr_getTimeSeconds(m_pvr);
                 const double nextFrameTime = m_lastFrameWaitedTime.value() + m_frameDuration;
-                if (nextFrameTime > now) {
-                    amount = nextFrameTime - now;
-                    timeout = std::chrono::milliseconds((uint64_t)(amount * 1e3));
-                } else {
-                    timeout = 0ms;
-                }
+
+                // Give 1ms grace period to compensate for timer precision.
+                amount = std::max(0.0, nextFrameTime - now - 0.001f);
+                timeout = std::chrono::milliseconds((uint64_t)(amount * 1e3));
             }
 
             // Wait for xrEndFrame() completion or for the next frame time.
-            TraceLoggingWrite(g_traceProvider, "WaitFrame2_Begin", TLArg(amount, "Amount"));
-            const bool timedOut = !m_frameCondVar.wait_for(lock, timeout, [&] { return !m_frameBegun; });
-            TraceLoggingWrite(g_traceProvider, "WaitFrame2_End", TLArg(timedOut, "TimedOut"));
+            {
+                TraceLocalActivity(waitFrame2);
+                TraceLoggingWriteStart(waitFrame2, "WaitFrame2", TLArg(amount, "Amount"));
+                const bool timedOut =
+                    !m_frameCondVar.wait_for(lock, timeout, [&] { return !m_useFrameTimingOverride && !m_frameBegun; });
+                TraceLoggingWriteStop(waitFrame2, "WaitFrame2", TLArg(timedOut, "TimedOut"));
+            }
 
             if (IsTraceEnabled()) {
                 waitTimer.stop();
@@ -161,6 +164,8 @@ namespace pimax_openxr {
 
             // Setup the app frame for use and the next frame for this call.
             frameState->predictedDisplayTime = pvrTimeToXrTime(predictedDisplayTime);
+
+            // We always use the native frame duration, regardless of Smart Smoothing.
             frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_frameDuration);
 
             m_frameWaited = true;
@@ -214,11 +219,12 @@ namespace pimax_openxr {
             // PVR unless there is a call to pvr_endFrame() first... Also unclear why the call occasionally fails
             // with error code -1 (undocumented).
             if (m_canBeginFrame) {
-                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Begin");
+                TraceLocalActivity(beginFrame);
+                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame");
                 // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
                 // a monotonically increasing frame index. Let's follow the example.
                 const auto result = pvr_beginFrame(m_pvrSession, 0);
-                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_End", TLArg((int)result, "Result"));
+                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg((int)result, "Result"));
             }
 
             if (IsTraceEnabled()) {
@@ -233,18 +239,21 @@ namespace pimax_openxr {
             m_isControllerActive[0] = m_isControllerActive[1] = false;
             m_frameLatchedActionSets.clear();
 
-            if (IsTraceEnabled()) {
-                // Statistics for the previous frame.
+            // Statistics for the previous frame.
+            if (m_useFrameTimingOverride || IsTraceEnabled()) {
+                const uint64_t cpuFrameTimeUs = m_cpuTimerApp.query();
+                const uint64_t gpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex]->query();
+
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
-                                  TLArg(m_cpuTimerApp.query(), "AppCpuTime"),
-                                  TLArg(m_gpuTimerApp[m_currentTimerIndex]->query(), "AppGpuTime"));
-            }
+                                  TLArg(cpuFrameTimeUs, "AppCpuTime"),
+                                  TLArg(gpuFrameTimeUs, "AppGpuTime"));
 
-            m_currentTimerIndex ^= 1;
+                m_lastGpuFrameTimeUs = gpuFrameTimeUs;
 
-            // Start app timers.
-            if (IsTraceEnabled()) {
+                m_currentTimerIndex ^= 1;
+
+                // Start app timers.
                 m_cpuTimerApp.start();
                 m_gpuTimerApp[m_currentTimerIndex]->start();
             }
@@ -253,10 +262,13 @@ namespace pimax_openxr {
             TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
             m_frameCondVar.notify_one();
 
-            TraceLoggingWrite(g_traceProvider,
-                              "PVR_Status",
-                              TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_available", 0), "SmartSmoothingAvailable"),
-                              TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_active", 0), "SmartSmoothingActive"));
+            TraceLoggingWrite(
+                g_traceProvider,
+                "PVR_Status",
+                TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
+                TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"),
+                TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_available", 0), "SmartSmoothingAvailable"),
+                TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_active", 0), "SmartSmoothingActive"));
         }
 
         return !frameDiscarded ? XR_SUCCESS : XR_FRAME_DISCARDED;
@@ -304,10 +316,13 @@ namespace pimax_openxr {
                 serializeOpenGLFrame();
             }
 
-            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex ^ 1]->query();
-            if (IsTraceEnabled()) {
+            if (m_useFrameTimingOverride || IsTraceEnabled()) {
                 m_cpuTimerApp.stop();
                 m_gpuTimerApp[m_currentTimerIndex]->stop();
+            }
+
+            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex ^ 1]->query();
+            if (IsTraceEnabled()) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
@@ -533,14 +548,47 @@ namespace pimax_openxr {
                     m_gpuTimerPvrComposition[m_currentTimerIndex]->start();
                 }
 
-                TraceLoggingWrite(g_traceProvider,
-                                  "PVR_EndFrame_Begin",
-                                  TLArg(layers.size(), "NumLayers"),
-                                  TLArg(m_frameTimes.size(), "Fps"),
-                                  TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"),
-                                  TLArg(lastCompositionTime, "LastCompositionTimeUs"));
+                if (m_useFrameTimingOverride) {
+                    float renderMs = 0.f;
+                    if (!m_gpuFrameTimeOverrideUs) {
+                        const auto latestGpuFrameTimeUs =
+                            std::max(0ll, (int64_t)m_lastGpuFrameTimeUs + m_gpuFrameTimeOverrideOffsetUs);
+
+                        // Simple median filter to smooth out the values.
+                        m_gpuFrameTimeFilter.push_back(latestGpuFrameTimeUs);
+                        while (m_gpuFrameTimeFilter.size() > m_gpuFrameTimeFilterLength) {
+                            m_gpuFrameTimeFilter.pop_front();
+                        }
+                        auto sortedFrameTimes = m_gpuFrameTimeFilter;
+                        std::sort(sortedFrameTimes.begin(), sortedFrameTimes.end());
+
+                        const auto filteredGpuFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
+                        renderMs = filteredGpuFrameTimeUs / 1e3f;
+                    } else {
+                        m_gpuFrameTimeFilter.clear();
+
+                        renderMs =
+                            std::max(0ll, (int64_t)m_gpuFrameTimeOverrideUs + m_gpuFrameTimeOverrideOffsetUs) / 1e3f;
+                    }
+
+                    TraceLoggingWrite(g_traceProvider, "PVR_ClientRenderMs", TLArg(renderMs, "RenderMs"));
+
+                    // pi_server requires to set this config value to hint the frame time of the application. This call
+                    // always seems to fail, in spite of having side effects.
+                    // According to Pimax, this value must be set to the last GPU frame time.
+                    pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
+                }
+
+                TraceLocalActivity(endFrame);
+                TraceLoggingWriteStart(endFrame,
+                                       "PVR_EndFrame",
+                                       TLArg(layers.size(), "NumLayers"),
+                                       TLArg(m_frameTimes.size(), "MeasuredFps"),
+                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"),
+                                       TLArg(lastCompositionTime, "LastCompositionTimeUs"));
                 CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
-                TraceLoggingWrite(g_traceProvider, "PVR_EndFrame_End");
+                TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
 
                 if (IsTraceEnabled()) {
                     m_gpuTimerPvrComposition[m_currentTimerIndex]->stop();

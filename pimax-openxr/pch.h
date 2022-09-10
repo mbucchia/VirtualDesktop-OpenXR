@@ -29,6 +29,7 @@
 #include <cstdarg>
 #include <ctime>
 #include <deque>
+#include <intrin.h>
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
@@ -42,13 +43,17 @@
 #include <string>
 #include <vector>
 
+#pragma intrinsic(_ReturnAddress)
+
 using namespace std::chrono_literals;
 
 // Windows header files.
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#define NOMINMAX
 #include <windows.h>
 #include <unknwn.h>
 #include <wrl.h>
+#include <wil/registry.h>
 #include <wil/resource.h>
 #include <traceloggingactivity.h>
 #include <traceloggingprovider.h>
@@ -90,6 +95,9 @@ using Microsoft::WRL::ComPtr;
 #include <XrMath.h>
 #include <XrStereoView.h>
 #include <XrToString.h>
+
+// Detours
+#include <detours.h>
 
 // FMT formatter.
 #include <fmt/format.h>

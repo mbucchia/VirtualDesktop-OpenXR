@@ -129,7 +129,7 @@ namespace pimax_openxr {
         if (m_useParallelProjection) {
             Log("Parallel projection is enabled\n");
         }
-        m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
+        refreshSettings();
 
         {
             const bool enableLighthouse = !!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0);
@@ -303,6 +303,29 @@ namespace pimax_openxr {
         m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
 
         return XR_SUCCESS;
+    }
+
+    // Read dynamic settings from the registry.
+    void OpenXrRuntime::refreshSettings() {
+        // Value is in unit of hundredth.
+        m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
+
+        // Value is already in microseconds.
+        m_gpuFrameTimeOverrideOffsetUs = getSetting("frame_time_override_offset").value_or(0);
+
+        // Multiplier is a percentage. Convert to milliseconds (*10) then convert the whole expression (including frame
+        // duration) from milliseconds to microseconds.
+        m_gpuFrameTimeOverrideUs =
+            (uint64_t)(getSetting("frame_time_override_multiplier").value_or(0) * 10.f * m_frameDuration * 1000.f);
+
+        m_gpuFrameTimeFilterLength = getSetting("frame_time_filter_length").value_or(5);
+
+        TraceLoggingWrite(g_traceProvider,
+                          "PXR_Config",
+                          TLArg(m_joystickDeadzone, "JoystickDeadzone"),
+                          TLArg(m_gpuFrameTimeOverrideOffsetUs, "GpuFrameTimeOverrideOffset"),
+                          TLArg(m_gpuFrameTimeOverrideUs, "GpuFrameTimeOverride"),
+                          TLArg(m_gpuFrameTimeFilterLength, "GpuFrameTimeFilterLength"));
     }
 
 } // namespace pimax_openxr

@@ -440,16 +440,16 @@ namespace pimax_openxr {
                 if (m_isControllerActive[side] && m_frameLatchedActionSets.count(xrAction.actionSet)) {
                     // Per spec, the combined state is the absolute maximum of all values.
                     if (value.floatValue) {
-                        combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
-                                            value.floatValue[side]);
+                        combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
+                                                 value.floatValue[side]);
                     } else if (value.buttonMap) {
-                        combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
-                                            value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
+                        combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
+                                                 value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
                     } else {
                         const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
 
-                        combinedState = max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
-                                            value.vector2fIndex == 0 ? vector2fValue.x : vector2fValue.y);
+                        combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
+                                                 value.vector2fIndex == 0 ? vector2fValue.x : vector2fValue.y);
                     }
                 }
             }

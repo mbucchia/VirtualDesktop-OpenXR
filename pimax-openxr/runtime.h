@@ -314,6 +314,9 @@ namespace pimax_openxr {
         // system.cpp
         void fillDisplayDeviceInfo();
 
+        // session.cpp
+        void refreshSettings();
+
         // action.cpp
         void rebindControllerActions(int side);
         std::string getXrPath(XrPath path) const;
@@ -400,6 +403,7 @@ namespace pimax_openxr {
         pvrSessionHandle m_pvrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
+        bool m_useFrameTimingOverride{false};
         bool m_isVisibilityMaskSupported{false};
         bool m_isD3D11Supported{false};
         bool m_isD3D12Supported{false};
@@ -421,6 +425,7 @@ namespace pimax_openxr {
         std::set<XrAction> m_actions;
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
+        wil::unique_registry_watcher m_registryWatcher;
 
         // Session state.
         ComPtr<ID3D11Device5> m_d3d11Device;
@@ -446,6 +451,10 @@ namespace pimax_openxr {
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
+        int64_t m_gpuFrameTimeOverrideOffsetUs{0};
+        uint64_t m_gpuFrameTimeOverrideUs{0};
+        size_t m_gpuFrameTimeFilterLength{3};
+        std::deque<uint64_t> m_gpuFrameTimeFilter;
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;
@@ -528,6 +537,7 @@ namespace pimax_openxr {
         bool m_frameWaited{false};
         bool m_frameBegun{false};
         std::optional<double> m_lastFrameWaitedTime;
+        uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
         bool m_isControllerActive[2]{false, false};
         std::set<XrActionSet> m_frameLatchedActionSets;

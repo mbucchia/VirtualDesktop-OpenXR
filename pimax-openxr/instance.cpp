@@ -77,6 +77,26 @@ namespace {
                 GetCurrentProcess(), ProcessPowerThrottling, &PowerThrottling, sizeof(PowerThrottling));
         }
     }
+
+    // A mock implementation of GetModuleFileNameA() that fakes being the SteamVR process.
+    decltype(GetModuleFileNameA)* g_original_GetModuleFileNameA = nullptr;
+    DWORD WINAPI hooked_GetModuleFileNameA(HMODULE hModule, LPSTR lpFilename, DWORD nSize) {
+        // We try to only intercept calls from the PVR client.
+        HMODULE callerModule;
+        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               (LPCSTR)_ReturnAddress(),
+                               &callerModule)) {
+            HMODULE libpvrModule = GetModuleHandleA(PVRCLIENT_DLL_NAME);
+            if (callerModule != libpvrModule) {
+                return g_original_GetModuleFileNameA(hModule, lpFilename, nSize);
+            }
+        }
+
+        // The code in libpvrclient64.dll seems to fail if there is no folder.
+        sprintf_s(lpFilename, nSize, "fake\\vrserver.exe");
+        return (DWORD)strlen(lpFilename);
+    }
+
 } // namespace
 
 namespace pimax_openxr {
@@ -96,7 +116,20 @@ namespace pimax_openxr {
         TraceLoggingWrite(g_traceProvider, "PimaxXR", TLArg(runtimeVersion.c_str(), "Version"));
         m_telemetry.logVersion(runtimeVersion);
 
+        m_useFrameTimingOverride = getSetting("use_frame_timing_override").value_or(1);
+        if (m_useFrameTimingOverride) {
+            // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
+            // process) in order to remove PVR frame timing constraints.
+            DetourDllAttach(
+                "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
+        }
+
         CHECK_PVRCMD(pvr_initialise(&m_pvr));
+
+        if (m_useFrameTimingOverride) {
+            DetourDllDetach(
+                "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
+        }
 
         std::string_view versionString(pvr_getVersionString(m_pvr));
         Log("PVR: %s\n", versionString.data());
@@ -119,10 +152,21 @@ namespace pimax_openxr {
             LARGE_INTEGER now;
             QueryPerformanceCounter(&now);
             const double qpcTime = (double)now.QuadPart / m_qpcFrequency.QuadPart;
-            m_pvrTimeFromQpcTimeOffset = min(m_pvrTimeFromQpcTimeOffset, pvr_getTimeSeconds(m_pvr) - qpcTime);
+            m_pvrTimeFromQpcTimeOffset = std::min(m_pvrTimeFromQpcTimeOffset, pvr_getTimeSeconds(m_pvr) - qpcTime);
         }
         TraceLoggingWrite(
             g_traceProvider, "ConvertTime", TLArg(m_pvrTimeFromQpcTimeOffset, "PvrTimeFromQpcTimeOffset"));
+
+        // Watch for changes in the registry.
+        try {
+            m_registryWatcher =
+                wil::make_registry_watcher(HKEY_LOCAL_MACHINE,
+                                           std::wstring(RegPrefix.begin(), RegPrefix.end()).c_str(),
+                                           true,
+                                           [&](wil::RegistryChangeKind changeType) { refreshSettings(); });
+        } catch (std::exception&) {
+            // Ignore errors that can happen with UWP applications not able to write to the registry.
+        }
 
         initializeRemappingTables();
     }
@@ -465,6 +509,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
         TraceLoggingRegister(pimax_openxr::log::g_traceProvider);
+        DetourRestoreAfterWith();
         InitializeHighPrecisionTimer();
         break;
 

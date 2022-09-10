@@ -492,6 +492,43 @@ namespace pimax_openxr::utils {
         return str.find(substr) == str.size() - substr.size();
     }
 
+    template <typename TMethod>
+    void DetourDllAttach(const char* dll, const char* target, TMethod hooked, TMethod& original) {
+        if (original) {
+            // Already hooked.
+            return;
+        }
+
+        HMODULE handle;
+        CHECK_MSG(GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_PIN, dll, &handle), "Failed to get DLL handle");
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        original = (TMethod)GetProcAddress(handle, target);
+        CHECK_MSG(original, "Failed to resolve symbol");
+        DetourAttach((PVOID*)&original, hooked);
+
+        CHECK_MSG(DetourTransactionCommit() == NO_ERROR, "Detour failed");
+    }
+
+    template <typename TMethod>
+    void DetourDllDetach(const char* dll, const char* target, TMethod hooked, TMethod& original) {
+        if (!original) {
+            // Not hooked.
+            return;
+        }
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        DetourDetach((PVOID*)&original, hooked);
+
+        CHECK_MSG(DetourTransactionCommit() == NO_ERROR, "Detour failed");
+
+        original = nullptr;
+    }
+
     // https://stackoverflow.com/questions/60700302/win32-api-to-get-machine-uuid
     static std::string getMachineUuid() {
         typedef struct _dmi_header {
