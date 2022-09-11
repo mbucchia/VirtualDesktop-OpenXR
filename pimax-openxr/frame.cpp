@@ -241,17 +241,20 @@ namespace pimax_openxr {
 
             // Statistics for the previous frame.
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
+                // Our principle is to always query() a timer before we start() it. This means that we get measurements
+                // with k_numGpuTimers-1 frames latency.
+                m_currentTimerIndex = (m_currentTimerIndex + 1) % k_numGpuTimers;
+
                 const uint64_t cpuFrameTimeUs = m_cpuTimerApp.query();
                 const uint64_t gpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex]->query();
 
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
                                   TLArg(cpuFrameTimeUs, "AppCpuTime"),
-                                  TLArg(gpuFrameTimeUs, "AppGpuTime"));
+                                  TLArg(gpuFrameTimeUs, "AppGpuTime"),
+                                  TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
 
                 m_lastGpuFrameTimeUs = gpuFrameTimeUs;
-
-                m_currentTimerIndex ^= 1;
 
                 // Start app timers.
                 m_cpuTimerApp.start();
@@ -321,7 +324,7 @@ namespace pimax_openxr {
                 m_gpuTimerApp[m_currentTimerIndex]->stop();
             }
 
-            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex ^ 1]->query();
+            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex]->query();
             if (IsTraceEnabled()) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
@@ -542,12 +545,6 @@ namespace pimax_openxr {
 
             // Submit the layers to PVR.
             if (!layers.empty()) {
-                // TODO: This timer does not seem to work. Perhaps because PVR is doing composition out-of-proc?
-                const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimerIndex ^ 1]->query();
-                if (IsTraceEnabled()) {
-                    m_gpuTimerPvrComposition[m_currentTimerIndex]->start();
-                }
-
                 if (m_useFrameTimingOverride) {
                     float renderMs = 0.f;
                     if (!m_gpuFrameTimeOverrideUs) {
@@ -577,6 +574,12 @@ namespace pimax_openxr {
                     // always seems to fail, in spite of having side effects.
                     // According to Pimax, this value must be set to the last GPU frame time.
                     pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
+                }
+
+                // TODO: This timer does not seem to work. Perhaps because PVR is doing composition out-of-proc?
+                const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimerIndex]->query();
+                if (IsTraceEnabled()) {
+                    m_gpuTimerPvrComposition[m_currentTimerIndex]->start();
                 }
 
                 TraceLocalActivity(endFrame);

@@ -805,12 +805,12 @@ namespace pimax_openxr {
     // Serialize commands from the Vulkan queue to the D3D11 context used by PVR.
     void OpenXrRuntime::serializeVulkanFrame() {
         m_fenceValue++;
-        TraceLoggingWrite(
-            g_traceProvider,
-            "xrEndFrame_Sync",
-            TLArg("Vulkan", "Api"),
-            TLArg(m_fenceValue, "FenceValue"),
-            TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex ^ 1]->query(), "LastSyncDurationUs"));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEndFrame_Sync",
+                          TLArg("Vulkan", "Api"),
+                          TLArg(m_fenceValue, "FenceValue"),
+                          TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"),
+                          TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
         VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
         timelineInfo.signalSemaphoreValueCount = 1;
         timelineInfo.pSignalSemaphoreValues = &m_fenceValue;

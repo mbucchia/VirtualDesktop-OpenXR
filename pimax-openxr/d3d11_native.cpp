@@ -177,7 +177,7 @@ namespace pimax_openxr {
             setDebugName(m_resolveShader[i].Get(), "DepthResolve CS");
         }
 
-        for (uint32_t i = 0; i < 2; i++) {
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerApp[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
             m_gpuTimerSynchronizationDuration[i] =
                 std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
@@ -213,7 +213,7 @@ namespace pimax_openxr {
     void OpenXrRuntime::cleanupD3D11() {
         flushD3D11Context();
 
-        for (uint32_t i = 0; i < 2; i++) {
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerSynchronizationDuration[i].reset();
             m_gpuTimerPrecomposition[i].reset();
             m_gpuTimerPvrComposition[i].reset();

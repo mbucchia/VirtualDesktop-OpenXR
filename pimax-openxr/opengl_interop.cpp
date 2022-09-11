@@ -161,7 +161,8 @@ namespace pimax_openxr {
         wil::unique_handle fenceHandle = nullptr;
         CHECK_HRCMD(m_d3d11Device->CreateFence(
             0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
-        CHECK_HRCMD(m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, m_fenceHandleForAMDWorkaround.put()));
+        CHECK_HRCMD(
+            m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, m_fenceHandleForAMDWorkaround.put()));
 
         // On the OpenGL side, it is called a semaphore.
         m_glDispatch.glImportSemaphoreWin32HandleEXT(
@@ -330,12 +331,12 @@ namespace pimax_openxr {
         GlContextSwitch context(m_glContext);
 
         m_fenceValue++;
-        TraceLoggingWrite(
-            g_traceProvider,
-            "xrEndFrame_Sync",
-            TLArg("OpenGL", "Api"),
-            TLArg(m_fenceValue, "FenceValue"),
-            TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex ^ 1]->query(), "LastSyncDurationUs"));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEndFrame_Sync",
+                          TLArg("OpenGL", "Api"),
+                          TLArg(m_fenceValue, "FenceValue"),
+                          TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"),
+                          TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
         m_glDispatch.glSemaphoreParameterui64vEXT(m_glSemaphore, GL_D3D12_FENCE_VALUE_EXT, &m_fenceValue);
         m_glDispatch.glSignalSemaphoreEXT(m_glSemaphore, 0, nullptr, 0, nullptr, nullptr);
         glFlush();
