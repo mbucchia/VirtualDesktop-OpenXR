@@ -424,6 +424,8 @@ namespace pimax_openxr {
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
         wil::unique_registry_watcher m_registryWatcher;
+        bool m_loggedProductName{false};
+        bool m_loggedResolution{false};
 
         // Session state.
         ComPtr<ID3D11Device5> m_d3d11Device;

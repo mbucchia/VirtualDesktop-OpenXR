@@ -70,6 +70,26 @@ namespace pimax_openxr {
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
 
+        // Query HMD properties.
+        pvrHmdInfo info{};
+        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &info));
+        TraceLoggingWrite(g_traceProvider,
+                          "PVR_HmdInfo",
+                          TLArg(info.VendorId, "VendorId"),
+                          TLArg(info.ProductId, "ProductId"),
+                          TLArg(info.Manufacturer, "Manufacturer"),
+                          TLArg(info.ProductName, "ProductName"),
+                          TLArg(info.SerialNumber, "SerialNumber"),
+                          TLArg(info.FirmwareMinor, "FirmwareMinor"),
+                          TLArg(info.FirmwareMajor, "FirmwareMajor"),
+                          TLArg(info.Resolution.w, "ResolutionWidth"),
+                          TLArg(info.Resolution.h, "ResolutionHeight"));
+        if (!m_loggedProductName) {
+            Log("Device is: %s\n", info.ProductName);
+            m_telemetry.logProduct(info.ProductName);
+            m_loggedProductName = true;
+        }
+
         // Cache common information.
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[0]));
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[1]));
@@ -112,18 +132,6 @@ namespace pimax_openxr {
         // Query HMD properties.
         pvrHmdInfo info{};
         CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &info));
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_HmdInfo",
-                          TLArg(info.VendorId, "VendorId"),
-                          TLArg(info.ProductId, "ProductId"),
-                          TLArg(info.Manufacturer, "Manufacturer"),
-                          TLArg(info.ProductName, "ProductName"),
-                          TLArg(info.SerialNumber, "SerialNumber"),
-                          TLArg(info.FirmwareMinor, "FirmwareMinor"),
-                          TLArg(info.FirmwareMajor, "FirmwareMajor"),
-                          TLArg(info.Resolution.w, "ResolutionWidth"),
-                          TLArg(info.Resolution.h, "ResolutionHeight"));
-        m_telemetry.logProduct(info.ProductName);
 
         properties->vendorId = info.VendorId;
 

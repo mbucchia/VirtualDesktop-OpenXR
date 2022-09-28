@@ -708,6 +708,11 @@ namespace pimax_openxr {
             }
 
             if (lastControllerType != m_cachedControllerType[side]) {
+                if (!m_cachedControllerType[side].empty()) {
+                    Log("Detected controller: %s (%s)\n",
+                        m_cachedControllerType[side].c_str(),
+                        side == 0 ? "Left" : "Right");
+                }
                 TraceLoggingWrite(g_traceProvider,
                                   "PVR_ControllerType",
                                   TLArg(side == 0 ? "Left" : "Right", "Side"),

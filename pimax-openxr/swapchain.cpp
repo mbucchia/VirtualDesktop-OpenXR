@@ -172,6 +172,13 @@ namespace pimax_openxr {
                 views[i].recommendedImageRectWidth = viewportSize.w;
                 views[i].recommendedImageRectHeight = viewportSize.h;
 
+                if (!m_loggedResolution) {
+                    Log("Recommended resolution: %ux%u\n",
+                        views[i].recommendedImageRectWidth,
+                        views[i].recommendedImageRectHeight);
+                    m_loggedResolution = true;
+                }
+
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateViewConfigurationViews",
                                   TLArg(views[i].maxImageRectWidth, "MaxImageRectWidth"),
