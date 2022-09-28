@@ -375,15 +375,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PimaxXR"
-        "ProductCode" = "8:{DAF2545E-4201-4BAC-9391-2AE5C573E263}"
-        "PackageCode" = "8:{62924EAE-1F0B-4296-A31A-55D946E1E926}"
+        "ProductCode" = "8:{9ECEC7FB-3041-4F9E-89BC-61EADA47EFBC}"
+        "PackageCode" = "8:{801355D6-FACD-4F08-9AE7-7B52DB407F0C}"
         "UpgradeCode" = "8:{462D4BAE-C6F9-4917-94BB-AF4A019B92E2}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:0.2.6"
+        "ProductVersion" = "8:0.2.7"
         "Manufacturer" = "8:mbucchia@gmail.com"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:https://github.com/mbucchia/Pimax-OpenXR"
@@ -1011,7 +1011,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_40856ECB196C4B9BB81AAF93EFAA99D8"
             {
-            "SourcePath" = "8:..\\companion\\obj\\Release\\companion.exe"
+            "SourcePath" = "8:..\\companion\\obj\\Debug\\companion.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
@@ -1067,7 +1067,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_7B703953430D444C9E135C75AB3F2E52"
             {
-            "SourcePath" = "8:..\\bin\\x64\\Release\\pimax_cli.exe"
+            "SourcePath" = "8:..\\bin\\Win32\\Debug\\pimax_cli.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
