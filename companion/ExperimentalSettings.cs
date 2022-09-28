@@ -31,12 +31,11 @@ namespace companion
                 enableFrameTiming.Checked = (int)key.GetValue("use_frame_timing_override", 1) == 1 ? true : false;
                 filterLength.Value = (int)key.GetValue("frame_time_filter_length", 5);
                 var multiplier = (int)key.GetValue("frame_time_override_multiplier", 0);
-                if (multiplier == 1000)
+                if (multiplier == 100)
                 {
-
                     forceHalf.Checked = true;
                 }
-                else if(multiplier == 2000)
+                else if(multiplier == 200)
                 {
                     forceThird.Checked = true;
                 }
