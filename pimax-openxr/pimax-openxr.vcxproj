@@ -137,12 +137,19 @@ copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
       </Message>
     </PreLinkEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+:skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>
-      </Message>
+      <Message>Generating version info...</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -188,12 +195,19 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
       </Message>
     </PreLinkEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+:skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>
-      </Message>
+      <Message>Generating version info...</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -244,12 +258,19 @@ copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
       </Message>
     </PreLinkEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+:skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>
-      </Message>
+      <Message>Generating version info...</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -299,12 +320,19 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
       </Message>
     </PreLinkEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+:skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>
-      </Message>
+      <Message>Generating version info...</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -313,6 +341,7 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
     <ClInclude Include="framework\dispatch.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="runtime.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
@@ -352,6 +381,9 @@ copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

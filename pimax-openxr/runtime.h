@@ -32,9 +32,7 @@ namespace pimax_openxr {
     using namespace pimax_openxr::appinsights;
     using namespace pimax_openxr::utils;
 
-    const unsigned int RuntimeVersionMajor = 0;
-    const unsigned int RuntimeVersionMinor = 2;
-    const unsigned int RuntimeVersionPatch = 6;
+#include "version.h"
 
     const std::string RuntimeName = "pimax-openxr";
     const std::string RuntimePrettyName =
