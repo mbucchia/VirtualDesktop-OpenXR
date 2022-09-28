@@ -107,6 +107,7 @@
       <Filter>Framework</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="pimax-openxr-32.json" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

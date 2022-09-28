@@ -61,7 +61,8 @@ jobs:
         Pop-Location
         
         # Finally, we may build the project.
-        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build ${{env.BUILD_CONFIGURATION}}
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "${{env.BUILD_CONFIGURATION}}|Win32"
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "${{env.BUILD_CONFIGURATION}}|x64"
 
     - name: Signing
       env:

@@ -46,6 +46,7 @@ namespace companion
 
         private bool loading = true;
         private string pimaxRuntimePath = "";
+        private string pimax32RuntimePath = "";
         private string steamRuntimePath = "";
 
         public MainForm()
@@ -93,6 +94,7 @@ namespace companion
             var assembly = Assembly.GetAssembly(GetType());
             var installPath = Path.GetDirectoryName(assembly.Location);
             pimaxRuntimePath = installPath + "\\pimax-openxr.json";
+            pimax32RuntimePath = installPath + "\\pimax-openxr-32.json";
 
             // Read the OpenXR Loader configuration.
             var activeRuntime = "";
@@ -168,17 +170,24 @@ namespace companion
             }
         }
 
-        private void SelectRuntime(string runtimePath)
+        private void SelectRuntime(string runtimePath, bool wow6432node = false)
         {
             Microsoft.Win32.RegistryKey key = null;
             try
             {
-                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey("SOFTWARE\\Khronos\\OpenXR\\1");
-                key.SetValue("ActiveRuntime", runtimePath, Microsoft.Win32.RegistryValueKind.String);
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(wow6432node ? "SOFTWARE\\WOW6432Node\\Khronos\\OpenXR\\1" : "SOFTWARE\\Khronos\\OpenXR\\1");
+                if (runtimePath != null)
+                {
+                    key.SetValue("ActiveRuntime", runtimePath, Microsoft.Win32.RegistryValueKind.String);
+                }
+                else
+                {
+                    key.DeleteValue("ActiveRuntime");
+                }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated." + e, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -218,14 +227,22 @@ namespace companion
 
         private void runtimePimax_CheckedChanged(object sender, EventArgs e)
         {
-            SelectRuntime(pimaxRuntimePath);
-            RefreshEnabledState();
+            if (runtimePimax.Checked)
+            {
+                SelectRuntime(pimaxRuntimePath);
+                SelectRuntime(pimax32RuntimePath, true /* 32-bit */);
+                RefreshEnabledState();
+            }
         }
 
         private void runtimeSteam_CheckedChanged(object sender, EventArgs e)
         {
-            SelectRuntime(steamRuntimePath);
-            RefreshEnabledState();
+            if (runtimeSteam.Checked)
+            {
+                SelectRuntime(steamRuntimePath);
+                SelectRuntime(null, true /* 32-bit */);
+                RefreshEnabledState();
+            }
         }
 
         private void recenterMode_CheckedChanged(object sender, EventArgs e)

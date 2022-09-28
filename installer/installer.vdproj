@@ -15,6 +15,12 @@
     {
         "Entry"
         {
+        "MsmKey" = "8:_054C99396E494E8D97559764E8CED441"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_138E53E928D2441489C834FC90AB6CC1"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -148,6 +154,26 @@
         }
         "File"
         {
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_054C99396E494E8D97559764E8CED441"
+            {
+            "SourcePath" = "8:..\\bin\\Win32\\Release\\pimax-openxr-32.dll"
+            "TargetName" = "8:pimax-openxr-32.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_138E53E928D2441489C834FC90AB6CC1"
             {
             "SourcePath" = "8:..\\bin\\x64\\Release\\pimax-openxr-curl.dll"
@@ -376,7 +402,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PimaxXR"
         "ProductCode" = "8:{9ECEC7FB-3041-4F9E-89BC-61EADA47EFBC}"
-        "PackageCode" = "8:{801355D6-FACD-4F08-9AE7-7B52DB407F0C}"
+        "PackageCode" = "8:{F5A476BD-B1ED-4735-968C-3E9625DDCD86}"
         "UpgradeCode" = "8:{462D4BAE-C6F9-4917-94BB-AF4A019B92E2}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
@@ -426,6 +452,92 @@
                             "Transitive" = "11:FALSE"
                                 "Keys"
                                 {
+                                }
+                                "Values"
+                                {
+                                }
+                            }
+                            "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_955731FD24B3424CB53A8DE44A62D6A9"
+                            {
+                            "Name" = "8:WOW6432Node"
+                            "Condition" = "8:"
+                            "AlwaysCreate" = "11:FALSE"
+                            "DeleteAtUninstall" = "11:FALSE"
+                            "Transitive" = "11:FALSE"
+                                "Keys"
+                                {
+                                    "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_DB95E5EB07D14E778241FDF6712DA6B9"
+                                    {
+                                    "Name" = "8:Khronos"
+                                    "Condition" = "8:"
+                                    "AlwaysCreate" = "11:FALSE"
+                                    "DeleteAtUninstall" = "11:FALSE"
+                                    "Transitive" = "11:FALSE"
+                                        "Keys"
+                                        {
+                                            "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_4ADB805485E04080B6DAF5E0D1DBDBE1"
+                                            {
+                                            "Name" = "8:OpenXR"
+                                            "Condition" = "8:"
+                                            "AlwaysCreate" = "11:FALSE"
+                                            "DeleteAtUninstall" = "11:FALSE"
+                                            "Transitive" = "11:FALSE"
+                                                "Keys"
+                                                {
+                                                    "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_D789E6E762444A9CAB7AA8060F9BC8BE"
+                                                    {
+                                                    "Name" = "8:1"
+                                                    "Condition" = "8:"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "DeleteAtUninstall" = "11:FALSE"
+                                                    "Transitive" = "11:FALSE"
+                                                        "Keys"
+                                                        {
+                                                            "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_E25B8EF744CB49269315DBEDA72E99D8"
+                                                            {
+                                                            "Name" = "8:AvailableRuntimes"
+                                                            "Condition" = "8:"
+                                                            "AlwaysCreate" = "11:FALSE"
+                                                            "DeleteAtUninstall" = "11:FALSE"
+                                                            "Transitive" = "11:FALSE"
+                                                                "Keys"
+                                                                {
+                                                                }
+                                                                "Values"
+                                                                {
+                                                                    "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_10D8D3B6D78F422897CAE8637CA868D2"
+                                                                    {
+                                                                    "Name" = "8:[TARGETDIR]pimax-openxr-32.json"
+                                                                    "Condition" = "8:"
+                                                                    "Transitive" = "11:FALSE"
+                                                                    "ValueTypes" = "3:3"
+                                                                    "Value" = "3:0"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        "Values"
+                                                        {
+                                                            "{ADCFDA98-8FDD-45E4-90BC-E3D20B029870}:_42AC7089FE504FC59EBBAA1BC65C00EA"
+                                                            {
+                                                            "Name" = "8:ActiveRuntime"
+                                                            "Condition" = "8:"
+                                                            "Transitive" = "11:FALSE"
+                                                            "ValueTypes" = "3:1"
+                                                            "Value" = "8:[TARGETDIR]pimax-openxr-32.json"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                "Values"
+                                                {
+                                                }
+                                            }
+                                        }
+                                        "Values"
+                                        {
+                                        }
+                                    }
                                 }
                                 "Values"
                                 {
@@ -1011,7 +1123,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_40856ECB196C4B9BB81AAF93EFAA99D8"
             {
-            "SourcePath" = "8:..\\companion\\obj\\Debug\\companion.exe"
+            "SourcePath" = "8:..\\companion\\obj\\Release\\companion.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
@@ -1067,7 +1179,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_7B703953430D444C9E135C75AB3F2E52"
             {
-            "SourcePath" = "8:..\\bin\\Win32\\Debug\\pimax_cli.exe"
+            "SourcePath" = "8:..\\bin\\x64\\Release\\pimax_cli.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
