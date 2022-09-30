@@ -182,12 +182,12 @@ namespace companion
                 }
                 else
                 {
-                    key.DeleteValue("ActiveRuntime");
+                    key.DeleteValue("ActiveRuntime", false);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated." + e, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
