@@ -1424,6 +1424,69 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrEnumerateDisplayRefreshRatesFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrEnumerateDisplayRefreshRatesFB(session, displayRefreshRateCapacityInput, displayRefreshRateCountOutput, displayRefreshRates);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrEnumerateDisplayRefreshRatesFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrEnumerateDisplayRefreshRatesFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrEnumerateDisplayRefreshRatesFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrEnumerateDisplayRefreshRatesFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetDisplayRefreshRateFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetDisplayRefreshRateFB(session, displayRefreshRate);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetDisplayRefreshRateFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetDisplayRefreshRateFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetDisplayRefreshRateFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetDisplayRefreshRateFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrRequestDisplayRefreshRateFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrRequestDisplayRefreshRateFB(session, displayRefreshRate);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrRequestDisplayRefreshRateFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrRequestDisplayRefreshRateFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrRequestDisplayRefreshRateFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrRequestDisplayRefreshRateFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 
 	// Auto-generated dispatcher handler.
 	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
@@ -1632,6 +1695,15 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (apiName == "xrGetVulkanGraphicsRequirements2KHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirements2KHR);
+		}
+		else if (apiName == "xrEnumerateDisplayRefreshRatesFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrEnumerateDisplayRefreshRatesFB);
+		}
+		else if (apiName == "xrGetDisplayRefreshRateFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetDisplayRefreshRateFB);
+		}
+		else if (apiName == "xrRequestDisplayRefreshRateFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrRequestDisplayRefreshRateFB);
 		}
 		else {
 			return XR_ERROR_FUNCTION_UNSUPPORTED;

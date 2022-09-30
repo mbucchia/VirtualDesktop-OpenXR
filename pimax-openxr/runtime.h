@@ -231,6 +231,12 @@ namespace pimax_openxr {
         XrResult xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
                                                     XrSystemId systemId,
                                                     XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) override;
+        XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session,
+                                                  uint32_t displayRefreshRateCapacityInput,
+                                                  uint32_t* displayRefreshRateCountOutput,
+                                                  float* displayRefreshRates) override;
+        XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) override;
+        XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) override;
 
       private:
         struct Swapchain {
@@ -403,6 +409,7 @@ namespace pimax_openxr {
         bool m_systemCreated{false};
         bool m_useFrameTimingOverride{false};
         bool m_isVisibilityMaskSupported{false};
+        bool m_isDisplayRefreshRateSupported{false};
         bool m_isD3D11Supported{false};
         bool m_isD3D12Supported{false};
         bool m_isVulkanSupported{false};
@@ -411,6 +418,7 @@ namespace pimax_openxr {
         bool m_isDepthSupported{false};
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
+        float m_displayRefreshRate{0};
         double m_frameDuration{0};
         pvrEyeRenderInfo m_cachedEyeInfo[xr::StereoView::Count];
         float m_floorHeight{0.f};

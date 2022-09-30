@@ -227,6 +227,9 @@ namespace pimax_openxr {
         extensions.push_back( // Hidden area mesh.
             {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
 
+        extensions.push_back( // Mock display refresh rate.
+            {XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME, XR_FB_display_refresh_rate_SPEC_VERSION});
+
         // FIXME: Add new extensions here.
 
         TraceLoggingWrite(g_traceProvider,
@@ -317,6 +320,8 @@ namespace pimax_openxr {
                 m_isDepthSupported = true;
             } else if (extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
                 m_isVisibilityMaskSupported = true;
+            } else if (extensionName == XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME) {
+                m_isDisplayRefreshRateSupported = true;
             } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
                 // Do nothing.
             } else {
