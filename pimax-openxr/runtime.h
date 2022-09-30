@@ -451,6 +451,7 @@ namespace pimax_openxr {
         XrSpace m_viewSpace{XR_NULL_HANDLE};
         bool m_useParallelProjection{false};
         float m_joystickDeadzone{0.f};
+        bool m_swapGripAimPoses{false};
         bool m_canBeginFrame{false};
         std::set<XrActionSet> m_activeActionSets;
         std::set<XrActionSet> m_validActionSets;

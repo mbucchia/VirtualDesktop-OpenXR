@@ -311,6 +311,8 @@ namespace pimax_openxr {
         // Value is in unit of hundredth.
         m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
 
+        m_swapGripAimPoses = getSetting("swap_grip_aim_poses").value_or(0);
+
         // Value is already in microseconds.
         m_gpuFrameTimeOverrideOffsetUs = getSetting("frame_time_override_offset").value_or(0);
 
