@@ -354,7 +354,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side] && m_frameLatchedActionSets.count(xrAction.actionSet)) {
+                if (m_isControllerActive[side] && m_validActionSets.count(xrAction.actionSet)) {
                     // Per spec, the combined state is the OR of all values.
                     if (value.buttonMap) {
                         combinedState = combinedState.value_or(false) || value.buttonMap[side] & value.buttonType;
@@ -437,7 +437,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side] && m_frameLatchedActionSets.count(xrAction.actionSet)) {
+                if (m_isControllerActive[side] && m_validActionSets.count(xrAction.actionSet)) {
                     // Per spec, the combined state is the absolute maximum of all values.
                     if (value.floatValue) {
                         combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
@@ -525,7 +525,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side] && m_frameLatchedActionSets.count(xrAction.actionSet)) {
+                if (m_isControllerActive[side] && m_validActionSets.count(xrAction.actionSet)) {
                     const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
 
                     // Per spec, the combined state if the one of the vector with the longest length.
@@ -642,7 +642,7 @@ namespace pimax_openxr {
                 return XR_ERROR_ACTIONSET_NOT_ATTACHED;
             }
 
-            m_frameLatchedActionSets.insert(syncInfo->activeActionSets[i].actionSet);
+            m_validActionSets.insert(syncInfo->activeActionSets[i].actionSet);
 
             // COMPLIANCE: We do not precisely honor subActionPath with multiple action sets.
 
@@ -978,6 +978,7 @@ namespace pimax_openxr {
     void OpenXrRuntime::rebindControllerActions(int side) {
         std::string preferredInteractionProfile;
         std::string actualInteractionProfile;
+        XrPosef gripPose = Pose::Identity();
         XrPosef aimPose = Pose::Identity();
 
         // Remove all old bindings for this controller.
@@ -1083,10 +1084,11 @@ namespace pimax_openxr {
         if (!actualInteractionProfile.empty()) {
             CHECK_XRCMD(
                 xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
+            m_controllerGripPose[side] = gripPose;
             m_controllerAimPose[side] = aimPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
-            m_controllerAimPose[side] = Pose::Identity();
+            m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();
         }
 
         m_currentInteractionProfileDirty = true;

@@ -453,9 +453,12 @@ namespace pimax_openxr {
         float m_joystickDeadzone{0.f};
         bool m_canBeginFrame{false};
         std::set<XrActionSet> m_activeActionSets;
+        std::set<XrActionSet> m_validActionSets;
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
+        bool m_isControllerActive[2]{false, false};
         std::string m_cachedControllerType[2];
         XrPosef m_controllerAimPose[2];
+        XrPosef m_controllerGripPose[2];
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
@@ -547,8 +550,6 @@ namespace pimax_openxr {
         std::optional<double> m_lastFrameWaitedTime;
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
-        bool m_isControllerActive[2]{false, false};
-        std::set<XrActionSet> m_frameLatchedActionSets;
 
         // Statistics.
         AppInsights m_telemetry;

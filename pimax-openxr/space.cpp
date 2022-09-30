@@ -395,9 +395,11 @@ namespace pimax_openxr {
                 if ((isGripPose || isAimPose) && side >= 0) {
                     result = getControllerPose(side, time, pose, velocity);
 
-                    // Apply the aim pose offset.
+                    // Apply the pose offsets.
                     if (isAimPose) {
                         pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                    } else {
+                        pose = Pose::Multiply(m_controllerGripPose[side], pose);
                     }
 
                     // Per spec we must consistently pick one source. We pick the first one.

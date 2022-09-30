@@ -236,9 +236,6 @@ namespace pimax_openxr {
             m_frameWaited = false;
             m_frameBegun = true;
 
-            m_isControllerActive[0] = m_isControllerActive[1] = false;
-            m_frameLatchedActionSets.clear();
-
             // Statistics for the previous frame.
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
                 // Our principle is to always query() a timer before we start() it. This means that we get measurements
