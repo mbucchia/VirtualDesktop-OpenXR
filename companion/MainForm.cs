@@ -135,6 +135,7 @@ namespace companion
                 // Must match the defaults in the runtime!
                 recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
                 swapGripAimPoses.Checked = (int)key.GetValue("swap_grip_aim_poses", 0) == 1 ? true : false;
+                controllerEmulation.SelectedIndex = (int)key.GetValue("force_interaction_profile", 0);
                 joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
                 enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 1) == 1 ? true : false;
             }
@@ -222,8 +223,9 @@ namespace companion
 
         private void RefreshEnabledState()
         {
-            recenterMode.Enabled = swapGripAimPoses.Enabled = joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled =
-                enableTelemetry.Enabled = pitoolLabel.Enabled = joystickLabel.Enabled = telemetryLabel.Enabled = runtimePimax.Checked;
+            recenterMode.Enabled = swapGripAimPoses.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
+                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = joystickLabel.Enabled =
+                telemetryLabel.Enabled = runtimePimax.Checked;
         }
 
         private void runtimePimax_CheckedChanged(object sender, EventArgs e)
@@ -264,6 +266,16 @@ namespace companion
             }
 
             WriteSetting("swap_grip_aim_poses", swapGripAimPoses.Checked ? 1 : 0);
+        }
+
+        private void controllerEmulation_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("force_interaction_profile", controllerEmulation.SelectedIndex);
         }
 
         private void joystickDeadzone_Scroll(object sender, EventArgs e)

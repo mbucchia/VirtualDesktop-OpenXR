@@ -312,6 +312,14 @@ namespace pimax_openxr {
         m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
 
         m_swapGripAimPoses = getSetting("swap_grip_aim_poses").value_or(0);
+        const auto forcedInteractionProfile = getSetting("force_interaction_profile").value_or(0);
+        if (forcedInteractionProfile == 1) {
+            m_forcedInteractionProfile = ForcedInteractionProfile::OculusTouchController;
+        } else if (forcedInteractionProfile == 2) {
+            m_forcedInteractionProfile = ForcedInteractionProfile::MicrosoftMotionController;
+        } else {
+            m_forcedInteractionProfile.reset();
+        }
 
         // Value is already in microseconds.
         m_gpuFrameTimeOverrideOffsetUs = getSetting("frame_time_override_offset").value_or(0);

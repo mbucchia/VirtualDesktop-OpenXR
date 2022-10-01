@@ -1016,19 +1016,34 @@ namespace pimax_openxr {
             auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
             if (bindings != m_suggestedBindings.cend()) {
                 actualInteractionProfile = preferredInteractionProfile;
-            } else {
+            }
+            if (bindings == m_suggestedBindings.cend() || m_forcedInteractionProfile) {
+                const bool hasOculusTouchControllerProfile =
+                    m_suggestedBindings.find("/interaction_profiles/oculus/touch_controller") !=
+                    m_suggestedBindings.cend();
+                const bool hasMicrosoftMotionControllerProfile =
+                    m_suggestedBindings.find("/interaction_profiles/microsoft/motion_controller") !=
+                    m_suggestedBindings.cend();
+
                 // In order of preference.
-                static const std::string fallbacks[] = {
-                    "/interaction_profiles/oculus/touch_controller",
-                    "/interaction_profiles/microsoft/motion_controller",
-                    "/interaction_profiles/khr/simple_controller",
-                };
-                for (int i = 0; i < ARRAYSIZE(fallbacks); i++) {
-                    bindings = m_suggestedBindings.find(fallbacks[i]);
-                    if (bindings != m_suggestedBindings.cend()) {
-                        actualInteractionProfile = fallbacks[i];
-                        break;
-                    }
+                if (m_forcedInteractionProfile &&
+                    m_forcedInteractionProfile.value() == ForcedInteractionProfile::OculusTouchController &&
+                    hasOculusTouchControllerProfile) {
+                    actualInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+                } else if (m_forcedInteractionProfile &&
+                           m_forcedInteractionProfile.value() == ForcedInteractionProfile::MicrosoftMotionController &&
+                           hasMicrosoftMotionControllerProfile) {
+                    actualInteractionProfile = "/interaction_profiles/microsoft/motion_controller";
+                } else if (hasOculusTouchControllerProfile) {
+                    actualInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+                } else if (hasMicrosoftMotionControllerProfile) {
+                    actualInteractionProfile = "/interaction_profiles/microsoft/motion_controller";
+                } else if (m_suggestedBindings.find("/interaction_profiles/khr/simple_controller") !=
+                           m_suggestedBindings.cend()) {
+                    actualInteractionProfile = "/interaction_profiles/khr/simple_controller";
+                }
+                if (!actualInteractionProfile.empty()) {
+                    bindings = m_suggestedBindings.find(actualInteractionProfile);
                 }
             }
 
@@ -1064,6 +1079,8 @@ namespace pimax_openxr {
                         if (!duplicated) {
                             TraceLoggingWrite(g_traceProvider,
                                               "xrSyncActions_MapActionSource",
+                                              TLPArg(binding.action, "Action"),
+                                              TLPArg(xrAction.actionSet, "ActionSet"),
                                               TLArg(sourcePath.c_str(), "ActionPath"),
                                               TLArg(newSource.realPath.c_str(), "SourcePath"),
                                               TLArg(!!newSource.buttonMap, "IsButton"),

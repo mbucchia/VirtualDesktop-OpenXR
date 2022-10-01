@@ -39,6 +39,11 @@ namespace pimax_openxr {
         fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
     const std::string RegPrefix = "SOFTWARE\\PimaxXR";
 
+    enum class ForcedInteractionProfile {
+        OculusTouchController,
+        MicrosoftMotionController,
+    };
+
     // This class implements all APIs that the runtime supports.
     class OpenXrRuntime : public OpenXrApi {
       public:
@@ -463,6 +468,7 @@ namespace pimax_openxr {
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
+        std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
         int64_t m_gpuFrameTimeOverrideOffsetUs{0};
         uint64_t m_gpuFrameTimeOverrideUs{0};
         size_t m_gpuFrameTimeFilterLength{3};
