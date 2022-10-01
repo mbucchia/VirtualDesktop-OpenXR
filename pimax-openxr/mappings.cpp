@@ -157,7 +157,8 @@ namespace pimax_openxr {
         if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system")) {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_System;
-        } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze")) {
+        } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/force") ||
+                   endsWith(path, "/input/squeeze")) {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_Grip;
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
@@ -179,7 +180,8 @@ namespace pimax_openxr {
         } else if (endsWith(path, "/input/trackpad/y")) {
             source.vector2fValue = m_cachedInputState.TouchPad;
             source.vector2fIndex = 1;
-        } else if (endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad")) {
+        } else if (endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                   endsWith(path, "/input/trackpad")) {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_TouchPad;
         } else if (endsWith(path, "/input/trackpad/touch")) {
@@ -308,7 +310,8 @@ namespace pimax_openxr {
     std::string OpenXrRuntime::getViveControllerLocalizedSourceName(const std::string& path) const {
         if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system")) {
             return "System Button";
-        } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze")) {
+        } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/force") ||
+                   endsWith(path, "/input/squeeze")) {
             return "Grip Press";
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return "Menu Button";
@@ -322,7 +325,8 @@ namespace pimax_openxr {
             return "Trackpad X axis";
         } else if (endsWith(path, "/input/trackpad/y")) {
             return "Trackpad Y axis";
-        } else if (endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad")) {
+        } else if (endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                   endsWith(path, "/input/trackpad")) {
             return "Trackpad Press";
         } else if (endsWith(path, "/input/trackpad/touch")) {
             return "Trackpad Touch";
@@ -429,6 +433,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/thumbstick", "/input/trackpad");
         } else if (endsWith(path, "/input/squeeze/value")) {
             return rreplace(path, "/input/squeeze/value", "/input/squeeze/click");
+        } else if (endsWith(path, "/input/squeeze/force")) {
+            return rreplace(path, "/input/squeeze/force", "/input/squeeze/click");
         } else if (path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a") {
             return "/user/hand/right/input/menu/click";
         } else if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
@@ -450,12 +456,15 @@ namespace pimax_openxr {
     OpenXrRuntime::remapMicrosoftMotionControllerToViveController(const std::string& path) const {
         if (endsWith(path, "/input/squeeze/value")) {
             return rreplace(path, "/input/squeeze/value", "/input/squeeze/click");
+        } else if (endsWith(path, "/input/squeeze/force")) {
+            return rreplace(path, "/input/squeeze/force", "/input/squeeze/click");
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
                    endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze") ||
                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
                    endsWith(path, "/input/trigger") || endsWith(path, "/input/trackpad") ||
                    endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
-                   endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/touch")) {
+                   endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                   endsWith(path, "/input/trackpad/touch")) {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {
@@ -490,11 +499,12 @@ namespace pimax_openxr {
                    endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
                    endsWith(path, "/input/a/click") || endsWith(path, "/input/a") || endsWith(path, "/input/b/click") ||
                    endsWith(path, "/input/b") || endsWith(path, "/input/squeeze/click") ||
-                   endsWith(path, "/input/squeeze/value") || endsWith(path, "/input/squeeze") ||
-                   endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
-                   endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
-                   endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
-                   endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch")) {
+                   endsWith(path, "/input/squeeze/value") || endsWith(path, "/input/squeeze/force") ||
+                   endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
+                   endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger") ||
+                   endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                   endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                   endsWith(path, "/input/thumbstick/touch")) {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
                    endsWith(path, "/output/haptic")) {
@@ -508,10 +518,11 @@ namespace pimax_openxr {
     std::optional<std::string>
     OpenXrRuntime::remapMicrosoftMotionControllerToIndexController(const std::string& path) const {
         if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
-            endsWith(path, "/input/squeeze") || endsWith(path, "/input/trigger/click") ||
-            endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger") ||
-            endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
-            endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
+            endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+            endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+            endsWith(path, "/input/trigger") || endsWith(path, "/input/trackpad") ||
+            endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
+            endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
             endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/thumbstick") ||
             endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
             endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch")) {
