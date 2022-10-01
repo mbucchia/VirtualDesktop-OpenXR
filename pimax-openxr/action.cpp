@@ -533,7 +533,7 @@ namespace pimax_openxr {
                                                           combinedState.value().y * combinedState.value().y)
                                                    : 0.f;
                     const float l2 = sqrt(vector2fValue.x * vector2fValue.x + vector2fValue.y * vector2fValue.y);
-                    if (l2 > l1) {
+                    if (l2 >= l1) {
                         combinedState = vector2fValue;
                     }
                 }
@@ -707,7 +707,8 @@ namespace pimax_openxr {
                 m_cachedControllerType[side].clear();
             }
 
-            if (lastControllerType != m_cachedControllerType[side]) {
+            if (lastControllerType != m_cachedControllerType[side] ||
+                m_forcedInteractionProfile != m_lastForcedInteractionProfile) {
                 if (!m_cachedControllerType[side].empty()) {
                     Log("Detected controller: %s (%s)\n",
                         m_cachedControllerType[side].c_str(),
@@ -720,6 +721,7 @@ namespace pimax_openxr {
                 rebindControllerActions(side);
             }
         }
+        m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
         return XR_SUCCESS;
     }
@@ -1004,7 +1006,7 @@ namespace pimax_openxr {
             } else if (m_cachedControllerType[side] == "knuckles") {
                 preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
                 m_localizedControllerType[side] = "Index Controller";
-                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-70.f), 0, 0}),
+                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
             } else {
                 // Fallback to simple controller.
@@ -1079,8 +1081,8 @@ namespace pimax_openxr {
                         if (!duplicated) {
                             TraceLoggingWrite(g_traceProvider,
                                               "xrSyncActions_MapActionSource",
-                                              TLPArg(binding.action, "Action"),
-                                              TLPArg(xrAction.actionSet, "ActionSet"),
+                                              TLXArg(binding.action, "Action"),
+                                              TLXArg(xrAction.actionSet, "ActionSet"),
                                               TLArg(sourcePath.c_str(), "ActionPath"),
                                               TLArg(newSource.realPath.c_str(), "SourcePath"),
                                               TLArg(!!newSource.buttonMap, "IsButton"),
