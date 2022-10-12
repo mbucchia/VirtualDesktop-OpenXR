@@ -391,7 +391,7 @@ namespace pimax_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(1, 0, 0);
+        graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(1, 1, 0);
         graphicsRequirements->maxApiVersionSupported = XR_MAKE_VERSION(2, 0, 0);
 
         TraceLoggingWrite(
@@ -551,7 +551,7 @@ namespace pimax_openxr {
         VK_GET_PTR(vkCreateSemaphore);
         VK_GET_PTR(vkDestroySemaphore);
         VK_GET_PTR(vkImportSemaphoreWin32HandleKHR);
-        VK_GET_PTR(vkWaitSemaphores);
+        VK_GET_PTR(vkWaitSemaphoresKHR);
         VK_GET_PTR(vkDeviceWaitIdle);
 
 #undef VK_GET_PTR
@@ -783,7 +783,7 @@ namespace pimax_openxr {
 
     // Wait for all pending commands to finish.
     void OpenXrRuntime::flushVulkanCommandQueue() {
-        if (m_vkDispatch.vkQueueSubmit && m_vkDispatch.vkWaitSemaphores) {
+        if (m_vkDispatch.vkQueueSubmit && m_vkDispatch.vkWaitSemaphoresKHR) {
             m_fenceValue++;
             TraceLoggingWrite(
                 g_traceProvider, "xrDestroySwapchain_Wait", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
@@ -798,7 +798,7 @@ namespace pimax_openxr {
             waitInfo.semaphoreCount = 1;
             waitInfo.pSemaphores = &m_vkTimelineSemaphore;
             waitInfo.pValues = &m_fenceValue;
-            CHECK_VKCMD(m_vkDispatch.vkWaitSemaphores(m_vkDevice, &waitInfo, -1));
+            CHECK_VKCMD(m_vkDispatch.vkWaitSemaphoresKHR(m_vkDevice, &waitInfo, -1));
         }
     }
 

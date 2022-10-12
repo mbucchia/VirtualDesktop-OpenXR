@@ -515,7 +515,7 @@ namespace pimax_openxr {
             PFN_vkCreateSemaphore vkCreateSemaphore{nullptr};
             PFN_vkDestroySemaphore vkDestroySemaphore{nullptr};
             PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR{nullptr};
-            PFN_vkWaitSemaphores vkWaitSemaphores{nullptr};
+            PFN_vkWaitSemaphoresKHR vkWaitSemaphoresKHR{nullptr};
             PFN_vkDeviceWaitIdle vkDeviceWaitIdle{nullptr};
         } m_vkDispatch;
         const VkAllocationCallbacks* m_vkAllocator{nullptr};
