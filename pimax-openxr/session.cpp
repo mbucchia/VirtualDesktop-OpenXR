@@ -225,6 +225,7 @@ namespace pimax_openxr {
         cleanupVulkan();
         cleanupD3D12();
         cleanupD3D11();
+        m_handTrackers.clear();
         m_sessionState = XR_SESSION_STATE_UNKNOWN;
         m_sessionStateDirty = false;
         m_sessionCreated = false;

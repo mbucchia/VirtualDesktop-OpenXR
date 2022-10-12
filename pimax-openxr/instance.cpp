@@ -459,6 +459,11 @@ namespace pimax_openxr {
         m_extensionsTable.push_back( // Mock display refresh rate.
             {XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME, XR_FB_display_refresh_rate_SPEC_VERSION});
 
+        m_extensionsTable.push_back( // Hand tracking.
+            {XR_EXT_HAND_TRACKING_EXTENSION_NAME, XR_EXT_hand_tracking_SPEC_VERSION});
+        m_extensionsTable.push_back( // Hand tracking.
+            {XR_EXT_HAND_JOINTS_MOTION_RANGE_EXTENSION_NAME, XR_EXT_hand_joints_motion_range_SPEC_VERSION});
+
         // FIXME: Add new extensions here.
     }
 

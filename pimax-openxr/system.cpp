@@ -129,6 +129,18 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        XrSystemHandTrackingPropertiesEXT* handTrackingProperties =
+            reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(properties->next);
+        if (has_XR_EXT_hand_tracking) {
+            while (handTrackingProperties) {
+                if (handTrackingProperties->type == XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT) {
+                    break;
+                }
+                handTrackingProperties =
+                    reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(handTrackingProperties->next);
+            }
+        }
+
         // Query HMD properties.
         pvrHmdInfo info{};
         CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &info));
@@ -157,6 +169,15 @@ namespace pimax_openxr {
                           TLArg(properties->graphicsProperties.maxLayerCount, "MaxLayerCount"),
                           TLArg(properties->graphicsProperties.maxSwapchainImageWidth, "MaxSwapchainImageWidth"),
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
+
+        if (handTrackingProperties) {
+            handTrackingProperties->supportsHandTracking = XR_TRUE;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetSystemProperties",
+                              TLArg((int)properties->systemId, "SystemId"),
+                              TLArg(!!handTrackingProperties->supportsHandTracking, "SupportsHandTracking"));
+        }
 
         return XR_SUCCESS;
     }

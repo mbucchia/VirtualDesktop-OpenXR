@@ -175,7 +175,7 @@ namespace pimax_openxr {
 
         *action = (XrAction)&xrAction;
 
-        // Maintain a list of known actionsets for validation.
+        // Maintain a list of known actions for validation.
         m_actions.insert(*action);
 
         TraceLoggingWrite(g_traceProvider, "xrCreateAction", TLXArg(*action, "Action"));
@@ -982,6 +982,7 @@ namespace pimax_openxr {
         std::string actualInteractionProfile;
         XrPosef gripPose = Pose::Identity();
         XrPosef aimPose = Pose::Identity();
+        XrPosef palmPose = Pose::Identity();
 
         // Remove all old bindings for this controller.
         for (const auto& action : m_actions) {
@@ -1008,6 +1009,10 @@ namespace pimax_openxr {
                 m_localizedControllerType[side] = "Index Controller";
                 aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
+                palmPose =
+                    Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                       {PVR::DegreeToRad(10.f), PVR::DegreeToRad(187.f), PVR::DegreeToRad(15.f)}),
+                                   XrVector3f{0, 0, 0});
             } else {
                 // Fallback to simple controller.
                 preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
@@ -1103,8 +1108,24 @@ namespace pimax_openxr {
         if (!actualInteractionProfile.empty()) {
             CHECK_XRCMD(
                 xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
+
+            if (side == 1) {
+                const auto flipHandedness = [&](XrPosef& pose) {
+                    // Mirror pose along the X axis.
+                    // https://stackoverflow.com/a/33999726/15056285
+                    pose.position.x = -pose.position.x;
+                    pose.orientation.y = -pose.orientation.y;
+                    pose.orientation.z = -pose.orientation.z;
+                };
+
+                flipHandedness(gripPose);
+                flipHandedness(aimPose);
+                flipHandedness(palmPose);
+            }
+
             m_controllerGripPose[side] = gripPose;
             m_controllerAimPose[side] = aimPose;
+            m_controllerPalmPose[side] = palmPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
             m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();

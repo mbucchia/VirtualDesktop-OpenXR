@@ -231,6 +231,13 @@ namespace pimax_openxr {
         XrResult xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
                                                     XrSystemId systemId,
                                                     XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) override;
+        XrResult xrCreateHandTrackerEXT(XrSession session,
+                                        const XrHandTrackerCreateInfoEXT* createInfo,
+                                        XrHandTrackerEXT* handTracker) override;
+        XrResult xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) override;
+        XrResult xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
+                                       const XrHandJointsLocateInfoEXT* locateInfo,
+                                       XrHandJointLocationsEXT* locations) override;
         XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session,
                                                   uint32_t displayRefreshRateCapacityInput,
                                                   uint32_t* displayRefreshRateCountOutput,
@@ -320,6 +327,10 @@ namespace pimax_openxr {
             XrTime lastBoolValueChangedTime{0};
 
             std::map<std::string, ActionSource> actionSources;
+        };
+
+        struct HandTracker {
+            int side;
         };
 
         // instance.cpp
@@ -433,6 +444,7 @@ namespace pimax_openxr {
         uint64_t m_actionSetIndex{0};
         std::set<XrActionSet> m_actionSets;
         std::set<XrAction> m_actions;
+        std::set<XrHandTrackerEXT> m_handTrackers;
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
         wil::unique_registry_watcher m_registryWatcher;
@@ -463,6 +475,7 @@ namespace pimax_openxr {
         std::string m_cachedControllerType[2];
         XrPosef m_controllerAimPose[2];
         XrPosef m_controllerGripPose[2];
+        XrPosef m_controllerPalmPose[2];
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
