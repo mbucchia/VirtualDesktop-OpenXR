@@ -43,7 +43,7 @@ namespace pimax_openxr {
                           TLXArg(session, "Session"),
                           TLArg(displayRefreshRateCapacityInput, "displayRefreshRateCapacityInput"));
 
-        if (!m_isDisplayRefreshRateSupported) {
+        if (!has_XR_FB_display_refresh_rate) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
@@ -73,7 +73,7 @@ namespace pimax_openxr {
     XrResult OpenXrRuntime::xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) {
         TraceLoggingWrite(g_traceProvider, "xrGetDisplayRefreshRateFB", TLXArg(session, "Session"));
 
-        if (!m_isDisplayRefreshRateSupported) {
+        if (!has_XR_FB_display_refresh_rate) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
@@ -95,7 +95,7 @@ namespace pimax_openxr {
                           TLXArg(session, "Session"),
                           TLArg(displayRefreshRate, "DisplayRefreshRate"));
 
-        if (!m_isDisplayRefreshRateSupported) {
+        if (!has_XR_FB_display_refresh_rate) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 

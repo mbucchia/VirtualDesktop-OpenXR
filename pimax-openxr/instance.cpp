@@ -168,6 +168,7 @@ namespace pimax_openxr {
             // Ignore errors that can happen with UWP applications not able to write to the registry.
         }
 
+        initializeExtensionsTable();
         initializeRemappingTables();
     }
 
@@ -198,50 +199,16 @@ namespace pimax_openxr {
                                                                    uint32_t propertyCapacityInput,
                                                                    uint32_t* propertyCountOutput,
                                                                    XrExtensionProperties* properties) {
-        struct Extensions {
-            const char* extensionName;
-            uint32_t extensionVersion;
-        };
-
-        std::vector<Extensions> extensions;
-        extensions.push_back( // Direct3D 11 support.
-            {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION});
-        extensions.push_back( // Direct3D 12 support.
-            {XR_KHR_D3D12_ENABLE_EXTENSION_NAME, XR_KHR_D3D12_enable_SPEC_VERSION});
-        extensions.push_back( // Vulkan support.
-            {XR_KHR_VULKAN_ENABLE_EXTENSION_NAME, XR_KHR_vulkan_enable_SPEC_VERSION});
-        extensions.push_back( // Vulkan support.
-            {XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME, XR_KHR_vulkan_enable2_SPEC_VERSION});
-        extensions.push_back( // OpenGL support.
-            {XR_KHR_OPENGL_ENABLE_EXTENSION_NAME, XR_KHR_opengl_enable_SPEC_VERSION});
-
-        extensions.push_back( // Depth buffer submission.
-            {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
-
-        extensions.push_back( // Qpc timestamp conversion.
-            {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
-             XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
-
-        // This was originally protected with m_isVisibilityMaskSupported, however certain apps like FS 2020 have bugs
-        // that rely on the extension being present.
-        extensions.push_back( // Hidden area mesh.
-            {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
-
-        extensions.push_back( // Mock display refresh rate.
-            {XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME, XR_FB_display_refresh_rate_SPEC_VERSION});
-
-        // FIXME: Add new extensions here.
-
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateInstanceExtensionProperties",
                           TLArg(layerName, "LayerName"),
                           TLArg(propertyCapacityInput, "PropertyCapacityInput"));
 
-        if (propertyCapacityInput && propertyCapacityInput < extensions.size()) {
+        if (propertyCapacityInput && propertyCapacityInput < m_extensionsTable.size()) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
-        *propertyCountOutput = (uint32_t)extensions.size();
+        *propertyCountOutput = (uint32_t)m_extensionsTable.size();
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateInstanceExtensionProperties",
                           TLArg(*propertyCountOutput, "PropertyCountOutput"));
@@ -255,8 +222,8 @@ namespace pimax_openxr {
                 sprintf_s(properties[i].extensionName,
                           sizeof(properties[0].extensionName),
                           "%s",
-                          extensions[i].extensionName);
-                properties[i].extensionVersion = extensions[i].extensionVersion;
+                          m_extensionsTable[i].extensionName);
+                properties[i].extensionVersion = m_extensionsTable[i].extensionVersion;
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateInstanceExtensionProperties",
                                   TLArg(properties[i].extensionName, "ExtensionName"),
@@ -305,28 +272,14 @@ namespace pimax_openxr {
             TraceLoggingWrite(g_traceProvider, "xrCreateInstance", TLArg(extensionName.data(), "ExtensionName"));
             Log("Requested extension: %s\n", extensionName.data());
 
-            // FIXME: Add new extension validation here.
-            if (extensionName == XR_KHR_D3D11_ENABLE_EXTENSION_NAME) {
-                m_isD3D11Supported = true;
-            } else if (extensionName == XR_KHR_D3D12_ENABLE_EXTENSION_NAME) {
-                m_isD3D12Supported = true;
-            } else if (extensionName == XR_KHR_VULKAN_ENABLE_EXTENSION_NAME) {
-                m_isVulkanSupported = true;
-            } else if (extensionName == XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME) {
-                m_isVulkan2Supported = true;
-            } else if (extensionName == XR_KHR_OPENGL_ENABLE_EXTENSION_NAME) {
-                m_isOpenGLSupported = true;
-            } else if (extensionName == XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME) {
-                m_isDepthSupported = true;
-            } else if (extensionName == XR_KHR_VISIBILITY_MASK_EXTENSION_NAME) {
-                m_isVisibilityMaskSupported = true;
-            } else if (extensionName == XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME) {
-                m_isDisplayRefreshRateSupported = true;
-            } else if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
-                // Do nothing.
-            } else {
+            if (std::find_if(
+                    m_extensionsTable.cbegin(), m_extensionsTable.cend(), [&extensionName](const Extension& extension) {
+                    return extension.extensionName == extensionName;
+                }) == m_extensionsTable.cend()) {
                 return XR_ERROR_EXTENSION_NOT_PRESENT;
             }
+
+            registerInstanceExtension(std::string(extensionName));
         }
 
         m_instanceCreated = true;
@@ -477,6 +430,36 @@ namespace pimax_openxr {
 #undef EMIT_STRUCTURE_TYPE_STRING
 
         return XR_SUCCESS;
+    }
+
+    void OpenXrRuntime::initializeExtensionsTable() {
+        m_extensionsTable.push_back( // Direct3D 11 support.
+            {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION});
+        m_extensionsTable.push_back( // Direct3D 12 support.
+            {XR_KHR_D3D12_ENABLE_EXTENSION_NAME, XR_KHR_D3D12_enable_SPEC_VERSION});
+        m_extensionsTable.push_back( // Vulkan support.
+            {XR_KHR_VULKAN_ENABLE_EXTENSION_NAME, XR_KHR_vulkan_enable_SPEC_VERSION});
+        m_extensionsTable.push_back( // Vulkan support.
+            {XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME, XR_KHR_vulkan_enable2_SPEC_VERSION});
+        m_extensionsTable.push_back( // OpenGL support.
+            {XR_KHR_OPENGL_ENABLE_EXTENSION_NAME, XR_KHR_opengl_enable_SPEC_VERSION});
+
+        m_extensionsTable.push_back( // Depth buffer submission.
+            {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
+
+        m_extensionsTable.push_back( // Qpc timestamp conversion.
+            {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
+             XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
+
+        // This was originally protected with m_isVisibilityMaskSupported, however certain apps like FS 2020 have bugs
+        // that rely on the extension being present.
+        m_extensionsTable.push_back( // Hidden area mesh.
+            {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
+
+        m_extensionsTable.push_back( // Mock display refresh rate.
+            {XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME, XR_FB_display_refresh_rate_SPEC_VERSION});
+
+        // FIXME: Add new extensions here.
     }
 
     std::optional<int> OpenXrRuntime::getSetting(const std::string& value) const {

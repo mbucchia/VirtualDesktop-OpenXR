@@ -113,6 +113,21 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) = 0;
 
 
+	protected:
+		// Specially-handled by the auto-generated code.
+		virtual void registerInstanceExtension(const std::string& extensionName);
+
+		// Auto-generated extension properties.
+		bool has_XR_KHR_D3D11_enable{false};
+		bool has_XR_KHR_D3D12_enable{false};
+		bool has_XR_KHR_vulkan_enable{false};
+		bool has_XR_KHR_vulkan_enable2{false};
+		bool has_XR_KHR_opengl_enable{false};
+		bool has_XR_KHR_composition_layer_depth{false};
+		bool has_XR_KHR_visibility_mask{false};
+		bool has_XR_KHR_win32_convert_performance_counter_time{false};
+		bool has_XR_FB_display_refresh_rate{false};
+
 
 	};
 

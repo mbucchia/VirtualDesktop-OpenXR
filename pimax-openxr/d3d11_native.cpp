@@ -77,16 +77,16 @@ namespace pimax_openxr {
                           TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"));
 
+        if (!has_XR_KHR_D3D11_enable) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        if (!m_isD3D11Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         // Get the display device LUID.

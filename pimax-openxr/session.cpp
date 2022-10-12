@@ -67,7 +67,7 @@ namespace pimax_openxr {
         bool hasGraphicsBindings = false;
         const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
         while (entry) {
-            if (m_isD3D11Supported && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D11_KHR) {
+            if (has_XR_KHR_D3D11_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D11_KHR) {
                 const XrGraphicsBindingD3D11KHR* d3dBindings =
                     reinterpret_cast<const XrGraphicsBindingD3D11KHR*>(entry);
 
@@ -78,7 +78,7 @@ namespace pimax_openxr {
 
                 hasGraphicsBindings = true;
                 break;
-            } else if (m_isD3D12Supported && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D12_KHR) {
+            } else if (has_XR_KHR_D3D12_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D12_KHR) {
                 const XrGraphicsBindingD3D12KHR* d3dBindings =
                     reinterpret_cast<const XrGraphicsBindingD3D12KHR*>(entry);
 
@@ -89,7 +89,7 @@ namespace pimax_openxr {
 
                 hasGraphicsBindings = true;
                 break;
-            } else if ((m_isVulkanSupported || m_isVulkan2Supported) &&
+            } else if ((has_XR_KHR_vulkan_enable || has_XR_KHR_vulkan_enable2) &&
                        entry->type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
                 const XrGraphicsBindingVulkanKHR* vkBindings =
                     reinterpret_cast<const XrGraphicsBindingVulkanKHR*>(entry);
@@ -101,7 +101,7 @@ namespace pimax_openxr {
 
                 hasGraphicsBindings = true;
                 break;
-            } else if (m_isOpenGLSupported && entry->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR) {
+            } else if (has_XR_KHR_opengl_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR) {
                 const XrGraphicsBindingOpenGLWin32KHR* glBindings =
                     reinterpret_cast<const XrGraphicsBindingOpenGLWin32KHR*>(entry);
 

@@ -1654,55 +1654,55 @@ namespace RUNTIME_NAMESPACE {
 		else if (apiName == "xrStopHapticFeedback") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStopHapticFeedback);
 		}
-		else if (apiName == "xrGetOpenGLGraphicsRequirementsKHR") {
+		else if (has_XR_KHR_opengl_enable && apiName == "xrGetOpenGLGraphicsRequirementsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetOpenGLGraphicsRequirementsKHR);
 		}
-		else if (apiName == "xrGetVulkanInstanceExtensionsKHR") {
+		else if (has_XR_KHR_vulkan_enable && apiName == "xrGetVulkanInstanceExtensionsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanInstanceExtensionsKHR);
 		}
-		else if (apiName == "xrGetVulkanDeviceExtensionsKHR") {
+		else if (has_XR_KHR_vulkan_enable && apiName == "xrGetVulkanDeviceExtensionsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanDeviceExtensionsKHR);
 		}
-		else if (apiName == "xrGetVulkanGraphicsDeviceKHR") {
+		else if (has_XR_KHR_vulkan_enable && apiName == "xrGetVulkanGraphicsDeviceKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsDeviceKHR);
 		}
-		else if (apiName == "xrGetVulkanGraphicsRequirementsKHR") {
+		else if (has_XR_KHR_vulkan_enable && apiName == "xrGetVulkanGraphicsRequirementsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirementsKHR);
 		}
-		else if (apiName == "xrGetD3D11GraphicsRequirementsKHR") {
+		else if (has_XR_KHR_D3D11_enable && apiName == "xrGetD3D11GraphicsRequirementsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetD3D11GraphicsRequirementsKHR);
 		}
-		else if (apiName == "xrGetD3D12GraphicsRequirementsKHR") {
+		else if (has_XR_KHR_D3D12_enable && apiName == "xrGetD3D12GraphicsRequirementsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetD3D12GraphicsRequirementsKHR);
 		}
-		else if (apiName == "xrGetVisibilityMaskKHR") {
+		else if (has_XR_KHR_visibility_mask && apiName == "xrGetVisibilityMaskKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVisibilityMaskKHR);
 		}
-		else if (apiName == "xrConvertWin32PerformanceCounterToTimeKHR") {
+		else if (has_XR_KHR_win32_convert_performance_counter_time && apiName == "xrConvertWin32PerformanceCounterToTimeKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertWin32PerformanceCounterToTimeKHR);
 		}
-		else if (apiName == "xrConvertTimeToWin32PerformanceCounterKHR") {
+		else if (has_XR_KHR_win32_convert_performance_counter_time && apiName == "xrConvertTimeToWin32PerformanceCounterKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertTimeToWin32PerformanceCounterKHR);
 		}
-		else if (apiName == "xrCreateVulkanInstanceKHR") {
+		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrCreateVulkanInstanceKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateVulkanInstanceKHR);
 		}
-		else if (apiName == "xrCreateVulkanDeviceKHR") {
+		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrCreateVulkanDeviceKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateVulkanDeviceKHR);
 		}
-		else if (apiName == "xrGetVulkanGraphicsDevice2KHR") {
+		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrGetVulkanGraphicsDevice2KHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsDevice2KHR);
 		}
-		else if (apiName == "xrGetVulkanGraphicsRequirements2KHR") {
+		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrGetVulkanGraphicsRequirements2KHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirements2KHR);
 		}
-		else if (apiName == "xrEnumerateDisplayRefreshRatesFB") {
+		else if (has_XR_FB_display_refresh_rate && apiName == "xrEnumerateDisplayRefreshRatesFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrEnumerateDisplayRefreshRatesFB);
 		}
-		else if (apiName == "xrGetDisplayRefreshRateFB") {
+		else if (has_XR_FB_display_refresh_rate && apiName == "xrGetDisplayRefreshRateFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetDisplayRefreshRateFB);
 		}
-		else if (apiName == "xrRequestDisplayRefreshRateFB") {
+		else if (has_XR_FB_display_refresh_rate && apiName == "xrRequestDisplayRefreshRateFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrRequestDisplayRefreshRateFB);
 		}
 		else {
@@ -1710,6 +1710,40 @@ namespace RUNTIME_NAMESPACE {
 		}
 
 		return XR_SUCCESS;
+	}
+
+	// Auto-generated extension registration handler.
+	void OpenXrApi::registerInstanceExtension(const std::string& extensionName) {
+		if (false) {
+		}
+		else if (extensionName == "XR_KHR_D3D11_enable") {
+			has_XR_KHR_D3D11_enable = true;
+		}
+		else if (extensionName == "XR_KHR_D3D12_enable") {
+			has_XR_KHR_D3D12_enable = true;
+		}
+		else if (extensionName == "XR_KHR_vulkan_enable") {
+			has_XR_KHR_vulkan_enable = true;
+		}
+		else if (extensionName == "XR_KHR_vulkan_enable2") {
+			has_XR_KHR_vulkan_enable2 = true;
+		}
+		else if (extensionName == "XR_KHR_opengl_enable") {
+			has_XR_KHR_opengl_enable = true;
+		}
+		else if (extensionName == "XR_KHR_composition_layer_depth") {
+			has_XR_KHR_composition_layer_depth = true;
+		}
+		else if (extensionName == "XR_KHR_visibility_mask") {
+			has_XR_KHR_visibility_mask = true;
+		}
+		else if (extensionName == "XR_KHR_win32_convert_performance_counter_time") {
+			has_XR_KHR_win32_convert_performance_counter_time = true;
+		}
+		else if (extensionName == "XR_FB_display_refresh_rate") {
+			has_XR_FB_display_refresh_rate = true;
+		}
+
 	}
 
 } // namespace RUNTIME_NAMESPACE

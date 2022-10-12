@@ -52,17 +52,17 @@ namespace pimax_openxr {
                           TLArg((int)systemId, "SystemId"),
                           TLArg(bufferCapacityInput, "BufferCapacityInput"));
 
+        // This function is used by our XR_KHR_vulkan_enable2 wrapper.
+        if (!has_XR_KHR_vulkan_enable && !has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        // This function is used by our XR_KHR_vulkan_enable2 wrapper.
-        if (!m_isVulkanSupported && !m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         if (bufferCapacityInput && bufferCapacityInput < instanceExtensions.size()) {
@@ -99,17 +99,17 @@ namespace pimax_openxr {
                           TLArg((int)systemId, "SystemId"),
                           TLArg(bufferCapacityInput, "BufferCapacityInput"));
 
+        // This function is used by our XR_KHR_vulkan_enable2 wrapper.
+        if (!has_XR_KHR_vulkan_enable && !has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        // This function is used by our XR_KHR_vulkan_enable2 wrapper.
-        if (!m_isVulkanSupported && !m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         if (bufferCapacityInput && bufferCapacityInput < deviceExtensions.size()) {
@@ -139,17 +139,17 @@ namespace pimax_openxr {
                           TLArg((int)systemId, "SystemId"),
                           TLPArg(vkInstance, "VkInstance"));
 
+        // This function is used by our XR_KHR_vulkan_enable2 wrapper.
+        if (!has_XR_KHR_vulkan_enable && !has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        // This function is used by our XR_KHR_vulkan_enable2 wrapper.
-        if (!m_isVulkanSupported && !m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         // Get the display device LUID.
@@ -200,16 +200,16 @@ namespace pimax_openxr {
                           TLArg((int)createInfo->createFlags, "CreateFlags"),
                           TLPArg(createInfo->pfnGetInstanceProcAddr, "GetInstanceProcAddr"));
 
+        if (!has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || createInfo->systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        if (!m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         uint32_t extensionNamesSize = 0;
@@ -266,6 +266,10 @@ namespace pimax_openxr {
                           TLPArg(createInfo->pfnGetInstanceProcAddr, "GetInstanceProcAddr"),
                           TLPArg(createInfo->vulkanPhysicalDevice, "VkPhysicalDevice"));
 
+        if (!has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
@@ -274,9 +278,6 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        if (!m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
-        }
 
         uint32_t deviceExtensionNamesSize = 0;
         CHECK_XRCMD(
@@ -343,16 +344,16 @@ namespace pimax_openxr {
                           TLArg((int)getInfo->systemId, "SystemId"),
                           TLPArg(getInfo->vulkanInstance, "VkInstance"));
 
+        if (!has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || getInfo->systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        if (!m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         CHECK_XRCMD(
@@ -379,16 +380,16 @@ namespace pimax_openxr {
                           TLXArg(instance, "Instance"),
                           TLArg((int)systemId, "SystemId"));
 
+        if (!has_XR_KHR_vulkan_enable && !has_XR_KHR_vulkan_enable2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
-        }
-
-        if (!m_isVulkanSupported && !m_isVulkan2Supported) {
-            return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
         graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(1, 1, 0);

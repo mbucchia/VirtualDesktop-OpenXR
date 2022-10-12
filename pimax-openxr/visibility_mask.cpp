@@ -55,7 +55,7 @@ namespace pimax_openxr {
                           TLArg(visibilityMask->indexCapacityInput, "IndexCapacityInput"));
         LOG_TELEMETRY_ONCE(logFeature("VisibilityMask"));
 
-        if (!m_isVisibilityMaskSupported) {
+        if (!has_XR_KHR_visibility_mask) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 

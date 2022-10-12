@@ -416,7 +416,7 @@ namespace pimax_openxr {
                         layer.EyeFov.SensorSampleTime = 0;
 
                         // Submit depth.
-                        if (m_isDepthSupported) {
+                        if (has_XR_KHR_composition_layer_depth) {
                             const XrBaseInStructure* entry =
                                 reinterpret_cast<const XrBaseInStructure*>(proj->views[eye].next);
                             while (entry) {

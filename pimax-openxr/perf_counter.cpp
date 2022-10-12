@@ -38,14 +38,18 @@ namespace pimax_openxr {
     XrResult OpenXrRuntime::xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
                                                                       const LARGE_INTEGER* performanceCounter,
                                                                       XrTime* time) {
-        if (!m_instanceCreated || instance != (XrInstance)1) {
-            return XR_ERROR_HANDLE_INVALID;
-        }
-
         TraceLoggingWrite(g_traceProvider,
                           "xrConvertWin32PerformanceCounterToTimeKHR",
                           TLXArg(instance, "Instance"),
                           TLArg(performanceCounter->QuadPart, "PerformanceCounter"));
+
+        if (!has_XR_KHR_win32_convert_performance_counter_time) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        if (!m_instanceCreated || instance != (XrInstance)1) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
 
         double pvrTime = (double)performanceCounter->QuadPart / m_qpcFrequency.QuadPart;
         pvrTime += m_pvrTimeFromQpcTimeOffset;
@@ -61,14 +65,18 @@ namespace pimax_openxr {
     XrResult OpenXrRuntime::xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance,
                                                                       XrTime time,
                                                                       LARGE_INTEGER* performanceCounter) {
-        if (!m_instanceCreated || instance != (XrInstance)1) {
-            return XR_ERROR_HANDLE_INVALID;
-        }
-
         TraceLoggingWrite(g_traceProvider,
                           "xrConvertTimeToWin32PerformanceCounterKHR",
                           TLXArg(instance, "Instance"),
                           TLArg(time, "Time"));
+
+        if (!has_XR_KHR_win32_convert_performance_counter_time) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        if (!m_instanceCreated || instance != (XrInstance)1) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
 
         double pvrTime = xrTimeToPvrTime(time);
         pvrTime -= m_pvrTimeFromQpcTimeOffset;

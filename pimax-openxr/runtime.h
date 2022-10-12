@@ -39,11 +39,6 @@ namespace pimax_openxr {
         fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
     const std::string RegPrefix = "SOFTWARE\\PimaxXR";
 
-    enum class ForcedInteractionProfile {
-        OculusTouchController,
-        MicrosoftMotionController,
-    };
-
     // This class implements all APIs that the runtime supports.
     class OpenXrRuntime : public OpenXrApi {
       public:
@@ -244,6 +239,16 @@ namespace pimax_openxr {
         XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) override;
 
       private:
+        enum class ForcedInteractionProfile {
+            OculusTouchController,
+            MicrosoftMotionController,
+        };
+
+        struct Extension {
+            const char* extensionName;
+            uint32_t extensionVersion;
+        };
+
         struct Swapchain {
             // The PVR swapchain objects. For texture arrays, we must have one swapchain per slice due to PVR
             // limitation.
@@ -318,6 +323,7 @@ namespace pimax_openxr {
         };
 
         // instance.cpp
+        void initializeExtensionsTable();
         std::optional<int> getSetting(const std::string& value) const;
 
         // system.cpp
@@ -413,14 +419,7 @@ namespace pimax_openxr {
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
         bool m_useFrameTimingOverride{false};
-        bool m_isVisibilityMaskSupported{false};
-        bool m_isDisplayRefreshRateSupported{false};
-        bool m_isD3D11Supported{false};
-        bool m_isD3D12Supported{false};
-        bool m_isVulkanSupported{false};
-        bool m_isVulkan2Supported{false};
-        bool m_isOpenGLSupported{false};
-        bool m_isDepthSupported{false};
+        std::vector<Extension> m_extensionsTable;
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
         float m_displayRefreshRate{0};

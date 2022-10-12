@@ -116,6 +116,7 @@ namespace RUNTIME_NAMESPACE {
     def endFile(self):
         generated_wrappers = self.genWrappers()
         generated_get_instance_proc_addr = self.genGetInstanceProcAddr()
+        generated_register_instance_extension = self.genRegisterInstanceExtension()
 
         postamble = '''} // namespace RUNTIME_NAMESPACE
 '''
@@ -126,6 +127,9 @@ namespace RUNTIME_NAMESPACE {
 
 	// Auto-generated dispatcher handler.
 {generated_get_instance_proc_addr}
+
+	// Auto-generated extension registration handler.
+{generated_register_instance_extension}
 
 {postamble}'''
 
@@ -191,9 +195,17 @@ namespace RUNTIME_NAMESPACE {
 		}
 '''
 
-        for cur_cmd in self.core_commands + self.ext_commands:
+        for cur_cmd in self.core_commands:
             if cur_cmd.name not in EXCLUDED_API:
                 generated += f'''		else if (apiName == "{cur_cmd.name}") {{
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::{cur_cmd.name});
+		}}
+'''
+
+        for cur_cmd in self.ext_commands:
+            if cur_cmd.name not in EXCLUDED_API:
+                requirements = " && ".join([f"has_{required_ext}" for required_ext in cur_cmd.required_exts])
+                generated += f'''		else if ({requirements} && apiName == "{cur_cmd.name}") {{
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::{cur_cmd.name});
 		}}
 '''
@@ -207,6 +219,22 @@ namespace RUNTIME_NAMESPACE {
 
         return generated
 
+    def genRegisterInstanceExtension(self):
+        generated = '''	void OpenXrApi::registerInstanceExtension(const std::string& extensionName) {
+		if (false) {
+		}
+'''
+
+        for extension in EXTENSIONS:
+                generated += f'''		else if (extensionName == "{extension}") {{
+			has_{extension} = true;
+		}}
+'''
+
+        generated += f'''
+	}}'''
+
+        return generated
 
 class DispatchGenHOutputGenerator(DispatchGenOutputGenerator):
     '''Generator for dispatch.gen.h.'''
@@ -235,6 +263,8 @@ namespace RUNTIME_NAMESPACE {
     def endFile(self):
         generated_virtual_methods = self.genVirtualMethods()
 
+        generated_extensions_properties = "\n".join([f'''		bool has_{extension}{{false}};''' for extension in EXTENSIONS])
+
         postamble = '''
 	};
 
@@ -244,6 +274,13 @@ namespace RUNTIME_NAMESPACE {
         contents = f'''
 		// Auto-generated entries for the requested APIs.
 {generated_virtual_methods}
+
+	protected:
+		// Specially-handled by the auto-generated code.
+		virtual void registerInstanceExtension(const std::string& extensionName);
+
+		// Auto-generated extension properties.
+{generated_extensions_properties}
 
 {postamble}'''
 
