@@ -1117,15 +1117,14 @@ namespace pimax_openxr {
                     pose.orientation.y = -pose.orientation.y;
                     pose.orientation.z = -pose.orientation.z;
                 };
-
                 flipHandedness(gripPose);
                 flipHandedness(aimPose);
                 flipHandedness(palmPose);
             }
 
-            m_controllerGripPose[side] = gripPose;
-            m_controllerAimPose[side] = aimPose;
-            m_controllerPalmPose[side] = palmPose;
+            m_controllerGripPose[side] = Pose::Multiply(m_controllerGripOffset, gripPose);
+            m_controllerAimPose[side] = Pose::Multiply(m_controllerAimOffset, aimPose);
+            m_controllerPalmPose[side] = Pose::Multiply(m_controllerPalmOffset, palmPose);
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
             m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();

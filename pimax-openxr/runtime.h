@@ -473,6 +473,9 @@ namespace pimax_openxr {
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
         bool m_isControllerActive[2]{false, false};
         std::string m_cachedControllerType[2];
+        XrPosef m_controllerAimOffset;
+        XrPosef m_controllerGripOffset;
+        XrPosef m_controllerPalmOffset;
         XrPosef m_controllerAimPose[2];
         XrPosef m_controllerGripPose[2];
         XrPosef m_controllerPalmPose[2];

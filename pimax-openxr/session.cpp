@@ -321,6 +321,33 @@ namespace pimax_openxr {
             m_forcedInteractionProfile.reset();
         }
 
+        m_controllerAimOffset = Pose::MakePose(
+            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("aim_pose_rot_z").value_or(0.f))}),
+            XrVector3f{getSetting("aim_pose_offset_x").value_or(0.f) / 1000.f,
+                       getSetting("aim_pose_offset_y").value_or(0.f) / 1000.f,
+                       getSetting("aim_pose_offset_z").value_or(0.f) / 1000.f});
+        m_controllerGripOffset = Pose::MakePose(
+            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("grip_pose_rot_x").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("grip_pose_rot_y").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("grip_pose_rot_z").value_or(0.f))}),
+            XrVector3f{getSetting("grip_pose_offset_x").value_or(0) / 1000.f,
+                       getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
+                       getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
+
+        m_controllerPalmOffset = Pose::MakePose(
+            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("palm_pose_rot_x").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("palm_pose_rot_y").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("palm_pose_rot_z").value_or(0.f))}),
+            XrVector3f{getSetting("palm_pose_offset_x").value_or(0) / 1000.f,
+                       getSetting("palm_pose_offset_y").value_or(0) / 1000.f,
+                       getSetting("palm_pose_offset_z").value_or(0) / 1000.f});
+
+        // Force re-evaluating poses.
+        m_cachedControllerType[0].clear();
+        m_cachedControllerType[1].clear();
+
         // Value is already in microseconds.
         m_frameTimeOverrideOffsetUs = getSetting("frame_time_override_offset").value_or(0);
 
