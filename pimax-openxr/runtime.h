@@ -456,7 +456,6 @@ namespace pimax_openxr {
         bool m_useParallelProjection{false};
         float m_joystickDeadzone{0.f};
         bool m_swapGripAimPoses{false};
-        bool m_canBeginFrame{false};
         std::set<XrActionSet> m_activeActionSets;
         std::set<XrActionSet> m_validActionSets;
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
@@ -552,9 +551,9 @@ namespace pimax_openxr {
 
         // Frame state.
         std::condition_variable m_frameCondVar;
-        bool m_frameWaited{false};
-        bool m_frameBegun{false};
-        std::optional<double> m_lastFrameWaitedTime;
+        uint64_t m_frameWaited{0};
+        uint64_t m_frameBegun{0};
+        uint64_t m_frameCompleted{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
 

@@ -116,37 +116,21 @@ namespace pimax_openxr {
             std::unique_lock lock(m_frameLock);
 
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
-            if (m_frameWaited) {
-                TraceLocalActivity(waitFrame1);
-                TraceLoggingWriteStart(waitFrame1, "WaitFrame1");
-                const bool timedOut = !m_frameCondVar.wait_for(lock, 3000ms, [&] { return m_frameBegun; });
-                TraceLoggingWriteStop(waitFrame1, "WaitFrame1", TLArg(timedOut, "TimedOut"));
-
-                // TODO: What to do if timed out? This would mean an app deadlock should have happened.
-                if (timedOut) {
-                    return XR_ERROR_RUNTIME_FAILURE;
-                }
-            }
-
-            // Calculate the time to the next frame.
-            auto timeout = 100ms;
-            double amount = 0.0;
-            if (m_lastFrameWaitedTime) {
-                const double now = pvr_getTimeSeconds(m_pvr);
-                const double nextFrameTime = m_lastFrameWaitedTime.value() + m_frameDuration;
-
-                // Give 1ms grace period to compensate for timer precision.
-                amount = std::max(0.0, nextFrameTime - now - 0.001f);
-                timeout = std::chrono::milliseconds((uint64_t)(amount * 1e3));
-            }
-
-            // Wait for xrEndFrame() completion or for the next frame time.
             {
-                TraceLocalActivity(waitFrame2);
-                TraceLoggingWriteStart(waitFrame2, "WaitFrame2", TLArg(amount, "Amount"));
-                const bool timedOut =
-                    !m_frameCondVar.wait_for(lock, timeout, [&] { return !m_useFrameTimingOverride && !m_frameBegun; });
-                TraceLoggingWriteStop(waitFrame2, "WaitFrame2", TLArg(timedOut, "TimedOut"));
+                TraceLocalActivity(waitBeginFrame);
+                TraceLoggingWriteStart(waitBeginFrame, "WaitBeginFrame");
+                m_frameCondVar.wait(lock, [&] { return m_frameBegun == m_frameWaited; });
+                TraceLoggingWriteStop(waitBeginFrame, "WaitBeginFrame");
+            }
+
+            // Wait for PVR to be ready for the next frame.
+            {
+                TraceLocalActivity(waitToBeginFrame);
+                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame");
+                // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
+                // a monotonically increasing frame index. Let's follow the example.
+                CHECK_PVRCMD(pvr_waitToBeginFrame(m_pvrSession, 0));
+                TraceLoggingWriteStop(waitToBeginFrame, "PVR_WaitToBeginFrame");
             }
 
             if (IsTraceEnabled()) {
@@ -168,10 +152,8 @@ namespace pimax_openxr {
             // We always use the native frame duration, regardless of Smart Smoothing.
             frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_frameDuration);
 
-            m_frameWaited = true;
+            m_frameWaited++;
         }
-
-        m_lastFrameWaitedTime = pvr_getTimeSeconds(m_pvr);
 
         m_telemetry.tick();
 
@@ -207,34 +189,40 @@ namespace pimax_openxr {
 
             std::unique_lock lock(m_frameLock);
 
-            if (!m_frameWaited && !m_frameBegun) {
+            if (m_frameWaited == m_frameCompleted) {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
-            if (m_frameBegun) {
-                frameDiscarded = true;
-            }
+            if (m_frameBegun != m_frameWaited) {
+                // Wait for a call to xrEndFrame() to match the previous call to xrBeginFrame().
+                {
+                    TraceLocalActivity(waitEndFrame);
+                    TraceLoggingWriteStart(waitEndFrame, "WaitEndFrame");
+                    m_frameCondVar.wait(lock, [&] { return m_frameCompleted == m_frameBegun; });
+                    TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame");
+                }
 
-            // TODO: Not sure why we need this workaround. The very first call to pvr_beginFrame() crashes inside
-            // PVR unless there is a call to pvr_endFrame() first... Also unclear why the call occasionally fails
-            // with error code -1 (undocumented).
-            if (m_canBeginFrame) {
-                TraceLocalActivity(beginFrame);
-                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame");
-                // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
-                // a monotonically increasing frame index. Let's follow the example.
-                const auto result = pvr_beginFrame(m_pvrSession, 0);
-                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg((int)result, "Result"));
+                // Tell PVR we are about to begin the frame.
+                {
+                    TraceLocalActivity(beginFrame);
+                    TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame");
+                    CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, 0));
+                    TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame");
+                }
+
+                m_frameBegun = m_frameWaited;
+            } else {
+                frameDiscarded = true;
             }
 
             if (IsTraceEnabled()) {
                 waitTimer.stop();
             }
 
-            TraceLoggingWrite(g_traceProvider, "BeginFrame", TLArg(waitTimer.query(), "WaitDurationUs"));
-
-            m_frameWaited = false;
-            m_frameBegun = true;
+            TraceLoggingWrite(g_traceProvider,
+                              "BeginFrame",
+                              TLArg(frameDiscarded, "FrameDiscarded"),
+                              TLArg(waitTimer.query(), "WaitDurationUs"));
 
             // Statistics for the previous frame.
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
@@ -303,7 +291,7 @@ namespace pimax_openxr {
             std::unique_lock lock1(m_swapchainsLock);
             std::unique_lock lock2(m_frameLock);
 
-            if (!m_frameBegun) {
+            if (m_frameBegun == m_frameCompleted) {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
@@ -592,8 +580,6 @@ namespace pimax_openxr {
                                        TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
                 CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
                 TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
-
-                m_canBeginFrame = true;
             }
 
             // When using RenderDoc, signal a frame through the dummy swapchain.
@@ -602,11 +588,11 @@ namespace pimax_openxr {
                 m_d3d11DeviceContext->Flush();
             }
 
-            m_frameBegun = false;
+            m_frameCompleted = m_frameBegun;
 
             m_sessionTotalFrameCount++;
 
-            // Signal xrWaitFrame().
+            // Signal xrBeginFrame().
             TraceLoggingWrite(g_traceProvider, "EndFrame_Signal");
             m_frameCondVar.notify_one();
         }

@@ -160,8 +160,7 @@ namespace pimax_openxr {
         m_sessionStateDirty = true;
         m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
 
-        m_frameWaited = m_frameBegun = false;
-        m_lastFrameWaitedTime.reset();
+        m_frameWaited = m_frameBegun = m_frameCompleted = 0;
 
         m_frameTimes.clear();
 
