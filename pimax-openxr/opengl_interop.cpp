@@ -333,12 +333,13 @@ namespace pimax_openxr {
         GlContextSwitch context(m_glContext);
 
         m_fenceValue++;
-        TraceLoggingWrite(g_traceProvider,
-                          "xrEndFrame_Sync",
-                          TLArg("OpenGL", "Api"),
-                          TLArg(m_fenceValue, "FenceValue"),
-                          TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"),
-                          TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
+        TraceLoggingWrite(g_traceProvider, "xrEndFrame_Sync", TLArg("OpenGL", "Api"), TLArg(m_fenceValue, "FenceValue"));
+        if (m_frameCompleted >= k_numGpuTimers) {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEndFrame_Sync",
+                              TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
+                              TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"));
+        }
         m_glDispatch.glSemaphoreParameterui64vEXT(m_glSemaphore, GL_D3D12_FENCE_VALUE_EXT, &m_fenceValue);
         m_glDispatch.glSignalSemaphoreEXT(m_glSemaphore, 0, nullptr, 0, nullptr, nullptr);
         glFlush();

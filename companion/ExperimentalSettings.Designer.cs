@@ -112,7 +112,7 @@ namespace companion
             this.timingBiasLabel.Padding = new System.Windows.Forms.Padding(0, 6, 0, 0);
             this.timingBiasLabel.Size = new System.Drawing.Size(136, 19);
             this.timingBiasLabel.TabIndex = 5;
-            this.timingBiasLabel.Text = "GPU Frame Time Bias (ms):";
+            this.timingBiasLabel.Text = "Frame Time Bias (ms):";
             // 
             // timingBias
             // 

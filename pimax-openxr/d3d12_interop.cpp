@@ -293,12 +293,13 @@ namespace pimax_openxr {
     // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.
     void OpenXrRuntime::serializeD3D12Frame() {
         m_fenceValue++;
-        TraceLoggingWrite(g_traceProvider,
-                          "xrEndFrame_Sync",
-                          TLArg("D3D12", "Api"),
-                          TLArg(m_fenceValue, "FenceValue"),
-                          TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"),
-                          TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
+        TraceLoggingWrite(g_traceProvider, "xrEndFrame_Sync", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));
+        if (m_frameCompleted >= k_numGpuTimers) {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEndFrame_Sync",
+                              TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
+                              TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"));
+        }
         CHECK_HRCMD(m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue));
 
         if (IsTraceEnabled()) {

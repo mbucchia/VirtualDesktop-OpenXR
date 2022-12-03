@@ -115,6 +115,14 @@ namespace pimax_openxr {
 
             std::unique_lock lock(m_frameLock);
 
+            m_frameTimerApp.stop();
+            m_lastCpuFrameTimeUs = m_frameTimerApp.query();
+
+            TraceLoggingWrite(g_traceProvider,
+                              "App_Statistics",
+                              TLArg(m_frameCompleted, "FrameId"),
+                              TLArg(m_lastCpuFrameTimeUs, "AppFrameCpuTime"));
+
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
             {
                 TraceLocalActivity(waitBeginFrame);
@@ -151,6 +159,8 @@ namespace pimax_openxr {
 
             // We always use the native frame duration, regardless of Smart Smoothing.
             frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_frameDuration);
+
+            m_frameTimerApp.start();
 
             m_frameWaited++;
         }
@@ -227,22 +237,23 @@ namespace pimax_openxr {
             // Statistics for the previous frame.
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
                 // Our principle is to always query() a timer before we start() it. This means that we get measurements
-                // with k_numGpuTimers-1 frames latency.
-                m_currentTimerIndex = (m_currentTimerIndex + 1) % k_numGpuTimers;
-
-                const uint64_t cpuFrameTimeUs = m_cpuTimerApp.query();
-                const uint64_t gpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex]->query();
+                // with k_numGpuTimers frames latency.
+                m_lastGpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex]->query();
 
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
-                                  TLArg(cpuFrameTimeUs, "AppCpuTime"),
-                                  TLArg(gpuFrameTimeUs, "AppGpuTime"),
-                                  TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
+                                  TLArg(m_frameCompleted, "FrameId"),
+                                  TLArg(m_renderTimerApp.query(), "AppRenderCpuTime"));
 
-                m_lastGpuFrameTimeUs = gpuFrameTimeUs;
+                if (m_frameCompleted >= k_numGpuTimers) {
+                    TraceLoggingWrite(g_traceProvider,
+                                      "App_Statistics",
+                                      TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
+                                      TLArg(m_lastGpuFrameTimeUs, "AppRenderGpuTime"));
+                }
 
                 // Start app timers.
-                m_cpuTimerApp.start();
+                m_renderTimerApp.start();
                 m_gpuTimerApp[m_currentTimerIndex]->start();
             }
 
@@ -282,7 +293,7 @@ namespace pimax_openxr {
             return XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED;
         }
 
-        if (frameEndInfo->layerCount > 16) {
+        if (frameEndInfo->layerCount > pvrMaxLayerCount) {
             return XR_ERROR_LAYER_LIMIT_EXCEEDED;
         }
 
@@ -305,7 +316,7 @@ namespace pimax_openxr {
             }
 
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
-                m_cpuTimerApp.stop();
+                m_renderTimerApp.stop();
                 m_gpuTimerApp[m_currentTimerIndex]->stop();
             }
 
@@ -542,25 +553,29 @@ namespace pimax_openxr {
             if (!layers.empty()) {
                 if (m_useFrameTimingOverride) {
                     float renderMs = 0.f;
-                    if (!m_gpuFrameTimeOverrideUs) {
-                        const auto latestGpuFrameTimeUs =
-                            std::max(0ll, (int64_t)m_lastGpuFrameTimeUs + m_gpuFrameTimeOverrideOffsetUs);
+                    if (!m_frameTimeOverrideUs) {
+                        // No inherent biasing today. Might change in the future.
+                        // TODO: We should account for m_lastCpuFrameTimeUs here.
+                        const auto biasedCpuFrameTimeUs = 0ll;
+                        const auto biasedGpuFrameTimeUs = (int64_t)m_lastGpuFrameTimeUs + 0;
+
+                        const auto latestFrameTimeUs = std::max(
+                            0ll, std::max(biasedCpuFrameTimeUs, biasedGpuFrameTimeUs) + m_frameTimeOverrideOffsetUs);
 
                         // Simple median filter to smooth out the values.
-                        m_gpuFrameTimeFilter.push_back(latestGpuFrameTimeUs);
-                        while (m_gpuFrameTimeFilter.size() > m_gpuFrameTimeFilterLength) {
-                            m_gpuFrameTimeFilter.pop_front();
+                        m_frameTimeFilter.push_back(latestFrameTimeUs);
+                        while (m_frameTimeFilter.size() > m_frameTimeFilterLength) {
+                            m_frameTimeFilter.pop_front();
                         }
-                        auto sortedFrameTimes = m_gpuFrameTimeFilter;
+                        auto sortedFrameTimes = m_frameTimeFilter;
                         std::sort(sortedFrameTimes.begin(), sortedFrameTimes.end());
 
-                        const auto filteredGpuFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
-                        renderMs = filteredGpuFrameTimeUs / 1e3f;
+                        const auto filteredFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
+                        renderMs = filteredFrameTimeUs / 1e3f;
                     } else {
-                        m_gpuFrameTimeFilter.clear();
+                        m_frameTimeFilter.clear();
 
-                        renderMs =
-                            std::max(0ll, (int64_t)m_gpuFrameTimeOverrideUs + m_gpuFrameTimeOverrideOffsetUs) / 1e3f;
+                        renderMs = std::max(0ll, (int64_t)m_frameTimeOverrideUs + m_frameTimeOverrideOffsetUs) / 1e3f;
                     }
 
                     TraceLoggingWrite(g_traceProvider, "PVR_ClientRenderMs", TLArg(renderMs, "RenderMs"));
@@ -589,6 +604,8 @@ namespace pimax_openxr {
             }
 
             m_frameCompleted = m_frameBegun;
+
+            m_currentTimerIndex = (m_currentTimerIndex + 1) % k_numGpuTimers;
 
             m_sessionTotalFrameCount++;
 

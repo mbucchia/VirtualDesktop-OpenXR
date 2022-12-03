@@ -278,7 +278,6 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-
         uint32_t deviceExtensionNamesSize = 0;
         CHECK_XRCMD(
             xrGetVulkanDeviceExtensionsKHR(instance, createInfo->systemId, 0, &deviceExtensionNamesSize, nullptr));
@@ -806,12 +805,14 @@ namespace pimax_openxr {
     // Serialize commands from the Vulkan queue to the D3D11 context used by PVR.
     void OpenXrRuntime::serializeVulkanFrame() {
         m_fenceValue++;
-        TraceLoggingWrite(g_traceProvider,
-                          "xrEndFrame_Sync",
-                          TLArg("Vulkan", "Api"),
-                          TLArg(m_fenceValue, "FenceValue"),
-                          TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"),
-                          TLArg(k_numGpuTimers - 1, "MeasurementLatency"));
+        TraceLoggingWrite(
+            g_traceProvider, "xrEndFrame_Sync", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
+        if (m_frameCompleted >= k_numGpuTimers) {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEndFrame_Sync",
+                              TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
+                              TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"));
+        }
         VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
         timelineInfo.signalSemaphoreValueCount = 1;
         timelineInfo.pSignalSemaphoreValues = &m_fenceValue;

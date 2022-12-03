@@ -468,10 +468,10 @@ namespace pimax_openxr {
         bool m_currentInteractionProfileDirty{false};
         std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
         std::optional<ForcedInteractionProfile> m_lastForcedInteractionProfile;
-        int64_t m_gpuFrameTimeOverrideOffsetUs{0};
-        uint64_t m_gpuFrameTimeOverrideUs{0};
-        size_t m_gpuFrameTimeFilterLength{3};
-        std::deque<uint64_t> m_gpuFrameTimeFilter;
+        int64_t m_frameTimeOverrideOffsetUs{0};
+        uint64_t m_frameTimeOverrideUs{0};
+        size_t m_frameTimeFilterLength{3};
+        std::deque<uint64_t> m_frameTimeFilter;
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;
@@ -554,6 +554,7 @@ namespace pimax_openxr {
         uint64_t m_frameWaited{0};
         uint64_t m_frameBegun{0};
         uint64_t m_frameCompleted{0};
+        uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
 
@@ -562,7 +563,8 @@ namespace pimax_openxr {
         double m_sessionStartTime{0.0};
         uint64_t m_sessionTotalFrameCount{0};
         std::deque<double> m_frameTimes;
-        CpuTimer m_cpuTimerApp;
+        CpuTimer m_frameTimerApp;
+        CpuTimer m_renderTimerApp;
         static constexpr uint32_t k_numGpuTimers = 3;
         std::unique_ptr<GpuTimer> m_gpuTimerApp[k_numGpuTimers];
         std::unique_ptr<GpuTimer> m_gpuTimerSynchronizationDuration[k_numGpuTimers];
