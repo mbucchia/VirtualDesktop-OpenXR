@@ -148,7 +148,7 @@ namespace pimax_openxr {
         // context.
         CHECK_HRCMD(m_d3d12Device->CreateFence(
             0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d12Fence.ReleaseAndGetAddressOf())));
-        wil::unique_handle fenceHandle = nullptr;
+        wil::unique_handle fenceHandle;
         CHECK_HRCMD(
             m_d3d12Device->CreateSharedHandle(m_d3d12Fence.Get(), nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
         m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf()));

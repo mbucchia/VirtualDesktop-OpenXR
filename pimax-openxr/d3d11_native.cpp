@@ -486,6 +486,7 @@ namespace pimax_openxr {
     // Flush any pending work.
     void OpenXrRuntime::flushD3D11Context() {
         wil::unique_handle eventHandle;
+        *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
         m_d3d11DeviceContext->Flush1(D3D11_CONTEXT_TYPE_ALL, eventHandle.get());
         WaitForSingleObject(eventHandle.get(), INFINITE);
     }

@@ -160,7 +160,6 @@ namespace pimax_openxr {
         // context.
         m_glDispatch.glGenSemaphoresEXT(1, &m_glSemaphore);
 
-        wil::unique_handle fenceHandle = nullptr;
         CHECK_HRCMD(m_d3d11Device->CreateFence(
             0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
         CHECK_HRCMD(

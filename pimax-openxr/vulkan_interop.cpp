@@ -497,7 +497,7 @@ namespace pimax_openxr {
 
         // We will use a shared fence to synchronize between the Vulkan queue and the D3D11
         // context.
-        wil::unique_handle fenceHandle = nullptr;
+        wil::unique_handle fenceHandle;
         CHECK_HRCMD(m_d3d11Device->CreateFence(
             0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
         CHECK_HRCMD(m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
