@@ -568,7 +568,6 @@ namespace pimax_openxr {
         std::unique_ptr<GpuTimer> m_gpuTimerApp[k_numGpuTimers];
         std::unique_ptr<GpuTimer> m_gpuTimerSynchronizationDuration[k_numGpuTimers];
         std::unique_ptr<GpuTimer> m_gpuTimerPrecomposition[k_numGpuTimers];
-        std::unique_ptr<GpuTimer> m_gpuTimerPvrComposition[k_numGpuTimers];
         uint32_t m_currentTimerIndex{0};
 
         friend AppInsights* GetTelemetry();

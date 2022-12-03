@@ -182,7 +182,6 @@ namespace pimax_openxr {
             m_gpuTimerSynchronizationDuration[i] =
                 std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
             m_gpuTimerPrecomposition[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
-            m_gpuTimerPvrComposition[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11DeviceContext.Get());
         }
 
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
@@ -216,7 +215,6 @@ namespace pimax_openxr {
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerSynchronizationDuration[i].reset();
             m_gpuTimerPrecomposition[i].reset();
-            m_gpuTimerPvrComposition[i].reset();
         }
 
         m_dxgiSwapchain.Reset();

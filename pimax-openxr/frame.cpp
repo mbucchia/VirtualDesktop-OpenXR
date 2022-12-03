@@ -583,26 +583,15 @@ namespace pimax_openxr {
                     pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
                 }
 
-                // TODO: This timer does not seem to work. Perhaps because PVR is doing composition out-of-proc?
-                const auto lastCompositionTime = m_gpuTimerPvrComposition[m_currentTimerIndex]->query();
-                if (IsTraceEnabled()) {
-                    m_gpuTimerPvrComposition[m_currentTimerIndex]->start();
-                }
-
                 TraceLocalActivity(endFrame);
                 TraceLoggingWriteStart(endFrame,
                                        "PVR_EndFrame",
                                        TLArg(layers.size(), "NumLayers"),
                                        TLArg(m_frameTimes.size(), "MeasuredFps"),
                                        TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
-                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"),
-                                       TLArg(lastCompositionTime, "LastCompositionTimeUs"));
+                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
                 CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
                 TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
-
-                if (IsTraceEnabled()) {
-                    m_gpuTimerPvrComposition[m_currentTimerIndex]->stop();
-                }
 
                 m_canBeginFrame = true;
             }
