@@ -116,6 +116,27 @@ namespace pimax_openxr {
         TraceLoggingWrite(g_traceProvider, "PimaxXR", TLArg(runtimeVersion.c_str(), "Version"));
         m_telemetry.logVersion(runtimeVersion);
 
+        // Initialize the platform SDK (requirement for the store).
+        // For now we disable this code until we figure out how to make the connection less intrusive.
+
+#if 0
+        const auto result = pvr_PlatformInit(10116220724823ull);
+        if (result != pvrPlatformResult::pvrPlatformResult_Success) {
+            TraceLoggingWrite(g_traceProvider, "PVR_Platform", TLArg((int)result, "Error"));
+            // We just make this optional, this is only useful for users who downloaded PimaxXR from the Pimax Client.
+
+        } else {
+            TraceLoggingWrite(g_traceProvider, "PVR_Platform", TLArg("None", "Error"));
+
+            // Kick-off an entitlement check for compliance. We won't even check the result.
+            pvr_CheckEntitlement();
+
+            m_pvrPlatformReady = true;
+        }
+#endif
+
+        // Initialize PVR.
+
         m_useFrameTimingOverride = getSetting("use_frame_timing_override").value_or(1);
         if (m_useFrameTimingOverride) {
             // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
@@ -181,6 +202,9 @@ namespace pimax_openxr {
             pvr_destroySession(m_pvrSession);
         }
         pvr_shutdown(m_pvr);
+        if (m_pvrPlatformReady) {
+            pvr_PlatformShutdown();
+        }
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr

@@ -75,6 +75,7 @@ using Microsoft::WRL::ComPtr;
 #include <PVR.h>
 #include <PVR_API_D3D.h>
 #include <PVR_Math.h>
+#include <PVR_Platform.h>
 
 // OpenXR + Windows-specific definitions.
 #define XR_NO_PROTOTYPES

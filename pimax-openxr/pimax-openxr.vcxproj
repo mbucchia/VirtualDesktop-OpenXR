@@ -112,8 +112,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>pimax-openxr-curl_imp.lib;dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK)\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_64.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -127,6 +127,7 @@ copy $(ProjectDir)\$(ProjectName).json $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
+copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_64.dll $(OutDir)
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -171,8 +172,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -185,6 +186,7 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /d
 copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
+copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_32.dll $(OutDir)
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -233,8 +235,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>pimax-openxr-curl_imp.lib;dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK)\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_64.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -248,6 +250,7 @@ copy $(ProjectDir)\$(ProjectName).json $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
+copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_64.dll $(OutDir)
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -296,8 +299,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -310,6 +313,7 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /d
 copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
+copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_32.dll $(OutDir)
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
