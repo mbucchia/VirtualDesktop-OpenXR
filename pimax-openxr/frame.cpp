@@ -170,7 +170,9 @@ namespace pimax_openxr {
             }
 
             // Wait for PVR to be ready for the next frame.
-            {
+            // Workaround: No idea why, but waiting for the first frame with OpenComposite always causes a crash inside
+            // PVR. Skip it.
+            if (!m_isOpenComposite || m_frameWaited) {
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame");
                 // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
@@ -251,7 +253,9 @@ namespace pimax_openxr {
                 }
 
                 // Tell PVR we are about to begin the frame.
-                {
+                // Workaround: No idea why, but waiting for the first frame with OpenComposite always causes a crash
+                // inside PVR. Skip it.
+                if (!m_isOpenComposite || m_frameBegun) {
                     TraceLocalActivity(beginFrame);
                     TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame");
                     CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, 0));
@@ -581,6 +585,11 @@ namespace pimax_openxr {
             }
 
             {
+                // Defer initialization of guardian resources until they are first needed.
+                if (m_guardianSpace == XR_NULL_HANDLE) {
+                    initializeGuardianResources();
+                }
+
                 // Measure the floor distance between the center of the guardian and the headset.
                 XrSpaceLocation viewToBase{XR_TYPE_SPACE_LOCATION};
                 CHECK_XRCMD(xrLocateSpace(m_viewSpace, m_originSpace, frameEndInfo->displayTime, &viewToBase));

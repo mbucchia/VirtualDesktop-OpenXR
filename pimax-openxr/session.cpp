@@ -121,64 +121,6 @@ namespace pimax_openxr {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
         }
 
-        // Create guardian resources.
-        {
-            HRESULT hr;
-
-            // Load the guardian texture.
-            auto image = std::make_unique<DirectX::ScratchImage>();
-            CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-            hr =
-                DirectX::LoadFromWICFile((dllHome / L"guardian.png").c_str(), DirectX::WIC_FLAGS_NONE, nullptr, *image);
-
-            if (SUCCEEDED(hr)) {
-                ComPtr<ID3D11Resource> texture;
-                hr = DirectX::CreateTexture(
-                    m_d3d11Device.Get(), image->GetImages(), 1, image->GetMetadata(), texture.ReleaseAndGetAddressOf());
-
-                if (SUCCEEDED(hr)) {
-                    // Create a PVR swapchain for the texture.
-                    pvrTextureSwapChainDesc desc{};
-                    desc.Type = pvrTexture_2D;
-                    desc.StaticImage = true;
-                    desc.ArraySize = 1;
-                    desc.Width = m_guardianExtent.width = (int)image->GetMetadata().width;
-                    desc.Height = m_guardianExtent.height = (int)image->GetMetadata().height;
-                    desc.MipLevels = (int)image->GetMetadata().mipLevels;
-                    desc.SampleCount = 1;
-                    desc.Format = dxgiToPvrTextureFormat(image->GetMetadata().format);
-
-                    CHECK_PVRCMD(
-                        pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &m_guardianSwapchain));
-
-                    // Copy and commit the guardian texture to the swapchain.
-                    int imageIndex = -1;
-                    CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_guardianSwapchain, &imageIndex));
-                    ID3D11Texture2D* swapchainTexture;
-                    CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                        m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(&swapchainTexture)));
-                    m_d3d11DeviceContext->CopyResource(swapchainTexture, texture.Get());
-                    m_d3d11DeviceContext->Flush();
-                    CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
-                } else {
-                    ErrorLog("Failed to create texture from guardian.png: %X\n");
-                }
-            } else {
-                ErrorLog("Failed to load guardian.png: %X\n");
-            }
-
-            // Create the guardian reference space, 1m below eyesight, flat on the floor.
-            Space& xrSpace = *new Space;
-            xrSpace.referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-            xrSpace.poseInSpace = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-90.f), 0.f, 0.f}),
-                                                 XrVector3f{0, -1, 0});
-
-            m_guardianSpace = (XrSpace)&xrSpace;
-
-            // Maintain a list of known spaces for validation and cleanup.
-            m_spaces.insert(m_guardianSpace);
-        }
-
         // Read configuration and set up the session accordingly.
         if (getSetting("recenter_on_startup").value_or(1)) {
             CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
@@ -277,6 +219,10 @@ namespace pimax_openxr {
         m_originSpace = XR_NULL_HANDLE;
         CHECK_XRCMD(xrDestroySpace(m_viewSpace));
         m_viewSpace = XR_NULL_HANDLE;
+        if (m_guardianSpace != XR_NULL_HANDLE) {
+            CHECK_XRCMD(xrDestroySpace(m_guardianSpace));
+            m_guardianSpace = XR_NULL_HANDLE;
+        }
 
         // FIXME: Add session and frame resource cleanup here.
         cleanupOpenGL();
@@ -442,6 +388,68 @@ namespace pimax_openxr {
             TLArg(m_frameTimeOverrideOffsetUs, "FrameTimeOverrideOffset"),
             TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
             TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"));
+    }
+
+    // Create guardian resources.
+    void OpenXrRuntime::initializeGuardianResources() {
+        HRESULT hr;
+
+        // Load the guardian texture.
+        auto image = std::make_unique<DirectX::ScratchImage>();
+        CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+        hr = DirectX::LoadFromWICFile((dllHome / L"guardian.png").c_str(), DirectX::WIC_FLAGS_NONE, nullptr, *image);
+
+        if (SUCCEEDED(hr)) {
+            ComPtr<ID3D11Resource> texture;
+            hr = DirectX::CreateTexture(
+                m_d3d11Device.Get(), image->GetImages(), 1, image->GetMetadata(), texture.ReleaseAndGetAddressOf());
+
+            if (SUCCEEDED(hr)) {
+                // Create a PVR swapchain for the texture.
+                pvrTextureSwapChainDesc desc{};
+                desc.Type = pvrTexture_2D;
+                desc.StaticImage = true;
+                desc.ArraySize = 1;
+                desc.Width = m_guardianExtent.width = (int)image->GetMetadata().width;
+                desc.Height = m_guardianExtent.height = (int)image->GetMetadata().height;
+                desc.MipLevels = (int)image->GetMetadata().mipLevels;
+                desc.SampleCount = 1;
+                desc.Format = dxgiToPvrTextureFormat(image->GetMetadata().format);
+
+                CHECK_PVRCMD(
+                    pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &m_guardianSwapchain));
+
+                // Copy and commit the guardian texture to the swapchain.
+                int imageIndex = -1;
+                CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_guardianSwapchain, &imageIndex));
+                ID3D11Texture2D* swapchainTexture;
+                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
+                    m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(&swapchainTexture)));
+
+                ComPtr<ID3D11Device> d1, d2;
+                swapchainTexture->GetDevice(d1.ReleaseAndGetAddressOf());
+                texture->GetDevice(d2.ReleaseAndGetAddressOf());
+
+                m_d3d11DeviceContext->CopyResource(swapchainTexture, texture.Get());
+                m_d3d11DeviceContext->Flush();
+                CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
+            } else {
+                ErrorLog("Failed to create texture from guardian.png: %X\n");
+            }
+        } else {
+            ErrorLog("Failed to load guardian.png: %X\n");
+        }
+
+        // Create the guardian reference space, 1m below eyesight, flat on the floor.
+        Space& xrSpace = *new Space;
+        xrSpace.referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+        xrSpace.poseInSpace =
+            Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-90.f), 0.f, 0.f}), XrVector3f{0, -1, 0});
+
+        m_guardianSpace = (XrSpace)&xrSpace;
+
+        // Maintain a list of known spaces for validation and cleanup.
+        m_spaces.insert(m_guardianSpace);
     }
 
 } // namespace pimax_openxr

@@ -284,6 +284,11 @@ namespace pimax_openxr {
         m_telemetry.logApplicationInfo(createInfo->applicationInfo.applicationName,
                                        createInfo->applicationInfo.engineName);
 
+        m_isOpenComposite = std::string_view(createInfo->applicationInfo.applicationName).find("OpenComposite_") == 0;
+        if (m_isOpenComposite) {
+            Log("Detected OpenComposite\n");
+        }
+
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
             TraceLoggingWrite(
                 g_traceProvider, "xrCreateInstance", TLArg(createInfo->enabledApiLayerNames[i], "ApiLayerName"));

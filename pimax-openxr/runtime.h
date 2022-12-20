@@ -342,6 +342,7 @@ namespace pimax_openxr {
 
         // session.cpp
         void refreshSettings();
+        void initializeGuardianResources();
 
         // action.cpp
         void rebindControllerActions(int side);
@@ -430,6 +431,7 @@ namespace pimax_openxr {
         bool m_pvrPlatformReady{false};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
+        bool m_isOpenComposite{false};
         bool m_useFrameTimingOverride{false};
         std::vector<Extension> m_extensionsTable;
         bool m_graphicsRequirementQueried{false};
