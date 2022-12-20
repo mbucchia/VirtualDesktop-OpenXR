@@ -658,6 +658,7 @@ namespace pimax_openxr {
 
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
         CHECK_PVRCMD(pvr_getInputState(m_pvrSession, &m_cachedInputState));
+        bool wasRecenteringPressed = false;
         for (uint32_t side = 0; side < 2; side++) {
             if (!doSide[side]) {
                 continue;
@@ -720,8 +721,34 @@ namespace pimax_openxr {
                                   TLArg(m_cachedControllerType[side].c_str(), "Type"));
                 rebindControllerActions(side);
             }
+
+            // Check for built-in actions.
+            wasRecenteringPressed =
+                wasRecenteringPressed || (((m_cachedInputState.HandButtons[side] & pvrButton_System) ||
+                                           (m_cachedInputState.HandButtons[side] & pvrButton_ApplicationMenu)) &&
+                                          (m_cachedInputState.HandButtons[side] & pvrButton_Trigger));
         }
         m_lastForcedInteractionProfile = m_forcedInteractionProfile;
+
+        // Execute built-in actions.
+        wasRecenteringPressed =
+            wasRecenteringPressed ||
+            (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_MENU) < 0 && GetAsyncKeyState(VK_SPACE) < 0);
+        if (wasRecenteringPressed) {
+            const auto now = pvr_getTimeSeconds(m_pvr);
+            if (m_isRecenteringPressed) {
+                // Requires a 3 seconds press.
+                if (now - m_isRecenteringPressed.value() > 2.f) {
+                    // Recenter view.
+                    CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+                }
+            } else {
+                m_isRecenteringPressed = now;
+            }
+            wasRecenteringPressed = true;
+        } else {
+            m_isRecenteringPressed.reset();
+        }
 
         return XR_SUCCESS;
     }
