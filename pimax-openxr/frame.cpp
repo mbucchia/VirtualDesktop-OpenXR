@@ -164,7 +164,11 @@ namespace pimax_openxr {
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
             {
                 TraceLocalActivity(waitBeginFrame);
-                TraceLoggingWriteStart(waitBeginFrame, "WaitBeginFrame");
+                TraceLoggingWriteStart(waitBeginFrame,
+                                       "WaitBeginFrame",
+                                       TLArg(m_frameWaited, "FrameWaited"),
+                                       TLArg(m_frameBegun, "FrameBegun"),
+                                       TLArg(m_frameCompleted, "FrameCompleted"));
                 m_frameCondVar.wait(lock, [&] { return m_frameBegun == m_frameWaited; });
                 TraceLoggingWriteStop(waitBeginFrame, "WaitBeginFrame");
             }
@@ -203,6 +207,12 @@ namespace pimax_openxr {
             m_frameTimerApp.start();
 
             m_frameWaited++;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "WaitFrame_State",
+                              TLArg(m_frameWaited, "FrameWaited"),
+                              TLArg(m_frameBegun, "FrameBegun"),
+                              TLArg(m_frameCompleted, "FrameCompleted"));
         }
 
         m_telemetry.tick();
@@ -243,11 +253,15 @@ namespace pimax_openxr {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
-            if (m_frameBegun != m_frameWaited) {
+            if (m_frameBegun != m_frameWaited && m_frameWaited == m_frameCompleted + 1) {
                 // Wait for a call to xrEndFrame() to match the previous call to xrBeginFrame().
                 {
                     TraceLocalActivity(waitEndFrame);
-                    TraceLoggingWriteStart(waitEndFrame, "WaitEndFrame");
+                    TraceLoggingWriteStart(waitEndFrame,
+                                           "WaitEndFrame",
+                                           TLArg(m_frameWaited, "FrameWaited"),
+                                           TLArg(m_frameBegun, "FrameBegun"),
+                                           TLArg(m_frameCompleted, "FrameCompleted"));
                     m_frameCondVar.wait(lock, [&] { return m_frameCompleted == m_frameBegun; });
                     TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame");
                 }
@@ -261,11 +275,15 @@ namespace pimax_openxr {
                     CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, 0));
                     TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame");
                 }
-
-                m_frameBegun = m_frameWaited;
             } else {
                 frameDiscarded = true;
             }
+
+            // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
+            // success code XR_FRAME_DISCARDED being returned from xrBeginFrame. In this case it is assumed that the
+            // xrBeginFrame refers to the next frame and the previously begun frame is forfeited by the application."
+            // Therefore, we always advance m_frameBegun even upon discard.
+            m_frameBegun = m_frameWaited;
 
             if (IsTraceEnabled()) {
                 waitTimer.stop();
@@ -300,7 +318,11 @@ namespace pimax_openxr {
             }
 
             // Signal xrWaitFrame().
-            TraceLoggingWrite(g_traceProvider, "BeginFrame_Signal");
+            TraceLoggingWrite(g_traceProvider,
+                              "BeginFrame_Signal",
+                              TLArg(m_frameWaited, "FrameWaited"),
+                              TLArg(m_frameBegun, "FrameBegun"),
+                              TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_one();
 
             TraceLoggingWrite(
@@ -688,7 +710,11 @@ namespace pimax_openxr {
             m_sessionTotalFrameCount++;
 
             // Signal xrBeginFrame().
-            TraceLoggingWrite(g_traceProvider, "EndFrame_Signal");
+            TraceLoggingWrite(g_traceProvider,
+                              "EndFrame_Signal",
+                              TLArg(m_frameWaited, "FrameWaited"),
+                              TLArg(m_frameBegun, "FrameBegun"),
+                              TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_one();
         }
 
