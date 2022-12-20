@@ -91,13 +91,36 @@ namespace pimax_openxr {
         }
 
         // Cache common information.
-        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[0]));
-        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[1]));
         m_floorHeight = pvr_getFloatConfig(m_pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
         TraceLoggingWrite(g_traceProvider,
                           "PVR_GetConfig",
                           TLArg(CONFIG_KEY_EYE_HEIGHT, "Config"),
                           TLArg(m_floorHeight, "EyeHeight"));
+
+        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[0]));
+        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[1]));
+        for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
+            m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
+            m_cachedEyeFov[i].angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
+            m_cachedEyeFov[i].angleLeft = -atan(m_cachedEyeInfo[i].Fov.LeftTan);
+            m_cachedEyeFov[i].angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
+
+            // Apply parallel projection transforms. These are needed in order to calculate the appropriate resolution
+            // to recommend for swapchains.
+            if (m_useParallelProjection) {
+                // Eliminate canting.
+                m_cachedEyeInfo[i].HmdToEyePose.Orientation = PVR::Quatf::Identity();
+
+                // Shift FOV by 10 degrees. All Pimax headsets have a 10 degrees canting.
+                const float angle = i == 0 ? -PVR::DegreeToRad(10.f) : PVR::DegreeToRad(10.f);
+                m_cachedEyeFov[i].angleLeft += angle;
+                m_cachedEyeFov[i].angleRight += angle;
+
+                // Per https://risa2000.github.io/hmdgdb, PP also increases the vertical FOV by 6 degrees.
+                m_cachedEyeFov[i].angleUp += PVR::DegreeToRad(6.f);
+                m_cachedEyeFov[i].angleDown -= PVR::DegreeToRad(6.f);
+            }
+        }
 
         // Setup common parameters.
         CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));

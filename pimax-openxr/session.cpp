@@ -125,10 +125,6 @@ namespace pimax_openxr {
         if (getSetting("recenter_on_startup").value_or(1)) {
             CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
         }
-        m_useParallelProjection = !pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0);
-        if (m_useParallelProjection) {
-            Log("Parallel projection is enabled\n");
-        }
         refreshSettings();
 
         {

@@ -467,6 +467,7 @@ namespace pimax_openxr {
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
         bool m_useParallelProjection{false};
+        XrFovf m_cachedEyeFov[xr::StereoView::Count];
         float m_joystickDeadzone{0.f};
         bool m_swapGripAimPoses{false};
         std::set<XrActionSet> m_activeActionSets;
