@@ -82,6 +82,24 @@ namespace xr {
         return fmt::format("x:{}, y:{} w:{} h:{}", rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height);
     }
 
+    namespace math {
+
+        namespace Pose {
+
+            static inline bool Equals(const XrPosef& a, const XrPosef& b) {
+                return std::abs(b.position.x - a.position.x) < 0.00001f &&
+                       std::abs(b.position.y - a.position.y) < 0.00001f &&
+                       std::abs(b.position.z - a.position.z) < 0.00001f &&
+                       std::abs(b.orientation.x - a.orientation.x) < 0.00001f &&
+                       std::abs(b.orientation.y - a.orientation.y) < 0.00001f &&
+                       std::abs(b.orientation.z - a.orientation.z) < 0.00001f &&
+                       std::abs(b.orientation.w - a.orientation.w) < 0.00001f;
+            }
+
+        } // namespace Pose
+
+    } // namespace math
+
     namespace detail {
 
         [[noreturn]] static inline void _ThrowPVRResult(pvrResult pvr,
