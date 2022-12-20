@@ -477,10 +477,10 @@ namespace pimax_openxr {
         std::string m_cachedControllerType[2];
         XrPosef m_controllerAimOffset;
         XrPosef m_controllerGripOffset;
-        XrPosef m_controllerPalmOffset;
+        XrPosef m_controllerHandOffset;
         XrPosef m_controllerAimPose[2];
         XrPosef m_controllerGripPose[2];
-        XrPosef m_controllerPalmPose[2];
+        XrPosef m_controllerHandPose[2];
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};

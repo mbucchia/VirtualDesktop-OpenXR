@@ -1009,7 +1009,7 @@ namespace pimax_openxr {
         std::string actualInteractionProfile;
         XrPosef gripPose = Pose::Identity();
         XrPosef aimPose = Pose::Identity();
-        XrPosef palmPose = Pose::Identity();
+        XrPosef handPose = Pose::Identity();
 
         // Remove all old bindings for this controller.
         for (const auto& action : m_actions) {
@@ -1031,15 +1031,17 @@ namespace pimax_openxr {
                 m_localizedControllerType[side] = "Vive Controller";
                 aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-45.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
+                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                              {PVR::DegreeToRad(-32.f), PVR::DegreeToRad(0.f), PVR::DegreeToRad(0.f)}),
+                                          XrVector3f{0.03f, -0.062f, -0.1f});
             } else if (m_cachedControllerType[side] == "knuckles") {
                 preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
                 m_localizedControllerType[side] = "Index Controller";
                 aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
-                palmPose =
-                    Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                       {PVR::DegreeToRad(10.f), PVR::DegreeToRad(187.f), PVR::DegreeToRad(15.f)}),
-                                   XrVector3f{0, 0, 0});
+                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                              {PVR::DegreeToRad(-32.f), PVR::DegreeToRad(0.f), PVR::DegreeToRad(0.f)}),
+                                          XrVector3f{0.03f, -0.062f, -0.1f});
             } else {
                 // Fallback to simple controller.
                 preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
@@ -1136,6 +1138,9 @@ namespace pimax_openxr {
             CHECK_XRCMD(
                 xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
 
+            auto adjustedGripPose = Pose::Multiply(m_controllerGripOffset, gripPose);
+            auto adjustedAimPose = Pose::Multiply(m_controllerAimOffset, aimPose);
+            auto adjustedHandPose = Pose::Multiply(m_controllerHandOffset, handPose);
             if (side == 1) {
                 const auto flipHandedness = [&](XrPosef& pose) {
                     // Mirror pose along the X axis.
@@ -1144,14 +1149,14 @@ namespace pimax_openxr {
                     pose.orientation.y = -pose.orientation.y;
                     pose.orientation.z = -pose.orientation.z;
                 };
-                flipHandedness(gripPose);
-                flipHandedness(aimPose);
-                flipHandedness(palmPose);
+                flipHandedness(adjustedGripPose);
+                flipHandedness(adjustedAimPose);
+                flipHandedness(adjustedHandPose);
             }
 
-            m_controllerGripPose[side] = Pose::Multiply(m_controllerGripOffset, gripPose);
-            m_controllerAimPose[side] = Pose::Multiply(m_controllerAimOffset, aimPose);
-            m_controllerPalmPose[side] = Pose::Multiply(m_controllerPalmOffset, palmPose);
+            m_controllerGripPose[side] = adjustedGripPose;
+            m_controllerAimPose[side] = adjustedAimPose;
+            m_controllerHandPose[side] = adjustedHandPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
             m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();

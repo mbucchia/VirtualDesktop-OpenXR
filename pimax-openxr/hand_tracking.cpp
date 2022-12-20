@@ -251,25 +251,35 @@ namespace pimax_openxr {
         // We must apply the transforms in order of the bone structure:
         // https://github.com/ValveSoftware/openvr/wiki/Hand-Skeleton#bone-structure
         XrVector3f barycenter{};
-        XrPosef accumulatedPose = Pose::Multiply(m_controllerAimPose[xrHandTracker.side], basePose);
+        XrPosef accumulatedPose = Pose::Multiply(m_controllerHandPose[xrHandTracker.side], basePose);
         XrPosef wristPose;
         for (uint32_t i = 0; i < locations->jointCount; i++) {
             accumulatedPose = Pose::Multiply(pvrPoseToXrPose(skeletalData.boneTransforms[i]), accumulatedPose);
+
             // Palm is estimated after this loop.
             if (i != XR_HAND_JOINT_PALM_EXT) {
                 locations->jointLocations[i].radius = 0.005f;
-                // Apparently, we need extra rotations.
+
+                // We need extra rotations to convert from what SteamVR expects to what OpenXR expects.
+                XrPosef correctedPose;
                 if (i != XR_HAND_JOINT_WRIST_EXT) {
-                    locations->jointLocations[i].pose =
-                        Pose::Multiply(Pose::MakePose(Quaternion::RotationRollPitchYaw({0, PVR::DegreeToRad(-90.f), 0}),
+                    correctedPose =
+                        Pose::Multiply(Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                                          {PVR::DegreeToRad(!xrHandTracker.side ? 0.f : 180.f),
+                                                           PVR::DegreeToRad(-90.f),
+                                                           PVR::DegreeToRad(180.f)}),
                                                       XrVector3f{0, 0, 0}),
-                                       Pose::Multiply(accumulatedPose, Pose::Invert(baseSpaceToVirtual)));
+                                       accumulatedPose);
                 } else {
-                    locations->jointLocations[i].pose =
-                        Pose::Multiply(Pose::MakePose(Quaternion::RotationRollPitchYaw({0, 0, PVR::DegreeToRad(-90.f)}),
+                    correctedPose =
+                        Pose::Multiply(Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                                          {PVR::DegreeToRad(180.f),
+                                                           PVR::DegreeToRad(0.f),
+                                                           PVR::DegreeToRad(!xrHandTracker.side ? -90.f : 90.f)}),
                                                       XrVector3f{0, 0, 0}),
-                                       Pose::Multiply(accumulatedPose, Pose::Invert(baseSpaceToVirtual)));
+                                       accumulatedPose);
                 }
+                locations->jointLocations[i].pose = Pose::Multiply(correctedPose, Pose::Invert(baseSpaceToVirtual));
             }
             locations->jointLocations[i].locationFlags =
                 (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) | flags2;
@@ -310,12 +320,10 @@ namespace pimax_openxr {
         // SteamVR doesn't have palm, we compute the barycenter of the metacarpal and proximal for
         // index/middle/ring/little fingers.
         barycenter = barycenter / 8.0f;
-        locations->jointLocations[XR_HAND_JOINT_PALM_EXT].radius = 0.05f;
+        locations->jointLocations[XR_HAND_JOINT_PALM_EXT].radius = 0.04f;
         locations->jointLocations[XR_HAND_JOINT_PALM_EXT].pose = Pose::Multiply(
-            m_controllerPalmPose[xrHandTracker.side],
-            Pose::Multiply(
-                Pose::MakePose(locations->jointLocations[XR_HAND_JOINT_WRIST_EXT].pose.orientation, barycenter),
-                Pose::Invert(baseSpaceToVirtual)));
+            Pose::MakePose(locations->jointLocations[XR_HAND_JOINT_MIDDLE_METACARPAL_EXT].pose.orientation, barycenter),
+            Pose::Invert(baseSpaceToVirtual));
 
         return XR_SUCCESS;
     }

@@ -404,19 +404,19 @@ namespace pimax_openxr {
                        getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
                        getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
 
-        const auto oldControllerPalmOffset = m_controllerPalmOffset;
-        m_controllerPalmOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("palm_pose_rot_x").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("palm_pose_rot_y").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("palm_pose_rot_z").value_or(0.f))}),
-            XrVector3f{getSetting("palm_pose_offset_x").value_or(0) / 1000.f,
-                       getSetting("palm_pose_offset_y").value_or(0) / 1000.f,
-                       getSetting("palm_pose_offset_z").value_or(0) / 1000.f});
+        const auto oldControllerHandOffset = m_controllerHandOffset;
+        m_controllerHandOffset = Pose::MakePose(
+            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("hand_pose_rot_x").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("hand_pose_rot_y").value_or(0.f)),
+                                              PVR::DegreeToRad((float)getSetting("hand_pose_rot_z").value_or(0.f))}),
+            XrVector3f{getSetting("hand_pose_offset_x").value_or(0) / 1000.f,
+                       getSetting("hand_pose_offset_y").value_or(0) / 1000.f,
+                       getSetting("hand_pose_offset_z").value_or(0) / 1000.f});
 
         // Force re-evaluating poses.
         if (!Pose::Equals(oldControllerAimOffset, m_controllerAimOffset) ||
             !Pose::Equals(oldControllerGripOffset, m_controllerGripOffset) ||
-            !Pose::Equals(oldControllerPalmOffset, m_controllerPalmOffset)) {
+            !Pose::Equals(oldControllerHandOffset, m_controllerHandOffset)) {
             m_cachedControllerType[0].clear();
             m_cachedControllerType[1].clear();
         }
