@@ -39,6 +39,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_483BA38E447142F89B580891A45B2A06"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_4B9D87F91604466992B4540D41A22326"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -210,6 +216,26 @@
             {
             "SourcePath" = "8:..\\LICENSE"
             "TargetName" = "8:LICENSE"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_483BA38E447142F89B580891A45B2A06"
+            {
+            "SourcePath" = "8:..\\bin\\x64\\Release\\guardian.png"
+            "TargetName" = "8:guardian.png"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
             "Condition" = "8:"

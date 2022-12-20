@@ -331,7 +331,8 @@ namespace pimax_openxr {
             return XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED;
         }
 
-        if (frameEndInfo->layerCount > pvrMaxLayerCount) {
+        // Count extra layer for the guardian.
+        if (frameEndInfo->layerCount + 1 > pvrMaxLayerCount) {
             return XR_ERROR_LAYER_LIMIT_EXCEEDED;
         }
 
@@ -366,10 +367,11 @@ namespace pimax_openxr {
             std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
 
             // Construct the list of layers.
-            std::vector<pvrLayer_Union> layersAllocator(frameEndInfo->layerCount);
+            std::vector<pvrLayer_Union> layersAllocator(frameEndInfo->layerCount + 1);
             std::vector<pvrLayerHeader*> layers;
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 auto& layer = layersAllocator[i];
+                layer.Header.Flags = 0;
 
                 // OpenGL needs to flip the texture vertically, which PVR can conveniently do for us.
                 if (isOpenGLSession()) {
@@ -576,6 +578,33 @@ namespace pimax_openxr {
                 }
 
                 layers.push_back(&layer.Header);
+            }
+
+            {
+                // Measure the floor distance between the center of the guardian and the headset.
+                XrSpaceLocation viewToBase{XR_TYPE_SPACE_LOCATION};
+                CHECK_XRCMD(xrLocateSpace(m_viewSpace, m_originSpace, frameEndInfo->displayTime, &viewToBase));
+                XrSpaceLocation guardianToBase{XR_TYPE_SPACE_LOCATION};
+                CHECK_XRCMD(xrLocateSpace(m_guardianSpace, m_originSpace, frameEndInfo->displayTime, &guardianToBase));
+                if (Pose::IsPoseValid(viewToBase.locationFlags) && Pose::IsPoseValid(guardianToBase.locationFlags) &&
+                    Length(XrVector3f{guardianToBase.pose.position.x, 0.f, guardianToBase.pose.position.z} -
+                           XrVector3f{viewToBase.pose.position.x, 0.f, viewToBase.pose.position.z}) >
+                        m_guardianThreshold) {
+                    // Draw the guardian on top of everything.
+                    auto& layer = layersAllocator[layers.size()];
+                    layer.Header.Type = pvrLayerType_Quad;
+                    layer.Header.Flags = pvrLayerFlag_HeadLocked;
+                    layer.Quad.ColorTexture = m_guardianSwapchain;
+                    layer.Quad.Viewport.x = layer.Quad.Viewport.y = 0;
+                    layer.Quad.Viewport.width = m_guardianExtent.width;
+                    layer.Quad.Viewport.height = m_guardianExtent.height;
+
+                    // Place the guardian in 3D space as a 2D overlay.
+                    layer.Quad.QuadPoseCenter =
+                        xrPoseToPvrPose(Pose::Multiply(guardianToBase.pose, Pose::Invert(viewToBase.pose)));
+                    layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
+                    layers.push_back(&layer.Header);
+                }
             }
 
             if (IsTraceEnabled()) {

@@ -137,6 +137,9 @@ namespace companion
                 swapGripAimPoses.Checked = (int)key.GetValue("swap_grip_aim_poses", 0) == 1 ? true : false;
                 controllerEmulation.SelectedIndex = (int)key.GetValue("force_interaction_profile", 0);
                 joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
+                guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
+                guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
+                guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
                 enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 1) == 1 ? true : false;
             }
             catch (Exception)
@@ -153,6 +156,8 @@ namespace companion
 
             RefreshEnabledState();
             joystickDeadzone_Scroll(null, null);
+            guardianRadius_Scroll(null, null);
+            guardianThreshold_Scroll(null, null);
 
             ResumeLayout();
 
@@ -224,8 +229,9 @@ namespace companion
         private void RefreshEnabledState()
         {
             recenterMode.Enabled = swapGripAimPoses.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
-                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = joystickLabel.Enabled =
+                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled =
                 telemetryLabel.Enabled = runtimePimax.Checked;
+            guardianRadius.Enabled = guardianRadiusValue.Enabled = guardianThreshold.Enabled = guardianThresholdValue.Enabled = guardian.Enabled && guardian.Checked;
         }
 
         private void runtimePimax_CheckedChanged(object sender, EventArgs e)
@@ -288,6 +294,53 @@ namespace companion
             }
 
             WriteSetting("joystick_deadzone", joystickDeadzone.Value);
+        }
+
+        private void guardian_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("guardian", guardian.Checked ? 1 : 0);
+            RefreshEnabledState();
+        }
+
+        private void guardianRadius_Scroll(object sender, EventArgs e)
+        {
+            guardianRadiusValue.Text = guardianRadius.Value > 0 ? (guardianRadius.Value / 100.0f).ToString("#.##") : "0";
+
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("guardian_radius", guardianRadius.Value * 10);
+
+            if (guardianThreshold.Value > guardianRadius.Value)
+            {
+                guardianThreshold.Value = guardianRadius.Value;
+                guardianThreshold_Scroll(null, null);
+            }
+        }
+
+        private void guardianThreshold_Scroll(object sender, EventArgs e)
+        {
+            guardianThresholdValue.Text = guardianThreshold.Value > 0 ? (guardianThreshold.Value / 100.0f).ToString("#.##") : "0";
+
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("guardian_threshold", guardianThreshold.Value * 10);
+
+            if (guardianRadius.Value < guardianThreshold.Value)
+            {
+                guardianRadius.Value = guardianThreshold.Value;
+                guardianRadius_Scroll(null, null);
+            }
         }
 
         private void enableTelemetry_CheckedChanged(object sender, EventArgs e)

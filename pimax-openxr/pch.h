@@ -107,3 +107,6 @@ using Microsoft::WRL::ComPtr;
 // libcurl
 #include <curl/curl.h>
 #endif
+
+// DirectXTex
+#include <DirectXTex.h>

@@ -121,6 +121,64 @@ namespace pimax_openxr {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
         }
 
+        // Create guardian resources.
+        {
+            HRESULT hr;
+
+            // Load the guardian texture.
+            auto image = std::make_unique<DirectX::ScratchImage>();
+            CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+            hr =
+                DirectX::LoadFromWICFile((dllHome / L"guardian.png").c_str(), DirectX::WIC_FLAGS_NONE, nullptr, *image);
+
+            if (SUCCEEDED(hr)) {
+                ComPtr<ID3D11Resource> texture;
+                hr = DirectX::CreateTexture(
+                    m_d3d11Device.Get(), image->GetImages(), 1, image->GetMetadata(), texture.ReleaseAndGetAddressOf());
+
+                if (SUCCEEDED(hr)) {
+                    // Create a PVR swapchain for the texture.
+                    pvrTextureSwapChainDesc desc{};
+                    desc.Type = pvrTexture_2D;
+                    desc.StaticImage = true;
+                    desc.ArraySize = 1;
+                    desc.Width = m_guardianExtent.width = (int)image->GetMetadata().width;
+                    desc.Height = m_guardianExtent.height = (int)image->GetMetadata().height;
+                    desc.MipLevels = (int)image->GetMetadata().mipLevels;
+                    desc.SampleCount = 1;
+                    desc.Format = dxgiToPvrTextureFormat(image->GetMetadata().format);
+
+                    CHECK_PVRCMD(
+                        pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &m_guardianSwapchain));
+
+                    // Copy and commit the guardian texture to the swapchain.
+                    int imageIndex = -1;
+                    CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_guardianSwapchain, &imageIndex));
+                    ID3D11Texture2D* swapchainTexture;
+                    CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
+                        m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(&swapchainTexture)));
+                    m_d3d11DeviceContext->CopyResource(swapchainTexture, texture.Get());
+                    m_d3d11DeviceContext->Flush();
+                    CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
+                } else {
+                    ErrorLog("Failed to create texture from guardian.png: %X\n");
+                }
+            } else {
+                ErrorLog("Failed to load guardian.png: %X\n");
+            }
+
+            // Create the guardian reference space, 1m below eyesight, flat on the floor.
+            Space& xrSpace = *new Space;
+            xrSpace.referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+            xrSpace.poseInSpace = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-90.f), 0.f, 0.f}),
+                                                 XrVector3f{0, -1, 0});
+
+            m_guardianSpace = (XrSpace)&xrSpace;
+
+            // Maintain a list of known spaces for validation and cleanup.
+            m_spaces.insert(m_guardianSpace);
+        }
+
         // Read configuration and set up the session accordingly.
         if (getSetting("recenter_on_startup").value_or(1)) {
             CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
@@ -208,6 +266,10 @@ namespace pimax_openxr {
         // Destroy all swapchains.
         while (m_swapchains.size()) {
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
+        }
+        if (m_guardianSwapchain) {
+            pvr_destroyTextureSwapChain(m_pvrSession, m_guardianSwapchain);
+            m_guardianSwapchain = nullptr;
         }
 
         // Destroy reference spaces.
@@ -317,6 +379,13 @@ namespace pimax_openxr {
             m_forcedInteractionProfile.reset();
         }
 
+        if (getSetting("guardian").value_or(1)) {
+            m_guardianThreshold = getSetting("guardian_threshold").value_or(1100) / 1e3f;
+            m_guardianRadius = getSetting("guardian_radius").value_or(1600) / 1e3f;
+        } else {
+            m_guardianThreshold = INFINITY;
+        }
+
         m_controllerAimOffset = Pose::MakePose(
             Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
                                               PVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
@@ -354,12 +423,17 @@ namespace pimax_openxr {
 
         m_frameTimeFilterLength = getSetting("frame_time_filter_length").value_or(5);
 
-        TraceLoggingWrite(g_traceProvider,
-                          "PXR_Config",
-                          TLArg(m_joystickDeadzone, "JoystickDeadzone"),
-                          TLArg(m_frameTimeOverrideOffsetUs, "FrameTimeOverrideOffset"),
-                          TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
-                          TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"));
+        TraceLoggingWrite(
+            g_traceProvider,
+            "PXR_Config",
+            TLArg(m_joystickDeadzone, "JoystickDeadzone"),
+            TLArg(m_swapGripAimPoses, "SwapGripAimPoses"),
+            TLArg((int)m_forcedInteractionProfile.value_or((ForcedInteractionProfile)-1), "ForcedInteractionProfile"),
+            TLArg(m_guardianThreshold, "GuardianThreshold"),
+            TLArg(m_guardianRadius, "GuardianRadius"),
+            TLArg(m_frameTimeOverrideOffsetUs, "FrameTimeOverrideOffset"),
+            TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
+            TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"));
     }
 
 } // namespace pimax_openxr

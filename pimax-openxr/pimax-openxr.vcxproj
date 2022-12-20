@@ -124,6 +124,7 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /d
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName).json $(OutDir)
+copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
@@ -184,6 +185,7 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /d
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
+copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_32.dll $(OutDir)
@@ -247,6 +249,7 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /d
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName).json $(OutDir)
+copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
@@ -311,6 +314,7 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /d
 :skip_signing
 
 copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
+copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_32.dll $(OutDir)
@@ -406,6 +410,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <Import Project="..\packages\fmt.7.0.1\build\fmt.targets" Condition="Exists('..\packages\fmt.7.0.1\build\fmt.targets')" />
     <Import Project="..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="..\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" />
+    <Import Project="..\packages\directxtex_desktop_win10.2022.10.18.1\build\native\directxtex_desktop_win10.targets" Condition="Exists('..\packages\directxtex_desktop_win10.2022.10.18.1\build\native\directxtex_desktop_win10.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -414,5 +419,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <Error Condition="!Exists('..\packages\fmt.7.0.1\build\fmt.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\fmt.7.0.1\build\fmt.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
     <Error Condition="!Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Detours.4.0.1\build\native\Detours.targets'))" />
+    <Error Condition="!Exists('..\packages\directxtex_desktop_win10.2022.10.18.1\build\native\directxtex_desktop_win10.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtex_desktop_win10.2022.10.18.1\build\native\directxtex_desktop_win10.targets'))" />
   </Target>
 </Project>

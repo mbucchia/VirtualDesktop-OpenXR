@@ -32,6 +32,8 @@
 #endif
 
 namespace RUNTIME_NAMESPACE {
+    std::filesystem::path dllHome;
+
     // The path to store logs & others.
     std::filesystem::path localAppData;
 
@@ -49,6 +51,21 @@ extern "C" {
 // Entry point for the loader.
 XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
                                                                             XrNegotiateRuntimeRequest* runtimeRequest) {
+    // Retrieve the path of the DLL.
+    if (dllHome.empty()) {
+        HMODULE module;
+        if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               (LPCWSTR)&dllHome,
+                               &module)) {
+            wchar_t path[_MAX_PATH];
+            GetModuleFileNameW(module, path, sizeof(path));
+            dllHome = std::filesystem::path(path).parent_path();
+        } else {
+            // Falling back to loading config/writing logs to the current working directory.
+            DebugLog("Failed to locate DLL\n");
+        }
+    }
+
     localAppData = std::filesystem::path(getenv("LOCALAPPDATA")) / RuntimeName;
     CreateDirectoryA(localAppData.string().c_str(), nullptr);
 

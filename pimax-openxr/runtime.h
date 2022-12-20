@@ -495,6 +495,13 @@ namespace pimax_openxr {
         std::mutex m_swapchainsLock;
         std::mutex m_frameLock;
 
+        // Guardian state.
+        pvrTextureSwapChain m_guardianSwapchain{nullptr};
+        XrSpace m_guardianSpace{XR_NULL_HANDLE};
+        XrExtent2Di m_guardianExtent{};
+        float m_guardianThreshold{1.1f};
+        float m_guardianRadius{1.6f};
+
         // Graphics API interop.
         ComPtr<ID3D12Device> m_d3d12Device;
         ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
@@ -601,6 +608,7 @@ namespace pimax_openxr {
     // Get telemetry object if available.
     AppInsights* GetTelemetry();
 
+    extern std::filesystem::path dllHome;
     extern std::filesystem::path localAppData;
 
 } // namespace pimax_openxr
