@@ -395,7 +395,8 @@ namespace pimax_openxr {
             TLArg(m_guardianRadius, "GuardianRadius"),
             TLArg(m_frameTimeOverrideOffsetUs, "FrameTimeOverrideOffset"),
             TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
-            TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"));
+            TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"),
+            TLArg(m_useDeferredFrameSubmit, "DeferredFrameSubmit"));
     }
 
     // Create guardian resources.

@@ -1,4 +1,26 @@
-﻿using System;
+﻿// MIT License
+//
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this softwareand associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+//
+// The above copyright noticeand this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -45,6 +67,7 @@ namespace companion
                 }
                 // Convert value from microseconds to tenth of milliseconds.
                 timingBias.Value = multiplier == 0 ? ((int)key.GetValue("frame_time_override_offset", 0) / 100) : 0;
+                enableDeferredSubmit.Checked = (int)key.GetValue("use_deferred_frame_submit", 0) == 1 ? true : false;
             }
             catch (Exception)
             {
@@ -167,17 +190,29 @@ namespace companion
             }
         }
 
+        private void enableDeferredSubmit_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            MainForm.WriteSetting("use_deferred_frame_submit", enableDeferredSubmit.Checked ? 1 : 0);
+        }
+
         private void restoreDefaults_Click(object sender, EventArgs e)
         {
             enableFrameTiming.Checked = true;
             forceHalf.Checked = forceThird.Checked = false;
             filterLength.Value = 5;
             timingBias.Value = 0;
+            enableDeferredSubmit.Checked = false;
 
             enableFrameTiming_CheckedChanged(null, null);
             filterLength_Scroll(null, null);
             timingBias_Scroll(null, null);
             forceHalf_CheckedChanged(null, null);
+            enableDeferredSubmit_CheckedChanged(null, null);
         }
     }
 }
