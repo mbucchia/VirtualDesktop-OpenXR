@@ -360,6 +360,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
   <ItemGroup>
     <ClCompile Include="action.cpp" />
     <ClCompile Include="appinsights.cpp" />
+    <ClCompile Include="companion.cpp" />
     <ClCompile Include="d3d11_native.cpp" />
     <ClCompile Include="d3d12_interop.cpp" />
     <ClCompile Include="display_refresh_rate.cpp" />

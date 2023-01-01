@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -40,6 +40,26 @@ namespace companion
     {
         [DllImport("pimax-openxr.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern IntPtr getVersionString();
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        unsafe struct RuntimeStatus
+        {
+            public bool valid;
+
+            public float refreshRate;
+            public uint resolutionWidth;
+            public uint resolutionHeight;
+            public byte fovLevel;
+            public float fov;
+            public float floorHeight;
+            public bool useParallelProjection;
+            public bool useSmartSmoothing;
+            public bool useLighthouseTracking;
+            public float fps;
+        }
+
+        [DllImport("pimax-openxr.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void getRuntimeStatus(IntPtr status);
 
         // Must match runtime.h.
         public static readonly string RegPrefix = "SOFTWARE\\PimaxXR";
@@ -161,6 +181,8 @@ namespace companion
 
             ResumeLayout();
 
+            GetRuntimeStatus();
+
             loading = false;
         }
 
@@ -174,6 +196,38 @@ namespace companion
             catch (Exception)
             {
                 MessageBox.Show(this, "Failed to query version", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private unsafe void GetRuntimeStatus()
+        {
+            try
+            {
+                var fov = new string[] { "Large", "Normal", "Small", "Potato" };
+                RuntimeStatus status = new RuntimeStatus();
+                status.valid = false;
+
+                getRuntimeStatus(new IntPtr(&status));
+                var label = "Resolution: " + status.resolutionWidth + "x" + status.resolutionHeight + " @ " + status.refreshRate.ToString("#") + " Hz" +
+                    "   Horizontal FOV: " + status.fov.ToString("#.#") + " deg (" + fov[status.fovLevel] + ")\n";
+                if (status.useLighthouseTracking)
+                {
+                    label += "Lighthouse tracking, ";
+                }
+                if (status.useParallelProjection)
+                {
+                    label += "Parallel projections, ";
+                }
+                if (status.useSmartSmoothing)
+                {
+                    label += "Smart Smoothing, ";
+                }
+                label += "Floor height: " + status.floorHeight.ToString("#.##") + " m";
+                runtimeStatusLabel.Text = label;
+            }
+            catch (Exception)
+            {
+                runtimeStatusLabel.Text = "Pimax runtime status is not available.";
             }
         }
 
@@ -501,6 +555,11 @@ namespace companion
                 experimentalSettings.Show();
                 secretHandshake = 0;
             }
+        }
+
+        private void runtimeStatusLabel_Click(object sender, EventArgs e)
+        {
+            GetRuntimeStatus();
         }
     }
 }
