@@ -355,6 +355,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="runtime.h" />
+    <ClInclude Include="store.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -382,6 +383,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClCompile Include="perf_counter.cpp" />
     <ClCompile Include="session.cpp" />
     <ClCompile Include="space.cpp" />
+    <ClCompile Include="store.cpp" />
     <ClCompile Include="swapchain.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="visibility_mask.cpp" />

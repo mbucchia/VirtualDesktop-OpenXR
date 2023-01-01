@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -186,7 +186,9 @@ namespace pimax_openxr {
 
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
         // not see our OpenXR frames.
-        if (GetModuleHandleA("renderdoc.dll")) {
+        HMODULE renderdocModule;
+        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "renderdoc.dll", &renderdocModule) &&
+            renderdocModule) {
             TraceLoggingWrite(g_traceProvider, "xrCreateSession", TLArg("True", "RenderDoc"));
             Log("Detected RenderDoc\n");
 

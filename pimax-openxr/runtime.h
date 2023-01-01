@@ -428,7 +428,6 @@ namespace pimax_openxr {
         // Instance & PVR state.
         pvrEnvHandle m_pvr;
         pvrSessionHandle m_pvrSession{nullptr};
-        bool m_pvrPlatformReady{false};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
         bool m_isOpenComposite{false};

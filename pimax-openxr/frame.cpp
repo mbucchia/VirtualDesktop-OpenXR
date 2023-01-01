@@ -48,44 +48,6 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // Clear the platform SDK message queue just in case it would unnecessarily leak memory.
-        pvrMessageHandle message;
-        while (m_pvrPlatformReady && (message = pvr_PollMessage())) {
-            const auto messageType = pvr_Message_GetType(message);
-            TraceLoggingWrite(g_traceProvider, "PVR_Platform", TLXArg((void*)messageType, "Message"));
-
-            // Trace errors for good measure.
-            if (pvr_Message_IsError(message)) {
-                TraceLoggingWrite(g_traceProvider,
-                                  "PVR_Platform",
-                                  TLArg(pvr_Message_GetErrorInfo(pvr_Message_GetError(message)), "Error"));
-            }
-
-            // Shutdown PVR platform on runtime error to avoid unwanted side effects.
-            switch (messageType) {
-            case pvrMessage_Notify_RuntimeError:
-                // The platform SDK does not seem to export this on 32-bit. It is misnamed "RunningError" instead.
-#ifdef _WIN64
-                TraceLoggingWrite(
-                    g_traceProvider, "PVR_Platform", TLArg((int)pvr_RuntimeError_GetError(message), "RuntimeError"));
-#endif
-                m_pvrPlatformReady = false;
-                break;
-
-            case pvrMessage_Notify_Logout:
-                TraceLoggingWrite(g_traceProvider, "PVR_Platform", TLArg("Logout", "Action"));
-                m_pvrPlatformReady = false;
-                break;
-
-            default:
-                break;
-            }
-
-            if (!m_pvrPlatformReady) {
-                pvr_PlatformShutdown();
-            }
-        }
-
         // Check for user presence and exit conditions. Emit events accordingly.
         pvrHmdStatus status{};
         CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));

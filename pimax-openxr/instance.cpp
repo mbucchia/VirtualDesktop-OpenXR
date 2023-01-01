@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -24,6 +24,7 @@
 
 #include "log.h"
 #include "runtime.h"
+#include "store.h"
 #include "utils.h"
 
 namespace {
@@ -86,8 +87,9 @@ namespace {
         if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                                (LPCSTR)_ReturnAddress(),
                                &callerModule)) {
-            HMODULE libpvrModule = GetModuleHandleA(PVRCLIENT_DLL_NAME);
-            if (callerModule != libpvrModule) {
+            HMODULE libpvrModule;
+            if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, PVRCLIENT_DLL_NAME, &libpvrModule) &&
+                callerModule != libpvrModule) {
                 return g_original_GetModuleFileNameA(hModule, lpFilename, nSize);
             }
         }
@@ -115,25 +117,6 @@ namespace pimax_openxr {
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
         TraceLoggingWrite(g_traceProvider, "PimaxXR", TLArg(runtimeVersion.c_str(), "Version"));
         m_telemetry.logVersion(runtimeVersion);
-
-        // Initialize the platform SDK (requirement for the store).
-        // For now we disable this code until we figure out how to make the connection less intrusive.
-
-#if 0
-        const auto result = pvr_PlatformInit(10116220724823ull);
-        if (result != pvrPlatformResult::pvrPlatformResult_Success) {
-            TraceLoggingWrite(g_traceProvider, "PVR_Platform", TLArg((int)result, "Error"));
-            // We just make this optional, this is only useful for users who downloaded PimaxXR from the Pimax Client.
-
-        } else {
-            TraceLoggingWrite(g_traceProvider, "PVR_Platform", TLArg("None", "Error"));
-
-            // Kick-off an entitlement check for compliance. We won't even check the result.
-            pvr_CheckEntitlement();
-
-            m_pvrPlatformReady = true;
-        }
-#endif
 
         // Initialize PVR.
 
@@ -202,9 +185,6 @@ namespace pimax_openxr {
             pvr_destroySession(m_pvrSession);
         }
         pvr_shutdown(m_pvr);
-        if (m_pvrPlatformReady) {
-            pvr_PlatformShutdown();
-        }
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr
@@ -303,8 +283,8 @@ namespace pimax_openxr {
 
             if (std::find_if(
                     m_extensionsTable.cbegin(), m_extensionsTable.cend(), [&extensionName](const Extension& extension) {
-                    return extension.extensionName == extensionName;
-                }) == m_extensionsTable.cend()) {
+                        return extension.extensionName == extensionName;
+                    }) == m_extensionsTable.cend()) {
                 return XR_ERROR_EXTENSION_NOT_PRESENT;
             }
 
@@ -540,6 +520,29 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         TraceLoggingRegister(pimax_openxr::log::g_traceProvider);
         DetourRestoreAfterWith();
         InitializeHighPrecisionTimer();
+        DisableThreadLibraryCalls(hModule);
+
+        // Initialize the platform SDK (requirement for the store).
+        // Do this in a background thread to avoid interfering with app initialization/shutdown.
+        CreateThread(
+            NULL,
+            0,
+            [](void* param) -> DWORD {
+                // Increment our own DLL refcount to prevent unloading until finished.
+                // https://devblogs.microsoft.com/oldnewthing/20131105-00/?p=2733
+                HMODULE self;
+                GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCSTR>(&DllMain), &self);
+
+                pimax_openxr::store::storeAsyncInit();
+
+                // Allow the DLL to be unloaded now.
+                FreeLibraryAndExitThread(self, 0);
+                return 0;
+            },
+            nullptr,
+            0,
+            0);
+
         break;
 
     case DLL_THREAD_ATTACH:
