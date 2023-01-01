@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -433,6 +433,7 @@ namespace pimax_openxr {
         bool m_systemCreated{false};
         bool m_isOpenComposite{false};
         bool m_useFrameTimingOverride{false};
+        bool m_useDeferredFrameSubmit{false};
         std::vector<Extension> m_extensionsTable;
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
@@ -582,6 +583,7 @@ namespace pimax_openxr {
         uint64_t m_frameWaited{0};
         uint64_t m_frameBegun{0};
         uint64_t m_frameCompleted{0};
+        std::future<void> m_asyncEndFrame;
         uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;

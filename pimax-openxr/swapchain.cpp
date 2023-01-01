@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -439,6 +439,14 @@ namespace pimax_openxr {
         }
 
         // Make sure there are no pending operations.
+        {
+            std::unique_lock lock2(m_frameLock);
+
+            if (m_asyncEndFrame.valid()) {
+                m_asyncEndFrame.wait();
+                m_asyncEndFrame = {};
+            }
+        }
         if (isD3D12Session()) {
             flushD3D12CommandQueue();
         } else if (isVulkanSession()) {

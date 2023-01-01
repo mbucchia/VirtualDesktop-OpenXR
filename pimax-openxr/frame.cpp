@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -160,6 +160,16 @@ namespace pimax_openxr {
                               "App_Statistics",
                               TLArg(m_frameCompleted, "FrameId"),
                               TLArg(m_lastCpuFrameTimeUs, "AppFrameCpuTime"));
+
+            // Wait for possibly deferred pvr_endFrame() to complete.
+            if (m_asyncEndFrame.valid()) {
+                TraceLocalActivity(waitDeferredEndFrame);
+                TraceLoggingWriteStart(waitDeferredEndFrame, "WaitDeferredEndFrame");
+                m_asyncEndFrame.wait();
+                TraceLoggingWriteStop(waitDeferredEndFrame, "WaitDeferredEndFrame");
+
+                m_asyncEndFrame = {};
+            }
 
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
             {
@@ -394,7 +404,6 @@ namespace pimax_openxr {
 
             // Construct the list of layers.
             std::vector<pvrLayer_Union> layersAllocator(frameEndInfo->layerCount + 1);
-            std::vector<pvrLayerHeader*> layers;
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 auto& layer = layersAllocator[i];
                 layer.Header.Flags = 0;
@@ -602,8 +611,6 @@ namespace pimax_openxr {
                 } else {
                     return XR_ERROR_LAYER_INVALID;
                 }
-
-                layers.push_back(&layer.Header);
             }
 
             {
@@ -611,6 +618,10 @@ namespace pimax_openxr {
                 if (m_guardianSpace == XR_NULL_HANDLE) {
                     initializeGuardianResources();
                 }
+
+                // Draw the guardian on top of everything.
+                auto& layer = layersAllocator[frameEndInfo->layerCount];
+                layer.Header.Type = pvrLayerType_Disabled;
 
                 // Measure the floor distance between the center of the guardian and the headset.
                 XrSpaceLocation viewToBase{XR_TYPE_SPACE_LOCATION};
@@ -621,8 +632,6 @@ namespace pimax_openxr {
                     Length(XrVector3f{guardianToBase.pose.position.x, 0.f, guardianToBase.pose.position.z} -
                            XrVector3f{viewToBase.pose.position.x, 0.f, viewToBase.pose.position.z}) >
                         m_guardianThreshold) {
-                    // Draw the guardian on top of everything.
-                    auto& layer = layersAllocator[layers.size()];
                     layer.Header.Type = pvrLayerType_Quad;
                     layer.Header.Flags = pvrLayerFlag_HeadLocked;
                     layer.Quad.ColorTexture = m_guardianSwapchain;
@@ -634,7 +643,6 @@ namespace pimax_openxr {
                     layer.Quad.QuadPoseCenter =
                         xrPoseToPvrPose(Pose::Multiply(guardianToBase.pose, Pose::Invert(viewToBase.pose)));
                     layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
-                    layers.push_back(&layer.Header);
                 }
             }
 
@@ -648,53 +656,72 @@ namespace pimax_openxr {
             while (now - m_frameTimes.front() >= 1.0) {
                 m_frameTimes.pop_front();
             }
+            const auto measuredFps = m_frameTimes.size();
+            const auto clientFps = pvr_getFloatConfig(m_pvrSession, "client_fps", 0);
+
+            // Submit frame timing to PVR.
+            if (m_useFrameTimingOverride) {
+                float renderMs = 0.f;
+                if (!m_frameTimeOverrideUs) {
+                    // No inherent biasing today. Might change in the future.
+                    // TODO: We should account for m_lastCpuFrameTimeUs here.
+                    const auto biasedCpuFrameTimeUs = 0ll;
+                    const auto biasedGpuFrameTimeUs = (int64_t)m_lastGpuFrameTimeUs + 0;
+
+                    const auto latestFrameTimeUs = std::max(
+                        0ll, std::max(biasedCpuFrameTimeUs, biasedGpuFrameTimeUs) + m_frameTimeOverrideOffsetUs);
+
+                    // Simple median filter to smooth out the values.
+                    m_frameTimeFilter.push_back(latestFrameTimeUs);
+                    while (m_frameTimeFilter.size() > m_frameTimeFilterLength) {
+                        m_frameTimeFilter.pop_front();
+                    }
+                    auto sortedFrameTimes = m_frameTimeFilter;
+                    std::sort(sortedFrameTimes.begin(), sortedFrameTimes.end());
+
+                    const auto filteredFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
+                    renderMs = filteredFrameTimeUs / 1e3f;
+                } else {
+                    m_frameTimeFilter.clear();
+
+                    renderMs = std::max(0ll, (int64_t)m_frameTimeOverrideUs + m_frameTimeOverrideOffsetUs) / 1e3f;
+                }
+
+                TraceLoggingWrite(g_traceProvider, "PVR_ClientRenderMs", TLArg(renderMs, "RenderMs"));
+
+                // pi_server requires to set this config value to hint the frame time of the application. This call
+                // always seems to fail, in spite of having side effects.
+                // According to Pimax, this value must be set to the last GPU frame time.
+                pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
+            }
 
             // Submit the layers to PVR.
-            if (!layers.empty()) {
-                if (m_useFrameTimingOverride) {
-                    float renderMs = 0.f;
-                    if (!m_frameTimeOverrideUs) {
-                        // No inherent biasing today. Might change in the future.
-                        // TODO: We should account for m_lastCpuFrameTimeUs here.
-                        const auto biasedCpuFrameTimeUs = 0ll;
-                        const auto biasedGpuFrameTimeUs = (int64_t)m_lastGpuFrameTimeUs + 0;
-
-                        const auto latestFrameTimeUs = std::max(
-                            0ll, std::max(biasedCpuFrameTimeUs, biasedGpuFrameTimeUs) + m_frameTimeOverrideOffsetUs);
-
-                        // Simple median filter to smooth out the values.
-                        m_frameTimeFilter.push_back(latestFrameTimeUs);
-                        while (m_frameTimeFilter.size() > m_frameTimeFilterLength) {
-                            m_frameTimeFilter.pop_front();
-                        }
-                        auto sortedFrameTimes = m_frameTimeFilter;
-                        std::sort(sortedFrameTimes.begin(), sortedFrameTimes.end());
-
-                        const auto filteredFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
-                        renderMs = filteredFrameTimeUs / 1e3f;
-                    } else {
-                        m_frameTimeFilter.clear();
-
-                        renderMs = std::max(0ll, (int64_t)m_frameTimeOverrideUs + m_frameTimeOverrideOffsetUs) / 1e3f;
-                    }
-
-                    TraceLoggingWrite(g_traceProvider, "PVR_ClientRenderMs", TLArg(renderMs, "RenderMs"));
-
-                    // pi_server requires to set this config value to hint the frame time of the application. This call
-                    // always seems to fail, in spite of having side effects.
-                    // According to Pimax, this value must be set to the last GPU frame time.
-                    pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
+            const auto submitFrame = [this, layersAllocator, measuredFps, clientFps, lastPrecompositionTime]() {
+                std::vector<const pvrLayerHeader*> layers;
+                for (auto& layer : layersAllocator) {
+                    layers.push_back(&layer.Header);
                 }
 
                 TraceLocalActivity(endFrame);
                 TraceLoggingWriteStart(endFrame,
                                        "PVR_EndFrame",
                                        TLArg(layers.size(), "NumLayers"),
-                                       TLArg(m_frameTimes.size(), "MeasuredFps"),
-                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                       TLArg(measuredFps, "MeasuredFps"),
+                                       TLArg(clientFps, "ClientFps"),
                                        TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
                 CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
                 TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+            };
+
+            if (!m_useDeferredFrameSubmit) {
+                submitFrame();
+                m_asyncEndFrame = {};
+            } else {
+                // TODO: Not clear why, but in certain circumstances, PVR will make us wait here rather than
+                // pvr_waitToBeginFrame(). We run this work asynchronously and we will wait just before invoking
+                // pvr_waitToBeginFrame().
+                TraceLoggingWrite(g_traceProvider, "EndFrame_DeferFrameSubmit");
+                m_asyncEndFrame = std::async(std::launch::async, submitFrame);
             }
 
             // When using RenderDoc, signal a frame through the dummy swapchain.

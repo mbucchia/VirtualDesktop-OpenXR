@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -205,6 +205,12 @@ namespace pimax_openxr {
 
         m_telemetry.logUsage(pvr_getTimeSeconds(m_pvr) - m_sessionStartTime, m_sessionTotalFrameCount);
 
+        // Wait for any in-flight operation.
+        if (m_asyncEndFrame.valid()) {
+            m_asyncEndFrame.wait();
+            m_asyncEndFrame = {};
+        }
+
         // Destroy all swapchains.
         while (m_swapchains.size()) {
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
@@ -376,6 +382,8 @@ namespace pimax_openxr {
             (uint64_t)(getSetting("frame_time_override_multiplier").value_or(0) * 10.f * m_frameDuration * 1000.f);
 
         m_frameTimeFilterLength = getSetting("frame_time_filter_length").value_or(5);
+
+        m_useDeferredFrameSubmit = getSetting("use_deferred_frame_submit").value_or(0);
 
         TraceLoggingWrite(
             g_traceProvider,
