@@ -426,7 +426,7 @@ namespace companion
             this.guardianRadius.Location = new System.Drawing.Point(114, 264);
             this.guardianRadius.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.guardianRadius.Maximum = 600;
-            this.guardianRadius.Minimum = 100;
+            this.guardianRadius.Minimum = 50;
             this.guardianRadius.Name = "guardianRadius";
             this.guardianRadius.Size = new System.Drawing.Size(104, 45);
             this.guardianRadius.TabIndex = 17;
@@ -439,7 +439,7 @@ namespace companion
             this.guardianThresholdValue.AccessibleDescription = "Value for guardian visibility";
             this.guardianThresholdValue.Location = new System.Drawing.Point(30, 312);
             this.guardianThresholdValue.Margin = new System.Windows.Forms.Padding(30, 3, 3, 3);
-            this.guardianThresholdValue.Name= "guardianThresholdValue";
+            this.guardianThresholdValue.Name = "guardianThresholdValue";
             this.guardianThresholdValue.ReadOnly = true;
             this.guardianThresholdValue.Size = new System.Drawing.Size(26, 20);
             this.guardianThresholdValue.TabIndex = 18;
@@ -461,7 +461,7 @@ namespace companion
             this.guardianThreshold.Location = new System.Drawing.Point(121, 312);
             this.guardianThreshold.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.guardianThreshold.Maximum = 600;
-            this.guardianThreshold.Minimum = 100;
+            this.guardianThreshold.Minimum = 50;
             this.guardianThreshold.Name = "guardianThreshold";
             this.guardianThreshold.Size = new System.Drawing.Size(104, 45);
             this.guardianThreshold.TabIndex = 20;
