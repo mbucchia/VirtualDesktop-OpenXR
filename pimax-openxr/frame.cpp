@@ -357,6 +357,12 @@ namespace pimax_openxr {
                 m_gpuTimerApp[m_currentTimerIndex]->stop();
             }
 
+            // Handle recentering via keyboard input when the app does not poll for motion controllers.
+            if (!m_actionsSyncedThisFrame) {
+                handleBuiltinActions();
+            }
+            m_actionsSyncedThisFrame = false;
+
             const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex]->query();
             if (IsTraceEnabled()) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();

@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022 Matthieu Bucchianeri
+// Copyright(c) 2022-2023 Matthieu Bucchianeri
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -731,24 +731,8 @@ namespace pimax_openxr {
         m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
         // Execute built-in actions.
-        wasRecenteringPressed =
-            wasRecenteringPressed ||
-            (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_MENU) < 0 && GetAsyncKeyState(VK_SPACE) < 0);
-        if (wasRecenteringPressed) {
-            const auto now = pvr_getTimeSeconds(m_pvr);
-            if (m_isRecenteringPressed) {
-                // Requires a 3 seconds press.
-                if (now - m_isRecenteringPressed.value() > 2.f) {
-                    // Recenter view.
-                    CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
-                }
-            } else {
-                m_isRecenteringPressed = now;
-            }
-            wasRecenteringPressed = true;
-        } else {
-            m_isRecenteringPressed.reset();
-        }
+        handleBuiltinActions(wasRecenteringPressed);
+        m_actionsSyncedThisFrame = true;
 
         return XR_SUCCESS;
     }
@@ -1196,6 +1180,27 @@ namespace pimax_openxr {
         XrVector2f normalizedInput{raw.x / length, raw.y / length};
         const float scaling = (length - m_joystickDeadzone) / (1 - m_joystickDeadzone);
         return {normalizedInput.x * scaling, normalizedInput.y * scaling};
+    }
+
+    void OpenXrRuntime::handleBuiltinActions(bool wasRecenteringPressed) {
+        wasRecenteringPressed =
+            wasRecenteringPressed ||
+            (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_MENU) < 0 && GetAsyncKeyState(VK_SPACE) < 0);
+        if (wasRecenteringPressed) {
+            const auto now = pvr_getTimeSeconds(m_pvr);
+            if (m_isRecenteringPressed) {
+                // Requires a 3 seconds press.
+                if (now - m_isRecenteringPressed.value() > 2.f) {
+                    // Recenter view.
+                    CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+                }
+            } else {
+                m_isRecenteringPressed = now;
+            }
+            wasRecenteringPressed = true;
+        } else {
+            m_isRecenteringPressed.reset();
+        }
     }
 
 } // namespace pimax_openxr

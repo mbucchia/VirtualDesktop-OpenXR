@@ -349,6 +349,7 @@ namespace pimax_openxr {
         std::string getXrPath(XrPath path) const;
         int getActionSide(const std::string& fullPath) const;
         XrVector2f handleJoystickDeadzone(pvrVector2f raw) const;
+        void handleBuiltinActions(bool wasRecenteringPressed = false);
 
         // mappings.cpp
         void initializeRemappingTables();
@@ -586,6 +587,7 @@ namespace pimax_openxr {
         uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
+        bool m_actionsSyncedThisFrame{false};
 
         // Statistics.
         AppInsights m_telemetry;
