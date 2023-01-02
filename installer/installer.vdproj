@@ -149,6 +149,21 @@
     {
         "CustomAction"
         {
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_6509B9E8EE584DEA83DEE22E9938C0AA"
+            {
+            "Name" = "8:Primary output from companion (Active)"
+            "Condition" = "8:"
+            "Object" = "8:_40856ECB196C4B9BB81AAF93EFAA99D8"
+            "FileType" = "3:2"
+            "InstallAction" = "3:1"
+            "Arguments" = "8:"
+            "EntryPoint" = "8:"
+            "Sequence" = "3:1"
+            "Identifier" = "8:_83B207DD_1E59_4B5F_9094_D735210CEFF8"
+            "InstallerClass" = "11:TRUE"
+            "CustomActionData" = "8:"
+            "Run64Bit" = "11:TRUE"
+            }
         }
         "DefaultFeature"
         {
@@ -480,7 +495,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PimaxXR"
         "ProductCode" = "8:{5F624C6A-B2E6-42F8-AFEE-993675C0B8AE}"
-        "PackageCode" = "8:{B175FEA2-69C3-4D90-8C8D-ABA2903C87E5}"
+        "PackageCode" = "8:{D006FAAD-E72F-4F8B-A5FE-F15282A3EF7F}"
         "UpgradeCode" = "8:{462D4BAE-C6F9-4917-94BB-AF4A019B92E2}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"

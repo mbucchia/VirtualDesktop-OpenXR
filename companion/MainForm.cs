@@ -160,7 +160,7 @@ namespace companion
                 guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
                 guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
                 guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
-                enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 1) == 1 ? true : false;
+                enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 0) == 1 ? true : false;
             }
             catch (Exception)
             {
