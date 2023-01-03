@@ -397,7 +397,7 @@ namespace pimax_openxr {
             desc.Format = PVR_FORMAT_D32_FLOAT;
             needDepthResolve = true;
         }
-        CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &pvrSwapchain));
+        CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &pvrSwapchain));
 
         // Create the internal struct.
         Swapchain& xrSwapchain = *new Swapchain;
@@ -446,15 +446,18 @@ namespace pimax_openxr {
                 m_asyncEndFrame.wait();
                 m_asyncEndFrame = {};
             }
-        }
-        if (isD3D12Session()) {
-            flushD3D12CommandQueue();
-        } else if (isVulkanSession()) {
-            flushVulkanCommandQueue();
-        } else if (isOpenGLSession()) {
-            flushOpenGLContext();
-        } else {
-            flushD3D11Context();
+
+            // These need the frameLock to manipulate the share fence value.
+            if (isD3D12Session()) {
+                flushD3D12CommandQueue();
+            } else if (isVulkanSession()) {
+                flushVulkanCommandQueue();
+            } else if (isOpenGLSession()) {
+                flushOpenGLContext();
+            } else {
+                flushD3D11Context();
+            }
+            flushSubmissionContext();
         }
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;

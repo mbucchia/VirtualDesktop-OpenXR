@@ -280,6 +280,7 @@ namespace pimax_openxr {
             ComPtr<ID3D11UnorderedAccessView> resolvedAccessView;
 
             // Resources needed for interop.
+            std::vector<ComPtr<ID3D11Texture2D>> d3d11Images;
             std::vector<ComPtr<ID3D12Resource>> d3d12Images;
             std::vector<VkDeviceMemory> vkDeviceMemory;
             std::vector<VkImage> vkImages;
@@ -381,16 +382,19 @@ namespace pimax_openxr {
         XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
 
         // d3d11_native.cpp
-        XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings, bool interop = false);
+        XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings);
         void cleanupD3D11();
-        XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain,
-                                         XrSwapchainImageD3D11KHR* d3d11Images,
-                                         uint32_t count,
-                                         bool interop = false);
+        void initializeSubmissionDevice(const std::string& appGraphicsApi);
+        void cleanupSubmissionDevice();
+        std::vector<HANDLE> getSwapchainImages(Swapchain& xrSwapchain);
+        XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain, XrSwapchainImageD3D11KHR* d3d11Images, uint32_t count);
         void prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
                                             uint32_t slice,
                                             std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const;
         void flushD3D11Context();
+        void flushSubmissionContext();
+        void serializeD3D11Frame();
+        void waitOnSubmissionDevice();
 
         // d3d12_interop.cpp
         XrResult initializeD3D12(const XrGraphicsBindingD3D12KHR& d3dBindings);
@@ -456,8 +460,9 @@ namespace pimax_openxr {
         bool m_loggedResolution{false};
 
         // Session state.
-        ComPtr<ID3D11Device5> m_d3d11Device;
-        ComPtr<ID3D11DeviceContext4> m_d3d11DeviceContext;
+        ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
+        ComPtr<ID3D11DeviceContext4> m_pvrSubmissionContext;
+        ComPtr<ID3D11Fence> m_pvrSubmissionFence;
         ComPtr<ID3D11ComputeShader> m_resolveShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
@@ -507,6 +512,8 @@ namespace pimax_openxr {
         float m_guardianRadius{1.6f};
 
         // Graphics API interop.
+        ComPtr<ID3D11Device5> m_d3d11Device;
+        ComPtr<ID3D11DeviceContext4> m_d3d11Context;
         ComPtr<ID3D12Device> m_d3d12Device;
         ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
         ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator[2];
@@ -598,7 +605,6 @@ namespace pimax_openxr {
         CpuTimer m_renderTimerApp;
         static constexpr uint32_t k_numGpuTimers = 3;
         std::unique_ptr<GpuTimer> m_gpuTimerApp[k_numGpuTimers];
-        std::unique_ptr<GpuTimer> m_gpuTimerSynchronizationDuration[k_numGpuTimers];
         std::unique_ptr<GpuTimer> m_gpuTimerPrecomposition[k_numGpuTimers];
         uint32_t m_currentTimerIndex{0};
 

@@ -360,6 +360,8 @@ namespace pimax_openxr {
                 serializeVulkanFrame();
             } else if (isOpenGLSession()) {
                 serializeOpenGLFrame();
+            } else {
+                serializeD3D11Frame();
             }
 
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
@@ -705,7 +707,7 @@ namespace pimax_openxr {
             // When using RenderDoc, signal a frame through the dummy swapchain.
             if (m_dxgiSwapchain) {
                 m_dxgiSwapchain->Present(0, 0);
-                m_d3d11DeviceContext->Flush();
+                m_pvrSubmissionContext->Flush();
             }
 
             m_frameCompleted = m_frameBegun;

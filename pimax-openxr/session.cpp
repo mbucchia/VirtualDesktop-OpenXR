@@ -235,6 +235,7 @@ namespace pimax_openxr {
         cleanupVulkan();
         cleanupD3D12();
         cleanupD3D11();
+        cleanupSubmissionDevice();
         m_handTrackers.clear();
         m_sessionState = XR_SESSION_STATE_UNKNOWN;
         m_sessionStateDirty = false;
@@ -410,8 +411,11 @@ namespace pimax_openxr {
 
         if (SUCCEEDED(hr)) {
             ComPtr<ID3D11Resource> texture;
-            hr = DirectX::CreateTexture(
-                m_d3d11Device.Get(), image->GetImages(), 1, image->GetMetadata(), texture.ReleaseAndGetAddressOf());
+            hr = DirectX::CreateTexture(m_pvrSubmissionDevice.Get(),
+                                        image->GetImages(),
+                                        1,
+                                        image->GetMetadata(),
+                                        texture.ReleaseAndGetAddressOf());
 
             if (SUCCEEDED(hr)) {
                 // Create a PVR swapchain for the texture.
@@ -425,8 +429,8 @@ namespace pimax_openxr {
                 desc.SampleCount = 1;
                 desc.Format = dxgiToPvrTextureFormat(image->GetMetadata().format);
 
-                CHECK_PVRCMD(
-                    pvr_createTextureSwapChainDX(m_pvrSession, m_d3d11Device.Get(), &desc, &m_guardianSwapchain));
+                CHECK_PVRCMD(pvr_createTextureSwapChainDX(
+                    m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &m_guardianSwapchain));
 
                 // Copy and commit the guardian texture to the swapchain.
                 int imageIndex = -1;
@@ -439,8 +443,8 @@ namespace pimax_openxr {
                 swapchainTexture->GetDevice(d1.ReleaseAndGetAddressOf());
                 texture->GetDevice(d2.ReleaseAndGetAddressOf());
 
-                m_d3d11DeviceContext->CopyResource(swapchainTexture, texture.Get());
-                m_d3d11DeviceContext->Flush();
+                m_pvrSubmissionContext->CopyResource(swapchainTexture, texture.Get());
+                m_pvrSubmissionContext->Flush();
                 CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
             } else {
                 ErrorLog("Failed to create texture from guardian.png: %X\n");

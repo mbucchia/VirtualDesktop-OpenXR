@@ -96,76 +96,16 @@ namespace pimax_openxr {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
         }
 
-        ComPtr<IDXGIFactory1> dxgiFactory;
-        CHECK_HRCMD(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
-
-        ComPtr<IDXGIAdapter1> dxgiAdapter;
-        for (UINT adapterIndex = 0;; adapterIndex++) {
-            // EnumAdapters1 will fail with DXGI_ERROR_NOT_FOUND when there are no more adapters to
-            // enumerate.
-            CHECK_HRCMD(dxgiFactory->EnumAdapters1(adapterIndex, dxgiAdapter.ReleaseAndGetAddressOf()));
-
-            DXGI_ADAPTER_DESC1 desc;
-            CHECK_HRCMD(dxgiAdapter->GetDesc1(&desc));
-            if (!memcmp(&desc.AdapterLuid, &m_adapterLuid, sizeof(LUID))) {
-                std::string deviceName;
-                const std::wstring wadapterDescription(desc.Description);
-                std::transform(wadapterDescription.begin(),
-                               wadapterDescription.end(),
-                               std::back_inserter(deviceName),
-                               [](wchar_t c) { return (char)c; });
-
-                TraceLoggingWrite(g_traceProvider,
-                                  "xrCreateSession",
-                                  TLArg("OpenGL", "Api"),
-                                  TLArg(deviceName.c_str(), "AdapterName"));
-                Log("Using OpenGL on adapter: %s\n", deviceName.c_str());
-                break;
-            }
-        }
-
-        // Create the interop device that PVR will be using.
-        ComPtr<ID3D11Device> device;
-        ComPtr<ID3D11DeviceContext> deviceContext;
-        D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-        UINT flags = 0;
-#ifdef _DEBUG
-        flags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-        CHECK_HRCMD(D3D11CreateDevice(dxgiAdapter.Get(),
-                                      D3D_DRIVER_TYPE_UNKNOWN,
-                                      0,
-                                      flags,
-                                      &featureLevel,
-                                      1,
-                                      D3D11_SDK_VERSION,
-                                      device.ReleaseAndGetAddressOf(),
-                                      nullptr,
-                                      deviceContext.ReleaseAndGetAddressOf()));
-
-        ComPtr<ID3D11Device5> device5;
-        CHECK_HRCMD(device->QueryInterface(m_d3d11Device.ReleaseAndGetAddressOf()));
-
-        // Create the Direct3D 11 resources.
-        XrGraphicsBindingD3D11KHR d3d11Bindings{};
-        d3d11Bindings.device = device.Get();
-        const auto result = initializeD3D11(d3d11Bindings, true);
-        if (XR_FAILED(result)) {
-            return result;
-        }
-
-        // Initialize common OpenGL resources.
+        // Create the interop device and resources that PVR will be using.
+        initializeSubmissionDevice("OpenGL");
 
         // We will use a shared fence to synchronize between the OpenGL context and the D3D11
         // context.
-        m_glDispatch.glGenSemaphoresEXT(1, &m_glSemaphore);
-
-        CHECK_HRCMD(m_d3d11Device->CreateFence(
-            0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
-        CHECK_HRCMD(
-            m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, m_fenceHandleForAMDWorkaround.put()));
+        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(
+            nullptr, GENERIC_ALL, nullptr, m_fenceHandleForAMDWorkaround.put()));
 
         // On the OpenGL side, it is called a semaphore.
+        m_glDispatch.glGenSemaphoresEXT(1, &m_glSemaphore);
         m_glDispatch.glImportSemaphoreWin32HandleEXT(
             m_glSemaphore, GL_HANDLE_TYPE_D3D12_FENCE_EXT, m_fenceHandleForAMDWorkaround.get());
 
@@ -222,13 +162,10 @@ namespace pimax_openxr {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
 
-        std::vector<XrSwapchainImageD3D11KHR> d3d11Images(count, {XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR});
+        std::vector<HANDLE> textureHandles;
         if (!initialized) {
-            // Query the D3D11 textures.
-            const auto result = getSwapchainImagesD3D11(xrSwapchain, d3d11Images.data(), count, true);
-            if (XR_FAILED(result)) {
-                return result;
-            }
+            // Query the swapchain textures.
+            textureHandles = getSwapchainImages(xrSwapchain);
         }
 
         // Export each D3D11 texture to OpenGL.
@@ -238,12 +175,6 @@ namespace pimax_openxr {
             }
 
             if (!initialized) {
-                HANDLE textureHandle;
-                ComPtr<IDXGIResource1> dxgiResource;
-                CHECK_HRCMD(
-                    d3d11Images[i].texture->QueryInterface(IID_PPV_ARGS(dxgiResource.ReleaseAndGetAddressOf())));
-                CHECK_HRCMD(dxgiResource->GetSharedHandle(&textureHandle));
-
                 // Import the device memory from D3D.
                 GLuint memory;
                 m_glDispatch.glCreateMemoryObjectsEXT(1, &memory);
@@ -253,11 +184,10 @@ namespace pimax_openxr {
 
                 // TODO: Not sure why we need to multiply by 2. Mipmapping?
                 // https://stackoverflow.com/questions/71108346/how-to-use-glimportmemorywin32handleext-to-share-an-id3d11texture2d-keyedmutex-s
-                m_glDispatch.glImportMemoryWin32HandleEXT(memory,
-                                                          xrSwapchain.xrDesc.width * xrSwapchain.xrDesc.height *
-                                                              xrSwapchain.xrDesc.sampleCount * bytePerPixels * 2,
-                                                          GL_HANDLE_TYPE_D3D11_IMAGE_KMT_EXT,
-                                                          textureHandle);
+                const auto memorySize = xrSwapchain.xrDesc.width * xrSwapchain.xrDesc.height *
+                                        xrSwapchain.xrDesc.sampleCount * bytePerPixels * 2;
+                m_glDispatch.glImportMemoryWin32HandleEXT(
+                    memory, memorySize, GL_HANDLE_TYPE_D3D11_IMAGE_KMT_EXT, textureHandles[i]);
 
                 // Create the texture that the app will use.
                 GLuint image;
@@ -332,24 +262,13 @@ namespace pimax_openxr {
         GlContextSwitch context(m_glContext);
 
         m_fenceValue++;
-        TraceLoggingWrite(g_traceProvider, "xrEndFrame_Sync", TLArg("OpenGL", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        if (m_frameCompleted >= k_numGpuTimers) {
-            TraceLoggingWrite(g_traceProvider,
-                              "xrEndFrame_Sync",
-                              TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
-                              TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"));
-        }
+        TraceLoggingWrite(
+            g_traceProvider, "xrEndFrame_Sync", TLArg("OpenGL", "Api"), TLArg(m_fenceValue, "FenceValue"));
         m_glDispatch.glSemaphoreParameterui64vEXT(m_glSemaphore, GL_D3D12_FENCE_VALUE_EXT, &m_fenceValue);
         m_glDispatch.glSignalSemaphoreEXT(m_glSemaphore, 0, nullptr, 0, nullptr, nullptr);
         glFlush();
 
-        if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->start();
-        }
-        CHECK_HRCMD(m_d3d11DeviceContext->Wait(m_d3d11Fence.Get(), m_fenceValue));
-        if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->stop();
-        }
+        waitOnSubmissionDevice();
     }
 
 } // namespace pimax_openxr

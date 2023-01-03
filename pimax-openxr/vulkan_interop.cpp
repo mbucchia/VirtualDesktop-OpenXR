@@ -461,35 +461,8 @@ namespace pimax_openxr {
         m_vkDevice = vkBindings.device;
         m_vkPhysicalDevice = vkBindings.physicalDevice;
 
-        // Create the interop device that PVR will be using.
-        ComPtr<ID3D11Device> device;
-        ComPtr<ID3D11DeviceContext> deviceContext;
-        D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-        UINT flags = 0;
-#ifdef _DEBUG
-        flags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-        CHECK_HRCMD(D3D11CreateDevice(dxgiAdapter.Get(),
-                                      D3D_DRIVER_TYPE_UNKNOWN,
-                                      0,
-                                      flags,
-                                      &featureLevel,
-                                      1,
-                                      D3D11_SDK_VERSION,
-                                      device.ReleaseAndGetAddressOf(),
-                                      nullptr,
-                                      deviceContext.ReleaseAndGetAddressOf()));
-
-        ComPtr<ID3D11Device5> device5;
-        CHECK_HRCMD(device->QueryInterface(m_d3d11Device.ReleaseAndGetAddressOf()));
-
-        // Create the Direct3D 11 resources.
-        XrGraphicsBindingD3D11KHR d3d11Bindings{};
-        d3d11Bindings.device = device.Get();
-        const auto result = initializeD3D11(d3d11Bindings, true);
-        if (XR_FAILED(result)) {
-            return result;
-        }
+        // Create the interop device and resources that PVR will be using.
+        initializeSubmissionDevice("Vulkan");
 
         // Initialize common Vulkan resources.
         m_vkDispatch.vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice, &m_vkMemoryProperties);
@@ -498,9 +471,7 @@ namespace pimax_openxr {
         // We will use a shared fence to synchronize between the Vulkan queue and the D3D11
         // context.
         wil::unique_handle fenceHandle;
-        CHECK_HRCMD(m_d3d11Device->CreateFence(
-            0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
-        CHECK_HRCMD(m_d3d11Fence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
+        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
 
         // On the Vulkan side, it is called a timeline semaphore.
         VkSemaphoreTypeCreateInfo timelineCreateInfo{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
@@ -512,7 +483,6 @@ namespace pimax_openxr {
         importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT;
         importInfo.handle = fenceHandle.get();
         CHECK_VKCMD(m_vkDispatch.vkImportSemaphoreWin32HandleKHR(m_vkDevice, &importInfo));
-        m_fenceValue = 0;
 
         // We will need command buffers to perform layout transitions.
         VkCommandPoolCreateInfo poolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
@@ -592,13 +562,10 @@ namespace pimax_openxr {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
 
-        std::vector<XrSwapchainImageD3D11KHR> d3d11Images(count, {XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR});
+        std::vector<HANDLE> textureHandles;
         if (!initialized) {
-            // Query the D3D11 textures.
-            const auto result = getSwapchainImagesD3D11(xrSwapchain, d3d11Images.data(), count, true);
-            if (XR_FAILED(result)) {
-                return result;
-            }
+            // Query the swapchain textures.
+            textureHandles = getSwapchainImages(xrSwapchain);
 
             // Create the command list needed for transitioning the resources.
             VkCommandBufferAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
@@ -685,23 +652,17 @@ namespace pimax_openxr {
                     VkMemoryRequirements2 requirements{VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2};
                     m_vkDispatch.vkGetImageMemoryRequirements2KHR(m_vkDevice, &requirementInfo, &requirements);
 
-                    HANDLE textureHandle;
-                    ComPtr<IDXGIResource1> dxgiResource;
-                    CHECK_HRCMD(
-                        d3d11Images[i].texture->QueryInterface(IID_PPV_ARGS(dxgiResource.ReleaseAndGetAddressOf())));
-                    CHECK_HRCMD(dxgiResource->GetSharedHandle(&textureHandle));
-
                     VkMemoryWin32HandlePropertiesKHR handleProperties{
                         VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR};
                     CHECK_VKCMD(m_vkDispatch.vkGetMemoryWin32HandlePropertiesKHR(
                         m_vkDevice,
                         VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT,
-                        textureHandle,
+                        textureHandles[i],
                         &handleProperties));
 
                     VkImportMemoryWin32HandleInfoKHR importInfo{VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR};
                     importInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT;
-                    importInfo.handle = textureHandle;
+                    importInfo.handle = textureHandles[i];
 
                     VkMemoryDedicatedAllocateInfo memoryAllocateInfo{VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
                                                                      &importInfo};
@@ -786,7 +747,7 @@ namespace pimax_openxr {
         if (m_vkDispatch.vkQueueSubmit && m_vkDispatch.vkWaitSemaphoresKHR) {
             m_fenceValue++;
             TraceLoggingWrite(
-                g_traceProvider, "xrDestroySwapchain_Wait", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
+                g_traceProvider, "FlushContext_Wait", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
             VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
             timelineInfo.signalSemaphoreValueCount = 1;
             timelineInfo.pSignalSemaphoreValues = &m_fenceValue;
@@ -807,12 +768,6 @@ namespace pimax_openxr {
         m_fenceValue++;
         TraceLoggingWrite(
             g_traceProvider, "xrEndFrame_Sync", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        if (m_frameCompleted >= k_numGpuTimers) {
-            TraceLoggingWrite(g_traceProvider,
-                              "xrEndFrame_Sync",
-                              TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
-                              TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"));
-        }
         VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
         timelineInfo.signalSemaphoreValueCount = 1;
         timelineInfo.pSignalSemaphoreValues = &m_fenceValue;
@@ -821,13 +776,7 @@ namespace pimax_openxr {
         submitInfo.pSignalSemaphores = &m_vkTimelineSemaphore;
         CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
 
-        if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->start();
-        }
-        CHECK_HRCMD(m_d3d11DeviceContext->Wait(m_d3d11Fence.Get(), m_fenceValue));
-        if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->stop();
-        }
+        waitOnSubmissionDevice();
     }
 
 } // namespace pimax_openxr

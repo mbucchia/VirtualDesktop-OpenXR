@@ -114,45 +114,15 @@ namespace pimax_openxr {
         m_d3d12Device = d3dBindings.device;
         m_d3d12CommandQueue = d3dBindings.queue;
 
-        // Create the interop device that PVR will be using.
-        ComPtr<ID3D11Device> device;
-        ComPtr<ID3D11DeviceContext> deviceContext;
-        D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-        UINT flags = 0;
-#ifdef _DEBUG
-        flags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-        CHECK_HRCMD(D3D11CreateDevice(dxgiAdapter.Get(),
-                                      D3D_DRIVER_TYPE_UNKNOWN,
-                                      0,
-                                      flags,
-                                      &featureLevel,
-                                      1,
-                                      D3D11_SDK_VERSION,
-                                      device.ReleaseAndGetAddressOf(),
-                                      nullptr,
-                                      deviceContext.ReleaseAndGetAddressOf()));
-
-        ComPtr<ID3D11Device5> device5;
-        CHECK_HRCMD(device->QueryInterface(m_d3d11Device.ReleaseAndGetAddressOf()));
-
-        // Create the Direct3D 11 resources.
-        XrGraphicsBindingD3D11KHR d3d11Bindings{};
-        d3d11Bindings.device = device.Get();
-        const auto result = initializeD3D11(d3d11Bindings, true);
-        if (XR_FAILED(result)) {
-            return result;
-        }
+        // Create the interop device and resources that PVR will be using.
+        initializeSubmissionDevice("D3D12");
 
         // We will use a shared fence to synchronize between the D3D12 queue and the D3D11
         // context.
-        CHECK_HRCMD(m_d3d12Device->CreateFence(
-            0, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_d3d12Fence.ReleaseAndGetAddressOf())));
         wil::unique_handle fenceHandle;
+        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
         CHECK_HRCMD(
-            m_d3d12Device->CreateSharedHandle(m_d3d12Fence.Get(), nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
-        m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf()));
-        m_fenceValue = 0;
+            m_d3d12Device->OpenSharedHandle(fenceHandle.get(), IID_PPV_ARGS(m_d3d12Fence.ReleaseAndGetAddressOf())));
 
         // We will need command lists to perform layout transitions.
         for (uint32_t i = 0; i < 2; i++) {
@@ -177,7 +147,6 @@ namespace pimax_openxr {
             m_d3d12CommandAllocator[i].Reset();
         }
         m_d3d12Fence.Reset();
-        m_d3d11Fence.Reset();
         m_d3d12CommandQueue.Reset();
         m_d3d12Device.Reset();
     }
@@ -193,13 +162,10 @@ namespace pimax_openxr {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
 
-        std::vector<XrSwapchainImageD3D11KHR> d3d11Images(count, {XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR});
+        std::vector<HANDLE> textureHandles;
         if (!initialized) {
-            // Query the D3D11 textures.
-            const auto result = getSwapchainImagesD3D11(xrSwapchain, d3d11Images.data(), count, true);
-            if (XR_FAILED(result)) {
-                return result;
-            }
+            // Query the swapchain textures.
+            textureHandles = getSwapchainImages(xrSwapchain);
         }
 
         // Export each D3D11 texture to D3D12.
@@ -210,16 +176,10 @@ namespace pimax_openxr {
 
             if (!initialized) {
                 // Create an imported texture on the D3D12 device.
-                HANDLE textureHandle;
-                ComPtr<IDXGIResource1> dxgiResource;
-                CHECK_HRCMD(
-                    d3d11Images[i].texture->QueryInterface(IID_PPV_ARGS(dxgiResource.ReleaseAndGetAddressOf())));
-                CHECK_HRCMD(dxgiResource->GetSharedHandle(&textureHandle));
-
                 ComPtr<ID3D12Resource> d3d12Resource;
-                CHECK_HRCMD(m_d3d12Device->OpenSharedHandle(textureHandle,
+                CHECK_HRCMD(m_d3d12Device->OpenSharedHandle(textureHandles[i],
                                                             IID_PPV_ARGS(d3d12Resource.ReleaseAndGetAddressOf())));
-                setDebugName(d3d12Resource.Get(), fmt::format("App Interop Texture[{}, {}]", i, (void*)&xrSwapchain));
+                setDebugName(d3d12Resource.Get(), fmt::format("App Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
                 xrSwapchain.d3d12Images.push_back(d3d12Resource);
             }
@@ -281,7 +241,7 @@ namespace pimax_openxr {
             wil::unique_handle eventHandle;
             m_fenceValue++;
             TraceLoggingWrite(
-                g_traceProvider, "xrDestroySwapchain_Wait", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));
+                g_traceProvider, "FlushContext_Wait", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));
             m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue);
             *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
             CHECK_HRCMD(m_d3d12Fence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
@@ -294,21 +254,9 @@ namespace pimax_openxr {
     void OpenXrRuntime::serializeD3D12Frame() {
         m_fenceValue++;
         TraceLoggingWrite(g_traceProvider, "xrEndFrame_Sync", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        if (m_frameCompleted >= k_numGpuTimers) {
-            TraceLoggingWrite(g_traceProvider,
-                              "xrEndFrame_Sync",
-                              TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
-                              TLArg(m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->query(), "SyncDurationUs"));
-        }
         CHECK_HRCMD(m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue));
 
-        if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->start();
-        }
-        CHECK_HRCMD(m_d3d11DeviceContext->Wait(m_d3d11Fence.Get(), m_fenceValue));
-        if (IsTraceEnabled()) {
-            m_gpuTimerSynchronizationDuration[m_currentTimerIndex]->stop();
-        }
+        waitOnSubmissionDevice();
 
         // We also use this opportunity to switch command list.
         m_currentAllocatorIndex ^= 1;
