@@ -513,6 +513,7 @@ namespace pimax_openxr {
         VK_GET_PTR(vkDestroyCommandPool);
         VK_GET_PTR(vkAllocateCommandBuffers);
         VK_GET_PTR(vkFreeCommandBuffers);
+        VK_GET_PTR(vkResetCommandBuffer);
         VK_GET_PTR(vkBeginCommandBuffer);
         VK_GET_PTR(vkCmdPipelineBarrier);
         VK_GET_PTR(vkEndCommandBuffer);

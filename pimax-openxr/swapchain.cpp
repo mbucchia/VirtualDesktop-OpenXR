@@ -470,6 +470,11 @@ namespace pimax_openxr {
             xrSwapchain.pvrSwapchain.pop_back();
         }
 
+        if (xrSwapchain.vkCmdBuffer != VK_NULL_HANDLE) {
+            m_vkDispatch.vkResetCommandBuffer(xrSwapchain.vkCmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+            m_vkDispatch.vkFreeCommandBuffers(m_vkDevice, m_vkCmdPool, 1, &xrSwapchain.vkCmdBuffer);
+        }
+
         while (!xrSwapchain.vkImages.empty()) {
             m_vkDispatch.vkDestroyImage(m_vkDevice, xrSwapchain.vkImages.back(), m_vkAllocator);
             xrSwapchain.vkImages.pop_back();
@@ -478,10 +483,6 @@ namespace pimax_openxr {
         while (!xrSwapchain.vkDeviceMemory.empty()) {
             m_vkDispatch.vkFreeMemory(m_vkDevice, xrSwapchain.vkDeviceMemory.back(), m_vkAllocator);
             xrSwapchain.vkDeviceMemory.pop_back();
-        }
-
-        if (xrSwapchain.vkCmdBuffer != VK_NULL_HANDLE) {
-            m_vkDispatch.vkFreeCommandBuffers(m_vkDevice, m_vkCmdPool, 1, &xrSwapchain.vkCmdBuffer);
         }
 
         // This will be a no-op if OpenGL is not used.
