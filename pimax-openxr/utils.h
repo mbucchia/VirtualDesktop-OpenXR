@@ -244,17 +244,18 @@ namespace pimax_openxr::utils {
                 wglMakeCurrent(context.glDC, context.glRC);
 
                 // Reset error codes.
-                (void)glGetError();
+                while (glGetError() != GL_NO_ERROR)
+                    ;
             }
         }
 
         ~GlContextSwitch() noexcept(false) {
             if (m_valid) {
-                const auto lastError = glGetError();
+                const auto error = glGetError();
 
                 wglMakeCurrent(m_glDC, m_glRC);
 
-                CHECK_MSG(lastError == GL_NO_ERROR, fmt::format("OpenGL error: 0x{:x}", lastError));
+                CHECK_MSG(error == GL_NO_ERROR, fmt::format("OpenGL error: 0x{:x}", error));
             }
         }
 
