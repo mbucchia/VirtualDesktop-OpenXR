@@ -384,7 +384,7 @@ namespace pimax_openxr {
 
         m_frameTimeFilterLength = getSetting("frame_time_filter_length").value_or(5);
 
-        m_useDeferredFrameSubmit = getSetting("use_deferred_frame_submit").value_or(0);
+        m_useDeferredFrameSubmit = getSetting("use_deferred_frame_submit").value_or(1);
 
         TraceLoggingWrite(
             g_traceProvider,

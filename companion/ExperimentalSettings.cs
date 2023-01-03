@@ -67,7 +67,7 @@ namespace companion
                 }
                 // Convert value from microseconds to tenth of milliseconds.
                 timingBias.Value = multiplier == 0 ? ((int)key.GetValue("frame_time_override_offset", 0) / 100) : 0;
-                enableDeferredSubmit.Checked = (int)key.GetValue("use_deferred_frame_submit", 0) == 1 ? true : false;
+                enableDeferredSubmit.Checked = (int)key.GetValue("use_deferred_frame_submit", 1) == 1 ? true : false;
             }
             catch (Exception)
             {
@@ -206,7 +206,7 @@ namespace companion
             forceHalf.Checked = forceThird.Checked = false;
             filterLength.Value = 5;
             timingBias.Value = 0;
-            enableDeferredSubmit.Checked = false;
+            enableDeferredSubmit.Checked = true;
 
             enableFrameTiming_CheckedChanged(null, null);
             filterLength_Scroll(null, null);
