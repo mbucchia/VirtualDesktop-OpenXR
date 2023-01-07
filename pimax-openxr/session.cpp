@@ -439,10 +439,6 @@ namespace pimax_openxr {
                 CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
                     m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(&swapchainTexture)));
 
-                ComPtr<ID3D11Device> d1, d2;
-                swapchainTexture->GetDevice(d1.ReleaseAndGetAddressOf());
-                texture->GetDevice(d2.ReleaseAndGetAddressOf());
-
                 m_pvrSubmissionContext->CopyResource(swapchainTexture, texture.Get());
                 m_pvrSubmissionContext->Flush();
                 CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
