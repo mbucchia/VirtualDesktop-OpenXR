@@ -174,7 +174,7 @@ namespace pimax_openxr {
         ComPtr<ID3D11Device> device;
         ComPtr<ID3D11DeviceContext> deviceContext;
         D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-        UINT flags = 0;
+        UINT flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef _DEBUG
         flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
