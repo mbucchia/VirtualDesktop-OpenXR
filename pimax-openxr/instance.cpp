@@ -265,6 +265,7 @@ namespace pimax_openxr {
         m_telemetry.logApplicationInfo(createInfo->applicationInfo.applicationName,
                                        createInfo->applicationInfo.engineName);
 
+        m_applicationName = createInfo->applicationInfo.applicationName;
         m_isOpenComposite = std::string_view(createInfo->applicationInfo.applicationName).find("OpenComposite_") == 0;
         if (m_isOpenComposite) {
             Log("Detected OpenComposite\n");

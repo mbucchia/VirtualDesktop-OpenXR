@@ -381,6 +381,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="perf_counter.cpp" />
+    <ClCompile Include="mirror_window.cpp" />
     <ClCompile Include="session.cpp" />
     <ClCompile Include="space.cpp" />
     <ClCompile Include="store.cpp" />

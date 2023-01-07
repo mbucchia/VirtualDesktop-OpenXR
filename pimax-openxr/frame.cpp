@@ -691,6 +691,12 @@ namespace pimax_openxr {
                                        TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
                 CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
                 TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+
+                // Defer initialization of mirror window resources until they are first needed.
+                if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
+                    createMirrorWindow();
+                }
+                updateMirrorWindow();
             };
 
             if (!m_useDeferredFrameSubmit) {

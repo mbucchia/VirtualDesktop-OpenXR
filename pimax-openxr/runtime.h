@@ -430,6 +430,12 @@ namespace pimax_openxr {
                                               uint32_t* indices,
                                               uint32_t count) const;
 
+        // mirror_window.cpp
+        void createMirrorWindow();
+        void updateMirrorWindow();
+        LRESULT CALLBACK mirrorWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+        friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
         // Instance & PVR state.
         pvrEnvHandle m_pvr;
         pvrSessionHandle m_pvrSession{nullptr};
@@ -458,6 +464,7 @@ namespace pimax_openxr {
         wil::unique_registry_watcher m_registryWatcher;
         bool m_loggedProductName{false};
         bool m_loggedResolution{false};
+        std::string m_applicationName;
 
         // Session state.
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
@@ -499,6 +506,13 @@ namespace pimax_openxr {
         uint64_t m_frameTimeOverrideUs{0};
         size_t m_frameTimeFilterLength{3};
         std::deque<uint64_t> m_frameTimeFilter;
+        bool m_useMirrorWindow{false};
+        std::mutex m_mirrorWindowLock;
+        HWND m_mirrorWindowHwnd{nullptr};
+        std::thread m_mirrorWindowThread;
+        ComPtr<IDXGISwapChain1> m_mirrorWindowSwapchain;
+        pvrMirrorTexture m_pvrMirrorSwapChain{nullptr};
+        ComPtr<ID3D11Texture2D> m_mirrorTexture;
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;

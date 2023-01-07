@@ -203,6 +203,14 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        // Shutdown the mirror window.
+        if (m_mirrorWindowThread.joinable()) {
+            if (m_mirrorWindowHwnd) {
+                PostMessage(m_mirrorWindowHwnd, WM_CLOSE, 0, 0);
+            }
+            m_mirrorWindowThread.join();
+        }
+
         m_telemetry.logUsage(pvr_getTimeSeconds(m_pvr) - m_sessionStartTime, m_sessionTotalFrameCount);
 
         // Wait for any in-flight operation.
@@ -386,6 +394,8 @@ namespace pimax_openxr {
 
         m_useDeferredFrameSubmit = getSetting("use_deferred_frame_submit").value_or(1);
 
+        m_useMirrorWindow = getSetting("mirror_window").value_or(0);
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
@@ -397,7 +407,8 @@ namespace pimax_openxr {
             TLArg(m_frameTimeOverrideOffsetUs, "FrameTimeOverrideOffset"),
             TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
             TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"),
-            TLArg(m_useDeferredFrameSubmit, "DeferredFrameSubmit"));
+            TLArg(m_useDeferredFrameSubmit, "DeferredFrameSubmit"),
+            TLArg(m_useMirrorWindow, "MirrorWindow"));
     }
 
     // Create guardian resources.
