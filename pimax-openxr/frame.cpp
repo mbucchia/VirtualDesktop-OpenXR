@@ -619,59 +619,64 @@ namespace pimax_openxr {
                 m_frameTimes.pop_front();
             }
 
-            // Submit the layers to PVR.
-            if (!layers.empty()) {
-                if (m_useFrameTimingOverride) {
-                    float renderMs = 0.f;
-                    if (!m_frameTimeOverrideUs) {
-                        // No inherent biasing today. Might change in the future.
-                        // TODO: We should account for m_lastCpuFrameTimeUs here.
-                        const auto biasedCpuFrameTimeUs = 0ll;
-                        const auto biasedGpuFrameTimeUs = (int64_t)m_lastGpuFrameTimeUs + 0;
-
-                        const auto latestFrameTimeUs = std::max(
-                            0ll, std::max(biasedCpuFrameTimeUs, biasedGpuFrameTimeUs) + m_frameTimeOverrideOffsetUs);
-
-                        // Simple median filter to smooth out the values.
-                        m_frameTimeFilter.push_back(latestFrameTimeUs);
-                        while (m_frameTimeFilter.size() > m_frameTimeFilterLength) {
-                            m_frameTimeFilter.pop_front();
-                        }
-                        auto sortedFrameTimes = m_frameTimeFilter;
-                        std::sort(sortedFrameTimes.begin(), sortedFrameTimes.end());
-
-                        const auto filteredFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
-                        renderMs = filteredFrameTimeUs / 1e3f;
-                    } else {
-                        m_frameTimeFilter.clear();
-
-                        renderMs = std::max(0ll, (int64_t)m_frameTimeOverrideUs + m_frameTimeOverrideOffsetUs) / 1e3f;
-                    }
-
-                    TraceLoggingWrite(g_traceProvider, "PVR_ClientRenderMs", TLArg(renderMs, "RenderMs"));
-
-                    // pi_server requires to set this config value to hint the frame time of the application. This call
-                    // always seems to fail, in spite of having side effects.
-                    // According to Pimax, this value must be set to the last GPU frame time.
-                    pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
-                }
-
-                TraceLocalActivity(endFrame);
-                TraceLoggingWriteStart(endFrame,
-                                       "PVR_EndFrame",
-                                       TLArg(layers.size(), "NumLayers"),
-                                       TLArg(m_frameTimes.size(), "MeasuredFps"),
-                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
-                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
-                CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
-                TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
-
-                // Defer initialization of mirror window resources until they are first needed.
-                if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
-                    createMirrorWindow();
-                }
-                updateMirrorWindow();
+            // Add a dummy layer so we can still call pvr_endFrame() for timing purposes.
+            pvrLayerHeader dummyLayer{};
+            if (layers.empty()) {
+                dummyLayer.Type = pvrLayerType_Disabled;
+                layers.push_back(&dummyLayer);
             }
+
+            // Submit the layers to PVR.
+            if (m_useFrameTimingOverride) {
+                float renderMs = 0.f;
+                if (!m_frameTimeOverrideUs) {
+                    // No inherent biasing today. Might change in the future.
+                    // TODO: We should account for m_lastCpuFrameTimeUs here.
+                    const auto biasedCpuFrameTimeUs = 0ll;
+                    const auto biasedGpuFrameTimeUs = (int64_t)m_lastGpuFrameTimeUs + 0;
+
+                    const auto latestFrameTimeUs = std::max(
+                        0ll, std::max(biasedCpuFrameTimeUs, biasedGpuFrameTimeUs) + m_frameTimeOverrideOffsetUs);
+
+                    // Simple median filter to smooth out the values.
+                    m_frameTimeFilter.push_back(latestFrameTimeUs);
+                    while (m_frameTimeFilter.size() > m_frameTimeFilterLength) {
+                        m_frameTimeFilter.pop_front();
+                    }
+                    auto sortedFrameTimes = m_frameTimeFilter;
+                    std::sort(sortedFrameTimes.begin(), sortedFrameTimes.end());
+
+                    const auto filteredFrameTimeUs = sortedFrameTimes[sortedFrameTimes.size() / 2];
+                    renderMs = filteredFrameTimeUs / 1e3f;
+                } else {
+                    m_frameTimeFilter.clear();
+
+                    renderMs = std::max(0ll, (int64_t)m_frameTimeOverrideUs + m_frameTimeOverrideOffsetUs) / 1e3f;
+                }
+
+                TraceLoggingWrite(g_traceProvider, "PVR_ClientRenderMs", TLArg(renderMs, "RenderMs"));
+
+                // pi_server requires to set this config value to hint the frame time of the application. This call
+                // always seems to fail, in spite of having side effects.
+                // According to Pimax, this value must be set to the last GPU frame time.
+                pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
+            }
+
+            TraceLocalActivity(endFrame);
+            TraceLoggingWriteStart(endFrame,
+                                    "PVR_EndFrame",
+                                    TLArg(layers.size(), "NumLayers"),
+                                    TLArg(m_frameTimes.size(), "MeasuredFps"),
+                                    TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                    TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
+            CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
+            TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+
+            // Defer initialization of mirror window resources until they are first needed.
+            if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
+                createMirrorWindow();
+            }
+            updateMirrorWindow();
 
             // When using RenderDoc, signal a frame through the dummy swapchain.
             if (m_dxgiSwapchain) {
