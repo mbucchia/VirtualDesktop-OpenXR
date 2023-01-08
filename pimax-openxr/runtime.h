@@ -441,7 +441,6 @@ namespace pimax_openxr {
         pvrSessionHandle m_pvrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
-        bool m_isOpenComposite{false};
         bool m_useFrameTimingOverride{false};
         std::vector<Extension> m_extensionsTable;
         bool m_graphicsRequirementQueried{false};

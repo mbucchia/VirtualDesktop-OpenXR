@@ -300,10 +300,6 @@ namespace pimax_openxr {
                                        createInfo->applicationInfo.engineName);
 
         m_applicationName = createInfo->applicationInfo.applicationName;
-        m_isOpenComposite = std::string_view(createInfo->applicationInfo.applicationName).find("OpenComposite_") == 0;
-        if (m_isOpenComposite) {
-            Log("Detected OpenComposite\n");
-        }
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
             TraceLoggingWrite(

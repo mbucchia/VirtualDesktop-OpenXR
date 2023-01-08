@@ -135,10 +135,29 @@ namespace pimax_openxr {
                 TraceLoggingWriteStop(waitBeginFrame, "WaitBeginFrame");
             }
 
+            // Workaround: PVR cannot wait for a frame without having a device. If no swapchain was created up to this
+            // point, we must create one to initialize PVR.
+            if (!m_pvrSession->envh->pvr_dxgl_interface) {
+                // Make as small as possible of a memory footprint...
+                pvrTextureSwapChainDesc desc{};
+                desc.Type = pvrTexture_2D;
+                desc.StaticImage = true;
+                desc.ArraySize = 1;
+                desc.Width = desc.Height = 128;
+                desc.MipLevels = 1;
+                desc.SampleCount = 1;
+                desc.Format = PVR_FORMAT_B8G8R8A8_UNORM;
+
+                pvrTextureSwapChain tempSwapchain;
+                CHECK_PVRCMD(
+                    pvr_createTextureSwapChainDX(m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &tempSwapchain));
+
+                // ...and free the memory right away.
+                pvr_destroyTextureSwapChain(m_pvrSession, tempSwapchain);
+            }
+
             // Wait for PVR to be ready for the next frame.
-            // Workaround: No idea why, but waiting for the first frame with OpenComposite always causes a crash inside
-            // PVR. Skip it.
-            if (!m_isOpenComposite || m_frameWaited) {
+            {
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame");
                 // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
@@ -229,9 +248,7 @@ namespace pimax_openxr {
                 }
 
                 // Tell PVR we are about to begin the frame.
-                // Workaround: No idea why, but waiting for the first frame with OpenComposite always causes a crash
-                // inside PVR. Skip it.
-                if (!m_isOpenComposite || m_frameBegun) {
+                {
                     TraceLocalActivity(beginFrame);
                     TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame");
                     CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, 0));
@@ -664,11 +681,11 @@ namespace pimax_openxr {
 
             TraceLocalActivity(endFrame);
             TraceLoggingWriteStart(endFrame,
-                                    "PVR_EndFrame",
-                                    TLArg(layers.size(), "NumLayers"),
-                                    TLArg(m_frameTimes.size(), "MeasuredFps"),
-                                    TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
-                                    TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
+                                   "PVR_EndFrame",
+                                   TLArg(layers.size(), "NumLayers"),
+                                   TLArg(m_frameTimes.size(), "MeasuredFps"),
+                                   TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                   TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
             CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
             TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
 
