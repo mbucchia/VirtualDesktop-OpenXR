@@ -99,6 +99,27 @@ namespace {
         return (DWORD)strlen(lpFilename);
     }
 
+    // A mock implementation of VerifyVersionInfoW() that always returns at least Windows 10 compatibility.
+    decltype(VerifyVersionInfoW)* g_original_VerifyVersionInfoW = nullptr;
+    BOOL WINAPI hooked_VerifyVersionInfoW(LPOSVERSIONINFOEXW lpVersionInformation,
+                                   DWORD dwTypeMask,
+                                   DWORDLONG dwlConditionMask) {
+        // We try to only intercept calls from the PVR client.
+        HMODULE callerModule;
+        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               (LPCSTR)_ReturnAddress(),
+                               &callerModule)) {
+            HMODULE libpvrModule;
+            if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, PVRCLIENT_DLL_NAME, &libpvrModule) &&
+                callerModule != libpvrModule) {
+                return g_original_VerifyVersionInfoW(lpVersionInformation, dwTypeMask, dwlConditionMask);
+            }
+        }
+
+        // PVR only seems to call this once and with a check against version 6.3 (Windows 8.1). Pretend the check passes.
+        return true;
+    }
+
 } // namespace
 
 namespace pimax_openxr {
@@ -126,6 +147,15 @@ namespace pimax_openxr {
             // process) in order to remove PVR frame timing constraints.
             DetourDllAttach(
                 "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
+
+            // Detour hack: we always ensure compatibility with Windows 10 in order to make pvr_waitToBeginFrame()
+            // behave as expected.
+            // This was discovered with the PVR_Sample, which specifies <supportedOS
+            // Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/> in its manifest.
+            // Without this manifest entry, VerifyVersionInfoW always returns Windows 8 compatibility only.
+            // https://social.msdn.microsoft.com/Forums/windows/en-US/298a1817-0af5-4efc-9663-db9a841a233b/verifyversioninfo-and-windows-10?forum=windowssdk
+            DetourDllAttach(
+                "kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
         }
 
         CHECK_PVRCMD(pvr_initialise(&m_pvr));
@@ -185,6 +215,11 @@ namespace pimax_openxr {
             pvr_destroySession(m_pvrSession);
         }
         pvr_shutdown(m_pvr);
+
+        if (m_useFrameTimingOverride) {
+            DetourDllDetach(
+                "kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
+        }
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr
