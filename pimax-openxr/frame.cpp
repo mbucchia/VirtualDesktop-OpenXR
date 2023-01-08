@@ -225,16 +225,6 @@ namespace pimax_openxr {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
-            // Wait for possibly deferred pvr_endFrame() to complete.
-            if (m_asyncEndFrame.valid()) {
-                TraceLocalActivity(waitDeferredEndFrame);
-                TraceLoggingWriteStart(waitDeferredEndFrame, "WaitDeferredEndFrame");
-                m_asyncEndFrame.wait();
-                TraceLoggingWriteStop(waitDeferredEndFrame, "WaitDeferredEndFrame");
-
-                m_asyncEndFrame = {};
-            }
-
             if (m_frameBegun != m_frameWaited && m_frameWaited == m_frameCompleted + 1) {
                 // Wait for a call to xrEndFrame() to match the previous call to xrBeginFrame().
                 {
