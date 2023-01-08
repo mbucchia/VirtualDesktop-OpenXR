@@ -439,26 +439,16 @@ namespace pimax_openxr {
         }
 
         // Make sure there are no pending operations.
-        {
-            std::unique_lock lock2(m_frameLock);
-
-            if (m_asyncEndFrame.valid()) {
-                m_asyncEndFrame.wait();
-                m_asyncEndFrame = {};
-            }
-
-            // These need the frameLock to manipulate the share fence value.
-            if (isD3D12Session()) {
-                flushD3D12CommandQueue();
-            } else if (isVulkanSession()) {
-                flushVulkanCommandQueue();
-            } else if (isOpenGLSession()) {
-                flushOpenGLContext();
-            } else {
-                flushD3D11Context();
-            }
-            flushSubmissionContext();
+        if (isD3D12Session()) {
+            flushD3D12CommandQueue();
+        } else if (isVulkanSession()) {
+            flushVulkanCommandQueue();
+        } else if (isOpenGLSession()) {
+            flushOpenGLContext();
+        } else {
+            flushD3D11Context();
         }
+        flushSubmissionContext();
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
