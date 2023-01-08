@@ -121,7 +121,6 @@ namespace pimax_openxr {
         // Initialize PVR.
 
         m_useFrameTimingOverride = getSetting("use_frame_timing_override").value_or(1);
-        TraceLoggingWrite(g_traceProvider, "PXR_Config", TLArg(m_useFrameTimingOverride, "FrameTimingOverride"));
         if (m_useFrameTimingOverride) {
             // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
             // process) in order to remove PVR frame timing constraints.
