@@ -157,13 +157,14 @@ namespace pimax_openxr {
             }
 
             // Wait for PVR to be ready for the next frame.
+            const long long pvrFrameId = m_frameWaited;
             {
+#if PVR_MINOR_VERSION == 23
                 TraceLocalActivity(waitToBeginFrame);
-                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame");
-                // The PVR sample is using frame index 0 for every frame and I am observing strange behaviors when using
-                // a monotonically increasing frame index. Let's follow the example.
-                CHECK_PVRCMD(pvr_waitToBeginFrame(m_pvrSession, 0));
+                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
+                CHECK_PVRCMD(pvr_waitToBeginFrame(m_pvrSession, pvrFrameId));
                 TraceLoggingWriteStop(waitToBeginFrame, "PVR_WaitToBeginFrame");
+#endif
             }
 
             if (IsTraceEnabled()) {
@@ -171,7 +172,7 @@ namespace pimax_openxr {
             }
 
             const double now = pvr_getTimeSeconds(m_pvr);
-            double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, 0);
+            double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, pvrFrameId);
             TraceLoggingWrite(g_traceProvider,
                               "WaitFrame",
                               TLArg(now, "Now"),
@@ -246,16 +247,17 @@ namespace pimax_openxr {
                     m_frameCondVar.wait(lock, [&] { return m_frameCompleted == m_frameBegun; });
                     TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame");
                 }
-
-                // Tell PVR we are about to begin the frame.
-                {
-                    TraceLocalActivity(beginFrame);
-                    TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame");
-                    CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, 0));
-                    TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame");
-                }
             } else {
                 frameDiscarded = true;
+            }
+
+            // Tell PVR we are about to begin the frame.
+            const long long pvrFrameId = m_frameWaited - 1;
+            {
+                TraceLocalActivity(beginFrame);
+                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"));
+                CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, pvrFrameId));
+                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame");
             }
 
             // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
@@ -679,14 +681,16 @@ namespace pimax_openxr {
                 pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
             }
 
+            const long long pvrFrameId = m_frameBegun - 1;
             TraceLocalActivity(endFrame);
             TraceLoggingWriteStart(endFrame,
                                    "PVR_EndFrame",
+                                   TLArg(pvrFrameId, "FrameIndex"),
                                    TLArg(layers.size(), "NumLayers"),
                                    TLArg(m_frameTimes.size(), "MeasuredFps"),
                                    TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
                                    TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
-            CHECK_PVRCMD(pvr_endFrame(m_pvrSession, 0, layers.data(), (unsigned int)layers.size()));
+            CHECK_PVRCMD(pvr_endFrame(m_pvrSession, pvrFrameId, layers.data(), (unsigned int)layers.size()));
             TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
 
             // Defer initialization of mirror window resources until they are first needed.
