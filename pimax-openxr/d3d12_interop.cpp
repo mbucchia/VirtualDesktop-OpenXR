@@ -136,12 +136,20 @@ namespace pimax_openxr {
             CHECK_HRCMD(m_d3d12CommandList[i]->Close());
         }
 
+        // Frame timers.
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            // TODO: m_gpuTimerApp[i] = std::make_unique<GpuTimer>(...);
+        }
+
         return XR_SUCCESS;
     }
 
     void OpenXrRuntime::cleanupD3D12() {
         flushD3D12CommandQueue();
 
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            m_gpuTimerApp[i].reset();
+        }
         for (uint32_t i = 0; i < 2; i++) {
             m_d3d12CommandList[i].Reset();
             m_d3d12CommandAllocator[i].Reset();

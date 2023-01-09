@@ -294,7 +294,8 @@ namespace pimax_openxr {
             if (m_useFrameTimingOverride || IsTraceEnabled()) {
                 // Our principle is to always query() a timer before we start() it. This means that we get measurements
                 // with k_numGpuTimers frames latency.
-                m_lastGpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex]->query();
+                m_lastGpuFrameTimeUs =
+                    m_gpuTimerApp[m_currentTimerIndex] ? m_gpuTimerApp[m_currentTimerIndex]->query() : 0;
 
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
@@ -310,7 +311,9 @@ namespace pimax_openxr {
 
                 // Start app timers.
                 m_renderTimerApp.start();
-                m_gpuTimerApp[m_currentTimerIndex]->start();
+                if (m_gpuTimerApp[m_currentTimerIndex]) {
+                    m_gpuTimerApp[m_currentTimerIndex]->start();
+                }
             }
 
             // Signal xrWaitFrame().
@@ -367,6 +370,13 @@ namespace pimax_openxr {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
+            if (m_useFrameTimingOverride || IsTraceEnabled()) {
+                m_renderTimerApp.stop();
+                if (m_gpuTimerApp[m_currentTimerIndex]) {
+                    m_gpuTimerApp[m_currentTimerIndex]->stop();
+                }
+            }
+
             // Serializes the app work between D3D12/Vulkan and D3D11.
             if (isD3D12Session()) {
                 serializeD3D12Frame();
@@ -376,11 +386,6 @@ namespace pimax_openxr {
                 serializeOpenGLFrame();
             } else {
                 serializeD3D11Frame();
-            }
-
-            if (m_useFrameTimingOverride || IsTraceEnabled()) {
-                m_renderTimerApp.stop();
-                m_gpuTimerApp[m_currentTimerIndex]->stop();
             }
 
             // Handle recentering via keyboard input when the app does not poll for motion controllers.

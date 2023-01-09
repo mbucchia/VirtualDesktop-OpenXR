@@ -137,6 +137,11 @@ namespace pimax_openxr {
         CHECK_HRCMD(
             m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
 
+        // Frame timers.
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            m_gpuTimerApp[i] = std::make_unique<GpuTimer>(m_d3d11Device.Get(), m_d3d11Context.Get());
+        }
+
         return XR_SUCCESS;
     }
 
@@ -237,7 +242,6 @@ namespace pimax_openxr {
         }
 
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
-            m_gpuTimerApp[i] = std::make_unique<GpuTimer>(m_pvrSubmissionDevice.Get(), m_pvrSubmissionContext.Get());
             m_gpuTimerPrecomposition[i] =
                 std::make_unique<GpuTimer>(m_pvrSubmissionDevice.Get(), m_pvrSubmissionContext.Get());
         }
@@ -269,6 +273,10 @@ namespace pimax_openxr {
 
     void OpenXrRuntime::cleanupD3D11() {
         flushD3D11Context();
+
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            m_gpuTimerApp[i].reset();
+        }
 
         m_d3d11Context.Reset();
         m_d3d11Device.Reset();

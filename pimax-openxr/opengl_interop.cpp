@@ -109,6 +109,11 @@ namespace pimax_openxr {
         m_glDispatch.glImportSemaphoreWin32HandleEXT(
             m_glSemaphore, GL_HANDLE_TYPE_D3D12_FENCE_EXT, m_fenceHandleForAMDWorkaround.get());
 
+        // Frame timers.
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            // TODO: m_gpuTimerApp[i] = std::make_unique<GpuTimer>(...);
+        }
+
         return XR_SUCCESS;
     }
 
@@ -141,6 +146,10 @@ namespace pimax_openxr {
             GlContextSwitch context(m_glContext);
 
             glFinish();
+
+            for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+                m_gpuTimerApp[i].reset();
+            }
 
             m_glDispatch.glDeleteSemaphoresEXT(1, &m_glSemaphore);
             m_fenceHandleForAMDWorkaround.reset();

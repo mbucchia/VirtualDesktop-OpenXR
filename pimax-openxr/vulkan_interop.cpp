@@ -490,6 +490,11 @@ namespace pimax_openxr {
         poolCreateInfo.queueFamilyIndex = vkBindings.queueFamilyIndex;
         CHECK_VKCMD(m_vkDispatch.vkCreateCommandPool(m_vkDevice, &poolCreateInfo, m_vkAllocator, &m_vkCmdPool));
 
+        // Frame timers.
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            // TODO: m_gpuTimerApp[i] = std::make_unique<GpuTimer>(...);
+        }
+
         return XR_SUCCESS;
     }
 
@@ -531,6 +536,10 @@ namespace pimax_openxr {
     void OpenXrRuntime::cleanupVulkan() {
         if (m_vkDispatch.vkDeviceWaitIdle) {
             m_vkDispatch.vkDeviceWaitIdle(m_vkDevice);
+        }
+
+        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+            m_gpuTimerApp[i].reset();
         }
         if (m_vkDispatch.vkDestroySemaphore) {
             m_vkDispatch.vkDestroySemaphore(m_vkDevice, m_vkTimelineSemaphore, m_vkAllocator);
