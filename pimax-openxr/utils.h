@@ -82,6 +82,46 @@ namespace xr {
         return fmt::format("x:{}, y:{} w:{} h:{}", rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height);
     }
 
+    static inline std::string ToString(pvrResult result) {
+        switch (result) {
+        case pvr_success:
+            return "Success";
+        case pvr_failed:
+            return "Failed";
+        case pvr_dll_failed:
+            return "DLL Failed";
+        case pvr_dll_wrong:
+            return "DLL Wrong";
+        case pvr_interface_not_found:
+            return "Interface not found";
+        case pvr_invalid_param:
+            return "Invalid Parameter";
+        case pvr_rpc_failed:
+            return "RPC Failed";
+        case pvr_share_mem_failed:
+            return "Share Memory Failed";
+        case pvr_unsupport_render_name:
+            return "Unsupported Render Name";
+        case pvr_no_display:
+            return "No Display";
+        case pvr_no_render_device:
+            return "No Render Device";
+        case pvr_app_not_visible:
+            return "App Not Visible";
+        case pvr_srv_not_ready:
+            return "Service Not Ready";
+        case pvr_dll_srv_mismatch:
+            return "DLL Mismatch";
+        case pvr_app_adapter_mismatch:
+            return "App Adapter Mismatch";
+        case pvr_not_support:
+            return " Not Supported";
+
+        default:
+            return fmt::format("pvrResult_{}", result);
+        }
+    }
+
     namespace math {
 
         namespace Pose {

@@ -162,8 +162,16 @@ namespace pimax_openxr {
 #if PVR_MINOR_VERSION == 23
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
-                CHECK_PVRCMD(pvr_waitToBeginFrame(m_pvrSession, pvrFrameId));
-                TraceLoggingWriteStop(waitToBeginFrame, "PVR_WaitToBeginFrame");
+                // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
+                // message:
+                //   [PVR] wait rendering complete event failed:258
+                // Let's ignore this for now and hope for the best.
+                const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
+                if (result != pvr_success) {
+                    ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                }
+                TraceLoggingWriteStop(
+                    waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
 #endif
             }
 
@@ -256,8 +264,15 @@ namespace pimax_openxr {
             {
                 TraceLocalActivity(beginFrame);
                 TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"));
-                CHECK_PVRCMD(pvr_beginFrame(m_pvrSession, pvrFrameId));
-                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame");
+                // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
+                // message:
+                //   [PVR] wait rendering complete event failed:258
+                // Let's ignore this for now and hope for the best.
+                const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
+                if (result != pvr_success) {
+                    ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                }
+                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
             }
 
             // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
