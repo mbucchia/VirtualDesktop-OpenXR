@@ -159,7 +159,6 @@ namespace pimax_openxr {
             // Wait for PVR to be ready for the next frame.
             const long long pvrFrameId = m_frameWaited;
             {
-#if PVR_MINOR_VERSION == 23
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
                 // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
@@ -172,7 +171,6 @@ namespace pimax_openxr {
                 }
                 TraceLoggingWriteStop(
                     waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
-#endif
             }
 
             if (IsTraceEnabled()) {
