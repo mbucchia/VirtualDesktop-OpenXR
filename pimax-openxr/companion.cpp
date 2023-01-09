@@ -56,7 +56,8 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
     pvrEyeRenderInfo eyeInfo[xr::StereoView::Count];
     CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Left, &eyeInfo[0]));
     CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Right, &eyeInfo[1]));
-    const auto fov = PVR::RadToDegree(atan(eyeInfo[1].Fov.RightTan)) + PVR::RadToDegree(atan(eyeInfo[0].Fov.LeftTan));
+    // Add the canting angle. All Pimax headsets have a 10 degrees canting on each size.
+    const auto fov = 20.f + PVR::RadToDegree(atan(eyeInfo[1].Fov.RightTan)) + PVR::RadToDegree(atan(eyeInfo[0].Fov.LeftTan));
     const auto useParallelProjection = !pvr_getIntConfig(pvrSession, "steamvr_use_native_fov", 0);
 
     pvrFovPort fovForResolution = eyeInfo[0].Fov;
