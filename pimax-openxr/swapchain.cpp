@@ -204,7 +204,7 @@ namespace pimax_openxr {
                                                         uint32_t formatCapacityInput,
                                                         uint32_t* formatCountOutput,
                                                         int64_t* formats) {
-        // We match exactly what pvrTextureFormat lists for use.
+        // We match desirables formats from the pvrTextureFormat lists.
         static const DXGI_FORMAT d3dFormats[] = {
             // clang-format off
                 DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, // Prefer SRGB formats.
@@ -218,18 +218,6 @@ namespace pimax_openxr {
                 DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
                 DXGI_FORMAT_D24_UNORM_S8_UINT,
                 DXGI_FORMAT_D16_UNORM,
-
-                DXGI_FORMAT_BC1_UNORM,
-                DXGI_FORMAT_BC1_UNORM_SRGB,
-                DXGI_FORMAT_BC2_UNORM,
-                DXGI_FORMAT_BC2_UNORM_SRGB,
-                DXGI_FORMAT_BC3_UNORM,
-                DXGI_FORMAT_BC3_UNORM_SRGB,
-                DXGI_FORMAT_BC6H_UF16,
-                DXGI_FORMAT_BC6H_SF16,
-                DXGI_FORMAT_BC7_UNORM,
-                DXGI_FORMAT_BC7_UNORM_SRGB,
-                DXGI_FORMAT_R11G11B10_FLOAT,
             // clang-format on
         };
         static const VkFormat vkFormats[] = {
@@ -245,18 +233,6 @@ namespace pimax_openxr {
                 VK_FORMAT_D32_SFLOAT_S8_UINT,
                 VK_FORMAT_D24_UNORM_S8_UINT,
                 VK_FORMAT_D16_UNORM,
-
-                VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
-                VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
-                VK_FORMAT_BC2_UNORM_BLOCK,
-                VK_FORMAT_BC2_SRGB_BLOCK,
-                VK_FORMAT_BC3_UNORM_BLOCK,
-                VK_FORMAT_BC3_SRGB_BLOCK,
-                VK_FORMAT_BC6H_UFLOAT_BLOCK,
-                VK_FORMAT_BC6H_SFLOAT_BLOCK,
-                VK_FORMAT_BC7_UNORM_BLOCK,
-                VK_FORMAT_BC7_SRGB_BLOCK,
-                VK_FORMAT_B10G11R11_UFLOAT_PACK32,
             // clang-format on
         };
         static const GLenum glFormats[] = {
@@ -268,9 +244,6 @@ namespace pimax_openxr {
                 GL_DEPTH32F_STENCIL8,
                 GL_DEPTH24_STENCIL8,
                 GL_DEPTH_COMPONENT16,
-
-                GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
-                GL_R11F_G11F_B10F,
             // clang-format on
         };
 

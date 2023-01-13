@@ -401,28 +401,6 @@ namespace pimax_openxr::utils {
             return PVR_FORMAT_D32_FLOAT;
         case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
             return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
-        case DXGI_FORMAT_BC1_UNORM:
-            return PVR_FORMAT_BC1_UNORM;
-        case DXGI_FORMAT_BC1_UNORM_SRGB:
-            return PVR_FORMAT_BC1_UNORM_SRGB;
-        case DXGI_FORMAT_BC2_UNORM:
-            return PVR_FORMAT_BC2_UNORM;
-        case DXGI_FORMAT_BC2_UNORM_SRGB:
-            return PVR_FORMAT_BC2_UNORM_SRGB;
-        case DXGI_FORMAT_BC3_UNORM:
-            return PVR_FORMAT_BC3_UNORM;
-        case DXGI_FORMAT_BC3_UNORM_SRGB:
-            return PVR_FORMAT_BC3_UNORM_SRGB;
-        case DXGI_FORMAT_BC6H_UF16:
-            return PVR_FORMAT_BC6H_UF16;
-        case DXGI_FORMAT_BC6H_SF16:
-            return PVR_FORMAT_BC6H_SF16;
-        case DXGI_FORMAT_BC7_UNORM:
-            return PVR_FORMAT_BC7_UNORM;
-        case DXGI_FORMAT_BC7_UNORM_SRGB:
-            return PVR_FORMAT_BC7_UNORM_SRGB;
-        case DXGI_FORMAT_R11G11B10_FLOAT:
-            return PVR_FORMAT_R11G11B10_FLOAT;
         default:
             return PVR_FORMAT_UNKNOWN;
         }
@@ -448,28 +426,6 @@ namespace pimax_openxr::utils {
             return PVR_FORMAT_D32_FLOAT;
         case VK_FORMAT_D32_SFLOAT_S8_UINT:
             return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
-        case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
-            return PVR_FORMAT_BC1_UNORM;
-        case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:
-            return PVR_FORMAT_BC1_UNORM_SRGB;
-        case VK_FORMAT_BC2_UNORM_BLOCK:
-            return PVR_FORMAT_BC2_UNORM;
-        case VK_FORMAT_BC2_SRGB_BLOCK:
-            return PVR_FORMAT_BC2_UNORM_SRGB;
-        case VK_FORMAT_BC3_UNORM_BLOCK:
-            return PVR_FORMAT_BC3_UNORM;
-        case VK_FORMAT_BC3_SRGB_BLOCK:
-            return PVR_FORMAT_BC3_UNORM_SRGB;
-        case VK_FORMAT_BC6H_UFLOAT_BLOCK:
-            return PVR_FORMAT_BC6H_UF16;
-        case VK_FORMAT_BC6H_SFLOAT_BLOCK:
-            return PVR_FORMAT_BC6H_SF16;
-        case VK_FORMAT_BC7_UNORM_BLOCK:
-            return PVR_FORMAT_BC7_UNORM;
-        case VK_FORMAT_BC7_SRGB_BLOCK:
-            return PVR_FORMAT_BC7_UNORM_SRGB;
-        case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
-            return PVR_FORMAT_R11G11B10_FLOAT;
         default:
             return PVR_FORMAT_UNKNOWN;
         }
@@ -491,10 +447,6 @@ namespace pimax_openxr::utils {
             return PVR_FORMAT_D32_FLOAT;
         case GL_DEPTH32F_STENCIL8:
             return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
-        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-            return PVR_FORMAT_BC1_UNORM;
-        case GL_R11F_G11F_B10F:
-            return PVR_FORMAT_R11G11B10_FLOAT;
         default:
             return PVR_FORMAT_UNKNOWN;
         }
