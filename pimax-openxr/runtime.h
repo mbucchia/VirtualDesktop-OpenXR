@@ -260,13 +260,18 @@ namespace pimax_openxr {
             // The PVR swapchain objects. For texture arrays, we must have one swapchain per slice due to PVR
             // limitation.
             std::vector<pvrTextureSwapChain> pvrSwapchain;
+            int pvrSwapchainLength{0};
 
             // The cached textures used for copy between swapchains.
             std::vector<std::vector<ID3D11Texture2D*>> slices;
 
-            // The last acquired/released swapchain image index.
-            int currentAcquiredIndex{0};
-            int pvrLastReleasedIndex{0};
+            // The last manipulated swapchain image index.
+            std::deque<int> acquiredIndices;
+            int lastWaitedIndex{-1};
+            int lastReleasedIndex{-1};
+
+            // Whether a static image swapchain has been acquired at least once.
+            bool frozen{false};
 
             // Certain depth formats require use to go through an intermediate texture and resolve (copy, convert) the
             // texture later. We manage our own set of textures and image index.

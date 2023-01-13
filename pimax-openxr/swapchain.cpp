@@ -375,6 +375,7 @@ namespace pimax_openxr {
         // Create the internal struct.
         Swapchain& xrSwapchain = *new Swapchain;
         xrSwapchain.pvrSwapchain.push_back(pvrSwapchain);
+        CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, pvrSwapchain, &xrSwapchain.pvrSwapchainLength));
         xrSwapchain.slices.push_back({});
         xrSwapchain.imagesResourceView.push_back({});
         xrSwapchain.pvrDesc = desc;
@@ -487,8 +488,7 @@ namespace pimax_openxr {
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
-        int count = -1;
-        CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[0], &count));
+        int count = !xrSwapchain.pvrDesc.StaticImage ? xrSwapchain.pvrSwapchainLength : 1;
 
         if (imageCapacityInput && imageCapacityInput < (uint32_t)count) {
             return XR_ERROR_SIZE_INSUFFICIENT;
@@ -534,15 +534,16 @@ namespace pimax_openxr {
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
+        // Check that we can acquire an image.
+        if (xrSwapchain.frozen || xrSwapchain.acquiredIndices.size() == xrSwapchain.pvrSwapchainLength) {
+            return XR_ERROR_CALL_ORDER_INVALID;
+        }
+
         // Query the image index from PVR.
-        int imageIndex = -1;
-        if (!xrSwapchain.needDepthResolve) {
+        int imageIndex = xrSwapchain.nextIndex;
+        if (!xrSwapchain.needDepthResolve && xrSwapchain.acquiredIndices.empty()) {
+            // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a bug.
             CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &imageIndex));
-        } else {
-            imageIndex = xrSwapchain.nextIndex++;
-            if (xrSwapchain.nextIndex >= xrSwapchain.images.size()) {
-                xrSwapchain.nextIndex = 0;
-            }
         }
 
         if (isD3D12Session()) {
@@ -551,7 +552,12 @@ namespace pimax_openxr {
             transitionImageVulkan(xrSwapchain, imageIndex, true);
         }
 
-        xrSwapchain.currentAcquiredIndex = imageIndex;
+        xrSwapchain.acquiredIndices.push_back(imageIndex);
+        xrSwapchain.frozen = xrSwapchain.pvrDesc.StaticImage;
+        xrSwapchain.nextIndex = imageIndex + 1;
+        if ((int)xrSwapchain.nextIndex >= xrSwapchain.pvrSwapchainLength) {
+            xrSwapchain.nextIndex = 0;
+        }
         *index = imageIndex;
 
         TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage", TLArg(*index, "Index"));
@@ -576,7 +582,15 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        Swapchain& xrSwapchain = *(Swapchain*)swapchain;
+
+        // Check an image is acquired but not waited.
+        if (xrSwapchain.acquiredIndices.empty() || xrSwapchain.acquiredIndices.front() == xrSwapchain.lastWaitedIndex) {
+            return XR_ERROR_CALL_ORDER_INVALID;
+        }
+
         // We assume that our frame timing in xrWaitFrame() guaranteed availability of the next image. No wait.
+        xrSwapchain.lastWaitedIndex = xrSwapchain.acquiredIndices.front();
 
         return XR_SUCCESS;
     }
@@ -598,15 +612,21 @@ namespace pimax_openxr {
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
-        // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.
-        CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(
-            m_pvrSession, xrSwapchain.pvrSwapchain[0], &xrSwapchain.pvrLastReleasedIndex));
+        // Check an image is acquired and waited.
+        if (xrSwapchain.acquiredIndices.empty() || xrSwapchain.acquiredIndices.front() != xrSwapchain.lastWaitedIndex) {
+            return XR_ERROR_CALL_ORDER_INVALID;
+        }
 
         if (isD3D12Session()) {
-            transitionImageD3D12(xrSwapchain, xrSwapchain.currentAcquiredIndex, false);
+            transitionImageD3D12(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
         } else if (isVulkanSession()) {
-            transitionImageVulkan(xrSwapchain, xrSwapchain.currentAcquiredIndex, false);
+            transitionImageVulkan(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
         }
+
+        // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.
+        xrSwapchain.lastReleasedIndex = xrSwapchain.lastWaitedIndex;
+        xrSwapchain.lastWaitedIndex = -1;
+        xrSwapchain.acquiredIndices.pop_front();
 
         return XR_SUCCESS;
     }

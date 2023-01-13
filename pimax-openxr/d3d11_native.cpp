@@ -349,9 +349,7 @@ namespace pimax_openxr {
 
         // Query the textures for the swapchain.
         std::vector<HANDLE> handles;
-        int count = -1;
-        CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[0], &count));
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < xrSwapchain.pvrSwapchainLength; i++) {
             if (!initialized) {
                 ID3D11Texture2D* swapchainTexture;
                 CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
@@ -469,10 +467,12 @@ namespace pimax_openxr {
     // Prepare a PVR swapchain to be used by PVR.
     void OpenXrRuntime::prepareAndCommitSwapchainImage(
         Swapchain& xrSwapchain, uint32_t slice, std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const {
-        // If the texture was already committed, do nothing.
-        if (committed.count(std::make_pair(xrSwapchain.pvrSwapchain[0], slice))) {
+        // If the texture was never used or already committed, do nothing.
+        if (xrSwapchain.slices[0].empty() || committed.count(std::make_pair(xrSwapchain.pvrSwapchain[0], slice))) {
             return;
         }
+
+        const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
 
         // Circumvent some of PVR's limitations:
         // - For texture arrays, we must do a copy to slice 0 into another swapchain.
@@ -486,8 +486,7 @@ namespace pimax_openxr {
                 CHECK_PVRCMD(pvr_createTextureSwapChainDX(
                     m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &xrSwapchain.pvrSwapchain[slice]));
 
-                int count = -1;
-                CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &count));
+                int count = !xrSwapchain.pvrDesc.StaticImage ? xrSwapchain.pvrSwapchainLength : 1;
                 if (count != xrSwapchain.slices[0].size()) {
                     throw std::runtime_error("Swapchain image count mismatch");
                 }
@@ -510,13 +509,12 @@ namespace pimax_openxr {
                 pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &pvrDestIndex));
 
             if (!xrSwapchain.needDepthResolve) {
-                int pvrSourceIndex = xrSwapchain.pvrLastReleasedIndex;
                 m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex],
                                                               0,
                                                               0,
                                                               0,
                                                               0,
-                                                              xrSwapchain.slices[0][pvrSourceIndex],
+                                                              xrSwapchain.slices[0][lastReleasedIndex],
                                                               slice,
                                                               nullptr);
             } else {
@@ -524,7 +522,7 @@ namespace pimax_openxr {
                 // corresponding formats below.
 
                 // Lazily create SRV/UAV.
-                if (!xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex]) {
+                if (!xrSwapchain.imagesResourceView[slice][lastReleasedIndex]) {
                     D3D11_SHADER_RESOURCE_VIEW_DESC desc{};
 
                     desc.ViewDimension = xrSwapchain.xrDesc.arraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D
@@ -535,15 +533,12 @@ namespace pimax_openxr {
                     desc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, slice, desc.Texture2DArray.MipLevels);
 
                     CHECK_HRCMD(m_pvrSubmissionDevice->CreateShaderResourceView(
-                        xrSwapchain.images[xrSwapchain.currentAcquiredIndex].Get(),
+                        xrSwapchain.images[lastReleasedIndex].Get(),
                         &desc,
-                        xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex]
-                            .ReleaseAndGetAddressOf()));
-                    setDebugName(xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex].Get(),
-                                 fmt::format("DepthResolve SRV[{}, {}, {}]",
-                                             slice,
-                                             xrSwapchain.currentAcquiredIndex,
-                                             (void*)&xrSwapchain));
+                        xrSwapchain.imagesResourceView[slice][lastReleasedIndex].ReleaseAndGetAddressOf()));
+                    setDebugName(
+                        xrSwapchain.imagesResourceView[slice][lastReleasedIndex].Get(),
+                        fmt::format("DepthResolve SRV[{}, {}, {}]", slice, lastReleasedIndex, (void*)&xrSwapchain));
                 }
                 if (!xrSwapchain.resolvedAccessView) {
                     D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
@@ -563,7 +558,7 @@ namespace pimax_openxr {
                 m_pvrSubmissionContext->CSSetShader(m_resolveShader[shaderToUse].Get(), nullptr, 0);
 
                 m_pvrSubmissionContext->CSSetShaderResources(
-                    0, 1, xrSwapchain.imagesResourceView[slice][xrSwapchain.currentAcquiredIndex].GetAddressOf());
+                    0, 1, xrSwapchain.imagesResourceView[slice][lastReleasedIndex].GetAddressOf());
                 m_pvrSubmissionContext->CSSetUnorderedAccessViews(
                     0, 1, xrSwapchain.resolvedAccessView.GetAddressOf(), nullptr);
 
@@ -588,13 +583,13 @@ namespace pimax_openxr {
             int pvrCurrentIndex = -1;
             CHECK_PVRCMD(
                 pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &pvrCurrentIndex));
-            if (pvrCurrentIndex != xrSwapchain.pvrLastReleasedIndex) {
+            if (pvrCurrentIndex != lastReleasedIndex) {
                 m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[0][pvrCurrentIndex],
                                                               0,
                                                               0,
                                                               0,
                                                               0,
-                                                              xrSwapchain.slices[0][xrSwapchain.pvrLastReleasedIndex],
+                                                              xrSwapchain.slices[0][lastReleasedIndex],
                                                               0,
                                                               nullptr);
             }
