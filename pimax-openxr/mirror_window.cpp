@@ -47,7 +47,8 @@ namespace pimax_openxr {
                                          (LPCWSTR)&wndProcWrapper,
                                          &wndClassEx.hInstance),
                       "Failed to get DLL handle");
-            CHECK_MSG(RegisterClassExW(&wndClassEx), "Failed to RegisterClassExW()");
+            // We may let this fail if the class was already registered by a previous start up.
+            RegisterClassExW(&wndClassEx);
 
             const std::string title = "PimaxXR Mirror Window - " + m_applicationName;
             const auto defaultWidth = m_cachedEyeInfo[0].DistortedViewport.Size.w / 2;

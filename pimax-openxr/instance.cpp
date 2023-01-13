@@ -102,8 +102,8 @@ namespace {
     // A mock implementation of VerifyVersionInfoW() that always returns at least Windows 10 compatibility.
     decltype(VerifyVersionInfoW)* g_original_VerifyVersionInfoW = nullptr;
     BOOL WINAPI hooked_VerifyVersionInfoW(LPOSVERSIONINFOEXW lpVersionInformation,
-                                   DWORD dwTypeMask,
-                                   DWORDLONG dwlConditionMask) {
+                                          DWORD dwTypeMask,
+                                          DWORDLONG dwlConditionMask) {
         // We try to only intercept calls from the PVR client.
         HMODULE callerModule;
         if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -116,7 +116,8 @@ namespace {
             }
         }
 
-        // PVR only seems to call this once and with a check against version 6.3 (Windows 8.1). Pretend the check passes.
+        // PVR only seems to call this once and with a check against version 6.3 (Windows 8.1). Pretend the check
+        // passes.
         return true;
     }
 
@@ -212,6 +213,10 @@ namespace pimax_openxr {
         }
 
         if (m_pvrSession) {
+            // Workaround: the environment doesn't appear to be cleared when re-initializing PVR. Clear the one pointer
+            // we care about.
+            m_pvrSession->envh->pvr_dxgl_interface = nullptr;
+
             pvr_destroySession(m_pvrSession);
         }
         pvr_shutdown(m_pvr);
