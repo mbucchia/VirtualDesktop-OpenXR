@@ -77,6 +77,10 @@ namespace pimax_openxr {
 
     // Initialize all the resources needed for D3D12 interoperation with the D3D11 backend.
     XrResult OpenXrRuntime::initializeD3D12(const XrGraphicsBindingD3D12KHR& d3dBindings) {
+        if (!d3dBindings.device || !d3dBindings.queue) {
+            return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+        }
+
         // Check that this is the correct adapter for the HMD.
         ComPtr<IDXGIFactory1> dxgiFactory;
         CHECK_HRCMD(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));

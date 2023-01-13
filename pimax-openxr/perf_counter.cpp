@@ -78,6 +78,10 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (time <= 0) {
+            return XR_ERROR_TIME_INVALID;
+        }
+
         double pvrTime = xrTimeToPvrTime(time);
         pvrTime -= m_pvrTimeFromQpcTimeOffset;
 

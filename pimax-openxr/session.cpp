@@ -54,10 +54,6 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        if (!m_graphicsRequirementQueried) {
-            return XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING;
-        }
-
         // We only support one concurrent session.
         if (m_sessionCreated) {
             return XR_ERROR_LIMIT_REACHED;
@@ -68,6 +64,10 @@ namespace pimax_openxr {
         const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
         while (entry) {
             if (has_XR_KHR_D3D11_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D11_KHR) {
+                if (!m_graphicsRequirementQueried) {
+                    return XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING;
+                }
+
                 const XrGraphicsBindingD3D11KHR* d3dBindings =
                     reinterpret_cast<const XrGraphicsBindingD3D11KHR*>(entry);
 
@@ -79,6 +79,10 @@ namespace pimax_openxr {
                 hasGraphicsBindings = true;
                 break;
             } else if (has_XR_KHR_D3D12_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D12_KHR) {
+                if (!m_graphicsRequirementQueried) {
+                    return XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING;
+                }
+
                 const XrGraphicsBindingD3D12KHR* d3dBindings =
                     reinterpret_cast<const XrGraphicsBindingD3D12KHR*>(entry);
 
@@ -91,6 +95,10 @@ namespace pimax_openxr {
                 break;
             } else if ((has_XR_KHR_vulkan_enable || has_XR_KHR_vulkan_enable2) &&
                        entry->type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR) {
+                if (!m_graphicsRequirementQueried) {
+                    return XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING;
+                }
+
                 const XrGraphicsBindingVulkanKHR* vkBindings =
                     reinterpret_cast<const XrGraphicsBindingVulkanKHR*>(entry);
 
@@ -102,6 +110,10 @@ namespace pimax_openxr {
                 hasGraphicsBindings = true;
                 break;
             } else if (has_XR_KHR_opengl_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR) {
+                if (!m_graphicsRequirementQueried) {
+                    return XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING;
+                }
+
                 const XrGraphicsBindingOpenGLWin32KHR* glBindings =
                     reinterpret_cast<const XrGraphicsBindingOpenGLWin32KHR*>(entry);
 
@@ -242,6 +254,7 @@ namespace pimax_openxr {
         m_sessionState = XR_SESSION_STATE_UNKNOWN;
         m_sessionStateDirty = false;
         m_sessionCreated = false;
+        m_sessionStopping = false;
         m_sessionExiting = false;
 
         return XR_SUCCESS;
@@ -312,7 +325,7 @@ namespace pimax_openxr {
             return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
-        m_sessionState = XR_SESSION_STATE_STOPPING;
+        m_sessionStopping = true;
         m_sessionStateDirty = true;
         m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
 

@@ -304,6 +304,10 @@ namespace pimax_openxr {
         m_telemetry.logApplicationInfo(createInfo->applicationInfo.applicationName,
                                        createInfo->applicationInfo.engineName);
 
+        if (XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != XR_VERSION_1_0) {
+            return XR_ERROR_API_VERSION_UNSUPPORTED;
+        }
+
         m_applicationName = createInfo->applicationInfo.applicationName;
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
@@ -394,6 +398,22 @@ namespace pimax_openxr {
 
         // Generate session events.
         if (m_sessionStateDirty) {
+            if (m_sessionStopping) {
+                // Regress through each state during stoppage.
+                switch (m_sessionState) {
+                case XR_SESSION_STATE_FOCUSED:
+                    m_sessionState = XR_SESSION_STATE_VISIBLE;
+                    break;
+                case XR_SESSION_STATE_VISIBLE:
+                    m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
+                    break;
+                case XR_SESSION_STATE_SYNCHRONIZED:
+                    m_sessionState = XR_SESSION_STATE_STOPPING;
+                    m_sessionStopping = false;
+                    break;
+                }
+            }
+
             XrEventDataSessionStateChanged* const buffer = reinterpret_cast<XrEventDataSessionStateChanged*>(eventData);
             buffer->type = XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED;
             buffer->next = nullptr;
@@ -408,7 +428,7 @@ namespace pimax_openxr {
                               TLArg(xr::ToCString(buffer->state), "State"),
                               TLArg(buffer->time, "Time"));
 
-            m_sessionStateDirty = false;
+            m_sessionStateDirty = m_sessionStopping;
 
             if (m_sessionState == XR_SESSION_STATE_IDLE) {
                 m_sessionState = !m_sessionExiting ? XR_SESSION_STATE_READY : XR_SESSION_STATE_EXITING;

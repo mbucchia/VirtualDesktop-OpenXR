@@ -91,6 +91,10 @@ namespace pimax_openxr {
             return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
         }
 
+        if (!Quaternion::IsNormalized(createInfo->poseInReferenceSpace.orientation)) {
+            return XR_ERROR_POSE_INVALID;
+        }
+
         // Create the internal struct.
         Space& xrSpace = *new Space;
         xrSpace.referenceType = createInfo->referenceSpaceType;
@@ -151,6 +155,15 @@ namespace pimax_openxr {
                           TLXArg(session, "Session"),
                           TLArg(xr::ToCString(referenceSpaceType), "ReferenceSpaceType"));
 
+        if (!m_sessionCreated || session != (XrSession)1) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (referenceSpaceType != XR_REFERENCE_SPACE_TYPE_VIEW && referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL &&
+            referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE) {
+            return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
+        }
+
         bounds->width = bounds->height = 0.f;
 
         return XR_SPACE_BOUNDS_UNAVAILABLE;
@@ -172,6 +185,10 @@ namespace pimax_openxr {
 
         if (!m_spaces.count(space) || !m_spaces.count(baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (time <= 0) {
+            return XR_ERROR_TIME_INVALID;
         }
 
         XrSpaceVelocity* velocity = reinterpret_cast<XrSpaceVelocity*>(location->next);
@@ -278,7 +295,11 @@ namespace pimax_openxr {
         if (viewCapacityInput && views) {
             // Get the HMD pose in the base space.
             XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-            CHECK_XRCMD(xrLocateSpace(m_viewSpace, viewLocateInfo->space, viewLocateInfo->displayTime, &location));
+            const auto result =
+                xrLocateSpace(m_viewSpace, viewLocateInfo->space, viewLocateInfo->displayTime, &location);
+            if (XR_FAILED(result)) {
+                return result;
+            }
             viewState->viewStateFlags = location.locationFlags;
 
             if (viewState->viewStateFlags & (XR_VIEW_STATE_POSITION_VALID_BIT | XR_VIEW_STATE_ORIENTATION_VALID_BIT)) {
@@ -365,7 +386,7 @@ namespace pimax_openxr {
             // Action spaces for motion controllers.
             Action& xrAction = *(Action*)xrSpace.action;
 
-            const std::string subActionPath = getXrPath(xrSpace.subActionPath);
+            const std::string& subActionPath = getXrPath(xrSpace.subActionPath);
             for (const auto& source : xrAction.actionSources) {
                 if (!startsWith(source.first, subActionPath)) {
                     continue;

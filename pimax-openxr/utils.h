@@ -500,7 +500,8 @@ namespace pimax_openxr::utils {
     }
 
     static inline bool endsWith(const std::string& str, const std::string& substr) {
-        return str.find(substr) == str.size() - substr.size();
+        const auto pos = str.find(substr);
+        return pos != std::string::npos && pos == str.size() - substr.size();
     }
 
     template <typename TMethod>

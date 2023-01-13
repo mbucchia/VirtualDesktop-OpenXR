@@ -80,6 +80,10 @@ namespace pimax_openxr {
 
     // Initialize all the resources needed for OpenGL interoperation with the D3D11 backend.
     XrResult OpenXrRuntime::initializeOpenGL(const XrGraphicsBindingOpenGLWin32KHR& glBindings) {
+        if (!glBindings.hDC || !glBindings.hGLRC) {
+            return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+        }
+
         // Gather function pointers for the OpenGL extensions we are going to use.
         initializeOpenGLDispatch();
 

@@ -32,6 +32,46 @@ namespace pimax_openxr {
     using namespace pimax_openxr::utils;
     using namespace xr::math;
 
+    namespace {
+
+        // https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#well-formed-path-strings
+        bool validateString(const std::string_view& str) {
+            for (const auto c : str) {
+                if (!islower(c) && !isdigit(c) && c != '-' && c != '_' && c != '.') {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool validatePath(std::string path) {
+            if (path.size() < 2 || path[0] != '/' || path[path.size() - 1] == '/') {
+                return false;
+            }
+
+            path.erase(0, 1);
+            size_t pos = 0;
+            while (!path.empty()) {
+                pos = path.find('/');
+                const auto token = pos != std::string::npos ? path.substr(0, pos) : path;
+                if (token.empty() || !validateString(token)) {
+                    return false;
+                }
+                bool notADot = false;
+                for (const auto c : token) {
+                    if (c != '.') {
+                        notADot = true;
+                    }
+                }
+                if (!notADot) {
+                    return false;
+                }
+                path.erase(0, std::min(token.size() + 1, path.size()));
+            }
+            return true;
+        }
+
+    } // namespace
+
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrStringToPath
     XrResult OpenXrRuntime::xrStringToPath(XrInstance instance, const char* pathString, XrPath* path) {
         TraceLoggingWrite(g_traceProvider, "xrStringToPath", TLXArg(instance, "Instance"), TLArg(pathString, "String"));
@@ -52,6 +92,10 @@ namespace pimax_openxr {
         }
 
         if (!found) {
+            if (str.length() >= XR_MAX_PATH_LENGTH || !validatePath(pathString)) {
+                return XR_ERROR_PATH_FORMAT_INVALID;
+            }
+
             *path = (XrPath)++m_stringIndex;
             m_strings.insert_or_assign(*path, str);
         }
@@ -114,10 +158,40 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // COMPLIANCE: Check for invalid/duplicate name.
-        // COMPLIANCE: We do not support the notion of priority.
+        const std::string_view name(createInfo->actionSetName);
+        if (name.empty()) {
+            return XR_ERROR_NAME_INVALID;
+        }
 
-        *actionSet = (XrActionSet)++m_actionSetIndex;
+        if (!validateString(name)) {
+            return XR_ERROR_PATH_FORMAT_INVALID;
+        }
+
+        const std::string_view localizedName(createInfo->localizedActionSetName);
+        if (localizedName.empty()) {
+            return XR_ERROR_LOCALIZED_NAME_INVALID;
+        }
+
+        for (const auto& entry : m_actionSets) {
+            const ActionSet& xrActionSet = *(ActionSet*)entry;
+
+            if (xrActionSet.name == name) {
+                return XR_ERROR_NAME_DUPLICATED;
+            }
+            if (xrActionSet.localizedName == localizedName) {
+                return XR_ERROR_LOCALIZED_NAME_DUPLICATED;
+            }
+        }
+
+        // COMPLIANCE: We do not support the notion of priority.
+        // COMPLIANCE: We do nothing about subActionPaths validation.
+
+        // Create the internal struct.
+        ActionSet& xrActionSet = *new ActionSet;
+        xrActionSet.name = name;
+        xrActionSet.localizedName = localizedName;
+
+        *actionSet = (XrActionSet)&xrActionSet;
 
         // Maintain a list of known actionsets for validation.
         m_actionSets.insert(*actionSet);
@@ -135,6 +209,9 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        ActionSet* xrActionSet = (ActionSet*)actionSet;
+
+        delete xrActionSet;
         m_actionSets.erase(actionSet);
 
         return XR_SUCCESS;
@@ -160,18 +237,63 @@ namespace pimax_openxr {
                               TLArg(getXrPath(createInfo->subactionPaths[i]).c_str(), "SubactionPath"));
         }
 
+        if (createInfo->actionType != XR_ACTION_TYPE_BOOLEAN_INPUT &&
+            createInfo->actionType != XR_ACTION_TYPE_FLOAT_INPUT &&
+            createInfo->actionType != XR_ACTION_TYPE_POSE_INPUT &&
+            createInfo->actionType != XR_ACTION_TYPE_VECTOR2F_INPUT &&
+            createInfo->actionType != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
         if (!m_actionSets.count(actionSet)) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // COMPLIANCE: Check for invalid/duplicate name.
+        if (m_activeActionSets.count(actionSet)) {
+            return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
+        }
+
+        const std::string_view name(createInfo->actionName);
+        if (name.empty()) {
+            return XR_ERROR_NAME_INVALID;
+        }
+
+        if (!validateString(name)) {
+            return XR_ERROR_PATH_FORMAT_INVALID;
+        }
+
+        const std::string_view localizedName(createInfo->localizedActionName);
+        if (localizedName.empty()) {
+            return XR_ERROR_LOCALIZED_NAME_INVALID;
+        }
+
+        for (const auto& entry : m_actions) {
+            const Action& xrAction = *(Action*)entry;
+
+            if (xrAction.name == name) {
+                return XR_ERROR_NAME_DUPLICATED;
+            }
+            if (xrAction.localizedName == localizedName) {
+                return XR_ERROR_LOCALIZED_NAME_DUPLICATED;
+            }
+        }
+
+        for (uint32_t i = 0; i < createInfo->countSubactionPaths; i++) {
+            const std::string& subactionPath = getXrPath(createInfo->subactionPaths[i]);
+            if (subactionPath != "/user/hand/left" && subactionPath != "/user/hand/right") {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
 
         // Create the internal struct.
         Action& xrAction = *new Action;
         xrAction.type = createInfo->actionType;
+        xrAction.name = name;
+        xrAction.localizedName = localizedName;
         xrAction.actionSet = actionSet;
-
-        // COMPLIANCE: We do nothing about subActionPaths validation.
+        for (uint32_t i = 0; i < createInfo->countSubactionPaths; i++) {
+            xrAction.subactionPaths.insert(createInfo->subactionPaths[i]);
+        }
 
         *action = (XrAction)&xrAction;
 
@@ -217,6 +339,10 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (!suggestedBindings->countSuggestedBindings) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
         for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
             TraceLoggingWrite(g_traceProvider,
                               "xrSuggestInteractionProfileBindings",
@@ -228,9 +354,19 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
         }
 
+        const auto checkValidPathIt =
+            m_controllerValidPathsTable.find(getXrPath(suggestedBindings->interactionProfile));
+        if (checkValidPathIt == m_controllerValidPathsTable.cend()) {
+            return XR_ERROR_PATH_UNSUPPORTED;
+        }
+
         std::vector<XrActionSuggestedBinding> bindings;
         for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
-            // COMPLIANCE: There is no validation of supported/unsupported paths.
+            const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
+            if (getActionSide(path) < 0 || !checkValidPathIt->second(path)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+
             bindings.push_back(suggestedBindings->suggestedBindings[i]);
         }
 
@@ -243,6 +379,10 @@ namespace pimax_openxr {
     XrResult OpenXrRuntime::xrAttachSessionActionSets(XrSession session,
                                                       const XrSessionActionSetsAttachInfo* attachInfo) {
         if (attachInfo->type != XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        if (!attachInfo->countActionSets) {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
@@ -288,13 +428,16 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (m_activeActionSets.empty()) {
+            return XR_ERROR_ACTIONSET_NOT_ATTACHED;
+        }
+
         // If no side is specified, we use left.
         const int side = topLevelUserPath != XR_NULL_PATH ? getActionSide(getXrPath(topLevelUserPath)) : 0;
         if (side >= 0) {
             interactionProfile->interactionProfile = m_currentInteractionProfile[side];
         } else {
-            // Paths we don't support (eg: gamepad).
-            interactionProfile->interactionProfile = XR_NULL_PATH;
+            return XR_ERROR_PATH_UNSUPPORTED;
         }
 
         TraceLoggingWrite(g_traceProvider,
@@ -336,8 +479,17 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
+        if (getInfo->subactionPath != XR_NULL_PATH) {
+            if (m_strings.find(getInfo->subactionPath) == m_strings.cend()) {
+                return XR_ERROR_PATH_INVALID;
+            }
+            if (!xrAction.subactionPaths.count(getInfo->subactionPath)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
         std::optional<bool> combinedState;
-        const std::string subActionPath = getXrPath(getInfo->subactionPath);
+        const std::string& subActionPath = getXrPath(getInfo->subactionPath);
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -417,8 +569,17 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
+        if (getInfo->subactionPath != XR_NULL_PATH) {
+            if (m_strings.find(getInfo->subactionPath) == m_strings.cend()) {
+                return XR_ERROR_PATH_INVALID;
+            }
+            if (!xrAction.subactionPaths.count(getInfo->subactionPath)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
         std::optional<float> combinedState;
-        const std::string subActionPath = getXrPath(getInfo->subactionPath);
+        const std::string& subActionPath = getXrPath(getInfo->subactionPath);
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -507,8 +668,17 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
+        if (getInfo->subactionPath != XR_NULL_PATH) {
+            if (m_strings.find(getInfo->subactionPath) == m_strings.cend()) {
+                return XR_ERROR_PATH_INVALID;
+            }
+            if (!xrAction.subactionPaths.count(getInfo->subactionPath)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
         std::optional<XrVector2f> combinedState;
-        const std::string subActionPath = getXrPath(getInfo->subactionPath);
+        const std::string& subActionPath = getXrPath(getInfo->subactionPath);
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -594,7 +764,16 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
-        const std::string subActionPath = getXrPath(getInfo->subactionPath);
+        if (getInfo->subactionPath != XR_NULL_PATH) {
+            if (m_strings.find(getInfo->subactionPath) == m_strings.cend()) {
+                return XR_ERROR_PATH_INVALID;
+            }
+            if (!xrAction.subactionPaths.count(getInfo->subactionPath)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
+        const std::string& subActionPath = getXrPath(getInfo->subactionPath);
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -644,6 +823,7 @@ namespace pimax_openxr {
 
             m_validActionSets.insert(syncInfo->activeActionSets[i].actionSet);
 
+            // COMPLIANCE: We do not check for subActionPath supported.
             // COMPLIANCE: We do not precisely honor subActionPath with multiple action sets.
 
             if (syncInfo->activeActionSets[i].subactionPath == XR_NULL_PATH) {
@@ -654,6 +834,10 @@ namespace pimax_openxr {
                     doSide[side] = true;
                 }
             }
+        }
+
+        if (m_sessionState != XR_SESSION_STATE_FOCUSED) {
+            return XR_SESSION_NOT_FOCUSED;
         }
 
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
@@ -763,6 +947,10 @@ namespace pimax_openxr {
 
         Action& xrAction = *(Action*)enumerateInfo->action;
 
+        if (!m_activeActionSets.count(xrAction.actionSet)) {
+            return XR_ERROR_ACTIONSET_NOT_ATTACHED;
+        }
+
         if (sourceCapacityInput && sourceCapacityInput < xrAction.actionSources.size()) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
@@ -807,6 +995,10 @@ namespace pimax_openxr {
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (m_activeActionSets.empty()) {
+            return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
         // Build the string.
@@ -894,7 +1086,16 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
-        const std::string subActionPath = getXrPath(hapticActionInfo->subactionPath);
+        if (hapticActionInfo->subactionPath != XR_NULL_PATH) {
+            if (m_strings.find(hapticActionInfo->subactionPath) == m_strings.cend()) {
+                return XR_ERROR_PATH_INVALID;
+            }
+            if (!xrAction.subactionPaths.count(hapticActionInfo->subactionPath)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
+        const std::string& subActionPath = getXrPath(hapticActionInfo->subactionPath);
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -967,7 +1168,16 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
-        const std::string subActionPath = getXrPath(hapticActionInfo->subactionPath);
+        if (hapticActionInfo->subactionPath != XR_NULL_PATH) {
+            if (m_strings.find(hapticActionInfo->subactionPath) == m_strings.cend()) {
+                return XR_ERROR_PATH_INVALID;
+            }
+            if (!xrAction.subactionPaths.count(hapticActionInfo->subactionPath)) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
+        const std::string& subActionPath = getXrPath(hapticActionInfo->subactionPath);
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;

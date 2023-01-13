@@ -318,8 +318,15 @@ namespace pimax_openxr {
             std::string realPath;
         };
 
+        struct ActionSet {
+            std::string name;
+            std::string localizedName;
+        };
+
         struct Action {
             XrActionType type;
+            std::string name;
+            std::string localizedName;
 
             XrActionSet actionSet{XR_NULL_HANDLE};
 
@@ -332,6 +339,7 @@ namespace pimax_openxr {
             bool lastBoolValue{false};
             XrTime lastBoolValueChangedTime{0};
 
+            std::set<XrPath> subactionPaths;
             std::map<std::string, ActionSource> actionSources;
         };
 
@@ -458,12 +466,13 @@ namespace pimax_openxr {
         double m_pvrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
         std::map<XrPath, std::string> m_strings;
-        uint64_t m_actionSetIndex{0};
         std::set<XrActionSet> m_actionSets;
         std::set<XrAction> m_actions;
         std::set<XrHandTrackerEXT> m_handTrackers;
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
+        using CheckValidPathFunction = std::function<bool(const std::string&)>;
         std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
+        std::map<std::string, CheckValidPathFunction> m_controllerValidPathsTable;
         wil::unique_registry_watcher m_registryWatcher;
         bool m_loggedProductName{false};
         bool m_loggedResolution{false};
@@ -478,6 +487,7 @@ namespace pimax_openxr {
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         bool m_sessionStateDirty{false};
+        bool m_sessionStopping{false};
         bool m_sessionExiting{false};
         double m_sessionStateEventTime{0.0};
         std::set<XrSwapchain> m_swapchains;
@@ -612,6 +622,7 @@ namespace pimax_openxr {
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
         bool m_actionsSyncedThisFrame{false};
+        XrTime m_lastPredictedDisplayTime{0};
 
         // Statistics.
         AppInsights m_telemetry;

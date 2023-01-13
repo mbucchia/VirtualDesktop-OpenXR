@@ -48,6 +48,11 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
+            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+            return XR_ERROR_SESSION_NOT_RUNNING;
+        }
+
         // Check for user presence and exit conditions. Emit events accordingly.
         pvrHmdStatus status{};
         CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
@@ -71,7 +76,7 @@ namespace pimax_openxr {
         // that it sees every single state.
 
         bool wasSessionStateDirty = m_sessionStateDirty;
-        if (!wasSessionStateDirty && status.IsVisible && !m_sessionExiting) {
+        if (!wasSessionStateDirty && status.IsVisible && !m_sessionStopping && !m_sessionExiting) {
             if (m_sessionState == XR_SESSION_STATE_SYNCHRONIZED) {
                 m_sessionState = XR_SESSION_STATE_VISIBLE;
                 m_sessionStateDirty = true;
@@ -94,7 +99,7 @@ namespace pimax_openxr {
             frameState->shouldRender = XR_TRUE;
         } else {
             if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_STOPPING &&
-                !m_sessionExiting) {
+                !m_sessionStopping && !m_sessionExiting) {
                 m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
                 m_sessionStateDirty = true;
             }
@@ -189,6 +194,12 @@ namespace pimax_openxr {
             // Setup the app frame for use and the next frame for this call.
             frameState->predictedDisplayTime = pvrTimeToXrTime(predictedDisplayTime);
 
+            // Workaround: during early calls, PVR times might violate OpenXR rules.
+            if (frameState->predictedDisplayTime <= m_lastPredictedDisplayTime) {
+                frameState->predictedDisplayTime = m_lastPredictedDisplayTime + 1;
+            }
+            m_lastPredictedDisplayTime = frameState->predictedDisplayTime;
+
             // We always use the native frame duration, regardless of Smart Smoothing.
             frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_frameDuration);
 
@@ -224,6 +235,11 @@ namespace pimax_openxr {
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
+            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+            return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
         bool frameDiscarded = false;
@@ -350,12 +366,20 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
+            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+            return XR_ERROR_SESSION_NOT_RUNNING;
+        }
+
         if (frameEndInfo->environmentBlendMode != XR_ENVIRONMENT_BLEND_MODE_OPAQUE) {
             return XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED;
         }
 
-        // Count extra layer for the guardian.
-        if (frameEndInfo->layerCount + 1 > pvrMaxLayerCount) {
+        if (frameEndInfo->displayTime <= 0) {
+            return XR_ERROR_TIME_INVALID;
+        }
+
+        if (frameEndInfo->layerCount > pvrMaxLayerCount) {
             return XR_ERROR_LAYER_LIMIT_EXCEEDED;
         }
 
@@ -403,6 +427,10 @@ namespace pimax_openxr {
             std::vector<pvrLayer_Union> layersAllocator(frameEndInfo->layerCount + 1);
             std::vector<pvrLayerHeader*> layers;
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
+                if (!frameEndInfo->layers[i]) {
+                    return XR_ERROR_LAYER_INVALID;
+                }
+
                 auto& layer = layersAllocator[i];
                 layer.Header.Flags = 0;
 
@@ -426,6 +454,10 @@ namespace pimax_openxr {
                                       TLArg("Proj", "Type"),
                                       TLArg(proj->layerFlags, "Flags"),
                                       TLXArg(proj->space, "Space"));
+
+                    if (proj->viewCount != xr::StereoView::Count) {
+                        return XR_ERROR_VALIDATION_FAILURE;
+                    }
 
                     // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
                     static_assert(offsetof(decltype(layer.EyeFov), ColorTexture) ==
@@ -452,11 +484,23 @@ namespace pimax_openxr {
                                           TLArg(xr::ToString(proj->views[eye].pose).c_str(), "Pose"),
                                           TLArg(xr::ToString(proj->views[eye].fov).c_str(), "Fov"));
 
+                        if (!Quaternion::IsNormalized(proj->views[eye].pose.orientation)) {
+                            return XR_ERROR_POSE_INVALID;
+                        }
+
                         if (!m_swapchains.count(proj->views[eye].subImage.swapchain)) {
                             return XR_ERROR_HANDLE_INVALID;
                         }
 
                         Swapchain& xrSwapchain = *(Swapchain*)proj->views[eye].subImage.swapchain;
+
+                        if (xrSwapchain.lastReleasedIndex == -1) {
+                            return XR_ERROR_LAYER_INVALID;
+                        }
+
+                        if (proj->views[eye].subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize) {
+                            return XR_ERROR_VALIDATION_FAILURE;
+                        }
 
                         // Fill out color buffer information.
                         prepareAndCommitSwapchainImage(
@@ -518,6 +562,14 @@ namespace pimax_openxr {
 
                                     Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
 
+                                    if (xrDepthSwapchain.lastReleasedIndex == -1) {
+                                        return XR_ERROR_LAYER_INVALID;
+                                    }
+
+                                    if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize) {
+                                        return XR_ERROR_VALIDATION_FAILURE;
+                                    }
+
                                     // Fill out depth buffer information.
                                     prepareAndCommitSwapchainImage(
                                         xrDepthSwapchain, depth->subImage.imageArrayIndex, committedSwapchainImages);
@@ -563,15 +615,27 @@ namespace pimax_openxr {
 
                     layer.Header.Type = pvrLayerType_Quad;
 
+                    if (!Quaternion::IsNormalized(quad->pose.orientation)) {
+                        return XR_ERROR_POSE_INVALID;
+                    }
+
                     if (!m_swapchains.count(quad->subImage.swapchain)) {
                         return XR_ERROR_HANDLE_INVALID;
                     }
 
                     Swapchain& xrSwapchain = *(Swapchain*)quad->subImage.swapchain;
 
+                    if (xrSwapchain.lastReleasedIndex == -1) {
+                        return XR_ERROR_LAYER_INVALID;
+                    }
+
                     // COMPLIANCE: We ignore eyeVisibility, since there is no equivalent.
                     if (quad->eyeVisibility != XR_EYE_VISIBILITY_BOTH) {
                         LOG_TELEMETRY_ONCE(logUnimplemented("QuadEyeVisibilityNotSupported"));
+                    }
+
+                    if (quad->subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize) {
+                        return XR_ERROR_VALIDATION_FAILURE;
                     }
 
                     // Fill out color buffer information.
@@ -641,7 +705,13 @@ namespace pimax_openxr {
                     layer.Quad.QuadPoseCenter =
                         xrPoseToPvrPose(Pose::Multiply(guardianToBase.pose, Pose::Invert(viewToBase.pose)));
                     layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
-                    layers.push_back(&layer.Header);
+
+                    // If there are too many layer, prioritize the guardian to be safe.
+                    if (layers.size() < pvrMaxLayerCount) {
+                        layers.push_back(&layer.Header);
+                    } else {
+                        layers[pvrMaxLayerCount - 1] = &layer.Header;
+                    }
                 }
             }
 

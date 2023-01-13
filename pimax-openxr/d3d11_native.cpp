@@ -107,6 +107,10 @@ namespace pimax_openxr {
 
     // Initialize all the resources needed for D3D11 support, both on the API frontend and also the runtime/PVR backend.
     XrResult OpenXrRuntime::initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings) {
+        if (!d3dBindings.device) {
+            return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+        }
+
         // Check that this is the correct adapter for the HMD.
         ComPtr<IDXGIDevice> dxgiDevice;
         CHECK_HRCMD(d3dBindings.device->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));

@@ -145,6 +145,55 @@ namespace pimax_openxr {
                 }
                 return false;
             });
+
+        // Functions for validating paths.
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/khr/simple_controller",
+            [&](const std::string& path) { return getSimpleControllerLocalizedSourceName(path) != "<Unknown>"; });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/htc/vive_controller",
+            [&](const std::string& path) { return getViveControllerLocalizedSourceName(path) != "<Unknown>"; });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/valve/index_controller",
+            [&](const std::string& path) { return getIndexControllerLocalizedSourceName(path) != "<Unknown>"; });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/oculus/touch_controller", [&](const std::string& path) {
+                if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                    path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                    path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                    path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                    path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                    path == "/user/hand/right/input/a" || path == "/user/hand/right/input/b/click" ||
+                    path == "/user/hand/right/input/b/touch" || path == "/user/hand/right/input/b" ||
+                    path == "/user/hand/right/input/system/click" || path == "/user/hand/right/input/system" ||
+                    endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                    endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                    endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                    endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                    endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch") ||
+                    endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest") ||
+                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+                    endsWith(path, "/output/haptic")) {
+                    return true;
+                }
+                return false;
+            });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/oculus/touch_controller", [&](const std::string& path) {
+                if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                    endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                    endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                    endsWith(path, "/input/trigger") || endsWith(path, "/input/trackpad") ||
+                    endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
+                    endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                    endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
+                    endsWith(path, "/input/aim/pose") || endsWith(path, "/output/haptic")) {
+                    return true;
+                }
+                return false;
+            });
     }
 
     bool OpenXrRuntime::mapPathToViveControllerInputState(const Action& xrAction,

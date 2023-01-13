@@ -414,6 +414,11 @@ namespace pimax_openxr {
 
     // Initialize all the resources needed for Vulkan interoperation with the D3D11 backend.
     XrResult OpenXrRuntime::initializeVulkan(const XrGraphicsBindingVulkanKHR& vkBindings) {
+        if (vkBindings.instance == VK_NULL_HANDLE || vkBindings.device == VK_NULL_HANDLE ||
+            vkBindings.physicalDevice == VK_NULL_HANDLE) {
+            return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+        }
+
         // Gather function pointers for the Vulkan device extensions we are going to use.
         initializeVulkanDispatch(vkBindings.instance);
 
