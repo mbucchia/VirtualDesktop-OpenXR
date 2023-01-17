@@ -216,7 +216,11 @@ namespace pimax_openxr {
 
         // Shutdown the mirror window.
         if (m_mirrorWindowThread.joinable()) {
-            if (m_mirrorWindowHwnd) {
+            // Avoid race conditions where the window will not receive the message.
+            while (!m_mirrorWindowReady) {
+                std::this_thread::sleep_for(100ms);
+            }
+            while (m_mirrorWindowHwnd) {
                 PostMessage(m_mirrorWindowHwnd, WM_CLOSE, 0, 0);
             }
             m_mirrorWindowThread.join();

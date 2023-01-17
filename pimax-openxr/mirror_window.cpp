@@ -36,6 +36,7 @@ namespace pimax_openxr {
     }
 
     void OpenXrRuntime::createMirrorWindow() {
+        m_mirrorWindowReady = false;
         m_mirrorWindowThread = std::thread([&]() {
             // Create the window.
             WNDCLASSEX wndClassEx = {sizeof(wndClassEx)};
@@ -65,6 +66,7 @@ namespace pimax_openxr {
                                                nullptr,
                                                nullptr);
             CHECK_MSG(m_mirrorWindowHwnd, "Failed to CreateWindowW()");
+            m_mirrorWindowReady = true;
 
             // Create the swapchain.
             ComPtr<IDXGIFactory2> dxgiFactory;

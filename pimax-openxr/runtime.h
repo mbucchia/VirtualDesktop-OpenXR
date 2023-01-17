@@ -532,6 +532,7 @@ namespace pimax_openxr {
         bool m_useMirrorWindow{false};
         std::mutex m_mirrorWindowLock;
         HWND m_mirrorWindowHwnd{nullptr};
+        bool m_mirrorWindowReady{false};
         std::thread m_mirrorWindowThread;
         ComPtr<IDXGISwapChain1> m_mirrorWindowSwapchain;
         pvrMirrorTexture m_pvrMirrorSwapChain{nullptr};
