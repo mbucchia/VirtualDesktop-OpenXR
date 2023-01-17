@@ -129,6 +129,18 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (createInfo->action != XR_NULL_HANDLE) {
+            if (!m_actions.count(createInfo->action)) {
+                return XR_ERROR_HANDLE_INVALID;
+            }
+
+            Action& xrAction = *(Action*)createInfo->action;
+
+            if (xrAction.type != XR_ACTION_TYPE_POSE_INPUT) {
+                return XR_ERROR_ACTION_TYPE_MISMATCH;
+            }
+        }
+
         // Create the internal struct.
         Space& xrSpace = *new Space;
         xrSpace.referenceType = XR_REFERENCE_SPACE_TYPE_MAX_ENUM;

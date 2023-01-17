@@ -225,7 +225,17 @@ namespace pimax_openxr {
 
         m_telemetry.logUsage(pvr_getTimeSeconds(m_pvr) - m_sessionStartTime, m_sessionTotalFrameCount);
 
-        // Destroy all swapchains.
+        // Destroy hand trackers (tied to session).
+        while (m_handTrackers.size()) {
+            CHECK_XRCMD(xrDestroyHandTrackerEXT(*m_handTrackers.begin()));
+        }
+
+        // Destroy action spaces (tied to session).
+        while (m_spaces.size()) {
+            CHECK_XRCMD(xrDestroySpace(*m_spaces.begin()));
+        }
+
+        // Destroy all swapchains (tied to session).
         while (m_swapchains.size()) {
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
         }
@@ -234,15 +244,7 @@ namespace pimax_openxr {
             m_guardianSwapchain = nullptr;
         }
 
-        // Destroy reference spaces.
-        CHECK_XRCMD(xrDestroySpace(m_originSpace));
-        m_originSpace = XR_NULL_HANDLE;
-        CHECK_XRCMD(xrDestroySpace(m_viewSpace));
-        m_viewSpace = XR_NULL_HANDLE;
-        if (m_guardianSpace != XR_NULL_HANDLE) {
-            CHECK_XRCMD(xrDestroySpace(m_guardianSpace));
-            m_guardianSpace = XR_NULL_HANDLE;
-        }
+        // We do not destroy actionsets and actions, since they are tied to the instance.
 
         // FIXME: Add session and frame resource cleanup here.
         cleanupOpenGL();

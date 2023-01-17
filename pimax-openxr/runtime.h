@@ -361,7 +361,7 @@ namespace pimax_openxr {
         // action.cpp
         void rebindControllerActions(int side);
         std::string getXrPath(XrPath path) const;
-        int getActionSide(const std::string& fullPath) const;
+        int getActionSide(const std::string& fullPath, bool allowExtraPaths = false) const;
         XrVector2f handleJoystickDeadzone(pvrVector2f raw) const;
         void handleBuiltinActions(bool wasRecenteringPressed = false);
 
@@ -468,6 +468,7 @@ namespace pimax_openxr {
         std::map<XrPath, std::string> m_strings;
         std::set<XrActionSet> m_actionSets;
         std::set<XrAction> m_actions;
+        std::set<XrAction> m_actionsForCleanup;
         std::set<XrHandTrackerEXT> m_handTrackers;
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         using CheckValidPathFunction = std::function<bool(const std::string&)>;

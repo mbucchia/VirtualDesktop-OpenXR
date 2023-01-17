@@ -183,8 +183,7 @@ namespace pimax_openxr {
             }
         }
 
-        // COMPLIANCE: We do not support the notion of priority.
-        // COMPLIANCE: We do nothing about subActionPaths validation.
+        // CONFORMANCE: We do not support the notion of priority. TODO: Sort actionSources by priority.
 
         // Create the internal struct.
         ActionSet& xrActionSet = *new ActionSet;
@@ -213,6 +212,8 @@ namespace pimax_openxr {
 
         delete xrActionSet;
         m_actionSets.erase(actionSet);
+        m_activeActionSets.erase(actionSet);
+        m_validActionSets.erase(actionSet);
 
         return XR_SUCCESS;
     }
@@ -299,6 +300,7 @@ namespace pimax_openxr {
 
         // Maintain a list of known actions for validation.
         m_actions.insert(*action);
+        m_actionsForCleanup.insert(*action);
 
         TraceLoggingWrite(g_traceProvider, "xrCreateAction", TLXArg(*action, "Action"));
 
@@ -313,11 +315,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // COMPLIANCE: Deleting actions is supposed to be deferred.
+        // We do not delete the action as it might still be used internally (eg: referenced by action spaces).
 
-        Action* xrAction = (Action*)action;
-
-        delete xrAction;
         m_actions.erase(action);
 
         return XR_SUCCESS;
@@ -363,7 +362,7 @@ namespace pimax_openxr {
         std::vector<XrActionSuggestedBinding> bindings;
         for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
             const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
-            if (getActionSide(path) < 0 || !checkValidPathIt->second(path)) {
+            if (getActionSide(path, true) < 0 || !checkValidPathIt->second(path)) {
                 return XR_ERROR_PATH_UNSUPPORTED;
             }
 
@@ -823,8 +822,8 @@ namespace pimax_openxr {
 
             m_validActionSets.insert(syncInfo->activeActionSets[i].actionSet);
 
-            // COMPLIANCE: We do not check for subActionPath supported.
-            // COMPLIANCE: We do not precisely honor subActionPath with multiple action sets.
+            // CONFORMANCE: We do not check for subActionPath supported. TODO.
+            // CONFORMANCE: We do not precisely honor subActionPath with multiple action sets. TODO.
 
             if (syncInfo->activeActionSets[i].subactionPath == XR_NULL_PATH) {
                 doSide[0] = doSide[1] = true;
@@ -1372,11 +1371,13 @@ namespace pimax_openxr {
         return it->second;
     }
 
-    int OpenXrRuntime::getActionSide(const std::string& fullPath) const {
+    int OpenXrRuntime::getActionSide(const std::string& fullPath, bool allowExtraPaths) const {
         if (startsWith(fullPath, "/user/hand/left")) {
             return 0;
         } else if (startsWith(fullPath, "/user/hand/right")) {
             return 1;
+        } else if (allowExtraPaths && (startsWith(fullPath, "/user/head") || startsWith(fullPath, "/user/gamepad"))) {
+            return 2;
         }
 
         return -1;

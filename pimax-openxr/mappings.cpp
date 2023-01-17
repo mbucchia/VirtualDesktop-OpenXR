@@ -169,7 +169,8 @@ namespace pimax_openxr {
                     endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
                     endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
                     endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
-                    endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                    endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger/touch") ||
+                    endsWith(path, "/input/thumbstick") ||
                     endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
                     endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch") ||
                     endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest") ||
@@ -180,16 +181,88 @@ namespace pimax_openxr {
                 return false;
             });
         m_controllerValidPathsTable.insert_or_assign(
-            "/interaction_profiles/oculus/touch_controller", [&](const std::string& path) {
+            "/interaction_profiles/microsoft/motion_controller", [&](const std::string& path) {
                 if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
                     endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
                     endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
                     endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
-                    endsWith(path, "/input/trigger") || endsWith(path, "/input/trackpad") ||
+                    endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                    endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                    endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                    endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/trackpad") ||
                     endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
                     endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
                     endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/output/haptic")) {
+                    return true;
+                }
+                return false;
+            });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/google/daydream_controller", [](const std::string& path) {
+                if (endsWith(path, "/input/select/click") || endsWith(path, "/input/select") ||
+                    endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
+                    endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
+                    endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
+                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose")) {
+                    return true;
+                }
+                return false;
+            });
+        m_controllerValidPathsTable.insert_or_assign("/interaction_profiles/htc/vive_pro", [](const std::string& path) {
+            if (path == "/user/head/input/system/click" || path == "/user/head/input/system" ||
+                path == "/user/head/input/volume_up/click" || path == "/user/head/input/volume_up" ||
+                path == "/user/head/input/volume_down/click" || path == "/user/head/input/volume_down" ||
+                path == "/user/head/input/mute_mic/click" || path == "/user/head/input/mute_mic") {
+                return true;
+            }
+            return false;
+        });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/microsoft/xbox_controller", [](const std::string& path) {
+                if (path == "/user/gamepad/input/menu/click" || path == "/user/gamepad/input/menu" ||
+                    path == "/user/gamepad/input/view/click" || path == "/user/gamepad/input/view" ||
+                    path == "/user/gamepad/input/a/click" || path == "/user/gamepad/input/a" ||
+                    path == "/user/gamepad/input/b/click" || path == "/user/gamepad/input/b" ||
+                    path == "/user/gamepad/input/x/click" || path == "/user/gamepad/input/x" ||
+                    path == "/user/gamepad/input/y/click" || path == "/user/gamepad/input/y" ||
+                    path == "/user/gamepad/input/dpad_down/click" || path == "/user/gamepad/input/dpad_down" ||
+                    path == "/user/gamepad/input/dpad_right/click" || path == "/user/gamepad/input/dpad_right" ||
+                    path == "/user/gamepad/input/dpad_up/click" || path == "/user/gamepad/input/dpad_up" ||
+                    path == "/user/gamepad/input/dpad_left/click" || path == "/user/gamepad/input/dpad_left" ||
+                    path == "/user/gamepad/input/shoulder_left/click" || path == "/user/gamepad/input/shoulder_left" ||
+                    path == "/user/gamepad/input/shoulder_right/click" ||
+                    path == "/user/gamepad/input/shoulder_right" || path == "/user/gamepad/input/trigger_left/click" ||
+                    path == "/user/gamepad/input/trigger_left/value" ||
+                    path == "/user/gamepad/input/trigger_left/force" || path == "/user/gamepad/input/trigger_left" ||
+                    path == "/user/gamepad/input/trigger_right/click" ||
+                    path == "/user/gamepad/input/trigger_right/value" ||
+                    path == "/user/gamepad/input/trigger_right/force" || path == "/user/gamepad/input/trigger_right" ||
+                    path == "/user/gamepad/input/thumbstick_left" || path == "/user/gamepad/input/thumbstick_left/x" ||
+                    path == "/user/gamepad/input/thumbstick_left/y" ||
+                    path == "/user/gamepad/input/thumbstick_left/click" ||
+                    path == "/user/gamepad/input/thumbstick_left/force" ||
+                    path == "/user/gamepad/input/thumbstick_right" ||
+                    path == "/user/gamepad/input/thumbstick_right/x" ||
+                    path == "/user/gamepad/input/thumbstick_right/y" ||
+                    path == "/user/gamepad/input/thumbstick_right/click" ||
+                    path == "/user/gamepad/input/thumbstick_right/force" ||
+                    path == "/user/gamepad/output/haptic_left" || path == "/user/gamepad/output/haptic_right" ||
+                    path == "/user/gamepad/output/haptic_left_trigger" ||
+                    path == "/user/gamepad/output/haptic_right_trigger") {
+                    return true;
+                }
+                return false;
+            });
+        m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/oculus/go_controller", [](const std::string& path) {
+                if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
+                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger") ||
+                    endsWith(path, "/input/back/click") || endsWith(path, "/input/back") ||
+                    endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
+                    endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
+                    endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
+                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose")) {
                     return true;
                 }
                 return false;

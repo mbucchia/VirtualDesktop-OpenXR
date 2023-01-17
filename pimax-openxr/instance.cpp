@@ -128,7 +128,7 @@ namespace pimax_openxr {
     using namespace pimax_openxr::utils;
     using namespace pimax_openxr::log;
 
-    // COMPLIANCE: We do not handle multithreading properly. All functions must be thread-safe.
+    // CONFORMANCE: We do not handle multithreading properly. TODO: All functions must be thread-safe.
 
     OpenXrRuntime::OpenXrRuntime() {
         if (getSetting("enable_telemetry").value_or(0)) {
@@ -208,6 +208,15 @@ namespace pimax_openxr {
     }
 
     OpenXrRuntime::~OpenXrRuntime() {
+        // Destroy actionset and actions (tied to the instance).
+        for (auto action : m_actionsForCleanup) {
+            Action* xrAction = (Action*)action;
+            delete xrAction;
+        }
+        while (m_actionSets.size()) {
+            CHECK_XRCMD(xrDestroyActionSet(*m_actionSets.begin()));
+        }
+
         if (m_sessionCreated) {
             xrDestroySession((XrSession)1);
         }
