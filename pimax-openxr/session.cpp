@@ -165,8 +165,7 @@ namespace pimax_openxr {
 
         // FIXME: Reset the session and frame state here.
         m_sessionState = XR_SESSION_STATE_IDLE;
-        m_sessionStateDirty = true;
-        m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
+        updateSessionState(true);
 
         m_frameWaited = m_frameBegun = m_frameCompleted = 0;
 
@@ -178,7 +177,7 @@ namespace pimax_openxr {
         m_activeActionSets.clear();
         m_validActionSets.clear();
 
-        m_sessionStartTime = m_sessionStateEventTime;
+        m_sessionStartTime = pvr_getTimeSeconds(m_pvr);
         m_sessionTotalFrameCount = 0;
 
         try {
@@ -254,8 +253,9 @@ namespace pimax_openxr {
         cleanupSubmissionDevice();
         m_handTrackers.clear();
         m_sessionState = XR_SESSION_STATE_UNKNOWN;
-        m_sessionStateDirty = false;
         m_sessionCreated = false;
+        m_sessionBegun = false;
+        m_sessionLossPending = false;
         m_sessionStopping = false;
         m_sessionExiting = false;
 
@@ -282,13 +282,16 @@ namespace pimax_openxr {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
-        if (m_sessionState != XR_SESSION_STATE_IDLE && m_sessionState != XR_SESSION_STATE_READY) {
+        if (m_sessionBegun) {
+            return XR_ERROR_SESSION_RUNNING;
+        }
+
+        if (m_sessionState != XR_SESSION_STATE_READY) {
             return XR_ERROR_SESSION_NOT_READY;
         }
 
-        m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
-        m_sessionStateDirty = true;
-        m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
+        m_sessionBegun = true;
+        updateSessionState();
 
         return XR_SUCCESS;
     }
@@ -301,15 +304,16 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (!m_sessionBegun) {
+            return XR_ERROR_SESSION_NOT_RUNNING;
+        }
+
         if (m_sessionState != XR_SESSION_STATE_STOPPING) {
             return XR_ERROR_SESSION_NOT_STOPPING;
         }
 
         m_sessionExiting = true;
-
-        m_sessionState = XR_SESSION_STATE_IDLE;
-        m_sessionStateDirty = true;
-        m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
+        updateSessionState();
 
         return XR_SUCCESS;
     }
@@ -322,16 +326,69 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
-            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+        if (!m_sessionBegun || m_sessionState == XR_SESSION_STATE_IDLE || m_sessionState == XR_SESSION_STATE_EXITING) {
             return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
         m_sessionStopping = true;
-        m_sessionStateDirty = true;
-        m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
+        updateSessionState();
 
         return XR_SUCCESS;
+    }
+
+    // Update the session state machine.
+    void OpenXrRuntime::updateSessionState(bool forceSendEvent) {
+        if (forceSendEvent) {
+            m_sessionEventQueue.push_back(std::make_pair(m_sessionState, pvr_getTimeSeconds(m_pvr)));
+        }
+
+        while (true) {
+            const auto oldSessionState = m_sessionState;
+            switch (m_sessionState) {
+            case XR_SESSION_STATE_IDLE:
+                if (m_sessionExiting) {
+                    m_sessionState = XR_SESSION_STATE_EXITING;
+                } else {
+                    m_sessionState = XR_SESSION_STATE_READY;
+                }
+                break;
+            case XR_SESSION_STATE_READY:
+                if (m_frameCompleted > 0) {
+                    m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
+                }
+                break;
+            case XR_SESSION_STATE_SYNCHRONIZED:
+                if (m_sessionStopping) {
+                    m_sessionState = XR_SESSION_STATE_STOPPING;
+                } else if (m_hmdStatus.IsVisible) {
+                    m_sessionState = XR_SESSION_STATE_VISIBLE;
+                }
+                break;
+            case XR_SESSION_STATE_VISIBLE:
+                if (m_sessionStopping) {
+                    m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
+                } else if (m_hmdStatus.HmdMounted) {
+                    m_sessionState = XR_SESSION_STATE_FOCUSED;
+                }
+                break;
+            case XR_SESSION_STATE_FOCUSED:
+                if (m_sessionStopping || !m_hmdStatus.HmdMounted) {
+                    m_sessionState = XR_SESSION_STATE_VISIBLE;
+                }
+                break;
+            case XR_SESSION_STATE_STOPPING:
+                if (m_sessionExiting) {
+                    m_sessionState = XR_SESSION_STATE_IDLE;
+                }
+                break;
+            }
+
+            if (m_sessionState != oldSessionState) {
+                m_sessionEventQueue.push_back(std::make_pair(m_sessionState, pvr_getTimeSeconds(m_pvr)));
+            } else {
+                break;
+            }
+        }
     }
 
     // Read dynamic settings from the registry.

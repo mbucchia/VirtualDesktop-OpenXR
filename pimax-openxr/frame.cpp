@@ -48,68 +48,29 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
-            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+        if (!m_sessionBegun || m_sessionState == XR_SESSION_STATE_IDLE || m_sessionState == XR_SESSION_STATE_EXITING) {
             return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
-        // Check for user presence and exit conditions. Emit events accordingly.
-        pvrHmdStatus status{};
-        CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
+        // Check for user presence and exit conditions.
+        CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &m_hmdStatus));
         TraceLoggingWrite(g_traceProvider,
                           "PVR_HmdStatus",
-                          TLArg(!!status.ServiceReady, "ServiceReady"),
-                          TLArg(!!status.HmdPresent, "HmdPresent"),
-                          TLArg(!!status.HmdMounted, "HmdMounted"),
-                          TLArg(!!status.IsVisible, "IsVisible"),
-                          TLArg(!!status.DisplayLost, "DisplayLost"),
-                          TLArg(!!status.ShouldQuit, "ShouldQuit"));
-        if (!(status.ServiceReady && status.HmdPresent) || status.DisplayLost || status.ShouldQuit) {
-            m_sessionState = XR_SESSION_STATE_LOSS_PENDING;
-            m_sessionStateDirty = true;
-            m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
-
-            return XR_SESSION_LOSS_PENDING;
+                          TLArg(!!m_hmdStatus.ServiceReady, "ServiceReady"),
+                          TLArg(!!m_hmdStatus.HmdPresent, "HmdPresent"),
+                          TLArg(!!m_hmdStatus.HmdMounted, "HmdMounted"),
+                          TLArg(!!m_hmdStatus.IsVisible, "IsVisible"),
+                          TLArg(!!m_hmdStatus.DisplayLost, "DisplayLost"),
+                          TLArg(!!m_hmdStatus.ShouldQuit, "ShouldQuit"));
+        if (!m_sessionLossPending) {
+            m_sessionLossPending = !(m_hmdStatus.ServiceReady && m_hmdStatus.HmdPresent) || m_hmdStatus.DisplayLost ||
+                                   m_hmdStatus.ShouldQuit;
         }
+        updateSessionState();
 
-        // Important: for state transitions, we must wait for the application to poll the session state to make sure
-        // that it sees every single state.
-
-        bool wasSessionStateDirty = m_sessionStateDirty;
-        if (!wasSessionStateDirty && status.IsVisible && !m_sessionStopping && !m_sessionExiting) {
-            if (m_sessionState == XR_SESSION_STATE_SYNCHRONIZED) {
-                m_sessionState = XR_SESSION_STATE_VISIBLE;
-                m_sessionStateDirty = true;
-            }
-
-            if (!m_sessionStateDirty) {
-                if (status.HmdMounted) {
-                    if (m_sessionState == XR_SESSION_STATE_VISIBLE) {
-                        m_sessionState = XR_SESSION_STATE_FOCUSED;
-                        m_sessionStateDirty = true;
-                    }
-                } else {
-                    if (m_sessionState == XR_SESSION_STATE_FOCUSED) {
-                        m_sessionState = XR_SESSION_STATE_VISIBLE;
-                        m_sessionStateDirty = true;
-                    }
-                }
-            }
-
-            frameState->shouldRender = XR_TRUE;
-        } else {
-            if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_STOPPING &&
-                !m_sessionStopping && !m_sessionExiting) {
-                m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
-                m_sessionStateDirty = true;
-            }
-
-            frameState->shouldRender = XR_FALSE;
-        }
-
-        if (!wasSessionStateDirty && m_sessionStateDirty) {
-            m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
-        }
+        frameState->shouldRender =
+            (!m_sessionStopping && !m_sessionExiting && !m_sessionLossPending && m_hmdStatus.IsVisible) ? XR_TRUE
+                                                                                                        : XR_FALSE;
 
         // Critical section.
         {
@@ -237,8 +198,7 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
-            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+        if (!m_sessionBegun || m_sessionState == XR_SESSION_STATE_IDLE || m_sessionState == XR_SESSION_STATE_EXITING) {
             return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
@@ -366,8 +326,7 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (m_sessionState != XR_SESSION_STATE_SYNCHRONIZED && m_sessionState != XR_SESSION_STATE_VISIBLE &&
-            m_sessionState != XR_SESSION_STATE_FOCUSED) {
+        if (!m_sessionBegun || m_sessionState == XR_SESSION_STATE_IDLE || m_sessionState == XR_SESSION_STATE_EXITING) {
             return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
@@ -794,6 +753,7 @@ namespace pimax_openxr {
             }
 
             m_frameCompleted = m_frameBegun;
+            updateSessionState();
 
             m_currentTimerIndex = (m_currentTimerIndex + 1) % k_numGpuTimers;
 

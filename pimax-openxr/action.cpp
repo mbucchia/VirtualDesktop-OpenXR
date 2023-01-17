@@ -1085,6 +1085,10 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
+        if (m_sessionState != XR_SESSION_STATE_FOCUSED) {
+            return XR_SESSION_NOT_FOCUSED;
+        }
+
         if (hapticActionInfo->subactionPath != XR_NULL_PATH) {
             if (m_strings.find(hapticActionInfo->subactionPath) == m_strings.cend()) {
                 return XR_ERROR_PATH_INVALID;
@@ -1191,6 +1195,11 @@ namespace pimax_openxr {
             if (isOutput && side >= 0) {
                 // Nothing to do here.
             }
+        }
+
+        // We do this at the very end to avoid any haptics to continue infinitely.
+        if (m_sessionState != XR_SESSION_STATE_FOCUSED) {
+            return XR_SESSION_NOT_FOCUSED;
         }
 
         return XR_SUCCESS;

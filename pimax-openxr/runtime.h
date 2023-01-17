@@ -355,6 +355,7 @@ namespace pimax_openxr {
         void fillDisplayDeviceInfo();
 
         // session.cpp
+        void updateSessionState(bool forceSendEvent = false);
         void refreshSettings();
         void initializeGuardianResources();
 
@@ -487,10 +488,12 @@ namespace pimax_openxr {
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
-        bool m_sessionStateDirty{false};
+        std::deque<std::pair<XrSessionState, double>> m_sessionEventQueue;
+        pvrHmdStatus m_hmdStatus{};
+        bool m_sessionBegun{false};
+        bool m_sessionLossPending{false};
         bool m_sessionStopping{false};
         bool m_sessionExiting{false};
-        double m_sessionStateEventTime{0.0};
         std::set<XrSwapchain> m_swapchains;
         std::set<XrSpace> m_spaces;
         XrSpace m_originSpace{XR_NULL_HANDLE};

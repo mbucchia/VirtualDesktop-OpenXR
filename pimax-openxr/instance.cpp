@@ -406,29 +406,15 @@ namespace pimax_openxr {
         }
 
         // Generate session events.
-        if (m_sessionStateDirty) {
-            if (m_sessionStopping) {
-                // Regress through each state during stoppage.
-                switch (m_sessionState) {
-                case XR_SESSION_STATE_FOCUSED:
-                    m_sessionState = XR_SESSION_STATE_VISIBLE;
-                    break;
-                case XR_SESSION_STATE_VISIBLE:
-                    m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
-                    break;
-                case XR_SESSION_STATE_SYNCHRONIZED:
-                    m_sessionState = XR_SESSION_STATE_STOPPING;
-                    m_sessionStopping = false;
-                    break;
-                }
-            }
-
+        updateSessionState();
+        if (!m_sessionEventQueue.empty()) {
             XrEventDataSessionStateChanged* const buffer = reinterpret_cast<XrEventDataSessionStateChanged*>(eventData);
             buffer->type = XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED;
             buffer->next = nullptr;
             buffer->session = (XrSession)1;
-            buffer->state = m_sessionState;
-            buffer->time = pvrTimeToXrTime(m_sessionStateEventTime);
+            buffer->state = m_sessionEventQueue.front().first;
+            buffer->time = pvrTimeToXrTime(m_sessionEventQueue.front().second);
+            m_sessionEventQueue.pop_front();
 
             TraceLoggingWrite(g_traceProvider,
                               "xrPollEvent",
@@ -436,14 +422,6 @@ namespace pimax_openxr {
                               TLXArg(buffer->session, "Session"),
                               TLArg(xr::ToCString(buffer->state), "State"),
                               TLArg(buffer->time, "Time"));
-
-            m_sessionStateDirty = m_sessionStopping;
-
-            if (m_sessionState == XR_SESSION_STATE_IDLE) {
-                m_sessionState = !m_sessionExiting ? XR_SESSION_STATE_READY : XR_SESSION_STATE_EXITING;
-                m_sessionStateDirty = true;
-                m_sessionStateEventTime = pvr_getTimeSeconds(m_pvr);
-            }
 
             return XR_SUCCESS;
         }
