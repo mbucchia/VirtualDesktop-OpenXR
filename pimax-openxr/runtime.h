@@ -273,16 +273,19 @@ namespace pimax_openxr {
             // Whether a static image swapchain has been acquired at least once.
             bool frozen{false};
 
-            // Certain depth formats require use to go through an intermediate texture and resolve (copy, convert) the
+            // Certain depth formats require use to go through an intermediate texture and convert the
             // texture later. We manage our own set of textures and image index.
-            bool needDepthResolve{false};
+            bool needDepthConvert{false};
             std::vector<ComPtr<ID3D11Texture2D>> images;
             uint32_t nextIndex{0};
 
-            // Resources needed to run the resolve shader.
+            // Resources needed to resolve MSAA and/or format conversion or alpha correction.
+            int lastProcessedIndex{-1};
+            bool needDownsample{false};
             std::vector<std::vector<ComPtr<ID3D11ShaderResourceView>>> imagesResourceView;
             ComPtr<ID3D11Texture2D> resolved;
-            ComPtr<ID3D11UnorderedAccessView> resolvedAccessView;
+            ComPtr<ID3D11Buffer> convertConstants;
+            ComPtr<ID3D11UnorderedAccessView> convertAccessView;
 
             // Resources needed for interop.
             std::vector<ComPtr<ID3D11Texture2D>> d3d11Images;
@@ -403,7 +406,9 @@ namespace pimax_openxr {
         std::vector<HANDLE> getSwapchainImages(Swapchain& xrSwapchain);
         XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain, XrSwapchainImageD3D11KHR* d3d11Images, uint32_t count);
         void prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
+                                            uint32_t layerIndex,
                                             uint32_t slice,
+                                            XrCompositionLayerFlags compositionFlags,
                                             std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const;
         void flushD3D11Context();
         void flushSubmissionContext();
@@ -484,7 +489,8 @@ namespace pimax_openxr {
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
         ComPtr<ID3D11DeviceContext4> m_pvrSubmissionContext;
         ComPtr<ID3D11Fence> m_pvrSubmissionFence;
-        ComPtr<ID3D11ComputeShader> m_resolveShader[2];
+        ComPtr<ID3D11ComputeShader> m_depthConvertShader[2];
+        ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};

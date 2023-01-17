@@ -178,6 +178,7 @@ namespace pimax_openxr {
         properties->trackingProperties.positionTracking = XR_TRUE;
         properties->trackingProperties.orientationTracking = XR_TRUE;
 
+        static_assert(pvrMaxLayerCount >= XR_MIN_COMPOSITION_LAYERS_SUPPORTED);
         properties->graphicsProperties.maxLayerCount = pvrMaxLayerCount;
         properties->graphicsProperties.maxSwapchainImageWidth = 16384;
         properties->graphicsProperties.maxSwapchainImageHeight = 16384;

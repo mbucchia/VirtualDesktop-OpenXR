@@ -160,7 +160,9 @@ namespace pimax_openxr {
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".
                 // We could go and check every supported render target formats to find a possibly higher count, but we
                 // do not bother.
-                views[i].maxSwapchainSampleCount = 8;
+                // TODO: We do not support MSAA swapchains today, as they are incompatible with our depth conversion and
+                // alpha correction shaders.
+                views[i].maxSwapchainSampleCount = 1;
                 views[i].recommendedSwapchainSampleCount = 1;
 
                 // Recommend the resolution with distortion accounted for.
@@ -365,10 +367,10 @@ namespace pimax_openxr {
         //   To mitigate this, we will create a D32_FLOAT swapchain and perform a conversion during xrEndFrame().
 
         pvrTextureSwapChain pvrSwapchain{};
-        bool needDepthResolve = false;
+        bool needDepthConvert = false;
         if (desc.Format == PVR_FORMAT_D32_FLOAT_S8X24_UINT) {
             desc.Format = PVR_FORMAT_D32_FLOAT;
-            needDepthResolve = true;
+            needDepthConvert = true;
         }
         CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &pvrSwapchain));
 
@@ -380,7 +382,7 @@ namespace pimax_openxr {
         xrSwapchain.imagesResourceView.push_back({});
         xrSwapchain.pvrDesc = desc;
         xrSwapchain.xrDesc = *createInfo;
-        xrSwapchain.needDepthResolve = needDepthResolve;
+        xrSwapchain.needDepthConvert = needDepthConvert;
 
         // Lazily-filled state.
         for (int i = 1; i < desc.ArraySize; i++) {
@@ -397,7 +399,7 @@ namespace pimax_openxr {
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateSwapchain",
                           TLXArg(*swapchain, "Swapchain"),
-                          TLArg(needDepthResolve, "NeedDepthResolve"));
+                          TLArg(needDepthConvert, "needDepthConvert"));
 
         return XR_SUCCESS;
     }
@@ -541,15 +543,19 @@ namespace pimax_openxr {
 
         // Query the image index from PVR.
         int imageIndex = xrSwapchain.nextIndex;
-        if (!xrSwapchain.needDepthResolve && xrSwapchain.acquiredIndices.empty()) {
-            // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a bug.
+        if (!xrSwapchain.needDepthConvert && xrSwapchain.acquiredIndices.empty()) {
+            // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a
+            // bug.
             CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &imageIndex));
         }
 
-        if (isD3D12Session()) {
-            transitionImageD3D12(xrSwapchain, imageIndex, true);
-        } else if (isVulkanSession()) {
-            transitionImageVulkan(xrSwapchain, imageIndex, true);
+        const bool isInitialized = !xrSwapchain.slices[0].empty();
+        if (isInitialized) {
+            if (isD3D12Session()) {
+                transitionImageD3D12(xrSwapchain, imageIndex, true);
+            } else if (isVulkanSession()) {
+                transitionImageVulkan(xrSwapchain, imageIndex, true);
+            }
         }
 
         xrSwapchain.acquiredIndices.push_back(imageIndex);
@@ -617,10 +623,13 @@ namespace pimax_openxr {
             return XR_ERROR_CALL_ORDER_INVALID;
         }
 
-        if (isD3D12Session()) {
-            transitionImageD3D12(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
-        } else if (isVulkanSession()) {
-            transitionImageVulkan(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
+        const bool isInitialized = !xrSwapchain.slices[0].empty();
+        if (isInitialized) {
+            if (isD3D12Session()) {
+                transitionImageD3D12(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
+            } else if (isVulkanSession()) {
+                transitionImageVulkan(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
+            }
         }
 
         // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.

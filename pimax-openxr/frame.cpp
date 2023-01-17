@@ -213,7 +213,7 @@ namespace pimax_openxr {
 
             std::unique_lock lock(m_frameLock);
 
-            if (m_frameWaited == m_frameCompleted) {
+            if (m_frameWaited == m_frameCompleted || m_frameBegun == m_frameWaited) {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
@@ -398,12 +398,6 @@ namespace pimax_openxr {
                     layer.Header.Flags = pvrLayerFlag_TextureOriginAtBottomLeft;
                 }
 
-                // COMPLIANCE: We ignore layerFlags, since there is no equivalent.
-                // Log the most common case that might cause issue.
-                if (!(frameEndInfo->layers[i]->layerFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)) {
-                    LOG_TELEMETRY_ONCE(logUnimplemented("LayerFlagsNotSupported"));
-                }
-
                 if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
                     const XrCompositionLayerProjection* proj =
                         reinterpret_cast<const XrCompositionLayerProjection*>(frameEndInfo->layers[i]);
@@ -462,8 +456,11 @@ namespace pimax_openxr {
                         }
 
                         // Fill out color buffer information.
-                        prepareAndCommitSwapchainImage(
-                            xrSwapchain, proj->views[eye].subImage.imageArrayIndex, committedSwapchainImages);
+                        prepareAndCommitSwapchainImage(xrSwapchain,
+                                                       i,
+                                                       proj->views[eye].subImage.imageArrayIndex,
+                                                       frameEndInfo->layers[i]->layerFlags,
+                                                       committedSwapchainImages);
                         layer.EyeFov.ColorTexture[eye] =
                             xrSwapchain.pvrSwapchain[proj->views[eye].subImage.imageArrayIndex];
 
@@ -530,8 +527,11 @@ namespace pimax_openxr {
                                     }
 
                                     // Fill out depth buffer information.
-                                    prepareAndCommitSwapchainImage(
-                                        xrDepthSwapchain, depth->subImage.imageArrayIndex, committedSwapchainImages);
+                                    prepareAndCommitSwapchainImage(xrDepthSwapchain,
+                                                                   i,
+                                                                   depth->subImage.imageArrayIndex,
+                                                                   0,
+                                                                   committedSwapchainImages);
                                     layer.EyeFovDepth.DepthTexture[eye] =
                                         xrDepthSwapchain.pvrSwapchain[depth->subImage.imageArrayIndex];
 
@@ -588,7 +588,8 @@ namespace pimax_openxr {
                         return XR_ERROR_LAYER_INVALID;
                     }
 
-                    // COMPLIANCE: We ignore eyeVisibility, since there is no equivalent.
+                    // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the PVR compositor.
+                    // We cannot achieve conformance for this particular (but uncommon) API usage.
                     if (quad->eyeVisibility != XR_EYE_VISIBILITY_BOTH) {
                         LOG_TELEMETRY_ONCE(logUnimplemented("QuadEyeVisibilityNotSupported"));
                     }
@@ -598,8 +599,11 @@ namespace pimax_openxr {
                     }
 
                     // Fill out color buffer information.
-                    prepareAndCommitSwapchainImage(
-                        xrSwapchain, quad->subImage.imageArrayIndex, committedSwapchainImages);
+                    prepareAndCommitSwapchainImage(xrSwapchain,
+                                                   i,
+                                                   quad->subImage.imageArrayIndex,
+                                                   frameEndInfo->layers[i]->layerFlags,
+                                                   committedSwapchainImages);
                     layer.Quad.ColorTexture = xrSwapchain.pvrSwapchain[quad->subImage.imageArrayIndex];
 
                     if (!isValidSwapchainRect(xrSwapchain.pvrDesc, quad->subImage.imageRect)) {
@@ -623,7 +627,7 @@ namespace pimax_openxr {
                         layer.Header.Flags = pvrLayerFlag_HeadLocked;
                         layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, location.pose));
                     } else {
-                        layer.Quad.QuadPoseCenter = xrPoseToPvrPose(quad->pose);
+                        layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
                         layer.Header.Flags = pvrLayerFlag_HeadLocked;
                     }
 
