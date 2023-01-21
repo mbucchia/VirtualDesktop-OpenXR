@@ -613,9 +613,8 @@ namespace pimax_openxr {
                 {
                     D3D11_TEXTURE2D_DESC desc{};
                     desc.ArraySize = 1;
-                    desc.Format = !xrSwapchain.needDepthConvert
-                                      ? getTypelessFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format)
-                                      : DXGI_FORMAT_R32_TYPELESS;
+                    desc.Format = !xrSwapchain.needDepthConvert ? getTypelessFormat(xrSwapchain.dxgiFormatForSubmission)
+                                                                : DXGI_FORMAT_R32_TYPELESS;
                     desc.Width = xrSwapchain.xrDesc.width;
                     desc.Height = xrSwapchain.xrDesc.height;
                     desc.MipLevels = xrSwapchain.xrDesc.mipCount;
@@ -642,9 +641,8 @@ namespace pimax_openxr {
                     D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
 
                     desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-                    desc.Format = !xrSwapchain.needDepthConvert
-                                      ? getNonSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format)
-                                      : DXGI_FORMAT_R32_FLOAT;
+                    desc.Format = !xrSwapchain.needDepthConvert ? getNonSRGBFormat(xrSwapchain.dxgiFormatForSubmission)
+                                                                : DXGI_FORMAT_R32_FLOAT;
                     desc.Texture2D.MipSlice = 0;
 
                     CHECK_HRCMD(m_pvrSubmissionDevice->CreateUnorderedAccessView(
@@ -660,7 +658,7 @@ namespace pimax_openxr {
 
                 desc.ViewDimension = xrSwapchain.xrDesc.arraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D
                                                                        : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-                desc.Format = !xrSwapchain.needDepthConvert ? (DXGI_FORMAT)xrSwapchain.xrDesc.format
+                desc.Format = !xrSwapchain.needDepthConvert ? xrSwapchain.dxgiFormatForSubmission
                                                             : DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
                 desc.Texture2DArray.ArraySize = 1;
                 desc.Texture2DArray.MipLevels = xrSwapchain.xrDesc.mipCount;

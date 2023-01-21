@@ -329,6 +329,7 @@ namespace pimax_openxr {
         desc.Format = isVulkanSession()   ? vkToPvrTextureFormat((VkFormat)createInfo->format)
                       : isOpenGLSession() ? glToPvrTextureFormat((GLenum)createInfo->format)
                                           : dxgiToPvrTextureFormat((DXGI_FORMAT)createInfo->format);
+        const auto dxgiFormatForSubmission = pvrToDxgiTextureFormat(desc.Format);
         if (desc.Format == PVR_FORMAT_UNKNOWN) {
             return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
         }
@@ -380,6 +381,7 @@ namespace pimax_openxr {
         xrSwapchain.imagesResourceView.push_back({});
         xrSwapchain.pvrDesc = desc;
         xrSwapchain.xrDesc = *createInfo;
+        xrSwapchain.dxgiFormatForSubmission = dxgiFormatForSubmission;
         xrSwapchain.needDepthConvert = needDepthConvert;
 
         // Lazily-filled state.

@@ -406,6 +406,35 @@ namespace pimax_openxr::utils {
         }
     }
 
+    static DXGI_FORMAT pvrToDxgiTextureFormat(pvrTextureFormat format) {
+        switch (format) {
+        case PVR_FORMAT_R8G8B8A8_UNORM:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case PVR_FORMAT_R8G8B8A8_UNORM_SRGB:
+            return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case PVR_FORMAT_B8G8R8A8_UNORM:
+            return DXGI_FORMAT_B8G8R8A8_UNORM;
+        case PVR_FORMAT_B8G8R8A8_UNORM_SRGB:
+            return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+        case PVR_FORMAT_B8G8R8X8_UNORM:
+            return DXGI_FORMAT_B8G8R8X8_UNORM;
+        case PVR_FORMAT_B8G8R8X8_UNORM_SRGB:
+            return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+        case PVR_FORMAT_R16G16B16A16_FLOAT:
+            return DXGI_FORMAT_R16G16B16A16_FLOAT;
+        case PVR_FORMAT_D16_UNORM:
+            return DXGI_FORMAT_D16_UNORM;
+        case PVR_FORMAT_D24_UNORM_S8_UINT:
+            return DXGI_FORMAT_D24_UNORM_S8_UINT;
+        case PVR_FORMAT_D32_FLOAT:
+            return DXGI_FORMAT_D32_FLOAT;
+        case PVR_FORMAT_D32_FLOAT_S8X24_UINT:
+            return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+        default:
+            return DXGI_FORMAT_UNKNOWN;
+        }
+    }
+
     static pvrTextureFormat vkToPvrTextureFormat(VkFormat format) {
         switch (format) {
         case VK_FORMAT_R8G8B8A8_UNORM:

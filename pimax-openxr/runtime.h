@@ -298,6 +298,7 @@ namespace pimax_openxr {
 
             // Information recorded at creation.
             XrSwapchainCreateInfo xrDesc;
+            DXGI_FORMAT dxgiFormatForSubmission{DXGI_FORMAT_UNKNOWN};
             pvrTextureSwapChainDesc pvrDesc;
         };
 
