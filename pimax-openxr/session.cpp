@@ -172,6 +172,8 @@ namespace pimax_openxr {
         m_frameTimes.clear();
 
         m_isControllerActive[0] = m_isControllerActive[1] = false;
+        m_controllerAimPose[0] = m_controllerGripPose[0] = m_controllerHandPose[0] = m_controllerAimPose[1] =
+            m_controllerGripPose[1] = m_controllerHandPose[1] = Pose::Identity();
         rebindControllerActions(0);
         rebindControllerActions(1);
         m_activeActionSets.clear();
