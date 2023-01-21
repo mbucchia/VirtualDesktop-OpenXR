@@ -624,11 +624,11 @@ namespace pimax_openxr {
                         XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
                         // Workaround: always use head-locked quads, otherwise PVR seems to misplace them in space.
                         CHECK_XRCMD(xrLocateSpace(quad->space, m_viewSpace, frameEndInfo->displayTime, &location));
-                        layer.Header.Flags = pvrLayerFlag_HeadLocked;
+                        layer.Header.Flags |= pvrLayerFlag_HeadLocked;
                         layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, location.pose));
                     } else {
                         layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
-                        layer.Header.Flags = pvrLayerFlag_HeadLocked;
+                        layer.Header.Flags |= pvrLayerFlag_HeadLocked;
                     }
 
                     layer.Quad.QuadSize.x = quad->size.width;
