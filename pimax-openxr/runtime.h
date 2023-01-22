@@ -325,6 +325,11 @@ namespace pimax_openxr {
         struct ActionSet {
             std::string name;
             std::string localizedName;
+
+            std::set<XrPath> subactionPaths;
+
+            // A copy of the input state. This is to handle when xrSyncActions() does not update all actionsets at once.
+            pvrInputState cachedInputState;
         };
 
         struct Action {
@@ -334,14 +339,14 @@ namespace pimax_openxr {
 
             XrActionSet actionSet{XR_NULL_HANDLE};
 
-            float lastFloatValue{0.f};
-            XrTime lastFloatValueChangedTime{0};
+            float lastFloatValue[2]{0.f, 0.f};
+            XrTime lastFloatValueChangedTime[2]{0, 0};
 
-            XrVector2f lastVector2fValue{0.f, 0.f};
-            XrTime lastVector2fValueChangedTime{0};
+            XrVector2f lastVector2fValue[2]{{0.f, 0.f}, {0.f, 0.f}};
+            XrTime lastVector2fValueChangedTime[2]{0, 0};
 
-            bool lastBoolValue{false};
-            XrTime lastBoolValueChangedTime{0};
+            bool lastBoolValue[2]{false, false};
+            XrTime lastBoolValueChangedTime[2]{0, 0};
 
             std::set<XrPath> subactionPaths;
             std::map<std::string, ActionSource> actionSources;
@@ -510,7 +515,6 @@ namespace pimax_openxr {
         float m_joystickDeadzone{0.f};
         bool m_swapGripAimPoses{false};
         std::set<XrActionSet> m_activeActionSets;
-        std::set<XrActionSet> m_validActionSets;
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
         bool m_isControllerActive[2]{false, false};
         std::string m_cachedControllerType[2];

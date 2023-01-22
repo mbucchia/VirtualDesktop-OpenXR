@@ -177,7 +177,6 @@ namespace pimax_openxr {
         rebindControllerActions(0);
         rebindControllerActions(1);
         m_activeActionSets.clear();
-        m_validActionSets.clear();
 
         m_sessionStartTime = pvr_getTimeSeconds(m_pvr);
         m_sessionTotalFrameCount = 0;

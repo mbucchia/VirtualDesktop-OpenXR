@@ -213,7 +213,6 @@ namespace pimax_openxr {
         delete xrActionSet;
         m_actionSets.erase(actionSet);
         m_activeActionSets.erase(actionSet);
-        m_validActionSets.erase(actionSet);
 
         return XR_SUCCESS;
     }
@@ -270,6 +269,10 @@ namespace pimax_openxr {
 
         for (const auto& entry : m_actions) {
             const Action& xrAction = *(Action*)entry;
+
+            if (xrAction.actionSet != actionSet) {
+                continue;
+            }
 
             if (xrAction.name == name) {
                 return XR_ERROR_NAME_DUPLICATED;
@@ -403,8 +406,19 @@ namespace pimax_openxr {
             if (!m_actionSets.count(attachInfo->actionSets[i])) {
                 return XR_ERROR_HANDLE_INVALID;
             }
+        }
 
+        for (uint32_t i = 0; i < attachInfo->countActionSets; i++) {
             m_activeActionSets.insert(attachInfo->actionSets[i]);
+
+            ActionSet& xrActionSet = *(ActionSet*)attachInfo->actionSets[i];
+
+            // Identify all valid subaction paths for the actionset.
+            for (const auto& entry : m_actions) {
+                const Action& xrAction = *(Action*)entry;
+
+                xrActionSet.subactionPaths.insert(xrAction.subactionPaths.begin(), xrAction.subactionPaths.end());
+            }
         }
 
         return XR_SUCCESS;
@@ -431,12 +445,19 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
-        // If no side is specified, we use left.
-        const int side = topLevelUserPath != XR_NULL_PATH ? getActionSide(getXrPath(topLevelUserPath)) : 0;
-        if (side >= 0) {
-            interactionProfile->interactionProfile = m_currentInteractionProfile[side];
-        } else {
+        const auto topLevelPath = getXrPath(topLevelUserPath);
+        if (topLevelPath.empty() || topLevelPath == "<unknown>") {
+            return XR_ERROR_PATH_INVALID;
+        }
+
+        const int side = getActionSide(topLevelPath, true);
+        if (side < 0) {
             return XR_ERROR_PATH_UNSUPPORTED;
+        }
+
+        interactionProfile->interactionProfile = XR_NULL_PATH;
+        if (side == 0 || side == 1) {
+            interactionProfile->interactionProfile = m_currentInteractionProfile[side];
         }
 
         TraceLoggingWrite(g_traceProvider,
@@ -489,6 +510,7 @@ namespace pimax_openxr {
 
         std::optional<bool> combinedState;
         const std::string& subActionPath = getXrPath(getInfo->subactionPath);
+        const int subActionSide = std::max(0, getActionSide(subActionPath));
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -505,7 +527,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side] && m_validActionSets.count(xrAction.actionSet)) {
+                if (m_isControllerActive[side]) {
                     // Per spec, the combined state is the OR of all values.
                     if (value.buttonMap) {
                         combinedState = combinedState.value_or(false) || value.buttonMap[side] & value.buttonType;
@@ -517,14 +539,21 @@ namespace pimax_openxr {
         }
 
         state->isActive = combinedState ? XR_TRUE : XR_FALSE;
-        state->currentState = combinedState.value_or(xrAction.lastBoolValue);
+        if (combinedState) {
+            state->currentState = combinedState.value();
+            state->changedSinceLastSync = !!state->currentState != xrAction.lastBoolValue[subActionSide];
 
-        state->changedSinceLastSync = !!state->currentState != xrAction.lastBoolValue;
-        state->lastChangeTime = state->changedSinceLastSync ? pvrTimeToXrTime(m_cachedInputState.TimeInSeconds)
-                                                            : xrAction.lastBoolValueChangedTime;
+            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+            state->lastChangeTime = state->changedSinceLastSync
+                                        ? pvrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
+                                        : xrAction.lastBoolValueChangedTime[subActionSide];
+        } else {
+            state->currentState = state->changedSinceLastSync = XR_FALSE;
+            state->lastChangeTime = 0;
+        }
 
-        xrAction.lastBoolValue = state->currentState;
-        xrAction.lastBoolValueChangedTime = state->lastChangeTime;
+        xrAction.lastBoolValue[subActionSide] = state->currentState;
+        xrAction.lastBoolValueChangedTime[subActionSide] = state->lastChangeTime;
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateBoolean",
@@ -579,6 +608,7 @@ namespace pimax_openxr {
 
         std::optional<float> combinedState;
         const std::string& subActionPath = getXrPath(getInfo->subactionPath);
+        const int subActionSide = std::max(0, getActionSide(subActionPath));
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -597,7 +627,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side] && m_validActionSets.count(xrAction.actionSet)) {
+                if (m_isControllerActive[side]) {
                     // Per spec, the combined state is the absolute maximum of all values.
                     if (value.floatValue) {
                         combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
@@ -616,14 +646,22 @@ namespace pimax_openxr {
         }
 
         state->isActive = combinedState ? XR_TRUE : XR_FALSE;
-        state->currentState = combinedState.value_or(xrAction.lastFloatValue);
+        if (combinedState) {
+            state->currentState = combinedState.value();
+            state->changedSinceLastSync = state->currentState != xrAction.lastFloatValue[subActionSide];
 
-        state->changedSinceLastSync = state->currentState != xrAction.lastFloatValue;
-        state->lastChangeTime = state->changedSinceLastSync ? pvrTimeToXrTime(m_cachedInputState.TimeInSeconds)
-                                                            : xrAction.lastFloatValueChangedTime;
+            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+            state->lastChangeTime = state->changedSinceLastSync
+                                        ? pvrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
+                                        : xrAction.lastFloatValueChangedTime[subActionSide];
+        } else {
+            state->currentState = 0.0f;
+            state->changedSinceLastSync = XR_FALSE;
+            state->lastChangeTime = 0;
+        }
 
-        xrAction.lastFloatValue = state->currentState;
-        xrAction.lastFloatValueChangedTime = state->lastChangeTime;
+        xrAction.lastFloatValue[subActionSide] = state->currentState;
+        xrAction.lastFloatValueChangedTime[subActionSide] = state->lastChangeTime;
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateFloat",
@@ -678,6 +716,7 @@ namespace pimax_openxr {
 
         std::optional<XrVector2f> combinedState;
         const std::string& subActionPath = getXrPath(getInfo->subactionPath);
+        const int subActionSide = std::max(0, getActionSide(subActionPath));
         for (const auto& source : xrAction.actionSources) {
             if (!startsWith(source.first, subActionPath)) {
                 continue;
@@ -694,7 +733,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side] && m_validActionSets.count(xrAction.actionSet)) {
+                if (m_isControllerActive[side]) {
                     const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
 
                     // Per spec, the combined state if the one of the vector with the longest length.
@@ -710,15 +749,24 @@ namespace pimax_openxr {
         }
 
         state->isActive = combinedState ? XR_TRUE : XR_FALSE;
-        state->currentState = combinedState.value_or(xrAction.lastVector2fValue);
+        if (combinedState) {
+            state->currentState = combinedState.value();
 
-        state->changedSinceLastSync = state->currentState.x != xrAction.lastVector2fValue.x ||
-                                      state->currentState.y != xrAction.lastVector2fValue.y;
-        state->lastChangeTime = state->changedSinceLastSync ? pvrTimeToXrTime(m_cachedInputState.TimeInSeconds)
-                                                            : xrAction.lastVector2fValueChangedTime;
+            state->changedSinceLastSync = state->currentState.x != xrAction.lastVector2fValue[subActionSide].x ||
+                                          state->currentState.y != xrAction.lastVector2fValue[subActionSide].y;
 
-        xrAction.lastVector2fValue = state->currentState;
-        xrAction.lastVector2fValueChangedTime = state->lastChangeTime;
+            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+            state->lastChangeTime = state->changedSinceLastSync
+                                        ? pvrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
+                                        : xrAction.lastVector2fValueChangedTime[subActionSide];
+        } else {
+            state->currentState = {0.0f, 0.0f};
+            state->changedSinceLastSync = XR_FALSE;
+            state->lastChangeTime = 0;
+        }
+
+        xrAction.lastVector2fValue[subActionSide] = state->currentState;
+        xrAction.lastVector2fValueChangedTime[subActionSide] = state->lastChangeTime;
 
         TraceLoggingWrite(
             g_traceProvider,
@@ -820,14 +868,15 @@ namespace pimax_openxr {
                 return XR_ERROR_ACTIONSET_NOT_ATTACHED;
             }
 
-            m_validActionSets.insert(syncInfo->activeActionSets[i].actionSet);
-
-            // CONFORMANCE: We do not check for subActionPath supported. TODO.
-            // CONFORMANCE: We do not precisely honor subActionPath with multiple action sets. TODO.
-
             if (syncInfo->activeActionSets[i].subactionPath == XR_NULL_PATH) {
                 doSide[0] = doSide[1] = true;
             } else {
+                const ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
+
+                if (!xrActionSet.subactionPaths.count(syncInfo->activeActionSets[i].subactionPath)) {
+                    return XR_ERROR_PATH_UNSUPPORTED;
+                }
+
                 const int side = getActionSide(getXrPath(syncInfo->activeActionSets[i].subactionPath));
                 if (side >= 0) {
                     doSide[side] = true;
@@ -869,6 +918,14 @@ namespace pimax_openxr {
                 TLArg(m_cachedInputState.fingerRing[side], "RingFinger"),
                 TLArg(m_cachedInputState.fingerPinky[side], "PinkyFinger"));
 
+            // Propagate the input state to the entire action state.
+            for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
+                ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
+
+                xrActionSet.cachedInputState = m_cachedInputState;
+            }
+
+            // Look for changes in controller/interaction profiles.
             const auto lastControllerType = m_cachedControllerType[side];
             const int size = pvr_getTrackedDeviceStringProperty(m_pvrSession,
                                                                 side == 0 ? pvrTrackedDevice_LeftController
@@ -1000,11 +1057,17 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
         }
 
-        // Build the string.
-        std::string localizedName;
+        if (!getInfo->whichComponents) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
 
         const std::string path = getXrPath(getInfo->sourcePath);
+        if (path.empty() || path == "<unknown>") {
+            return XR_ERROR_PATH_INVALID;
+        }
 
+        // Build the string.
+        std::string localizedName;
         const int side = getActionSide(path);
         if (side >= 0) {
             bool needSpace = false;
@@ -1122,8 +1185,9 @@ namespace pimax_openxr {
                                           TLArg(vibration->frequency, "Frequency"),
                                           TLArg(vibration->duration, "Duration"));
 
-                        // NOTE: PVR only supports pulses, so there is nothing we can do with the frequency/duration?
-                        // OpenComposite seems to pass an amplitude of 0 sometimes, which is not supported.
+                        // NOTE: PVR only supports pulses, so there is nothing we can do with the
+                        // frequency/duration? OpenComposite seems to pass an amplitude of 0 sometimes, which is not
+                        // supported.
                         if (vibration->amplitude > 0) {
                             CHECK_PVRCMD(pvr_triggerHapticPulse(m_pvrSession,
                                                                 side == 0 ? pvrTrackedDevice_LeftController
@@ -1305,7 +1369,7 @@ namespace pimax_openxr {
                     // Map to the PVR input state.
                     ActionSource newSource{};
                     if (mapping(xrAction, binding.binding, newSource)) {
-                        // Avoid duplicates. This is because we (lazily) don't handle subActionPath properly.
+                        // Avoid duplicates.
                         bool duplicated = false;
                         for (const auto& source : xrAction.actionSources) {
                             if (source.second.realPath == newSource.realPath) {
@@ -1324,6 +1388,20 @@ namespace pimax_openxr {
                                               TLArg(!!newSource.buttonMap, "IsButton"),
                                               TLArg(!!newSource.floatValue, "IsFloat"),
                                               TLArg(!!newSource.vector2fValue, "IsVector2"));
+
+                            // Relocate the pointers to the copy of the input state within the actionset.
+                            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+                            const auto relocatePointer = [&](void* pointer) {
+                                uint8_t* p = (uint8_t*)pointer;
+                                uint8_t* oldBase = (uint8_t*)&m_cachedInputState;
+                                uint8_t* newBase = (uint8_t*)&xrActionSet.cachedInputState;
+
+                                return newBase + (p - oldBase);
+                            };
+                            newSource.buttonMap = (uint32_t*)relocatePointer((void*)newSource.buttonMap);
+                            newSource.floatValue = (float*)relocatePointer((void*)newSource.floatValue);
+                            newSource.vector2fValue = (pvrVector2f*)relocatePointer((void*)newSource.vector2fValue);
+
                             xrAction.actionSources.insert_or_assign(sourcePath, newSource);
                         }
                     }
