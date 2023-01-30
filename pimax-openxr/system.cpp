@@ -52,7 +52,14 @@ namespace pimax_openxr {
 
         // Create the PVR session.
         if (!m_pvrSession) {
-            CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
+            const auto result = pvr_createSession(m_pvr, &m_pvrSession);
+
+            // This is the error returned when pi_server is not running. We pretend the HMD is not found.
+            if (result == pvrResult::pvr_rpc_failed) {
+                return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
+            }
+
+            CHECK_PVRCMD(result);
         }
 
         // Check for HMD presence.
