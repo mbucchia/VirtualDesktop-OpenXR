@@ -1414,6 +1414,7 @@ namespace pimax_openxr {
                           TLArg(side == 0 ? "Left" : "Right", "Side"),
                           TLArg(actualInteractionProfile.c_str(), "InteractionProfile"));
 
+        const auto prevInterationProfile = m_currentInteractionProfile[side];
         if (!actualInteractionProfile.empty()) {
             CHECK_XRCMD(
                 xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
@@ -1442,7 +1443,9 @@ namespace pimax_openxr {
             m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();
         }
 
-        m_currentInteractionProfileDirty = true;
+        m_currentInteractionProfileDirty =
+            m_currentInteractionProfileDirty ||
+            (m_currentInteractionProfile[side] != prevInterationProfile && !m_activeActionSets.empty());
     }
 
     std::string OpenXrRuntime::getXrPath(XrPath path) const {
