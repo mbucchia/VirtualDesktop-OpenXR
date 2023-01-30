@@ -50,15 +50,21 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
     pvrSessionHandle pvrSession;
     CHECK_PVRCMD(pvr_createSession(pvr, &pvrSession));
 
+    pvrHmdInfo hmdInfo{};
+    CHECK_PVRCMD(pvr_getHmdInfo(pvrSession, &hmdInfo));
+    // Pimax 4K is the only device without canted displays.
+    const bool hasCantedDisplays = !(hmdInfo.VendorId == 1155 && hmdInfo.ProductId == 33);
+
     pvrDisplayInfo displayInfo{};
     CHECK_PVRCMD(pvr_getEyeDisplayInfo(pvrSession, pvrEye_Left, &displayInfo));
 
     pvrEyeRenderInfo eyeInfo[xr::StereoView::Count];
     CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Left, &eyeInfo[0]));
     CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Right, &eyeInfo[1]));
-    // Add the canting angle. All Pimax headsets have a 10 degrees canting on each size.
-    const auto fov = 20.f + PVR::RadToDegree(atan(eyeInfo[1].Fov.RightTan)) + PVR::RadToDegree(atan(eyeInfo[0].Fov.LeftTan));
-    const auto useParallelProjection = !pvr_getIntConfig(pvrSession, "steamvr_use_native_fov", 0);
+    // Add the canting angle. All Pimax headsets with canted displays have a 10 degrees canting on each size.
+    const auto fov = PVR::RadToDegree(atan(eyeInfo[1].Fov.RightTan)) + PVR::RadToDegree(atan(eyeInfo[0].Fov.LeftTan)) +
+                     (hasCantedDisplays ? 20.0f : 0.0f);
+    const auto useParallelProjection = hasCantedDisplays && !pvr_getIntConfig(pvrSession, "steamvr_use_native_fov", 0);
 
     pvrFovPort fovForResolution = eyeInfo[0].Fov;
     if (useParallelProjection) {

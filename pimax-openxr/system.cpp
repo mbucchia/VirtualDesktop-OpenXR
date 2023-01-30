@@ -71,23 +71,29 @@ namespace pimax_openxr {
         }
 
         // Query HMD properties.
-        pvrHmdInfo info{};
-        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &info));
+        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &m_cachedHmdInfo));
         TraceLoggingWrite(g_traceProvider,
                           "PVR_HmdInfo",
-                          TLArg(info.VendorId, "VendorId"),
-                          TLArg(info.ProductId, "ProductId"),
-                          TLArg(info.Manufacturer, "Manufacturer"),
-                          TLArg(info.ProductName, "ProductName"),
-                          TLArg(info.SerialNumber, "SerialNumber"),
-                          TLArg(info.FirmwareMinor, "FirmwareMinor"),
-                          TLArg(info.FirmwareMajor, "FirmwareMajor"),
-                          TLArg(info.Resolution.w, "ResolutionWidth"),
-                          TLArg(info.Resolution.h, "ResolutionHeight"));
+                          TLArg(m_cachedHmdInfo.VendorId, "VendorId"),
+                          TLArg(m_cachedHmdInfo.ProductId, "ProductId"),
+                          TLArg(m_cachedHmdInfo.Manufacturer, "Manufacturer"),
+                          TLArg(m_cachedHmdInfo.ProductName, "ProductName"),
+                          TLArg(m_cachedHmdInfo.SerialNumber, "SerialNumber"),
+                          TLArg(m_cachedHmdInfo.FirmwareMinor, "FirmwareMinor"),
+                          TLArg(m_cachedHmdInfo.FirmwareMajor, "FirmwareMajor"),
+                          TLArg(m_cachedHmdInfo.Resolution.w, "ResolutionWidth"),
+                          TLArg(m_cachedHmdInfo.Resolution.h, "ResolutionHeight"));
         if (!m_loggedProductName) {
-            Log("Device is: %s\n", info.ProductName);
-            m_telemetry.logProduct(info.ProductName);
+            Log("Device is: %s\n", m_cachedHmdInfo.ProductName);
+            m_telemetry.logProduct(m_cachedHmdInfo.ProductName);
             m_loggedProductName = true;
+        }
+
+        // Pimax 4K is the only device without canted displays.
+        const bool hasCantedDisplays = !(m_cachedHmdInfo.VendorId == 1155 && m_cachedHmdInfo.ProductId == 33);
+        m_useParallelProjection = hasCantedDisplays && m_useParallelProjection;
+        if (m_useParallelProjection) {
+            Log("Parallel projection is enabled\n");
         }
 
         // Cache common information.
@@ -111,7 +117,7 @@ namespace pimax_openxr {
                 // Eliminate canting.
                 m_cachedEyeInfo[i].HmdToEyePose.Orientation = PVR::Quatf::Identity();
 
-                // Shift FOV by 10 degrees. All Pimax headsets have a 10 degrees canting.
+                // Shift FOV by 10 degrees. All Pimax headsets with canted displays have a 10 degrees canting.
                 const float angle = i == 0 ? -PVR::DegreeToRad(10.f) : PVR::DegreeToRad(10.f);
                 m_cachedEyeFov[i].angleLeft += angle;
                 m_cachedEyeFov[i].angleRight += angle;
@@ -164,15 +170,11 @@ namespace pimax_openxr {
             }
         }
 
-        // Query HMD properties.
-        pvrHmdInfo info{};
-        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &info));
-
-        properties->vendorId = info.VendorId;
+        properties->vendorId = m_cachedHmdInfo.VendorId;
 
         // We include the "aapvr" string because some applications like OpenXR Toolkit rely on this string to
         // identify Pimax.
-        sprintf_s(properties->systemName, sizeof(properties->systemName), "%s (aapvr)", info.ProductName);
+        sprintf_s(properties->systemName, sizeof(properties->systemName), "%s (aapvr)", m_cachedHmdInfo.ProductName);
         properties->systemId = systemId;
 
         properties->trackingProperties.positionTracking = XR_TRUE;

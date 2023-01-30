@@ -462,7 +462,7 @@ namespace pimax_openxr {
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
         // Instance & PVR state.
-        pvrEnvHandle m_pvr;
+        pvrEnvHandle m_pvr{nullptr};
         pvrSessionHandle m_pvrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
@@ -472,9 +472,10 @@ namespace pimax_openxr {
         LUID m_adapterLuid{};
         float m_displayRefreshRate{0};
         double m_frameDuration{0};
-        pvrEyeRenderInfo m_cachedEyeInfo[xr::StereoView::Count];
+        pvrHmdInfo m_cachedHmdInfo{};
+        pvrEyeRenderInfo m_cachedEyeInfo[xr::StereoView::Count]{};
         float m_floorHeight{0.f};
-        LARGE_INTEGER m_qpcFrequency;
+        LARGE_INTEGER m_qpcFrequency{};
         double m_pvrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
         std::map<XrPath, std::string> m_strings;
