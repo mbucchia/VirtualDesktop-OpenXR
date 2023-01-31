@@ -32,7 +32,7 @@ namespace pimax_openxr {
     using namespace pimax_openxr::utils;
 
     LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-        return dynamic_cast<OpenXrRuntime*>(GetInstance())->mirrorWindowProc(hwnd, msg, wParam, lParam);
+        return static_cast<OpenXrRuntime*>(GetInstance())->mirrorWindowProc(hwnd, msg, wParam, lParam);
     }
 
     void OpenXrRuntime::createMirrorWindow() {
