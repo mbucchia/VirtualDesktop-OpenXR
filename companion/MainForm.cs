@@ -267,6 +267,8 @@ namespace companion
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
                 key.SetValue(name, value, Microsoft.Win32.RegistryValueKind.DWord);
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix.Replace("SOFTWARE\\", "SOFTWARE\\WOW6432Node\\"));
+                key.SetValue(name, value, Microsoft.Win32.RegistryValueKind.DWord);
             }
             catch (Exception)
             {
