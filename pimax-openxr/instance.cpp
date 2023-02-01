@@ -571,26 +571,30 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         InitializeHighPrecisionTimer();
         DisableThreadLibraryCalls(hModule);
 
-        // Initialize the platform SDK (requirement for the store).
-        // Do this in a background thread to avoid interfering with app initialization/shutdown.
-        CreateThread(
-            NULL,
-            0,
-            [](void* param) -> DWORD {
-                // Increment our own DLL refcount to prevent unloading until finished.
-                // https://devblogs.microsoft.com/oldnewthing/20131105-00/?p=2733
-                HMODULE self;
-                GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCSTR>(&DllMain), &self);
+        if (!pimax_openxr::utils::RegGetDword(HKEY_LOCAL_MACHINE, pimax_openxr::RegPrefix, "disable_platform_sdk")
+                 .value_or(0)) {
+            // Initialize the platform SDK (requirement for the store).
+            // Do this in a background thread to avoid interfering with app initialization/shutdown.
+            CreateThread(
+                NULL,
+                0,
+                [](void* param) -> DWORD {
+                    // Increment our own DLL refcount to prevent unloading until finished.
+                    // https://devblogs.microsoft.com/oldnewthing/20131105-00/?p=2733
+                    HMODULE self;
+                    GetModuleHandleExA(
+                        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, reinterpret_cast<LPCSTR>(&DllMain), &self);
 
-                pimax_openxr::store::storeAsyncInit();
+                    pimax_openxr::store::storeAsyncInit();
 
-                // Allow the DLL to be unloaded now.
-                FreeLibraryAndExitThread(self, 0);
-                return 0;
-            },
-            nullptr,
-            0,
-            0);
+                    // Allow the DLL to be unloaded now.
+                    FreeLibraryAndExitThread(self, 0);
+                    return 0;
+                },
+                nullptr,
+                0,
+                0);
+        }
 
         break;
 
