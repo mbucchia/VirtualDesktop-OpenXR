@@ -170,6 +170,14 @@ namespace pimax_openxr {
         Log("PVR: %s\n", versionString.data());
         TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
+        // We want to log a warning if HAGS is on.
+        const auto hwSchMode =
+            RegGetDword(HKEY_LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "HwSchMode");
+        if (hwSchMode && hwSchMode.value() == 2) {
+            TraceLoggingWrite(g_traceProvider, "HwSchMode", TLArg("On", "Mode"));
+            Log("HAGS is on\n");
+        }
+
         // Create the PVR session. Failing here is not considered fatal. We will try to initialize again during
         // xrGetSystem(). This is to allow the application to create the instance and query its properties even if
         // pi_server is not available.
