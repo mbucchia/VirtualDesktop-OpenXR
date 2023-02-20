@@ -248,10 +248,15 @@ namespace pimax_openxr {
 
         // Watch for changes in the registry.
         try {
-            m_registryWatcher = wil::make_registry_watcher(
-                HKEY_LOCAL_MACHINE, xr::utf8_to_wide(RegPrefix).c_str(), true, [&](wil::RegistryChangeKind changeType) {
-                    refreshSettings();
-                });
+            wil::unique_hkey keyToWatch;
+            if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                              xr::utf8_to_wide(RegPrefix).c_str(),
+                              0,
+                              KEY_WOW64_64KEY | KEY_READ,
+                              keyToWatch.put()) == ERROR_SUCCESS) {
+                m_registryWatcher = wil::make_registry_watcher(
+                    std::move(keyToWatch), true, [&](wil::RegistryChangeKind changeType) { refreshSettings(); });
+            }
         } catch (std::exception&) {
             // Ignore errors that can happen with UWP applications not able to write to the registry.
         }

@@ -310,7 +310,7 @@ namespace pimax_openxr::utils {
         LONG retCode = ::RegGetValue(hKey,
                                      xr::utf8_to_wide(subKey).c_str(),
                                      xr::utf8_to_wide(value).c_str(),
-                                     RRF_RT_REG_DWORD,
+                                     RRF_SUBKEY_WOW6464KEY | RRF_RT_REG_DWORD,
                                      nullptr,
                                      &data,
                                      &dataSize);
@@ -325,7 +325,7 @@ namespace pimax_openxr::utils {
         LONG retCode = ::RegGetValue(hKey,
                                      xr::utf8_to_wide(subKey).c_str(),
                                      xr::utf8_to_wide(value).c_str(),
-                                     RRF_RT_REG_SZ,
+                                     RRF_SUBKEY_WOW6464KEY | RRF_RT_REG_SZ,
                                      nullptr,
                                      nullptr,
                                      &dataSize);
@@ -337,7 +337,7 @@ namespace pimax_openxr::utils {
         retCode = ::RegGetValue(hKey,
                                 xr::utf8_to_wide(subKey).c_str(),
                                 xr::utf8_to_wide(value).c_str(),
-                                RRF_RT_REG_SZ,
+                                RRF_SUBKEY_WOW6464KEY | RRF_RT_REG_SZ,
                                 nullptr,
                                 data.data(),
                                 &dataSize);
