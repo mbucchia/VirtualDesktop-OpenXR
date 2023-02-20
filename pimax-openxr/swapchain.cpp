@@ -436,11 +436,6 @@ namespace pimax_openxr {
             xrSwapchain.pvrSwapchain.pop_back();
         }
 
-        if (xrSwapchain.vkCmdBuffer != VK_NULL_HANDLE) {
-            m_vkDispatch.vkResetCommandBuffer(xrSwapchain.vkCmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-            m_vkDispatch.vkFreeCommandBuffers(m_vkDevice, m_vkCmdPool, 1, &xrSwapchain.vkCmdBuffer);
-        }
-
         while (!xrSwapchain.vkImages.empty()) {
             m_vkDispatch.vkDestroyImage(m_vkDevice, xrSwapchain.vkImages.back(), m_vkAllocator);
             xrSwapchain.vkImages.pop_back();
@@ -549,15 +544,6 @@ namespace pimax_openxr {
             CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &imageIndex));
         }
 
-        const bool isInitialized = !xrSwapchain.slices[0].empty();
-        if (isInitialized) {
-            if (isD3D12Session()) {
-                transitionImageD3D12(xrSwapchain, imageIndex, true);
-            } else if (isVulkanSession()) {
-                transitionImageVulkan(xrSwapchain, imageIndex, true);
-            }
-        }
-
         xrSwapchain.acquiredIndices.push_back(imageIndex);
         xrSwapchain.frozen = xrSwapchain.pvrDesc.StaticImage;
         xrSwapchain.nextIndex = imageIndex + 1;
@@ -621,15 +607,6 @@ namespace pimax_openxr {
         // Check an image is acquired and waited.
         if (xrSwapchain.acquiredIndices.empty() || xrSwapchain.acquiredIndices.front() != xrSwapchain.lastWaitedIndex) {
             return XR_ERROR_CALL_ORDER_INVALID;
-        }
-
-        const bool isInitialized = !xrSwapchain.slices[0].empty();
-        if (isInitialized) {
-            if (isD3D12Session()) {
-                transitionImageD3D12(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
-            } else if (isVulkanSession()) {
-                transitionImageVulkan(xrSwapchain, xrSwapchain.lastWaitedIndex, false);
-            }
         }
 
         // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.

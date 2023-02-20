@@ -289,7 +289,6 @@ namespace pimax_openxr {
             std::vector<ComPtr<ID3D12Resource>> d3d12Images;
             std::vector<VkDeviceMemory> vkDeviceMemory;
             std::vector<VkImage> vkImages;
-            VkCommandBuffer vkCmdBuffer{VK_NULL_HANDLE};
             std::vector<GLuint> glMemory;
             std::vector<GLuint> glImages;
 
@@ -423,7 +422,6 @@ namespace pimax_openxr {
         void cleanupD3D12();
         bool isD3D12Session() const;
         XrResult getSwapchainImagesD3D12(Swapchain& xrSwapchain, XrSwapchainImageD3D12KHR* d3d12Images, uint32_t count);
-        void transitionImageD3D12(Swapchain& xrSwapchain, uint32_t index, bool acquire);
         void flushD3D12CommandQueue();
         void serializeD3D12Frame();
 
@@ -433,7 +431,6 @@ namespace pimax_openxr {
         void cleanupVulkan();
         bool isVulkanSession() const;
         XrResult getSwapchainImagesVulkan(Swapchain& xrSwapchain, XrSwapchainImageVulkanKHR* vkImages, uint32_t count);
-        void transitionImageVulkan(Swapchain& xrSwapchain, uint32_t index, bool acquire);
         void flushVulkanCommandQueue();
         void serializeVulkanFrame();
 
@@ -558,14 +555,14 @@ namespace pimax_openxr {
         ComPtr<ID3D11DeviceContext4> m_d3d11Context;
         ComPtr<ID3D12Device> m_d3d12Device;
         ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
-        ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator[2];
-        ComPtr<ID3D12GraphicsCommandList> m_d3d12CommandList[2];
-        uint32_t m_currentAllocatorIndex{0};
+        ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator;
+        ComPtr<ID3D12GraphicsCommandList> m_d3d12CommandList;
         VkInstance m_vkBootstrapInstance{VK_NULL_HANDLE};
         VkPhysicalDevice m_vkBootstrapPhysicalDevice{VK_NULL_HANDLE};
         VkInstance m_vkInstance{VK_NULL_HANDLE};
         VkDevice m_vkDevice{VK_NULL_HANDLE};
         VkCommandPool m_vkCmdPool{VK_NULL_HANDLE};
+        VkCommandBuffer m_vkCmdBuffer{VK_NULL_HANDLE};
         struct {
             PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr{nullptr};
 
@@ -623,6 +620,10 @@ namespace pimax_openxr {
         VkSemaphore m_vkTimelineSemaphore{VK_NULL_HANDLE};
         GLuint m_glSemaphore{0};
         UINT64 m_fenceValue{0};
+
+        // Due to Vulkan semaphore transference rules(?) it looks like we may not be able to both signal and wait on an
+        // imported semaphore. Use a separate one for host-side flushes.
+        VkSemaphore m_vkTimelineSemaphoreForFlush{VK_NULL_HANDLE};
 
         // Workaround: the AMD driver does not seem to like closing the handle for the shared fence when using
         // OpenGL. We keep it alive for the whole session.

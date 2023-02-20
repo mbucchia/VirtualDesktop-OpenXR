@@ -124,16 +124,14 @@ namespace pimax_openxr {
             m_d3d12Device->OpenSharedHandle(fenceHandle.get(), IID_PPV_ARGS(m_d3d12Fence.ReleaseAndGetAddressOf())));
 
         // We will need command lists to perform layout transitions.
-        for (uint32_t i = 0; i < 2; i++) {
-            CHECK_HRCMD(m_d3d12Device->CreateCommandAllocator(
-                D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_d3d12CommandAllocator[i].ReleaseAndGetAddressOf())));
-            CHECK_HRCMD(m_d3d12Device->CreateCommandList(0,
-                                                         D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                                         m_d3d12CommandAllocator[i].Get(),
-                                                         nullptr,
-                                                         IID_PPV_ARGS(m_d3d12CommandList[i].ReleaseAndGetAddressOf())));
-            CHECK_HRCMD(m_d3d12CommandList[i]->Close());
-        }
+        CHECK_HRCMD(m_d3d12Device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_d3d12CommandAllocator.ReleaseAndGetAddressOf())));
+        CHECK_HRCMD(m_d3d12Device->CreateCommandList(0,
+                                                     D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                     m_d3d12CommandAllocator.Get(),
+                                                     nullptr,
+                                                     IID_PPV_ARGS(m_d3d12CommandList.ReleaseAndGetAddressOf())));
+        CHECK_HRCMD(m_d3d12CommandList->Close());
 
         // Frame timers.
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
@@ -149,10 +147,8 @@ namespace pimax_openxr {
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerApp[i].reset();
         }
-        for (uint32_t i = 0; i < 2; i++) {
-            m_d3d12CommandList[i].Reset();
-            m_d3d12CommandAllocator[i].Reset();
-        }
+        m_d3d12CommandList.Reset();
+        m_d3d12CommandAllocator.Reset();
         m_d3d12Fence.Reset();
         m_d3d12CommandQueue.Reset();
         m_d3d12Device.Reset();
@@ -169,10 +165,22 @@ namespace pimax_openxr {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
 
+        const bool needTransition = xrSwapchain.xrDesc.usageFlags & (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT |
+                                                                     XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
         std::vector<HANDLE> textureHandles;
         if (!initialized) {
             // Query the swapchain textures.
             textureHandles = getSwapchainImages(xrSwapchain);
+
+            if (needTransition) {
+                // We keep our code simple by only using a single command list, which means we must wait before reusing
+                // it.
+                flushD3D12CommandQueue();
+
+                // Prepare to execute barriers.
+                CHECK_HRCMD(m_d3d12CommandList->Reset(m_d3d12CommandAllocator.Get(), nullptr));
+            }
         }
 
         // Export each D3D11 texture to D3D12.
@@ -189,6 +197,19 @@ namespace pimax_openxr {
                 setDebugName(d3d12Resource.Get(), fmt::format("App Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
                 xrSwapchain.d3d12Images.push_back(d3d12Resource);
+
+                if (needTransition) {
+                    D3D12_RESOURCE_BARRIER barrier{};
+                    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                    barrier.Transition.pResource = d3d12Resource.Get();
+                    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+                    barrier.Transition.StateAfter =
+                        xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
+                            ? D3D12_RESOURCE_STATE_RENDER_TARGET
+                            : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+                    m_d3d12CommandList->ResourceBarrier(1, &barrier);
+                }
             }
 
             d3d12Images[i].texture = xrSwapchain.d3d12Images[i].Get();
@@ -215,31 +236,14 @@ namespace pimax_openxr {
                               TLPArg(d3d12Images[i].texture, "Texture"));
         }
 
-        return XR_SUCCESS;
-    }
-
-    // Transition a swapchain image to the appropriate layout.
-    void OpenXrRuntime::transitionImageD3D12(Swapchain& xrSwapchain, uint32_t index, bool acquire) {
-        if (!(xrSwapchain.xrDesc.usageFlags &
-              (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT))) {
-            return;
+        if (!initialized && needTransition) {
+            // Transition all images to the desired state.
+            CHECK_HRCMD(m_d3d12CommandList->Close());
+            m_d3d12CommandQueue->ExecuteCommandLists(
+                1, reinterpret_cast<ID3D12CommandList**>(m_d3d12CommandList.GetAddressOf()));
         }
 
-        CHECK_HRCMD(m_d3d12CommandList[m_currentAllocatorIndex]->Reset(
-            m_d3d12CommandAllocator[m_currentAllocatorIndex].Get(), nullptr));
-        D3D12_RESOURCE_BARRIER barrier{};
-        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        barrier.Transition.pResource = xrSwapchain.d3d12Images[index].Get();
-        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-        barrier.Transition.StateAfter = xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
-                                            ? D3D12_RESOURCE_STATE_RENDER_TARGET
-                                            : D3D12_RESOURCE_STATE_DEPTH_WRITE;
-        m_d3d12CommandList[m_currentAllocatorIndex]->ResourceBarrier(1, &barrier);
-        CHECK_HRCMD(m_d3d12CommandList[m_currentAllocatorIndex]->Close());
-
-        m_d3d12CommandQueue->ExecuteCommandLists(
-            1, reinterpret_cast<ID3D12CommandList**>(m_d3d12CommandList[m_currentAllocatorIndex].GetAddressOf()));
+        return XR_SUCCESS;
     }
 
     // Wait for all pending commands to finish.
@@ -264,10 +268,6 @@ namespace pimax_openxr {
         CHECK_HRCMD(m_d3d12CommandQueue->Signal(m_d3d12Fence.Get(), m_fenceValue));
 
         waitOnSubmissionDevice();
-
-        // We also use this opportunity to switch command list.
-        m_currentAllocatorIndex ^= 1;
-        m_d3d12CommandAllocator[m_currentAllocatorIndex]->Reset();
     }
 
 } // namespace pimax_openxr

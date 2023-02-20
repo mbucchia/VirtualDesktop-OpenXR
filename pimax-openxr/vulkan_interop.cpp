@@ -487,11 +487,20 @@ namespace pimax_openxr {
         importInfo.handle = fenceHandle.get();
         CHECK_VKCMD(m_vkDispatch.vkImportSemaphoreWin32HandleKHR(m_vkDevice, &importInfo));
 
+        // Create an additional semaphore for host-side wait.
+        CHECK_VKCMD(
+            m_vkDispatch.vkCreateSemaphore(m_vkDevice, &createInfo, m_vkAllocator, &m_vkTimelineSemaphoreForFlush));
+
         // We will need command buffers to perform layout transitions.
         VkCommandPoolCreateInfo poolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
         poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolCreateInfo.queueFamilyIndex = vkBindings.queueFamilyIndex;
         CHECK_VKCMD(m_vkDispatch.vkCreateCommandPool(m_vkDevice, &poolCreateInfo, m_vkAllocator, &m_vkCmdPool));
+        VkCommandBufferAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+        allocateInfo.commandPool = m_vkCmdPool;
+        allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocateInfo.commandBufferCount = 1;
+        CHECK_VKCMD(m_vkDispatch.vkAllocateCommandBuffers(m_vkDevice, &allocateInfo, &m_vkCmdBuffer));
 
         // Frame timers.
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
@@ -547,6 +556,15 @@ namespace pimax_openxr {
         if (m_vkDispatch.vkDestroySemaphore) {
             m_vkDispatch.vkDestroySemaphore(m_vkDevice, m_vkTimelineSemaphore, m_vkAllocator);
             m_vkTimelineSemaphore = VK_NULL_HANDLE;
+            m_vkDispatch.vkDestroySemaphore(m_vkDevice, m_vkTimelineSemaphoreForFlush, m_vkAllocator);
+            m_vkTimelineSemaphoreForFlush = VK_NULL_HANDLE;
+        }
+        if (m_vkDispatch.vkResetCommandBuffer) {
+            m_vkDispatch.vkResetCommandBuffer(m_vkCmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+        }
+        if (m_vkDispatch.vkFreeCommandBuffers) {
+            m_vkDispatch.vkFreeCommandBuffers(m_vkDevice, m_vkCmdPool, 1, &m_vkCmdBuffer);
+            m_vkCmdBuffer = VK_NULL_HANDLE;
         }
         if (m_vkDispatch.vkDestroyCommandPool) {
             m_vkDispatch.vkDestroyCommandPool(m_vkDevice, m_vkCmdPool, m_vkAllocator);
@@ -575,18 +593,24 @@ namespace pimax_openxr {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
 
+        const bool needTransition = xrSwapchain.xrDesc.usageFlags & (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT |
+                                                                     XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
         std::vector<HANDLE> textureHandles;
         if (!initialized) {
             // Query the swapchain textures.
             textureHandles = getSwapchainImages(xrSwapchain);
 
-            // Create the command list needed for transitioning the resources.
-            VkCommandBufferAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-            allocateInfo.commandPool = m_vkCmdPool;
-            allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocateInfo.commandBufferCount = 1;
+            if (needTransition) {
+                // We keep our code simple by only using a single command buffer, which means we must wait before
+                // reusing it.
+                flushVulkanCommandQueue();
 
-            CHECK_VKCMD(m_vkDispatch.vkAllocateCommandBuffers(m_vkDevice, &allocateInfo, &xrSwapchain.vkCmdBuffer));
+                // Prepare to execute layout transitions.
+                VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+                beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                CHECK_VKCMD(m_vkDispatch.vkBeginCommandBuffer(m_vkCmdBuffer, &beginInfo));
+            }
         }
 
         // Helper to select the memory type.
@@ -694,6 +718,36 @@ namespace pimax_openxr {
                 bindImageInfo.image = image;
                 bindImageInfo.memory = memory;
                 CHECK_VKCMD(m_vkDispatch.vkBindImageMemory2KHR(m_vkDevice, 1, &bindImageInfo));
+
+                if (needTransition) {
+                    VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                    if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
+                        barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    }
+                    if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                        barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    }
+                    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    barrier.image = image;
+                    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    barrier.subresourceRange.baseMipLevel = 0;
+                    barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+                    barrier.subresourceRange.baseArrayLayer = 0;
+                    barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+                    m_vkDispatch.vkCmdPipelineBarrier(m_vkCmdBuffer,
+                                                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                      VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                                                      0,
+                                                      0,
+                                                      (VkMemoryBarrier*)nullptr,
+                                                      0,
+                                                      (VkBufferMemoryBarrier*)nullptr,
+                                                      1,
+                                                      &barrier);
+                }
             }
 
             vkImages[i].image = xrSwapchain.vkImages[i];
@@ -704,55 +758,16 @@ namespace pimax_openxr {
                               TLXArg(vkImages[i].image, "Texture"));
         }
 
+        if (!initialized && needTransition) {
+            // Transition all images to the desired state.
+            m_vkDispatch.vkEndCommandBuffer(m_vkCmdBuffer);
+            VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &m_vkCmdBuffer;
+            CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
+        }
+
         return XR_SUCCESS;
-    }
-
-    // Transition a swapchain image to the appropriate layout.
-    void OpenXrRuntime::transitionImageVulkan(Swapchain& xrSwapchain, uint32_t index, bool acquire) {
-        if (!(xrSwapchain.xrDesc.usageFlags &
-              (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT))) {
-            return;
-        }
-
-        VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-        barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
-            barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
-        if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        }
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = xrSwapchain.vkImages[index];
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-        VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        CHECK_VKCMD(m_vkDispatch.vkBeginCommandBuffer(xrSwapchain.vkCmdBuffer, &beginInfo));
-
-        m_vkDispatch.vkCmdPipelineBarrier(xrSwapchain.vkCmdBuffer,
-                                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                          VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                                          0,
-                                          0,
-                                          (VkMemoryBarrier*)nullptr,
-                                          0,
-                                          (VkBufferMemoryBarrier*)nullptr,
-                                          1,
-                                          &barrier);
-
-        m_vkDispatch.vkEndCommandBuffer(xrSwapchain.vkCmdBuffer);
-
-        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &xrSwapchain.vkCmdBuffer;
-        CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
     }
 
     // Wait for all pending commands to finish.
@@ -766,13 +781,13 @@ namespace pimax_openxr {
             timelineInfo.pSignalSemaphoreValues = &m_fenceValue;
             VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo};
             submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = &m_vkTimelineSemaphore;
+            submitInfo.pSignalSemaphores = &m_vkTimelineSemaphoreForFlush;
             CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
             VkSemaphoreWaitInfo waitInfo{VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO};
             waitInfo.semaphoreCount = 1;
-            waitInfo.pSemaphores = &m_vkTimelineSemaphore;
+            waitInfo.pSemaphores = &m_vkTimelineSemaphoreForFlush;
             waitInfo.pValues = &m_fenceValue;
-            CHECK_VKCMD(m_vkDispatch.vkWaitSemaphoresKHR(m_vkDevice, &waitInfo, -1));
+            CHECK_VKCMD(m_vkDispatch.vkWaitSemaphoresKHR(m_vkDevice, &waitInfo, UINT64_MAX));
         }
     }
 
