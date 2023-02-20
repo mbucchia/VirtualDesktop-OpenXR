@@ -122,6 +122,33 @@ namespace {
         return true;
     }
 
+    // Retrieve the version of Pitool/Pimax Client.
+    std::optional<std::tuple<std::string, int, int, int, int>> getPimaxClientVersion() {
+        const auto clientVersion = pimax_openxr::utils::RegGetString(
+            HKEY_LOCAL_MACHINE,
+            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{0D1DA8F2-89A7-4DAC-A9EF-B55E82CDA462}}_is1",
+            "DisplayVersion");
+        if (clientVersion) {
+            try {
+                std::stringstream ss(clientVersion.value());
+                std::string component;
+                std::getline(ss, component, '.');
+                const int major = std::stoi(component);
+                std::getline(ss, component, '.');
+                const int intermediate = std::stoi(component);
+                std::getline(ss, component, '.');
+                const int minor = std::stoi(component);
+                std::getline(ss, component, '.');
+                const int release = std::stoi(component);
+
+                return std::make_tuple(clientVersion.value(), major, intermediate, minor, release);
+            } catch (std::exception&) {
+                // Ignore.
+            }
+        }
+        return {};
+    }
+
 } // namespace
 
 namespace pimax_openxr {
@@ -175,43 +202,29 @@ namespace pimax_openxr {
         TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
         // Identify the version of Pitool or Pimax Client.
-        const auto clientVersion = RegGetString(
-            HKEY_LOCAL_MACHINE,
-            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{0D1DA8F2-89A7-4DAC-A9EF-B55E82CDA462}}_is1",
-            "DisplayVersion");
+        const auto clientVersion = getPimaxClientVersion();
         if (clientVersion) {
-            try {
-                std::stringstream ss(*clientVersion);
-                std::string component;
-                std::getline(ss, component, '.');
-                const int major = std::stoi(component);
-                std::getline(ss, component, '.');
-                const int intermediate = std::stoi(component);
-                std::getline(ss, component, '.');
-                const int minor = std::stoi(component);
-                std::getline(ss, component, '.');
-                const int release = std::stoi(component);
+            std::string clientVersionString;
+            int major, intermediate, minor, release;
+            std::tie(clientVersionString, major, intermediate, minor, release) = clientVersion.value();
 
-                const bool isPitool = major == 1 && intermediate == 0 && minor == 1;
+            const bool isPitool = major == 1 && intermediate == 0 && minor == 1;
 
-                if (isPitool) {
-                    Log("Pitool: %s\n", clientVersion->c_str());
-                    TraceLoggingWrite(g_traceProvider, "Pitool", TLArg(clientVersion->c_str(), "VersionString"));
-                } else {
-                    Log("Pimax Client: %s\n", clientVersion->c_str());
-                    TraceLoggingWrite(g_traceProvider, "PimaxClient", TLArg(clientVersion->c_str(), "VersionString"));
-                }
-
-                // Enable quirks based on version.
-
-                // Quick for compositor not properly placing world-locked quad layers.
-                // - Pitool 1.0.1.283 and above ;
-                // - All versions of Pimax Client.
-                m_needWorldLockedQuadLayerQuirk = !isPitool || (isPitool && release >= 283);
-
-            } catch (std::exception&) {
-                Log("Unrecognized version of Pitool/Pimax Client: %s\n", clientVersion->c_str());
+            if (isPitool) {
+                Log("Pitool: %s\n", clientVersionString.c_str());
+                TraceLoggingWrite(g_traceProvider, "Pitool", TLArg(clientVersionString.c_str(), "VersionString"));
+            } else {
+                Log("Pimax Client: %s\n", clientVersionString.c_str());
+                TraceLoggingWrite(g_traceProvider, "PimaxClient", TLArg(clientVersionString.c_str(), "VersionString"));
             }
+
+            // Enable quirks based on version.
+
+            // Quick for compositor not properly placing world-locked quad layers.
+            // - Pitool 1.0.1.283 and above ;
+            // - All versions of Pimax Client.
+            m_needWorldLockedQuadLayerQuirk = !isPitool || (isPitool && release >= 283);
+
         } else {
             Log("Could not detect Pitool/Pimax Client version\n");
         }
@@ -615,14 +628,25 @@ extern "C" __declspec(dllexport) const char* WINAPI getVersionString() {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
-    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_ATTACH: {
         TraceLoggingRegister(pimax_openxr::log::g_traceProvider);
         DetourRestoreAfterWith();
         InitializeHighPrecisionTimer();
         DisableThreadLibraryCalls(hModule);
 
+        // Detect presence of the Pimax Client (as opposed to Pitool).
+        bool isPimaxClient = false;
+        const auto clientVersion = getPimaxClientVersion();
+        if (clientVersion) {
+            std::string clientVersionString;
+            int major, intermediate, minor, release;
+            std::tie(clientVersionString, major, intermediate, minor, release) = clientVersion.value();
+
+            isPimaxClient = !(major == 1 && intermediate == 0 && minor == 1);
+        }
+
         if (!pimax_openxr::utils::RegGetDword(HKEY_LOCAL_MACHINE, pimax_openxr::RegPrefix, "disable_platform_sdk")
-                 .value_or(0)) {
+                 .value_or(!isPimaxClient)) {
             // Initialize the platform SDK (requirement for the store).
             // Do this in a background thread to avoid interfering with app initialization/shutdown.
             CreateThread(
@@ -645,8 +669,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 0,
                 0);
         }
-
-        break;
+    } break;
 
     case DLL_PROCESS_DETACH:
         TraceLoggingUnregister(pimax_openxr::log::g_traceProvider);
