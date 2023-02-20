@@ -1,6 +1,6 @@
 $BuildType = "RelWithDebInfo"
 
-cmake -G "Visual Studio 17 2022" -A "x64" -B $PSScriptRoot\..\bin\x64\CTS -S $PSScriptRoot\..\external\OpenXR-CTS `
+cmake -G "Visual Studio 16 2019" -A "x64" -B $PSScriptRoot\..\bin\x64\CTS -S $PSScriptRoot\..\external\OpenXR-CTS `
     -DDYNAMIC_LOADER=ON `
     -DBUILD_LOADER=ON `
     -DBUILD_API_LAYERS=OFF `
