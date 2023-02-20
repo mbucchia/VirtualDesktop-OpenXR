@@ -26,6 +26,7 @@
 #include "runtime.h"
 #include "store.h"
 #include "utils.h"
+#include "version.h"
 
 namespace {
 
@@ -129,6 +130,9 @@ namespace pimax_openxr {
     using namespace pimax_openxr::log;
 
     // CONFORMANCE: We do not handle multithreading properly. TODO: All functions must be thread-safe.
+
+    const std::string RuntimePrettyName =
+        fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
 
     OpenXrRuntime::OpenXrRuntime() {
         if (getSetting("enable_telemetry").value_or(0)) {

@@ -32,11 +32,8 @@ namespace pimax_openxr {
     using namespace pimax_openxr::appinsights;
     using namespace pimax_openxr::utils;
 
-#include "version.h"
-
     const std::string RuntimeName = "pimax-openxr";
-    const std::string RuntimePrettyName =
-        fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
+    extern const std::string RuntimePrettyName;
     const std::string RegPrefix = "SOFTWARE\\PimaxXR";
 
     // This class implements all APIs that the runtime supports.
