@@ -237,12 +237,7 @@ namespace pimax_openxr {
             DXGI_ADAPTER_DESC1 desc;
             CHECK_HRCMD(dxgiAdapter->GetDesc1(&desc));
             if (!memcmp(&desc.AdapterLuid, &m_adapterLuid, sizeof(LUID))) {
-                std::string deviceName;
-                const std::wstring wadapterDescription(desc.Description);
-                std::transform(wadapterDescription.begin(),
-                               wadapterDescription.end(),
-                               std::back_inserter(deviceName),
-                               [](wchar_t c) { return (char)c; });
+                const std::string deviceName = xr::wide_to_utf8(desc.Description);
 
                 TraceLoggingWrite(g_traceProvider,
                                   "xrCreateSession",

@@ -308,8 +308,8 @@ namespace pimax_openxr::utils {
         DWORD data{};
         DWORD dataSize = sizeof(data);
         LONG retCode = ::RegGetValue(hKey,
-                                     std::wstring(subKey.begin(), subKey.end()).c_str(),
-                                     std::wstring(value.begin(), value.end()).c_str(),
+                                     xr::utf8_to_wide(subKey).c_str(),
+                                     xr::utf8_to_wide(value).c_str(),
                                      RRF_RT_REG_DWORD,
                                      nullptr,
                                      &data,
@@ -318,6 +318,34 @@ namespace pimax_openxr::utils {
             return {};
         }
         return data;
+    }
+
+    static std::optional<std::string> RegGetString(HKEY hKey, const std::string& subKey, const std::string& value) {
+        DWORD dataSize = 0;
+        LONG retCode = ::RegGetValue(hKey,
+                                     xr::utf8_to_wide(subKey).c_str(),
+                                     xr::utf8_to_wide(value).c_str(),
+                                     RRF_RT_REG_SZ,
+                                     nullptr,
+                                     nullptr,
+                                     &dataSize);
+        if (retCode != ERROR_SUCCESS || !dataSize) {
+            return {};
+        }
+
+        std::wstring data(dataSize / sizeof(wchar_t), 0);
+        retCode = ::RegGetValue(hKey,
+                                xr::utf8_to_wide(subKey).c_str(),
+                                xr::utf8_to_wide(value).c_str(),
+                                RRF_RT_REG_SZ,
+                                nullptr,
+                                data.data(),
+                                &dataSize);
+        if (retCode != ERROR_SUCCESS) {
+            return {};
+        }
+
+        return xr::wide_to_utf8(data).substr(0, dataSize / sizeof(wchar_t) - 1);
     }
 
     static std::vector<const char*> ParseExtensionString(char* names) {

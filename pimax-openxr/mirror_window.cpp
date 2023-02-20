@@ -55,7 +55,7 @@ namespace pimax_openxr {
             const auto defaultWidth = m_cachedEyeInfo[0].DistortedViewport.Size.w / 2;
             const auto defaultHeight = m_cachedEyeInfo[0].DistortedViewport.Size.h / 2;
             m_mirrorWindowHwnd = CreateWindowW(wndClassEx.lpszClassName,
-                                               std::wstring(title.begin(), title.end()).c_str(),
+                                               xr::utf8_to_wide(title).c_str(),
                                                WS_OVERLAPPEDWINDOW,
                                                CW_USEDEFAULT,
                                                CW_USEDEFAULT,

@@ -170,6 +170,18 @@ namespace pimax_openxr {
         Log("PVR: %s\n", versionString.data());
         TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
+        // Identify the version of Pitool.
+        const auto pitoolVersion = RegGetString(
+            HKEY_LOCAL_MACHINE,
+            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{0D1DA8F2-89A7-4DAC-A9EF-B55E82CDA462}}_is1",
+            "DisplayVersion");
+        if (pitoolVersion) {
+            Log("Pitool: %s\n", pitoolVersion->c_str());
+            TraceLoggingWrite(g_traceProvider, "Pitool", TLArg(pitoolVersion->c_str(), "VersionString"));
+        } else {
+            Log("Could not detect Pitool version\n");
+        }
+
         // We want to log a warning if HAGS is on.
         const auto hwSchMode =
             RegGetDword(HKEY_LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "HwSchMode");
@@ -202,11 +214,10 @@ namespace pimax_openxr {
 
         // Watch for changes in the registry.
         try {
-            m_registryWatcher =
-                wil::make_registry_watcher(HKEY_LOCAL_MACHINE,
-                                           std::wstring(RegPrefix.begin(), RegPrefix.end()).c_str(),
-                                           true,
-                                           [&](wil::RegistryChangeKind changeType) { refreshSettings(); });
+            m_registryWatcher = wil::make_registry_watcher(
+                HKEY_LOCAL_MACHINE, xr::utf8_to_wide(RegPrefix).c_str(), true, [&](wil::RegistryChangeKind changeType) {
+                    refreshSettings();
+                });
         } catch (std::exception&) {
             // Ignore errors that can happen with UWP applications not able to write to the registry.
         }

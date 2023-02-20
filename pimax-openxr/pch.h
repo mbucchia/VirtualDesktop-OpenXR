@@ -98,6 +98,13 @@ using Microsoft::WRL::ComPtr;
 #include <XrStereoView.h>
 #include <XrToString.h>
 
+// This header is not compatible with XR_NO_PROTOTYPES... We make a couple of symbols for now.
+#define xrStringToPath(...) XR_ERROR_RUNTIME_FAILURE
+#define xrPathToString(...) XR_ERROR_RUNTIME_FAILURE
+#include <XrString.h>
+#undef xrStringToPath
+#undef xrPathToString
+
 // Detours
 #include <detours.h>
 
