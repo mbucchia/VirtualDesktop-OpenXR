@@ -189,7 +189,7 @@ namespace pimax_openxr::utils {
         virtual uint64_t query(bool reset = true) const = 0;
     };
 
-    // A CPU synchronous timer.
+    // A synchronous CPU timer.
     class CpuTimer : public ITimer {
         using clock = std::chrono::high_resolution_clock;
 
@@ -214,9 +214,9 @@ namespace pimax_openxr::utils {
         mutable clock::duration m_duration{0};
     };
 
-    // A GPU asynchronous timer.
-    struct GpuTimer : public ITimer {
-        GpuTimer(ID3D11Device* device, ID3D11DeviceContext* context) : m_context(context) {
+    // An asynchronous GPU timer for Direct3D 11.
+    struct D3D11GpuTimer : public ITimer {
+        D3D11GpuTimer(ID3D11Device* device, ID3D11DeviceContext* context) : m_context(context) {
             D3D11_QUERY_DESC queryDesc;
             ZeroMemory(&queryDesc, sizeof(D3D11_QUERY_DESC));
             queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
@@ -260,6 +260,105 @@ namespace pimax_openxr::utils {
         ComPtr<ID3D11Query> m_timeStampDis;
         ComPtr<ID3D11Query> m_timeStampStart;
         ComPtr<ID3D11Query> m_timeStampEnd;
+
+        // Can the timer be queried (it might still only read 0).
+        mutable bool m_valid{false};
+    };
+
+    // An asynchronous GPU timer for Direct3D 12.
+    struct D3D12GpuTimer : public ITimer {
+        D3D12GpuTimer(ID3D12Device* device, ID3D12CommandQueue* queue) : m_queue(queue) {
+            // Create the command context.
+            for (uint32_t i = 0; i < 2; i++) {
+                CHECK_HRCMD(device->CreateCommandAllocator(
+                    D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(m_commandAllocator[i].ReleaseAndGetAddressOf())));
+                m_commandAllocator[i]->SetName(L"Timer Command Allocator");
+                CHECK_HRCMD(device->CreateCommandList(0,
+                                                      D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                                      m_commandAllocator[i].Get(),
+                                                      nullptr,
+                                                      IID_PPV_ARGS(m_commandList[i].ReleaseAndGetAddressOf())));
+                m_commandList[i]->SetName(L"Timer Command List");
+                CHECK_HRCMD(m_commandList[i]->Close());
+            }
+            CHECK_HRCMD(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_fence.ReleaseAndGetAddressOf())));
+            m_fence->SetName(L"Timer Readback Fence");
+
+            // Create the query heap and readback resources.
+            D3D12_QUERY_HEAP_DESC heapDesc{};
+            heapDesc.Count = 2;
+            heapDesc.NodeMask = 0;
+            heapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+            CHECK_HRCMD(device->CreateQueryHeap(&heapDesc, IID_PPV_ARGS(m_queryHeap.ReleaseAndGetAddressOf())));
+            m_queryHeap->SetName(L"Timestamp Query Heap");
+
+            D3D12_HEAP_PROPERTIES heapType{};
+            heapType.Type = D3D12_HEAP_TYPE_READBACK;
+            heapType.CreationNodeMask = heapType.VisibleNodeMask = 1;
+            D3D12_RESOURCE_DESC readbackDesc{};
+            readbackDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            readbackDesc.Width = heapDesc.Count * sizeof(uint64_t);
+            readbackDesc.Height = readbackDesc.DepthOrArraySize = readbackDesc.MipLevels =
+                readbackDesc.SampleDesc.Count = 1;
+            readbackDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            CHECK_HRCMD(device->CreateCommittedResource(&heapType,
+                                                        D3D12_HEAP_FLAG_NONE,
+                                                        &readbackDesc,
+                                                        D3D12_RESOURCE_STATE_COPY_DEST,
+                                                        nullptr,
+                                                        IID_PPV_ARGS(m_queryReadbackBuffer.ReleaseAndGetAddressOf())));
+            m_queryReadbackBuffer->SetName(L"Query Readback Buffer");
+        }
+
+        void start() override {
+            CHECK_HRCMD(m_commandAllocator[0]->Reset());
+            CHECK_HRCMD(m_commandList[0]->Reset(m_commandAllocator[0].Get(), nullptr));
+            m_commandList[0]->EndQuery(m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0);
+            CHECK_HRCMD(m_commandList[0]->Close());
+            ID3D12CommandList* const lists[] = {m_commandList[0].Get()};
+            m_queue->ExecuteCommandLists(1, lists);
+        }
+
+        void stop() override {
+            CHECK_HRCMD(m_commandAllocator[1]->Reset());
+            CHECK_HRCMD(m_commandList[1]->Reset(m_commandAllocator[1].Get(), nullptr));
+            m_commandList[1]->EndQuery(m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 1);
+            m_commandList[1]->ResolveQueryData(
+                m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, m_queryReadbackBuffer.Get(), 0);
+            CHECK_HRCMD(m_commandList[1]->Close());
+            ID3D12CommandList* const lists[] = {m_commandList[1].Get()};
+            m_queue->ExecuteCommandLists(1, lists);
+
+            // Signal a fence for completion.
+            m_queue->Signal(m_fence.Get(), ++m_fenceValue);
+            m_valid = true;
+        }
+
+        uint64_t query(bool reset = true) const override {
+            uint64_t duration = 0;
+            if (m_valid) {
+                uint64_t gpuTickFrequency;
+                if (m_fence->GetCompletedValue() >= m_fenceValue &&
+                    SUCCEEDED(m_queue->GetTimestampFrequency(&gpuTickFrequency))) {
+                    uint64_t* mappedBuffer;
+                    D3D12_RANGE range{0, 2 * sizeof(uint64_t)};
+                    CHECK_HRCMD(m_queryReadbackBuffer->Map(0, &range, reinterpret_cast<void**>(&mappedBuffer)));
+                    duration = ((mappedBuffer[1] - mappedBuffer[0]) * 1000000) / gpuTickFrequency;
+                    m_queryReadbackBuffer->Unmap(0, nullptr);
+                }
+                m_valid = !reset;
+            }
+            return duration;
+        }
+
+      private:
+        ComPtr<ID3D12CommandQueue> m_queue;
+        ComPtr<ID3D12CommandAllocator> m_commandAllocator[2];
+        ComPtr<ID3D12GraphicsCommandList> m_commandList[2];
+        ComPtr<ID3D12Fence> m_fence;
+        uint64_t m_fenceValue{0};
+        ComPtr<ID3D12QueryHeap> m_queryHeap;
+        ComPtr<ID3D12Resource> m_queryReadbackBuffer;
 
         // Can the timer be queried (it might still only read 0).
         mutable bool m_valid{false};

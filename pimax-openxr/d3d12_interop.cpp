@@ -137,7 +137,7 @@ namespace pimax_openxr {
 
         // Frame timers.
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
-            // TODO: m_gpuTimerApp[i] = std::make_unique<GpuTimer>(...);
+            m_gpuTimerApp[i] = std::make_unique<D3D12GpuTimer>(m_d3d12Device.Get(), m_d3d12CommandQueue.Get());
         }
 
         return XR_SUCCESS;
