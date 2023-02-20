@@ -657,20 +657,6 @@
                                         {
                                         }
                                     }
-                                    "{60EA8692-D2D5-43EB-80DC-7906BF13D6EF}:_F34825FF4C0646F883A32599FB2276EF"
-                                    {
-                                    "Name" = "8:PimaxXR"
-                                    "Condition" = "8:"
-                                    "AlwaysCreate" = "11:FALSE"
-                                    "DeleteAtUninstall" = "11:FALSE"
-                                    "Transitive" = "11:FALSE"
-                                        "Keys"
-                                        {
-                                        }
-                                        "Values"
-                                        {
-                                        }
-                                    }
                                 }
                                 "Values"
                                 {
