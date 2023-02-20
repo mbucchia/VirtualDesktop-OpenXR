@@ -391,6 +391,9 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        // Get the display device LUID.
+        fillDisplayDeviceInfo();
+
         graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(1, 1, 0);
         graphicsRequirements->maxApiVersionSupported = XR_MAKE_VERSION(2, 0, 0);
 
