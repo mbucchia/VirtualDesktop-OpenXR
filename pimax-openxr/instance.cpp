@@ -174,16 +174,46 @@ namespace pimax_openxr {
         Log("PVR: %s\n", versionString.data());
         TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
-        // Identify the version of Pitool.
-        const auto pitoolVersion = RegGetString(
+        // Identify the version of Pitool or Pimax Client.
+        const auto clientVersion = RegGetString(
             HKEY_LOCAL_MACHINE,
             "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{0D1DA8F2-89A7-4DAC-A9EF-B55E82CDA462}}_is1",
             "DisplayVersion");
-        if (pitoolVersion) {
-            Log("Pitool: %s\n", pitoolVersion->c_str());
-            TraceLoggingWrite(g_traceProvider, "Pitool", TLArg(pitoolVersion->c_str(), "VersionString"));
+        if (clientVersion) {
+            try {
+                std::stringstream ss(*clientVersion);
+                std::string component;
+                std::getline(ss, component, '.');
+                const int major = std::stoi(component);
+                std::getline(ss, component, '.');
+                const int intermediate = std::stoi(component);
+                std::getline(ss, component, '.');
+                const int minor = std::stoi(component);
+                std::getline(ss, component, '.');
+                const int release = std::stoi(component);
+
+                const bool isPitool = major == 1 && intermediate == 0 && minor == 1;
+
+                if (isPitool) {
+                    Log("Pitool: %s\n", clientVersion->c_str());
+                    TraceLoggingWrite(g_traceProvider, "Pitool", TLArg(clientVersion->c_str(), "VersionString"));
+                } else {
+                    Log("Pimax Client: %s\n", clientVersion->c_str());
+                    TraceLoggingWrite(g_traceProvider, "PimaxClient", TLArg(clientVersion->c_str(), "VersionString"));
+                }
+
+                // Enable quirks based on version.
+
+                // Quick for compositor not properly placing world-locked quad layers.
+                // - Pitool 1.0.1.283 and above ;
+                // - All versions of Pimax Client.
+                m_needWorldLockedQuadLayerQuirk = !isPitool || (isPitool && release >= 283);
+
+            } catch (std::exception&) {
+                Log("Unrecognized version of Pitool/Pimax Client: %s\n", clientVersion->c_str());
+            }
         } else {
-            Log("Could not detect Pitool version\n");
+            Log("Could not detect Pitool/Pimax Client version\n");
         }
 
         // We want to log a warning if HAGS is on.

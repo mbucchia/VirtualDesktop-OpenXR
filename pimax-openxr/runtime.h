@@ -488,6 +488,7 @@ namespace pimax_openxr {
         bool m_loggedProductName{false};
         bool m_loggedResolution{false};
         std::string m_applicationName;
+        bool m_needWorldLockedQuadLayerQuirk{false};
 
         // Session state.
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;

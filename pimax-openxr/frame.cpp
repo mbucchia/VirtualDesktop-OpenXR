@@ -622,9 +622,14 @@ namespace pimax_openxr {
                     // Fill out pose and quad information.
                     if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
                         XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-                        // Workaround: always use head-locked quads, otherwise PVR seems to misplace them in space.
-                        CHECK_XRCMD(xrLocateSpace(quad->space, m_viewSpace, frameEndInfo->displayTime, &location));
-                        layer.Header.Flags |= pvrLayerFlag_HeadLocked;
+                        if (!m_needWorldLockedQuadLayerQuirk) {
+                            CHECK_XRCMD(
+                                xrLocateSpace(quad->space, m_originSpace, frameEndInfo->displayTime, &location));
+                        } else {
+                            // Workaround: use head-locked quads, otherwise PVR seems to misplace them in space.
+                            CHECK_XRCMD(xrLocateSpace(quad->space, m_viewSpace, frameEndInfo->displayTime, &location));
+                            layer.Header.Flags |= pvrLayerFlag_HeadLocked;
+                        }
                         layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, location.pose));
                     } else {
                         layer.Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
@@ -658,15 +663,22 @@ namespace pimax_openxr {
                     // Draw the guardian on top of everything.
                     auto& layer = layersAllocator[layers.size()];
                     layer.Header.Type = pvrLayerType_Quad;
-                    layer.Header.Flags = pvrLayerFlag_HeadLocked;
+                    layer.Header.Flags = 0;
                     layer.Quad.ColorTexture = m_guardianSwapchain;
                     layer.Quad.Viewport.x = layer.Quad.Viewport.y = 0;
                     layer.Quad.Viewport.width = m_guardianExtent.width;
                     layer.Quad.Viewport.height = m_guardianExtent.height;
 
                     // Place the guardian in 3D space as a 2D overlay.
-                    layer.Quad.QuadPoseCenter =
-                        xrPoseToPvrPose(Pose::Multiply(guardianToBase.pose, Pose::Invert(viewToBase.pose)));
+                    XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+                    if (!m_needWorldLockedQuadLayerQuirk) {
+                        layer.Quad.QuadPoseCenter = xrPoseToPvrPose(guardianToBase.pose);
+                    } else {
+                        // Workaround: use head-locked quads, otherwise PVR seems to misplace them in space.
+                        layer.Quad.QuadPoseCenter =
+                            xrPoseToPvrPose(Pose::Multiply(guardianToBase.pose, Pose::Invert(viewToBase.pose)));
+                        layer.Header.Flags |= pvrLayerFlag_HeadLocked;
+                    }
                     layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
 
                     // If there are too many layer, prioritize the guardian to be safe.
