@@ -1392,6 +1392,10 @@ namespace pimax_openxr {
                             // Relocate the pointers to the copy of the input state within the actionset.
                             const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
                             const auto relocatePointer = [&](void* pointer) {
+                                if (!pointer) {
+                                    return (uint8_t*)nullptr;
+                                }
+
                                 uint8_t* p = (uint8_t*)pointer;
                                 uint8_t* oldBase = (uint8_t*)&m_cachedInputState;
                                 uint8_t* newBase = (uint8_t*)&xrActionSet.cachedInputState;
