@@ -760,7 +760,7 @@ namespace pimax_openxr {
 
         if (!initialized && needTransition) {
             // Transition all images to the desired state.
-            m_vkDispatch.vkEndCommandBuffer(m_vkCmdBuffer);
+            CHECK_VKCMD(m_vkDispatch.vkEndCommandBuffer(m_vkCmdBuffer));
             VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &m_vkCmdBuffer;

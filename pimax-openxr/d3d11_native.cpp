@@ -721,7 +721,7 @@ namespace pimax_openxr {
             m_fenceValue++;
             TraceLoggingWrite(
                 g_traceProvider, "FlushContext_Wait", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
-            m_d3d11Context->Signal(m_d3d11Fence.Get(), m_fenceValue);
+            CHECK_HRCMD(m_d3d11Context->Signal(m_d3d11Fence.Get(), m_fenceValue));
             *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
             CHECK_HRCMD(m_d3d11Fence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
             WaitForSingleObject(eventHandle.get(), INFINITE);
@@ -735,7 +735,7 @@ namespace pimax_openxr {
         m_fenceValue++;
         TraceLoggingWrite(
             g_traceProvider, "FlushContext_Wait", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        m_pvrSubmissionContext->Signal(m_pvrSubmissionFence.Get(), m_fenceValue);
+        CHECK_HRCMD(m_pvrSubmissionContext->Signal(m_pvrSubmissionFence.Get(), m_fenceValue));
         *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
         CHECK_HRCMD(m_pvrSubmissionFence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
         WaitForSingleObject(eventHandle.get(), INFINITE);
