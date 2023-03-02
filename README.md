@@ -19,6 +19,7 @@ Special thanks to the following individuals for their contributions:
 - Vladimir Dranyonkov
 - Pavel Skakov
 - DJSlane
+- TommyVR
 
 # Very special thanks
 
