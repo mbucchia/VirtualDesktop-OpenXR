@@ -28,11 +28,16 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace companion
 {
@@ -183,8 +188,52 @@ namespace companion
             ResumeLayout();
 
             GetRuntimeStatus();
+            CheckForUpdates();
 
             loading = false;
+        }
+
+        private void CheckForUpdates()
+        {
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+
+                string url = "https://api.github.com/repos/mbucchia/Pimax-OpenXR/releases/latest";
+
+                // https://stackoverflow.com/questions/9620278/how-do-i-make-calls-to-a-rest-api-using-c
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.Method = "GET";
+                request.UserAgent = "PimaxXR/Updated";
+                try
+                {
+                    WebResponse webResponse = request.GetResponse();
+                    using (Stream webStream = webResponse.GetResponseStream() ?? Stream.Null)
+                    using (StreamReader responseReader = new StreamReader(webStream))
+                    {
+                        string response = responseReader.ReadToEnd();
+                        var jsonReader = JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(response), new System.Xml.XmlDictionaryReaderQuotas());
+                        var root = XElement.Load(jsonReader);
+                        var ourVersion = versionString.Text.Substring("PimaxXR - v".Length).Split('.');
+                        string tagName = root.XPathSelectElement("//tag_name").Value;
+                        var githubLatestVersion = tagName.Split('.');
+                        var ourVersionNumber = (int.Parse(ourVersion[0]) << 24) + (int.Parse(ourVersion[1]) << 16) + int.Parse(ourVersion[2]);
+                        var githubLatestVersionNumber = (int.Parse(githubLatestVersion[0]) << 24) + (int.Parse(githubLatestVersion[1]) << 16) + int.Parse(githubLatestVersion[2]);
+                        if (ourVersionNumber < githubLatestVersionNumber)
+                        {
+                            if (MessageBox.Show(this, "A new version of PimaxXR is available: " + tagName + ".\n\nDo you wish to open the download page?", "New version is available", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                            {
+                                gotoDownloads_LinkClicked(null, null);
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.ToString());
+                }
+
+            }).Start();
         }
 
         private unsafe void GetPimaxXRVersion()
