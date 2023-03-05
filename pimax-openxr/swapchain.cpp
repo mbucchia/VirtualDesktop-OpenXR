@@ -437,12 +437,14 @@ namespace pimax_openxr {
         }
 
         while (!xrSwapchain.vkImages.empty()) {
-            m_vkDispatch.vkDestroyImage(m_vkDevice, xrSwapchain.vkImages.back(), m_vkAllocator);
+            m_vkDispatch.vkDestroyImage(
+                m_vkDevice, xrSwapchain.vkImages.back(), m_vkAllocator ? &m_vkAllocator.value() : nullptr);
             xrSwapchain.vkImages.pop_back();
         }
 
         while (!xrSwapchain.vkDeviceMemory.empty()) {
-            m_vkDispatch.vkFreeMemory(m_vkDevice, xrSwapchain.vkDeviceMemory.back(), m_vkAllocator);
+            m_vkDispatch.vkFreeMemory(
+                m_vkDevice, xrSwapchain.vkDeviceMemory.back(), m_vkAllocator ? &m_vkAllocator.value() : nullptr);
             xrSwapchain.vkDeviceMemory.pop_back();
         }
 

@@ -563,57 +563,15 @@ namespace pimax_openxr {
         VkDevice m_vkDevice{VK_NULL_HANDLE};
         VkCommandPool m_vkCmdPool{VK_NULL_HANDLE};
         VkCommandBuffer m_vkCmdBuffer{VK_NULL_HANDLE};
-        struct {
-            PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr{nullptr};
-
-            // Pointers below must be initialized in initializeVulkanDispatch().
-            PFN_vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2{nullptr};
-            PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties{nullptr};
-            PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR{nullptr};
-            PFN_vkGetDeviceQueue vkGetDeviceQueue{nullptr};
-            PFN_vkQueueSubmit vkQueueSubmit{nullptr};
-            PFN_vkCreateImage vkCreateImage{nullptr};
-            PFN_vkDestroyImage vkDestroyImage{nullptr};
-            PFN_vkAllocateMemory vkAllocateMemory{nullptr};
-            PFN_vkFreeMemory vkFreeMemory{nullptr};
-            PFN_vkCreateCommandPool vkCreateCommandPool{nullptr};
-            PFN_vkDestroyCommandPool vkDestroyCommandPool{nullptr};
-            PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers{nullptr};
-            PFN_vkFreeCommandBuffers vkFreeCommandBuffers{nullptr};
-            PFN_vkResetCommandBuffer vkResetCommandBuffer{nullptr};
-            PFN_vkBeginCommandBuffer vkBeginCommandBuffer{nullptr};
-            PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier{nullptr};
-            PFN_vkEndCommandBuffer vkEndCommandBuffer{nullptr};
-            PFN_vkGetMemoryWin32HandlePropertiesKHR vkGetMemoryWin32HandlePropertiesKHR{nullptr};
-            PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR{nullptr};
-            PFN_vkCreateSemaphore vkCreateSemaphore{nullptr};
-            PFN_vkDestroySemaphore vkDestroySemaphore{nullptr};
-            PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR{nullptr};
-            PFN_vkWaitSemaphoresKHR vkWaitSemaphoresKHR{nullptr};
-            PFN_vkDeviceWaitIdle vkDeviceWaitIdle{nullptr};
-        } m_vkDispatch;
-        const VkAllocationCallbacks* m_vkAllocator{nullptr};
+        // Pointers in the dispatcher must be initialized in initializeVulkanDispatch().
+        VulkanDispatch m_vkDispatch;
+        std::optional<VkAllocationCallbacks> m_vkAllocator;
         VkPhysicalDevice m_vkPhysicalDevice{VK_NULL_HANDLE};
         VkPhysicalDeviceMemoryProperties m_vkMemoryProperties;
         VkQueue m_vkQueue{VK_NULL_HANDLE};
         GlContext m_glContext{};
-        struct {
-            // Pointers below must be initialized in initializeOpenGLDispatch().
-            PFNGLGETUNSIGNEDBYTEVEXTPROC glGetUnsignedBytevEXT{nullptr};
-            PFNGLCREATETEXTURESPROC glCreateTextures{nullptr};
-            PFNGLCREATEMEMORYOBJECTSEXTPROC glCreateMemoryObjectsEXT{nullptr};
-            PFNGLDELETEMEMORYOBJECTSEXTPROC glDeleteMemoryObjectsEXT{nullptr};
-            PFNGLTEXTURESTORAGEMEM2DEXTPROC glTextureStorageMem2DEXT{nullptr};
-            PFNGLTEXTURESTORAGEMEM2DMULTISAMPLEEXTPROC glTextureStorageMem2DMultisampleEXT{nullptr};
-            PFNGLTEXTURESTORAGEMEM3DEXTPROC glTextureStorageMem3DEXT{nullptr};
-            PFNGLTEXTURESTORAGEMEM3DMULTISAMPLEEXTPROC glTextureStorageMem3DMultisampleEXT{nullptr};
-            PFNGLGENSEMAPHORESEXTPROC glGenSemaphoresEXT{nullptr};
-            PFNGLDELETESEMAPHORESEXTPROC glDeleteSemaphoresEXT{nullptr};
-            PFNGLSEMAPHOREPARAMETERUI64VEXTPROC glSemaphoreParameterui64vEXT{nullptr};
-            PFNGLSIGNALSEMAPHOREEXTPROC glSignalSemaphoreEXT{nullptr};
-            PFNGLIMPORTMEMORYWIN32HANDLEEXTPROC glImportMemoryWin32HandleEXT{nullptr};
-            PFNGLIMPORTSEMAPHOREWIN32HANDLEEXTPROC glImportSemaphoreWin32HandleEXT{nullptr};
-        } m_glDispatch;
+        // Pointers in the dispatcher must be initialized in initializeOpenGLDispatch().
+        GlDispatch m_glDispatch;
 
         ComPtr<ID3D11Fence> m_d3d11Fence;
         ComPtr<ID3D12Fence> m_d3d12Fence;

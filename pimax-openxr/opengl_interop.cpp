@@ -115,7 +115,7 @@ namespace pimax_openxr {
 
         // Frame timers.
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
-            // TODO: m_gpuTimerApp[i] = std::make_unique<GpuTimer>(...);
+            m_gpuTimerApp[i] = std::make_unique<GlGpuTimer>(m_glDispatch, m_glContext);
         }
 
         return XR_SUCCESS;
@@ -141,6 +141,11 @@ namespace pimax_openxr {
         GL_GET_PTR(glSignalSemaphoreEXT);
         GL_GET_PTR(glImportMemoryWin32HandleEXT);
         GL_GET_PTR(glImportSemaphoreWin32HandleEXT);
+        GL_GET_PTR(glGenQueries);
+        GL_GET_PTR(glDeleteQueries);
+        GL_GET_PTR(glQueryCounter);
+        GL_GET_PTR(glGetQueryObjectiv);
+        GL_GET_PTR(glGetQueryObjectui64v);
 
 #undef GL_GET_PTR
     }

@@ -351,6 +351,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClInclude Include="appinsights.h" />
     <ClInclude Include="framework\dispatch.gen.h" />
     <ClInclude Include="framework\dispatch.h" />
+    <ClInclude Include="gpu_timers.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />

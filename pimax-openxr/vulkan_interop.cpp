@@ -301,13 +301,14 @@ namespace pimax_openxr {
             TraceLoggingWrite(g_traceProvider, "xrCreateVulkanDeviceKHR", TLArg(extensions[i], "Extension"));
         }
 
+        VkDeviceCreateInfo deviceInfo = *createInfo->vulkanCreateInfo;
+
         // Enable timeline semaphores.
         VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES};
         timelineSemaphoreFeatures.timelineSemaphore = true;
-
-        VkDeviceCreateInfo deviceInfo = *createInfo->vulkanCreateInfo;
         timelineSemaphoreFeatures.pNext = (void*)deviceInfo.pNext;
+
         deviceInfo.pNext = &timelineSemaphoreFeatures;
         deviceInfo.enabledExtensionCount = (uint32_t)extensions.size();
         deviceInfo.ppEnabledExtensionNames = extensions.empty() ? nullptr : extensions.data();
@@ -323,7 +324,11 @@ namespace pimax_openxr {
                           TLArg((int)*vulkanResult, "VkResult"));
 
         m_vkDispatch.vkGetInstanceProcAddr = createInfo->pfnGetInstanceProcAddr;
-        m_vkAllocator = createInfo->vulkanAllocator;
+        if (createInfo->vulkanAllocator) {
+            m_vkAllocator = *createInfo->vulkanAllocator;
+        } else {
+            m_vkAllocator.reset();
+        }
 
         return XR_SUCCESS;
     }
@@ -433,6 +438,8 @@ namespace pimax_openxr {
             return XR_ERROR_RUNTIME_FAILURE;
         }
 
+        const bool queueSupportsTimers = properties.properties.limits.timestampComputeAndGraphics;
+
         ComPtr<IDXGIFactory1> dxgiFactory;
         CHECK_HRCMD(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
 
@@ -480,7 +487,8 @@ namespace pimax_openxr {
         VkSemaphoreTypeCreateInfo timelineCreateInfo{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
         timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
         VkSemaphoreCreateInfo createInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo};
-        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(m_vkDevice, &createInfo, m_vkAllocator, &m_vkTimelineSemaphore));
+        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(
+            m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkTimelineSemaphore));
         VkImportSemaphoreWin32HandleInfoKHR importInfo{VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR};
         importInfo.semaphore = m_vkTimelineSemaphore;
         importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT;
@@ -488,14 +496,15 @@ namespace pimax_openxr {
         CHECK_VKCMD(m_vkDispatch.vkImportSemaphoreWin32HandleKHR(m_vkDevice, &importInfo));
 
         // Create an additional semaphore for host-side wait.
-        CHECK_VKCMD(
-            m_vkDispatch.vkCreateSemaphore(m_vkDevice, &createInfo, m_vkAllocator, &m_vkTimelineSemaphoreForFlush));
+        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(
+            m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkTimelineSemaphoreForFlush));
 
         // We will need command buffers to perform layout transitions.
         VkCommandPoolCreateInfo poolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
         poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolCreateInfo.queueFamilyIndex = vkBindings.queueFamilyIndex;
-        CHECK_VKCMD(m_vkDispatch.vkCreateCommandPool(m_vkDevice, &poolCreateInfo, m_vkAllocator, &m_vkCmdPool));
+        CHECK_VKCMD(m_vkDispatch.vkCreateCommandPool(
+            m_vkDevice, &poolCreateInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkCmdPool));
         VkCommandBufferAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
         allocateInfo.commandPool = m_vkCmdPool;
         allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -503,8 +512,17 @@ namespace pimax_openxr {
         CHECK_VKCMD(m_vkDispatch.vkAllocateCommandBuffers(m_vkDevice, &allocateInfo, &m_vkCmdBuffer));
 
         // Frame timers.
-        for (uint32_t i = 0; i < k_numGpuTimers; i++) {
-            // TODO: m_gpuTimerApp[i] = std::make_unique<GpuTimer>(...);
+        if (queueSupportsTimers) {
+            for (uint32_t i = 0; i < k_numGpuTimers; i++) {
+                m_gpuTimerApp[i] = std::make_unique<VulkanGpuTimer>(m_vkDispatch,
+                                                                    m_vkPhysicalDevice,
+                                                                    m_vkDevice,
+                                                                    m_vkQueue,
+                                                                    vkBindings.queueFamilyIndex,
+                                                                    m_vkAllocator);
+            }
+        } else {
+            Log("Queue does not support timestamps. Smart Smoothing will not work properly.\n");
         }
 
         return XR_SUCCESS;
@@ -533,6 +551,8 @@ namespace pimax_openxr {
         VK_GET_PTR(vkResetCommandBuffer);
         VK_GET_PTR(vkBeginCommandBuffer);
         VK_GET_PTR(vkCmdPipelineBarrier);
+        VK_GET_PTR(vkCmdResetQueryPool);
+        VK_GET_PTR(vkCmdWriteTimestamp);
         VK_GET_PTR(vkEndCommandBuffer);
         VK_GET_PTR(vkGetMemoryWin32HandlePropertiesKHR);
         VK_GET_PTR(vkBindImageMemory2KHR);
@@ -541,6 +561,9 @@ namespace pimax_openxr {
         VK_GET_PTR(vkImportSemaphoreWin32HandleKHR);
         VK_GET_PTR(vkWaitSemaphoresKHR);
         VK_GET_PTR(vkDeviceWaitIdle);
+        VK_GET_PTR(vkCreateQueryPool);
+        VK_GET_PTR(vkDestroyQueryPool);
+        VK_GET_PTR(vkGetQueryPoolResults);
 
 #undef VK_GET_PTR
     }
@@ -554,9 +577,11 @@ namespace pimax_openxr {
             m_gpuTimerApp[i].reset();
         }
         if (m_vkDispatch.vkDestroySemaphore) {
-            m_vkDispatch.vkDestroySemaphore(m_vkDevice, m_vkTimelineSemaphore, m_vkAllocator);
+            m_vkDispatch.vkDestroySemaphore(
+                m_vkDevice, m_vkTimelineSemaphore, m_vkAllocator ? &m_vkAllocator.value() : nullptr);
             m_vkTimelineSemaphore = VK_NULL_HANDLE;
-            m_vkDispatch.vkDestroySemaphore(m_vkDevice, m_vkTimelineSemaphoreForFlush, m_vkAllocator);
+            m_vkDispatch.vkDestroySemaphore(
+                m_vkDevice, m_vkTimelineSemaphoreForFlush, m_vkAllocator ? &m_vkAllocator.value() : nullptr);
             m_vkTimelineSemaphoreForFlush = VK_NULL_HANDLE;
         }
         if (m_vkDispatch.vkResetCommandBuffer) {
@@ -567,7 +592,8 @@ namespace pimax_openxr {
             m_vkCmdBuffer = VK_NULL_HANDLE;
         }
         if (m_vkDispatch.vkDestroyCommandPool) {
-            m_vkDispatch.vkDestroyCommandPool(m_vkDevice, m_vkCmdPool, m_vkAllocator);
+            m_vkDispatch.vkDestroyCommandPool(
+                m_vkDevice, m_vkCmdPool, m_vkAllocator ? &m_vkAllocator.value() : nullptr);
             m_vkCmdPool = VK_NULL_HANDLE;
         }
 
@@ -577,7 +603,7 @@ namespace pimax_openxr {
         m_vkInstance = VK_NULL_HANDLE;
         m_vkDevice = VK_NULL_HANDLE;
         ZeroMemory(&m_vkDispatch, sizeof(m_vkDispatch));
-        m_vkAllocator = nullptr;
+        m_vkAllocator.reset();
         m_vkPhysicalDevice = VK_NULL_HANDLE;
         m_vkQueue = VK_NULL_HANDLE;
     }
@@ -677,7 +703,8 @@ namespace pimax_openxr {
                         createInfo.usage |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
                     }
                     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-                    CHECK_VKCMD(m_vkDispatch.vkCreateImage(m_vkDevice, &createInfo, m_vkAllocator, &image));
+                    CHECK_VKCMD(m_vkDispatch.vkCreateImage(
+                        m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &image));
                 }
                 xrSwapchain.vkImages.push_back(image);
 
@@ -710,7 +737,8 @@ namespace pimax_openxr {
                     allocateInfo.memoryTypeIndex =
                         findMemoryType(handleProperties.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
 
-                    CHECK_VKCMD(m_vkDispatch.vkAllocateMemory(m_vkDevice, &allocateInfo, m_vkAllocator, &memory));
+                    CHECK_VKCMD(m_vkDispatch.vkAllocateMemory(
+                        m_vkDevice, &allocateInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &memory));
                 }
                 xrSwapchain.vkDeviceMemory.push_back(memory);
 

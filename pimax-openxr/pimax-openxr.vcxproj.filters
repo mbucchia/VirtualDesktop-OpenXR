@@ -41,6 +41,9 @@
     <ClInclude Include="store.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gpu_timers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
