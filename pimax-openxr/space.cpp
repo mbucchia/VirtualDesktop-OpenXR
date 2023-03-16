@@ -317,8 +317,8 @@ namespace pimax_openxr {
             if (viewState->viewStateFlags & (XR_VIEW_STATE_POSITION_VALID_BIT | XR_VIEW_STATE_ORIENTATION_VALID_BIT)) {
                 // Calculate poses for each eye.
                 pvrPosef hmdToEyePose[xr::StereoView::Count];
-                hmdToEyePose[0] = m_cachedEyeInfo[0].HmdToEyePose;
-                hmdToEyePose[1] = m_cachedEyeInfo[1].HmdToEyePose;
+                hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
+                hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
 
                 pvrPosef eyePoses[xr::StereoView::Count]{{}, {}};
                 pvr_calcEyePoses(m_pvr, xrPoseToPvrPose(location.pose), hmdToEyePose, eyePoses);

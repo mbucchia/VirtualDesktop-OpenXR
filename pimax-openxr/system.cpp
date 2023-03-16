@@ -96,22 +96,24 @@ namespace pimax_openxr {
             m_loggedProductName = true;
         }
 
-        // Pimax 4K is the only device without canted displays.
-        const bool hasCantedDisplays = !(m_cachedHmdInfo.VendorId == 1155 && m_cachedHmdInfo.ProductId == 33);
-        m_useParallelProjection = hasCantedDisplays && m_useParallelProjection;
-        if (m_useParallelProjection) {
-            Log("Parallel projection is enabled\n");
-        }
-
         // Cache common information.
+        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
+        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
+
         m_floorHeight = pvr_getFloatConfig(m_pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
         TraceLoggingWrite(g_traceProvider,
                           "PVR_GetConfig",
                           TLArg(CONFIG_KEY_EYE_HEIGHT, "Config"),
                           TLArg(m_floorHeight, "EyeHeight"));
 
-        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[0]));
-        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[1]));
+        const float cantingAngle = PVR::Quatf{m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose.Orientation}.Angle(
+                                       m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose.Orientation) /
+                                   2.f;
+        m_useParallelProjection = cantingAngle > 0.0001f && m_useParallelProjection;
+        if (m_useParallelProjection) {
+            Log("Parallel projection is enabled\n");
+        }
+
         for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
             m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
             m_cachedEyeFov[i].angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
@@ -124,8 +126,8 @@ namespace pimax_openxr {
                 // Eliminate canting.
                 m_cachedEyeInfo[i].HmdToEyePose.Orientation = PVR::Quatf::Identity();
 
-                // Shift FOV by 10 degrees. All Pimax headsets with canted displays have a 10 degrees canting.
-                const float angle = i == 0 ? -PVR::DegreeToRad(10.f) : PVR::DegreeToRad(10.f);
+                // Shift FOV by the canting angle.
+                const float angle = i == 0 ? -cantingAngle : cantingAngle;
                 m_cachedEyeFov[i].angleLeft += angle;
                 m_cachedEyeFov[i].angleRight += angle;
 
