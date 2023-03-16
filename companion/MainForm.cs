@@ -228,9 +228,8 @@ namespace companion
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    MessageBox.Show(e.ToString());
                 }
 
             }).Start();
