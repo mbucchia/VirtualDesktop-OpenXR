@@ -531,7 +531,7 @@ namespace pimax_openxr {
                     // Per spec, the combined state is the OR of all values.
                     if (value.buttonMap) {
                         combinedState = combinedState.value_or(false) || value.buttonMap[side] & value.buttonType;
-                    } else {
+                    } else if (value.floatValue) {
                         combinedState = combinedState.value_or(false) || value.floatValue[side] > 0.99f;
                     }
                 }
@@ -635,7 +635,7 @@ namespace pimax_openxr {
                     } else if (value.buttonMap) {
                         combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
                                                  value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
-                    } else {
+                    } else if (value.vector2fValue) {
                         const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
 
                         combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
@@ -733,7 +733,7 @@ namespace pimax_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
-                if (m_isControllerActive[side]) {
+                if (m_isControllerActive[side] && value.vector2fValue) {
                     const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
 
                     // Per spec, the combined state if the one of the vector with the longest length.
