@@ -286,14 +286,7 @@ namespace companion
             try
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(wow6432node ? "SOFTWARE\\WOW6432Node\\Khronos\\OpenXR\\1" : "SOFTWARE\\Khronos\\OpenXR\\1");
-                if (runtimePath != null)
-                {
-                    key.SetValue("ActiveRuntime", runtimePath, Microsoft.Win32.RegistryValueKind.String);
-                }
-                else
-                {
-                    key.DeleteValue("ActiveRuntime", false);
-                }
+                key.SetValue("ActiveRuntime", runtimePath, Microsoft.Win32.RegistryValueKind.String);
             }
             catch (Exception)
             {
@@ -352,7 +345,7 @@ namespace companion
             if (runtimeSteam.Checked)
             {
                 SelectRuntime(steamRuntimePath);
-                SelectRuntime(null, true /* 32-bit */);
+                SelectRuntime("", true /* 32-bit */);
                 RefreshEnabledState();
             }
         }
