@@ -420,6 +420,9 @@ namespace pimax_openxr {
             registerInstanceExtension(std::string(extensionName));
         }
 
+        // Game-specific quirks.
+        m_needFocusFovCorrectionQuirk = m_applicationName == "DCS World";
+
         m_instanceCreated = true;
         *instance = (XrInstance)1;
 

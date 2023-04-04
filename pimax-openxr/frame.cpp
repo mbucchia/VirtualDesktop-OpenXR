@@ -553,7 +553,31 @@ namespace pimax_openxr {
                         layer->EyeFov.RenderPose[pvrViewIndex] =
                             xrPoseToPvrPose(Pose::Multiply(proj->views[viewIndex].pose, location.pose));
 
-                        const XrFovf fov = proj->views[viewIndex].fov;
+                        XrFovf fov = proj->views[viewIndex].fov;
+                        if (m_needFocusFovCorrectionQuirk && viewIndex >= xr::StereoView::Count) {
+                            // Quirk for DCS World: the application does not pass the correct FOV for the focus views in
+                            // xrEndFrame(). We must keep track of the correct values for each frame.
+                            std::unique_lock lock(m_focusFovMutex);
+
+                            const auto& cit = m_focusFovForDisplayTime.find(frameEndInfo->displayTime);
+                            if (cit != m_focusFovForDisplayTime.cend()) {
+                                const XrFovf& patchedFov =
+                                    viewIndex == xr::QuadView::FocusLeft ? cit->second.first : cit->second.second;
+                                if (IsTraceEnabled() &&
+                                    (std::abs(patchedFov.angleDown - fov.angleDown) > FLT_EPSILON ||
+                                     std::abs(patchedFov.angleUp - fov.angleUp) > FLT_EPSILON ||
+                                     std::abs(patchedFov.angleLeft - fov.angleLeft) > FLT_EPSILON ||
+                                     std::abs(patchedFov.angleRight - fov.angleRight) > FLT_EPSILON)) {
+                                    TraceLoggingWrite(g_traceProvider,
+                                                      "xrEndFrame_View",
+                                                      TLArg("Proj", "Type"),
+                                                      TLArg(viewIndex, "ViewIndex"),
+                                                      TLArg(xr::ToString(patchedFov).c_str(), "PatchedFov"));
+                                }
+                                fov = patchedFov;
+                            }
+                        }
+
                         layer->EyeFov.Fov[pvrViewIndex].DownTan = -tan(fov.angleDown);
                         layer->EyeFov.Fov[pvrViewIndex].UpTan = tan(fov.angleUp);
                         layer->EyeFov.Fov[pvrViewIndex].LeftTan = -tan(fov.angleLeft);
@@ -881,6 +905,19 @@ namespace pimax_openxr {
             m_useDeferredFrameWaitThisFrame = m_useDeferredFrameWait;
 
             m_sessionTotalFrameCount++;
+
+            if (m_needFocusFovCorrectionQuirk) {
+                std::unique_lock lock(m_focusFovMutex);
+
+                // Delete all entries older than 1s.
+                while (!m_focusFovForDisplayTime.empty() &&
+                       m_focusFovForDisplayTime.cbegin()->first < frameEndInfo->displayTime - 1'000'000'000) {
+                    m_focusFovForDisplayTime.erase(m_focusFovForDisplayTime.begin());
+                }
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrEndFrame",
+                                  TLArg(m_focusFovForDisplayTime.size(), "FovForDisplayTimeDictionarySize"));
+            }
 
             // Signal xrBeginFrame().
             TraceLoggingWrite(g_traceProvider,

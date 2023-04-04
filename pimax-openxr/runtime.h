@@ -690,6 +690,11 @@ namespace pimax_openxr {
         bool m_actionsSyncedThisFrame{false};
         XrTime m_lastPredictedDisplayTime{0};
 
+        // FOV submission correction.
+        bool m_needFocusFovCorrectionQuirk{false};
+        std::mutex m_focusFovMutex;
+        std::map<XrTime, std::pair<XrFovf, XrFovf>> m_focusFovForDisplayTime;
+
         // Statistics.
         AppInsights m_telemetry;
         double m_sessionStartTime{0.0};

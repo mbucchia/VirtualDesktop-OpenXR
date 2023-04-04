@@ -441,6 +441,17 @@ namespace pimax_openxr {
                                       TLArg(i, "ViewIndex"),
                                       TLArg(xr::ToString(views[i].pose).c_str(), "Pose"),
                                       TLArg(xr::ToString(views[i].fov).c_str(), "Fov"));
+
+                    // Quirk for DCS World: the application does not pass the correct FOV for the focus views in
+                    // xrEndFrame(). We must keep track of the correct values for each frame.
+                    if (m_needFocusFovCorrectionQuirk &&
+                        viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
+                        std::unique_lock lock(m_focusFovMutex);
+
+                        m_focusFovForDisplayTime.insert_or_assign(
+                            viewLocateInfo->displayTime,
+                            std::make_pair(views[xr::QuadView::FocusLeft].fov, views[xr::QuadView::FocusRight].fov));
+                    }
                 }
             } else {
                 // All or nothing.
