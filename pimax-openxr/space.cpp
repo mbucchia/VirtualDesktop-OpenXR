@@ -218,10 +218,26 @@ namespace pimax_openxr {
         XrSpaceVelocity spaceToVirtualVelocity{};
         XrPosef baseSpaceToVirtual = Pose::Identity();
         XrSpaceVelocity baseSpaceToVirtualVelocity{};
-        const auto flags1 =
-            locateSpaceToOrigin(xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr);
-        const auto flags2 = locateSpaceToOrigin(
-            xrBaseSpace, time, baseSpaceToVirtual, velocity ? &baseSpaceToVirtualVelocity : nullptr);
+        XrSpaceLocationFlags flags1, flags2;
+        if (xrSpace.referenceType != xrBaseSpace.referenceType ||
+            (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_MAX_ENUM && xrSpace.action != xrBaseSpace.action &&
+             xrSpace.subActionPath != xrBaseSpace.subActionPath)) {
+            flags1 = locateSpaceToOrigin(xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr);
+            flags2 = locateSpaceToOrigin(
+                xrBaseSpace, time, baseSpaceToVirtual, velocity ? &baseSpaceToVirtualVelocity : nullptr);
+        } else {
+            // Optimize the case of locating against the same reference space or same action space.
+            flags1 = flags2 = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT |
+                              XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+            spaceToVirtual = xrSpace.poseInSpace;
+            baseSpaceToVirtual = xrBaseSpace.poseInSpace;
+            if (velocity) {
+                spaceToVirtualVelocity.velocityFlags = baseSpaceToVirtualVelocity.velocityFlags =
+                    XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+                spaceToVirtualVelocity.angularVelocity = spaceToVirtualVelocity.linearVelocity =
+                    baseSpaceToVirtualVelocity.angularVelocity = baseSpaceToVirtualVelocity.linearVelocity = {};
+            }
+        }
 
         // If either pose is not valid, we cannot locate.
         if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags2))) {
