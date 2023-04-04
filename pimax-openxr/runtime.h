@@ -528,6 +528,12 @@ namespace pimax_openxr {
 #endif
         float m_droolonProjectionDistance{0.35f};
         bool m_isEyeTrackingAvailable{false};
+        float m_focusPixelDensity{1.f};
+        float m_peripheralPixelDensity{0.5f};
+        // [0] = non-foveated, [1] = foveated
+        float m_horizontalFovSection[2]{0.75f, 0.5f};
+        float m_verticalFovSection[2]{0.7f, 0.5f};
+        bool m_preferFoveatedRendering{true};
 
         // Session state.
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
@@ -537,6 +543,7 @@ namespace pimax_openxr {
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
+        XrViewConfigurationType m_primaryViewConfigurationType{XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         std::deque<std::pair<XrSessionState, double>> m_sessionEventQueue;
         pvrHmdStatus m_hmdStatus{};
@@ -549,7 +556,10 @@ namespace pimax_openxr {
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
         bool m_useParallelProjection{false};
-        XrFovf m_cachedEyeFov[xr::StereoView::Count];
+        // [0] = left, [1] = right
+        // [2] = left focus non-foveated, [3] = right focus non-foveated,
+        // [4] = left focus foveated, [5] = right focus foveated
+        XrFovf m_cachedEyeFov[xr::QuadView::Count + 2];
         float m_joystickDeadzone{0.f};
         bool m_swapGripAimPoses{false};
         std::set<XrActionSet> m_activeActionSets;
@@ -580,6 +590,7 @@ namespace pimax_openxr {
         ComPtr<IDXGISwapChain1> m_mirrorWindowSwapchain;
         pvrMirrorTexture m_pvrMirrorSwapChain{nullptr};
         ComPtr<ID3D11Texture2D> m_mirrorTexture;
+        bool m_debugFocusViews{false};
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;

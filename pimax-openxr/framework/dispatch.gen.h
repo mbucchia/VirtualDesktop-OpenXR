@@ -133,6 +133,8 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_EXT_hand_tracking{false};
 		bool has_XR_EXT_hand_joints_motion_range{false};
 		bool has_XR_EXT_eye_gaze_interaction{false};
+		bool has_XR_VARJO_quad_views{false};
+		bool has_XR_VARJO_foveated_rendering{false};
 
 
 	};

@@ -1824,6 +1824,12 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_EXT_eye_gaze_interaction") {
 			has_XR_EXT_eye_gaze_interaction = true;
 		}
+		else if (extensionName == "XR_VARJO_quad_views") {
+			has_XR_VARJO_quad_views = true;
+		}
+		else if (extensionName == "XR_VARJO_foveated_rendering") {
+			has_XR_VARJO_foveated_rendering = true;
+		}
 
 	}
 

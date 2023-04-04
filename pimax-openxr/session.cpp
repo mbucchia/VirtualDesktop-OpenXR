@@ -291,7 +291,9 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (!has_XR_VARJO_quad_views ||
+             beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO)) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
@@ -308,6 +310,12 @@ namespace pimax_openxr {
             startDroolonTracking();
         }
 #endif
+
+        m_primaryViewConfigurationType = beginInfo->primaryViewConfigurationType;
+        if (m_primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
+            Log("Beginning session with quad views\n");
+            LOG_TELEMETRY_ONCE(logFeature("QuadViews"));
+        }
 
         m_sessionBegun = true;
         updateSessionState();
@@ -494,6 +502,8 @@ namespace pimax_openxr {
             TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"),
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"));
+
+        m_debugFocusViews = getSetting("debug_focus_view").value_or(0);
     }
 
     // Create guardian resources.

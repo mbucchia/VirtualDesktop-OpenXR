@@ -37,8 +37,11 @@ namespace pimax_openxr {
                                                           uint32_t viewConfigurationTypeCapacityInput,
                                                           uint32_t* viewConfigurationTypeCountOutput,
                                                           XrViewConfigurationType* viewConfigurationTypes) {
-        // We only support Stereo 3D.
-        static const XrViewConfigurationType types[] = {XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO};
+        std::vector<XrViewConfigurationType> types;
+        types.push_back(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO);
+        if (has_XR_VARJO_quad_views) {
+            types.push_back(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO);
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateViewConfigurations",
@@ -54,11 +57,11 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        if (viewConfigurationTypeCapacityInput && viewConfigurationTypeCapacityInput < ARRAYSIZE(types)) {
+        if (viewConfigurationTypeCapacityInput && viewConfigurationTypeCapacityInput < types.size()) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
-        *viewConfigurationTypeCountOutput = ARRAYSIZE(types);
+        *viewConfigurationTypeCountOutput = (uint32_t)types.size();
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateViewConfigurations",
                           TLArg(*viewConfigurationTypeCountOutput, "ViewConfigurationTypeCountOutput"));
@@ -98,11 +101,12 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (!has_XR_VARJO_quad_views || viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO)) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
-        configurationProperties->viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+        configurationProperties->viewConfigurationType = viewConfigurationType;
         configurationProperties->fovMutable = XR_TRUE;
 
         TraceLoggingWrite(g_traceProvider,
@@ -135,19 +139,49 @@ namespace pimax_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (!has_XR_VARJO_quad_views || viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO)) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
-        if (viewCapacityInput && viewCapacityInput < xr::StereoView::Count) {
+        if (viewCapacityInput && viewCapacityInput < (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO
+                                                          ? xr::StereoView::Count
+                                                          : xr::QuadView::Count)) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
-        *viewCountOutput = xr::StereoView::Count;
+        *viewCountOutput = (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO ? xr::StereoView::Count
+                                                                                               : xr::QuadView::Count);
         TraceLoggingWrite(
             g_traceProvider, "xrEnumerateViewConfigurationViews", TLArg(*viewCountOutput, "ViewCountOutput"));
 
         if (viewCapacityInput && views) {
+            // Override default to specify whether foveated rendering is desired when the application does not specify.
+            bool foveatedRenderingActive = m_preferFoveatedRendering;
+
+            // When foveated rendering extension is active, look whether the application is requesting it for the views.
+            // The spec is a little questionable and calls for each view to have the flag specified. Here we check that
+            // at least one view has the flag on.
+            if (has_XR_VARJO_foveated_rendering) {
+                for (uint32_t i = 0; i < *viewCountOutput; i++) {
+                    const XrFoveatedViewConfigurationViewVARJO* foveatedViewConfiguration =
+                        reinterpret_cast<const XrFoveatedViewConfigurationViewVARJO*>(views[i].next);
+                    while (foveatedViewConfiguration) {
+                        if (foveatedViewConfiguration->type == XR_TYPE_FOVEATED_VIEW_CONFIGURATION_VIEW_VARJO) {
+                            foveatedRenderingActive =
+                                foveatedRenderingActive || foveatedViewConfiguration->foveatedRenderingActive;
+                            break;
+                        }
+                        foveatedViewConfiguration = reinterpret_cast<const XrFoveatedViewConfigurationViewVARJO*>(
+                            foveatedViewConfiguration->next);
+                    }
+                }
+
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrEnumerateViewConfigurationViews",
+                                  TLArg(foveatedRenderingActive, "FoveatedRenderingActive"));
+            }
+
             for (uint32_t i = 0; i < *viewCountOutput; i++) {
                 if (views[i].type != XR_TYPE_VIEW_CONFIGURATION_VIEW) {
                     return XR_ERROR_VALIDATION_FAILURE;
@@ -165,36 +199,63 @@ namespace pimax_openxr {
                 views[i].maxSwapchainSampleCount = 1;
                 views[i].recommendedSwapchainSampleCount = 1;
 
+                // When using quad views, we use 2 peripheral views with lower pixel densities, and 2 focus views with
+                // higher pixel densities.
+                uint32_t viewFovIndex = i;
+                float pixelDensity = m_focusPixelDensity;
+                if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
+                    if (i < xr::StereoView::Count) {
+                        pixelDensity = m_peripheralPixelDensity;
+                    } else if (foveatedRenderingActive) {
+                        viewFovIndex = i + 2;
+                    }
+                }
+
                 // Recommend the resolution with distortion accounted for.
                 // There is a DistortedViewport in the EyeInfo struct, but it does not account for additional transforms
                 // such as parallel projection, so we recompute the resolution based on the actual FOV information.
                 pvrFovPort fov;
-                fov.UpTan = tan(m_cachedEyeFov[i].angleUp);
-                fov.DownTan = tan(-m_cachedEyeFov[i].angleDown);
-                fov.LeftTan = tan(-m_cachedEyeFov[i].angleLeft);
-                fov.RightTan = tan(m_cachedEyeFov[i].angleRight);
+                fov.UpTan = tan(m_cachedEyeFov[viewFovIndex].angleUp);
+                fov.DownTan = tan(-m_cachedEyeFov[viewFovIndex].angleDown);
+                fov.LeftTan = tan(-m_cachedEyeFov[viewFovIndex].angleLeft);
+                fov.RightTan = tan(m_cachedEyeFov[viewFovIndex].angleRight);
 
                 pvrSizei viewportSize;
-                CHECK_PVRCMD(
-                    pvr_getFovTextureSize(m_pvrSession, !i ? pvrEye_Left : pvrEye_Right, fov, 1.f, &viewportSize));
+                CHECK_PVRCMD(pvr_getFovTextureSize(m_pvrSession,
+                                                   (i % xr::StereoView::Count) == 0 ? pvrEye_Left : pvrEye_Right,
+                                                   fov,
+                                                   pixelDensity,
+                                                   &viewportSize));
                 views[i].recommendedImageRectWidth = viewportSize.w;
                 views[i].recommendedImageRectHeight = viewportSize.h;
 
-                if (!m_loggedResolution) {
-                    Log("Recommended resolution: %ux%u\n",
-                        views[i].recommendedImageRectWidth,
-                        views[i].recommendedImageRectHeight);
-                    m_loggedResolution = true;
-                }
-
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateViewConfigurationViews",
+                                  TLArg(i, "ViewIndex"),
                                   TLArg(views[i].maxImageRectWidth, "MaxImageRectWidth"),
                                   TLArg(views[i].maxImageRectHeight, "MaxImageRectHeight"),
                                   TLArg(views[i].maxSwapchainSampleCount, "MaxSwapchainSampleCount"),
                                   TLArg(views[i].recommendedImageRectWidth, "RecommendedImageRectWidth"),
                                   TLArg(views[i].recommendedImageRectHeight, "RecommendedImageRectHeight"),
                                   TLArg(views[i].recommendedSwapchainSampleCount, "RecommendedSwapchainSampleCount"));
+            }
+
+            if (!m_loggedResolution) {
+                if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
+                    Log("Recommended peripheral resolution: %ux%u (%.3f density)\n",
+                        views[xr::StereoView::Left].recommendedImageRectWidth,
+                        views[xr::StereoView::Left].recommendedImageRectHeight,
+                        m_peripheralPixelDensity);
+                    Log("Recommended focus resolution: %ux%u (%.3f density)\n",
+                        views[xr::QuadView::FocusLeft].recommendedImageRectWidth,
+                        views[xr::QuadView::FocusLeft].recommendedImageRectHeight,
+                        m_focusPixelDensity);
+                } else {
+                    Log("Recommended resolution: %ux%u\n",
+                        views[0].recommendedImageRectWidth,
+                        views[0].recommendedImageRectHeight);
+                }
+                m_loggedResolution = true;
             }
         }
 
