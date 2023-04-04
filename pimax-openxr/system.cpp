@@ -205,7 +205,7 @@ namespace pimax_openxr {
                           TLArg(properties->graphicsProperties.maxSwapchainImageWidth, "MaxSwapchainImageWidth"),
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
 
-        if (handTrackingProperties) {
+        if (has_XR_EXT_hand_tracking && handTrackingProperties) {
             handTrackingProperties->supportsHandTracking = XR_TRUE;
 
             TraceLoggingWrite(g_traceProvider,
