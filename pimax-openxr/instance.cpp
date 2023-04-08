@@ -221,9 +221,9 @@ namespace pimax_openxr {
             // Enable quirks based on version.
 
             // Quick for compositor not properly placing world-locked quad layers.
-            // - Pitool 1.0.1.283 and above ;
-            // - All versions of Pimax Client.
-            m_needWorldLockedQuadLayerQuirk = !isPitool || (isPitool && release >= 283);
+            // - Pitool 1.0.1.283 and above;
+            // - Pimax Client 1.10 and below;
+            m_needWorldLockedQuadLayerQuirk = (isPitool && release >= 283) || (!isPitool && intermediate <= 10);
 
         } else {
             Log("Could not detect Pitool/Pimax Client version\n");
