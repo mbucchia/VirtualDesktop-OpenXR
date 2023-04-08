@@ -37,7 +37,11 @@ namespace pimax_openxr::appinsights {
 
         void logVersion(const std::string& version);
         void logApplicationInfo(const std::string& name, const std::string& engine);
-        void logScenario(const std::string& gfxApi, bool useLighthouse, int fovLevel, bool useParallelProjection);
+        void logScenario(const std::string& gfxApi,
+                         bool useLighthouse,
+                         int fovLevel,
+                         bool useParallelProjection,
+                         bool useMirrorWindow);
         void logFeature(const std::string& feature);
         void logUnimplemented(const std::string& feature);
         void logUsage(double sessionTime, uint64_t frameCount);
@@ -51,7 +55,7 @@ namespace pimax_openxr::appinsights {
         void transact(const std::string& messageType, const std::string& data);
 
         CURLM* m_multiHandle{nullptr};
-        
+
         std::mutex m_poolLock;
         std::deque<CURL*> m_pool;
         std::set<CURL*> m_inflight;

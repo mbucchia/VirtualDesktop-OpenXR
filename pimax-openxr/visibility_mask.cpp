@@ -53,11 +53,12 @@ namespace pimax_openxr {
                           TLArg(xr::ToCString(visibilityMaskType), "VisibilityMaskType"),
                           TLArg(visibilityMask->vertexCapacityInput, "VertexCapacityInput"),
                           TLArg(visibilityMask->indexCapacityInput, "IndexCapacityInput"));
-        LOG_TELEMETRY_ONCE(logFeature("VisibilityMask"));
 
         if (!has_XR_KHR_visibility_mask) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
+
+        LOG_TELEMETRY_ONCE(logFeature("VisibilityMask"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;

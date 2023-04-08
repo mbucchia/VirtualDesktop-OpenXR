@@ -1497,6 +1497,7 @@ namespace pimax_openxr {
                 // Requires a 3 seconds press.
                 if (now - m_isRecenteringPressed.value() > 2.f) {
                     // Recenter view.
+                    TraceLoggingWrite(g_traceProvider, "PVR_RecenterTrackingOrigin");
                     CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
                 }
             } else {

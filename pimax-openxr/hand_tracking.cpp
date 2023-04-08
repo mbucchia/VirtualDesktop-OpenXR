@@ -48,11 +48,12 @@ namespace pimax_openxr {
                           TLXArg(session, "Session"),
                           TLArg((uint32_t)createInfo->hand, "Hand"),
                           TLArg((uint32_t)createInfo->handJointSet, "HandJointSet"));
-        LOG_TELEMETRY_ONCE(logFeature("HandTracking"));
 
         if (!has_XR_EXT_hand_tracking) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
+
+        LOG_TELEMETRY_ONCE(logFeature("HandTracking"));
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;

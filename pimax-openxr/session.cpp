@@ -158,7 +158,8 @@ namespace pimax_openxr {
                                                         : "D3D11",
                                     enableLighthouse,
                                     fovLevel,
-                                    m_useParallelProjection);
+                                    m_useParallelProjection,
+                                    m_useMirrorWindow);
         }
 
         m_sessionCreated = true;

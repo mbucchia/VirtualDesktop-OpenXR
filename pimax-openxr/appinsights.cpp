@@ -238,8 +238,8 @@ namespace pimax_openxr::appinsights {
         transact("EventData", data);
     }
 
-    void
-    AppInsights::logScenario(const std::string& gfxApi, bool useLighthouse, int fovLevel, bool useParallelProjection) {
+    void AppInsights::logScenario(
+        const std::string& gfxApi, bool useLighthouse, int fovLevel, bool useParallelProjection, bool useMirrorWindow) {
         const auto data = fmt::format(R"_(
       "name": "ApplicationUserScenario",
       "properties": {{
@@ -248,14 +248,16 @@ namespace pimax_openxr::appinsights {
         "gfxApi": "{}",
         "useLighthouse": "{}",
         "fovLevel": "{}",
-        "useParallelProjection": "{}"
+        "useParallelProjection": "{}",
+        "useMirrorWindow": "{}"
       }})_",
                                       escapeJson(m_machineUuid),
                                       escapeJson(m_applicationName),
                                       escapeJson(gfxApi),
                                       useLighthouse ? 1 : 0,
                                       fovLevel,
-                                      useParallelProjection ? 1 : 0);
+                                      useParallelProjection ? 1 : 0,
+                                      useMirrorWindow ? 1 : 0);
         transact("EventData", data);
     }
 
@@ -355,8 +357,8 @@ namespace pimax_openxr::appinsights {
     void AppInsights::logApplicationInfo(const std::string& name, const std::string& engine) {
     }
 
-    void
-    AppInsights::logScenario(const std::string& gfxApi, bool useLighthouse, int fovLevel, bool useParallelProjection) {
+    void AppInsights::logScenario(
+        const std::string& gfxApi, bool useLighthouse, int fovLevel, bool useParallelProjection, bool useMirrorWindow) {
     }
 
     void AppInsights::logFeature(const std::string& feature) {
