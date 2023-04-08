@@ -483,9 +483,10 @@ namespace pimax_openxr {
                         layer.EyeFov.Fov[eye].LeftTan = -tan(proj->views[eye].fov.angleLeft);
                         layer.EyeFov.Fov[eye].RightTan = tan(proj->views[eye].fov.angleRight);
 
-                        // Other applications (eg: SteamVR) always pass 0, and I am observing strange flickering when
-                        // passing any other value. Let's follow what SteamVR does.
-                        layer.EyeFov.SensorSampleTime = 0;
+                        // Per Pimax: this value is currently unused, but should be set to the timestamp of the head
+                        // pose. In the case of OpenXR, we expect the app to use the predictedDisplayTime to query the
+                        // head pose, and pass that same time as displayTime.
+                        layer.EyeFov.SensorSampleTime = xrTimeToPvrTime(frameEndInfo->displayTime);
 
                         // Submit depth.
                         if (has_XR_KHR_composition_layer_depth) {
