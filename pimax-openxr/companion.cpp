@@ -50,6 +50,9 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
     pvrSessionHandle pvrSession;
     CHECK_PVRCMD(pvr_createSession(pvr, &pvrSession));
 
+    // Ensure there is no stale parallel projection settings.
+    CHECK_PVRCMD(pvr_setIntConfig(pvrSession, "view_rotation_fix", 0));
+
     pvrDisplayInfo displayInfo{};
     CHECK_PVRCMD(pvr_getEyeDisplayInfo(pvrSession, pvrEye_Left, &displayInfo));
 
@@ -66,11 +69,12 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
 
     pvrFovPort fovForResolution = eyeInfo[xr::StereoView::Left].Fov;
     if (useParallelProjection) {
-        // Shift FOV by 10 degrees. All Pimax headsets have a 10 degrees canting.
-        fovForResolution.LeftTan = tan(atan(eyeInfo[xr::StereoView::Left].Fov.LeftTan) - cantingAngle);
-        fovForResolution.RightTan = tan(atan(eyeInfo[xr::StereoView::Left].Fov.RightTan) + cantingAngle);
-        fovForResolution.UpTan = tan(atan(eyeInfo[xr::StereoView::Left].Fov.UpTan) + PVR::DegreeToRad(6.f));
-        fovForResolution.DownTan = tan(atan(eyeInfo[xr::StereoView::Left].Fov.DownTan) + PVR::DegreeToRad(6.f));
+        // Per Pimax, we must set this value for parallel projection to work properly.
+        CHECK_PVRCMD(pvr_setIntConfig(pvrSession, "view_rotation_fix", 1));
+
+        // Update eye info to account for parallel projection.
+        CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Left, &eyeInfo[xr::StereoView::Left]));
+        CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Right, &eyeInfo[xr::StereoView::Right]));
     }
 
     pvrSizei viewportSize;

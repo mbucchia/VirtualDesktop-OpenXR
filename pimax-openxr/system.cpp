@@ -112,6 +112,13 @@ namespace pimax_openxr {
         m_useParallelProjection = cantingAngle > 0.0001f && m_useParallelProjection;
         if (m_useParallelProjection) {
             Log("Parallel projection is enabled\n");
+
+            // Per Pimax, we must set this value for parallel projection to work properly.
+            CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 1));
+
+            // Update cached eye info to account for parallel projection.
+            CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
+            CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
         }
 
         for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
@@ -120,21 +127,12 @@ namespace pimax_openxr {
             m_cachedEyeFov[i].angleLeft = -atan(m_cachedEyeInfo[i].Fov.LeftTan);
             m_cachedEyeFov[i].angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
 
-            // Apply parallel projection transforms. These are needed in order to calculate the appropriate resolution
-            // to recommend for swapchains.
-            if (m_useParallelProjection) {
-                // Eliminate canting.
-                m_cachedEyeInfo[i].HmdToEyePose.Orientation = PVR::Quatf::Identity();
-
-                // Shift FOV by the canting angle.
-                const float angle = i == 0 ? -cantingAngle : cantingAngle;
-                m_cachedEyeFov[i].angleLeft += angle;
-                m_cachedEyeFov[i].angleRight += angle;
-
-                // Per https://risa2000.github.io/hmdgdb, PP also increases the vertical FOV by 6 degrees.
-                m_cachedEyeFov[i].angleUp += PVR::DegreeToRad(6.f);
-                m_cachedEyeFov[i].angleDown -= PVR::DegreeToRad(6.f);
-            }
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_EyeRenderInfo",
+                              TLArg(i == xr::StereoView::Left ? "Left" : "Right", "Eye"),
+                              TLArg(xr::ToString(m_cachedEyeInfo[i].HmdToEyePose).c_str(), "EyePose"),
+                              TLArg(xr::ToString(m_cachedEyeFov[i]).c_str(), "Fov"),
+                              TLArg(i == xr::StereoView::Left ? -cantingAngle : cantingAngle, "Canting"));
         }
 
         // Setup common parameters.
