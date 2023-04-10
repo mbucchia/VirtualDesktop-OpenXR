@@ -378,7 +378,9 @@ namespace pimax_openxr {
         xrSwapchain.pvrSwapchain.push_back(pvrSwapchain);
         CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, pvrSwapchain, &xrSwapchain.pvrSwapchainLength));
         xrSwapchain.slices.push_back({});
+        xrSwapchain.lastProcessedIndex.push_back(-1);
         xrSwapchain.imagesResourceView.push_back({});
+        xrSwapchain.renderTargetView.push_back({});
         xrSwapchain.pvrDesc = desc;
         xrSwapchain.xrDesc = *createInfo;
         xrSwapchain.dxgiFormatForSubmission = dxgiFormatForSubmission;
@@ -388,7 +390,9 @@ namespace pimax_openxr {
         for (int i = 1; i < desc.ArraySize; i++) {
             xrSwapchain.pvrSwapchain.push_back(nullptr);
             xrSwapchain.slices.push_back({});
+            xrSwapchain.lastProcessedIndex.push_back(-1);
             xrSwapchain.imagesResourceView.push_back({});
+            xrSwapchain.renderTargetView.push_back({});
         }
 
         *swapchain = (XrSwapchain)&xrSwapchain;

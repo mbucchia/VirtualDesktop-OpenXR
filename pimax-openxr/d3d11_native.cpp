@@ -89,6 +89,22 @@ void mainForArray(uint2 pos : SV_DispatchThreadID)
 }
     )_";
 
+    // Vertex and pixel shader for color conversion.
+    const std::string_view FullQuadColorConversionShader = R"_(
+void vsMain(in uint id : SV_VertexID, out float4 position : SV_POSITION, out float2 texcoord : TEXCOORD0)
+{
+    texcoord = float2((id == 1) ? 2.0 : 0.0, (id == 2) ? 2.0 : 0.0);
+    position = float4(texcoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
+}
+
+SamplerState sourceSampler : register(s0);
+Texture2D sourceTexture : register(t0);
+
+float4 psMain(in float4 position : SV_POSITION, in float2 texcoord : TEXCOORD0) : SV_TARGET {
+    return sourceTexture.Sample(sourceSampler, texcoord);
+}
+)_";
+
     DXGI_FORMAT getTypelessFormat(DXGI_FORMAT format) {
         switch (format) {
         case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -115,20 +131,15 @@ void mainForArray(uint2 pos : SV_DispatchThreadID)
         return format;
     }
 
-    DXGI_FORMAT getNonSRGBFormat(DXGI_FORMAT format) {
+    bool isSRGBFormat(DXGI_FORMAT format) {
         switch (format) {
         case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
-            break;
         case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            return DXGI_FORMAT_B8G8R8A8_UNORM;
-            break;
         case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-            return DXGI_FORMAT_B8G8R8X8_UNORM;
-            break;
+            return true;
         }
 
-        return format;
+        return false;
     }
 
 } // namespace
@@ -280,45 +291,108 @@ namespace pimax_openxr {
         m_fenceValue = 0;
 
         // Create the resources for depth conversion and alpha correction.
-        const auto compileShader =
-            [&](const std::string_view& code, const std::string_view& entry, ID3D11ComputeShader** shader) {
-                ComPtr<ID3DBlob> shaderBytes;
-                ComPtr<ID3DBlob> errMsgs;
-                DWORD flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+        const auto compileShader = [&](const std::string_view& code,
+                                       const std::string_view& type,
+                                       const std::string_view& entry,
+                                       ID3DBlob** shaderBytes) {
+            ComPtr<ID3DBlob> errMsgs;
+            DWORD flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #ifdef _DEBUG
-                flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
+            flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
 #else
-                flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
+            flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
 
-                const HRESULT hr = D3DCompile(code.data(),
-                                              code.size(),
-                                              nullptr,
-                                              nullptr,
-                                              nullptr,
-                                              entry.data(),
-                                              "cs_5_0",
-                                              flags,
-                                              0,
-                                              shaderBytes.ReleaseAndGetAddressOf(),
-                                              errMsgs.ReleaseAndGetAddressOf());
-                if (FAILED(hr)) {
-                    std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
-                    ErrorLog("D3DCompile failed %X: %s\n", hr, errMsg.c_str());
-                    CHECK_HRESULT(hr, "D3DCompile failed");
-                }
-                CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(
-                    shaderBytes->GetBufferPointer(), shaderBytes->GetBufferSize(), nullptr, shader));
-            };
+            const HRESULT hr = D3DCompile(code.data(),
+                                          code.size(),
+                                          nullptr,
+                                          nullptr,
+                                          nullptr,
+                                          entry.data(),
+                                          type.data(),
+                                          flags,
+                                          0,
+                                          shaderBytes,
+                                          errMsgs.ReleaseAndGetAddressOf());
+            if (FAILED(hr)) {
+                std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
+                ErrorLog("D3DCompile failed %X: %s\n", hr, errMsg.c_str());
+                CHECK_HRESULT(hr, "D3DCompile failed");
+            }
+        };
 
-        compileShader(DepthConvertShaderHlsl, "main", m_depthConvertShader[0].ReleaseAndGetAddressOf());
-        setDebugName(m_depthConvertShader[0].Get(), "DepthConvert CS");
-        compileShader(DepthConvertShaderHlsl, "main", m_depthConvertShader[1].ReleaseAndGetAddressOf());
-        setDebugName(m_depthConvertShader[1].Get(), "DepthConvert CS");
-        compileShader(AlphaCorrectShaderHlsl, "mainForArray", m_alphaCorrectShader[0].ReleaseAndGetAddressOf());
-        setDebugName(m_alphaCorrectShader[0].Get(), "AlphaCorrect CS");
-        compileShader(AlphaCorrectShaderHlsl, "mainForArray", m_alphaCorrectShader[1].ReleaseAndGetAddressOf());
-        setDebugName(m_alphaCorrectShader[1].Get(), "AlphaCorrect CS");
+        ComPtr<ID3DBlob> shaderBytes;
+        {
+            compileShader(DepthConvertShaderHlsl, "cs_5_0", "main", shaderBytes.ReleaseAndGetAddressOf());
+            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
+                                                                   shaderBytes->GetBufferSize(),
+                                                                   nullptr,
+                                                                   m_depthConvertShader[0].ReleaseAndGetAddressOf()));
+            setDebugName(m_depthConvertShader[0].Get(), "DepthConvert CS");
+        }
+        {
+            compileShader(DepthConvertShaderHlsl, "cs_5_0", "mainForArray", shaderBytes.ReleaseAndGetAddressOf());
+            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
+                                                                   shaderBytes->GetBufferSize(),
+                                                                   nullptr,
+                                                                   m_depthConvertShader[1].ReleaseAndGetAddressOf()));
+            setDebugName(m_depthConvertShader[1].Get(), "DepthConvert CS");
+        }
+        {
+            compileShader(AlphaCorrectShaderHlsl, "cs_5_0", "main", shaderBytes.ReleaseAndGetAddressOf());
+            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
+                                                                   shaderBytes->GetBufferSize(),
+                                                                   nullptr,
+                                                                   m_alphaCorrectShader[0].ReleaseAndGetAddressOf()));
+            setDebugName(m_alphaCorrectShader[0].Get(), "AlphaCorrect CS");
+        }
+        {
+            compileShader(AlphaCorrectShaderHlsl, "cs_5_0", "mainForArray", shaderBytes.ReleaseAndGetAddressOf());
+            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
+                                                                   shaderBytes->GetBufferSize(),
+                                                                   nullptr,
+                                                                   m_alphaCorrectShader[1].ReleaseAndGetAddressOf()));
+            setDebugName(m_alphaCorrectShader[1].Get(), "AlphaCorrect CS");
+        }
+        {
+            compileShader(FullQuadColorConversionShader, "vs_5_0", "vsMain", shaderBytes.ReleaseAndGetAddressOf());
+            CHECK_HRCMD(m_pvrSubmissionDevice->CreateVertexShader(shaderBytes->GetBufferPointer(),
+                                                                  shaderBytes->GetBufferSize(),
+                                                                  nullptr,
+                                                                  m_fullQuadVS.ReleaseAndGetAddressOf()));
+            setDebugName(m_fullQuadVS.Get(), "FullQuad VS");
+        }
+        {
+            compileShader(FullQuadColorConversionShader, "ps_5_0", "psMain", shaderBytes.ReleaseAndGetAddressOf());
+            CHECK_HRCMD(m_pvrSubmissionDevice->CreatePixelShader(shaderBytes->GetBufferPointer(),
+                                                                 shaderBytes->GetBufferSize(),
+                                                                 nullptr,
+                                                                 m_colorConversionPS.ReleaseAndGetAddressOf()));
+            setDebugName(m_fullQuadVS.Get(), "ColorConversion PS");
+        }
+
+        {
+            D3D11_SAMPLER_DESC desc;
+            ZeroMemory(&desc, sizeof(desc));
+            desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.MaxAnisotropy = 1;
+            desc.MinLOD = D3D11_MIP_LOD_BIAS_MIN;
+            desc.MaxLOD = D3D11_MIP_LOD_BIAS_MAX;
+            CHECK_HRCMD(
+                m_pvrSubmissionDevice->CreateSamplerState(&desc, m_linearClampSampler.ReleaseAndGetAddressOf()));
+        }
+        {
+            D3D11_RASTERIZER_DESC desc;
+            ZeroMemory(&desc, sizeof(desc));
+            desc.FillMode = D3D11_FILL_SOLID;
+            desc.CullMode = D3D11_CULL_NONE;
+            desc.FrontCounterClockwise = TRUE;
+            CHECK_HRCMD(
+                m_pvrSubmissionDevice->CreateRasterizerState(&desc, m_noDepthRasterizer.ReleaseAndGetAddressOf()));
+        }
 
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerPrecomposition[i] =
@@ -459,6 +533,7 @@ namespace pimax_openxr {
                 }
                 for (uint32_t i = 0; i < xrSwapchain.xrDesc.arraySize; i++) {
                     xrSwapchain.imagesResourceView[i].push_back({});
+                    xrSwapchain.renderTargetView[i].push_back({});
                 }
             }
 
@@ -548,43 +623,25 @@ namespace pimax_openxr {
             return;
         }
 
-        // Ensure necessary resources for texture arrays: lazily create a second swapchain for this slice of the array.
-        if (!xrSwapchain.pvrSwapchain[slice]) {
-            auto desc = xrSwapchain.pvrDesc;
-            desc.ArraySize = 1;
-            CHECK_PVRCMD(pvr_createTextureSwapChainDX(
-                m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &xrSwapchain.pvrSwapchain[slice]));
-
-            int count = -1;
-            CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &count));
-            if (count != xrSwapchain.slices[0].size()) {
-                throw std::runtime_error("Swapchain image count mismatch");
-            }
-
-            // Query the textures for the swapchain.
-            for (int i = 0; i < count; i++) {
-                ID3D11Texture2D* texture = nullptr;
-                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                    m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(&texture)));
-                setDebugName(texture, fmt::format("Runtime Sliced Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
-
-                xrSwapchain.slices[slice].push_back(texture);
-            }
-        }
+        ensureSwapchainSliceResources(xrSwapchain, slice);
 
         int pvrDestIndex = -1;
         CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &pvrDestIndex));
         const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
 
-        const bool needCopy = xrSwapchain.lastProcessedIndex == lastReleasedIndex;
         const bool needClearAlpha =
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
         const bool needPremultiplyAlpha = (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
+        const bool needCopy = xrSwapchain.lastProcessedIndex[slice] == lastReleasedIndex ||
+                              (slice > 0 && !(xrSwapchain.needDepthConvert || needClearAlpha || needPremultiplyAlpha));
 
         if (needCopy) {
-            // The app may render to certain swapchains (eg: quad layers) at a lower frame rate. We must perform a copy
-            // to the current PVR swapchain image. All the processing needed (eg: depth conversion or alpha correction)
-            // was done during initial processing (the first time we saw the last released image).
+            // Circumvent some of PVR's limitations:
+            // - For texture arrays, we must do a copy to slice 0 into another swapchain.
+            // - Committing into a swapchain automatically acquires the next image. When an app renders certain
+            //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current PVR swapchain
+            //   image. All the processing needed (eg: depth conversion or alpha correction) was done during initial
+            //   processing (the first time we saw the last released image), so no need to redo it.
             m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex],
                                                           0,
                                                           0,
@@ -595,59 +652,20 @@ namespace pimax_openxr {
                                                           nullptr);
         } else if (xrSwapchain.needDepthConvert || needClearAlpha || needPremultiplyAlpha) {
             // Circumvent some of PVR's limitations:
-            // - For texture arrays, we must do a copy to slice 0 into another swapchain.
             // - For unsupported depth format, we must do a conversion.
             // - For alpha-blended layers, we must pre-process the alpha channel.
-            // For unsupported depth formats or alpha-blended with texture arrays, we must do both!
+            // For unsupported depth formats or alpha-blended with texture arrays, we must also output into slice 0 of
+            // another swapchain (see other branch above).
+            //
+            // One more difficulty: because we use a compute shader, we cannot use an SRGB format as destination. We
+            // might need to do a conversion pass at the very end.
 
             // FIXME: Today we only do convert from D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
             // corresponding formats below.
-            //
-            // Lazily create our intermediate buffer and compute shader resources.
-            if (!xrSwapchain.resolved) {
-                {
-                    D3D11_TEXTURE2D_DESC desc{};
-                    desc.ArraySize = 1;
-                    desc.Format = !xrSwapchain.needDepthConvert ? getTypelessFormat(xrSwapchain.dxgiFormatForSubmission)
-                                                                : DXGI_FORMAT_R32_TYPELESS;
-                    desc.Width = xrSwapchain.xrDesc.width;
-                    desc.Height = xrSwapchain.xrDesc.height;
-                    desc.MipLevels = xrSwapchain.xrDesc.mipCount;
-                    desc.SampleDesc.Count = xrSwapchain.xrDesc.sampleCount;
-                    desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
 
-                    CHECK_HRCMD(m_pvrSubmissionDevice->CreateTexture2D(
-                        &desc, nullptr, xrSwapchain.resolved.ReleaseAndGetAddressOf()));
-                    setDebugName(xrSwapchain.resolved.Get(), fmt::format("Resolved Texture[{}]", (void*)&xrSwapchain));
-                }
-                {
-                    D3D11_BUFFER_DESC desc{};
-                    desc.ByteWidth = 16; // Minimal size. We we only use 4 bytes.
-                    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-                    desc.Usage = D3D11_USAGE_DYNAMIC;
-                    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            ensureSwapchainIntermediateResources(xrSwapchain);
 
-                    CHECK_HRCMD(m_pvrSubmissionDevice->CreateBuffer(
-                        &desc, nullptr, xrSwapchain.convertConstants.ReleaseAndGetAddressOf()));
-                    setDebugName(xrSwapchain.convertConstants.Get(),
-                                 fmt::format("Convert Constants[{}]", (void*)&xrSwapchain));
-                }
-                {
-                    D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
-
-                    desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-                    desc.Format = !xrSwapchain.needDepthConvert ? getNonSRGBFormat(xrSwapchain.dxgiFormatForSubmission)
-                                                                : DXGI_FORMAT_R32_FLOAT;
-                    desc.Texture2D.MipSlice = 0;
-
-                    CHECK_HRCMD(m_pvrSubmissionDevice->CreateUnorderedAccessView(
-                        xrSwapchain.resolved.Get(), &desc, xrSwapchain.convertAccessView.ReleaseAndGetAddressOf()));
-                    setDebugName(xrSwapchain.convertAccessView.Get(),
-                                 fmt::format("Convert UAV[{}]", (void*)&xrSwapchain));
-                }
-            }
-
-            // Lazily create SRV/UAV.
+            // Lazily create SRV.
             if (!xrSwapchain.imagesResourceView[slice][lastReleasedIndex]) {
                 D3D11_SHADER_RESOURCE_VIEW_DESC desc{};
 
@@ -703,15 +721,166 @@ namespace pimax_openxr {
             }
 
             // Final copy into the PVR texture.
-            m_pvrSubmissionContext->CopySubresourceRegion(
-                xrSwapchain.slices[slice][pvrDestIndex], 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
+            if (!isSRGBFormat(xrSwapchain.dxgiFormatForSubmission)) {
+                m_pvrSubmissionContext->CopySubresourceRegion(
+                    xrSwapchain.slices[slice][pvrDestIndex], 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
+            } else {
+                // Lazily create RTV.
+                if (!xrSwapchain.renderTargetView[slice][pvrDestIndex]) {
+                    D3D11_RENDER_TARGET_VIEW_DESC desc{};
+
+                    // When rendering to a swapchain with slice > 0, we know the swapchain is always arraySize of 1.
+                    desc.ViewDimension = (xrSwapchain.xrDesc.arraySize == 1) || slice > 0
+                                             ? D3D11_RTV_DIMENSION_TEXTURE2D
+                                             : D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+                    desc.Format = xrSwapchain.dxgiFormatForSubmission;
+                    desc.Texture2DArray.ArraySize = 1;
+                    desc.Texture2DArray.MipSlice = D3D11CalcSubresource(0, 0, xrSwapchain.xrDesc.mipCount);
+                    desc.Texture2DArray.FirstArraySlice = slice;
+
+                    CHECK_HRCMD(m_pvrSubmissionDevice->CreateRenderTargetView(
+                        xrSwapchain.slices[slice][pvrDestIndex],
+                        &desc,
+                        xrSwapchain.renderTargetView[slice][pvrDestIndex].ReleaseAndGetAddressOf()));
+                    setDebugName(xrSwapchain.renderTargetView[slice][lastReleasedIndex].Get(),
+                                 fmt::format("Convert RTV[{}, {}, {}]", slice, pvrDestIndex, (void*)&xrSwapchain));
+                }
+
+                // Use a full quad shader for color conversion to sRGB.
+                m_pvrSubmissionContext->ClearState();
+                m_pvrSubmissionContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+                m_pvrSubmissionContext->OMSetRenderTargets(
+                    1, xrSwapchain.renderTargetView[slice][lastReleasedIndex].GetAddressOf(), nullptr);
+                m_pvrSubmissionContext->RSSetState(m_noDepthRasterizer.Get());
+                D3D11_VIEWPORT viewport{};
+                viewport.Width = (float)xrSwapchain.pvrDesc.Width;
+                viewport.Height = (float)xrSwapchain.pvrDesc.Height;
+                viewport.MaxDepth = 1.f;
+                m_pvrSubmissionContext->RSSetViewports(1, &viewport);
+                m_pvrSubmissionContext->VSSetShader(m_fullQuadVS.Get(), nullptr, 0);
+                m_pvrSubmissionContext->PSSetSamplers(0, 1, m_linearClampSampler.GetAddressOf());
+                m_pvrSubmissionContext->PSSetShaderResources(0, 1, xrSwapchain.convertResourceView.GetAddressOf());
+                m_pvrSubmissionContext->PSSetShader(m_colorConversionPS.Get(), nullptr, 0);
+                m_pvrSubmissionContext->Draw(3, 0);
+
+                // Unbind all resources to avoid D3D validation errors.
+                {
+                    ID3D11RenderTargetView* nullRTV[] = {nullptr};
+                    m_pvrSubmissionContext->OMSetRenderTargets(1, nullRTV, nullptr);
+                    ID3D11ShaderResourceView* nullSRV[] = {nullptr};
+                    m_pvrSubmissionContext->PSSetShaderResources(0, 1, nullSRV);
+                }
+            }
         }
 
-        xrSwapchain.lastProcessedIndex = lastReleasedIndex;
+        xrSwapchain.lastProcessedIndex[slice] = lastReleasedIndex;
 
         // Commit the texture to PVR.
         CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, xrSwapchain.pvrSwapchain[slice]));
         committed.insert(std::make_pair(xrSwapchain.pvrSwapchain[0], slice));
+    }
+
+    void OpenXrRuntime::ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const {
+        // Ensure necessary resources for texture arrays: lazily create a second swapchain for this slice of the array.
+        if (!xrSwapchain.pvrSwapchain[slice]) {
+            auto desc = xrSwapchain.pvrDesc;
+
+            // We might use a full quad shader to perform final color conversion.
+            if (isSRGBFormat(xrSwapchain.dxgiFormatForSubmission)) {
+                desc.BindFlags |= pvrTextureBind_DX_RenderTarget;
+            }
+            desc.ArraySize = 1;
+            CHECK_PVRCMD(pvr_createTextureSwapChainDX(
+                m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &xrSwapchain.pvrSwapchain[slice]));
+
+            int count = -1;
+            CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &count));
+            if (count != xrSwapchain.slices[0].size()) {
+                throw std::runtime_error("Swapchain image count mismatch");
+            }
+
+            // Query the textures for the swapchain.
+            for (int i = 0; i < count; i++) {
+                ID3D11Texture2D* texture = nullptr;
+                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
+                    m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(&texture)));
+                setDebugName(texture, fmt::format("Runtime Sliced Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
+
+                xrSwapchain.slices[slice].push_back(texture);
+            }
+        }
+    }
+
+    void OpenXrRuntime::ensureSwapchainIntermediateResources(Swapchain& xrSwapchain) const {
+        // Lazily create our intermediate buffer and compute shader resources.
+        if (!xrSwapchain.resolved) {
+            const bool isSRGBDestination = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
+
+            {
+                D3D11_TEXTURE2D_DESC desc{};
+                desc.ArraySize = 1;
+                if (xrSwapchain.needDepthConvert) {
+                    desc.Format = DXGI_FORMAT_R32_TYPELESS;
+                } else if (!isSRGBDestination) {
+                    desc.Format = getTypelessFormat(xrSwapchain.dxgiFormatForSubmission);
+                } else {
+                    // Use a non-SRGB format that has enough precision to avoid loss of colors.
+                    desc.Format = DXGI_FORMAT_R16G16B16A16_TYPELESS;
+                }
+                desc.Width = xrSwapchain.xrDesc.width;
+                desc.Height = xrSwapchain.xrDesc.height;
+                desc.MipLevels = xrSwapchain.xrDesc.mipCount;
+                desc.SampleDesc.Count = xrSwapchain.xrDesc.sampleCount;
+                desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+
+                CHECK_HRCMD(m_pvrSubmissionDevice->CreateTexture2D(
+                    &desc, nullptr, xrSwapchain.resolved.ReleaseAndGetAddressOf()));
+                setDebugName(xrSwapchain.resolved.Get(), fmt::format("Resolved Texture[{}]", (void*)&xrSwapchain));
+            }
+            {
+                D3D11_BUFFER_DESC desc{};
+                desc.ByteWidth = 16; // Minimal size. We we only use 4 bytes.
+                desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+                desc.Usage = D3D11_USAGE_DYNAMIC;
+                desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+                CHECK_HRCMD(m_pvrSubmissionDevice->CreateBuffer(
+                    &desc, nullptr, xrSwapchain.convertConstants.ReleaseAndGetAddressOf()));
+                setDebugName(xrSwapchain.convertConstants.Get(),
+                             fmt::format("Convert Constants[{}]", (void*)&xrSwapchain));
+            }
+            {
+                D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
+
+                desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+                if (xrSwapchain.needDepthConvert) {
+                    desc.Format = DXGI_FORMAT_R32_FLOAT;
+                } else if (!isSRGBDestination) {
+                    desc.Format = xrSwapchain.dxgiFormatForSubmission;
+                } else {
+                    desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+                }
+                desc.Texture2D.MipSlice = 0;
+
+                CHECK_HRCMD(m_pvrSubmissionDevice->CreateUnorderedAccessView(
+                    xrSwapchain.resolved.Get(), &desc, xrSwapchain.convertAccessView.ReleaseAndGetAddressOf()));
+                setDebugName(xrSwapchain.convertAccessView.Get(), fmt::format("Convert UAV[{}]", (void*)&xrSwapchain));
+            }
+            if (isSRGBDestination) {
+                D3D11_SHADER_RESOURCE_VIEW_DESC desc{};
+
+                desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+                // We only every use the SRV for color conversion when destination is SRGB.
+                desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+                desc.Texture2D.MipLevels = xrSwapchain.xrDesc.mipCount;
+                desc.Texture2D.MostDetailedMip = D3D11CalcSubresource(0, 0, desc.Texture2DArray.MipLevels);
+
+                CHECK_HRCMD(m_pvrSubmissionDevice->CreateShaderResourceView(
+                    xrSwapchain.resolved.Get(), &desc, xrSwapchain.convertResourceView.ReleaseAndGetAddressOf()));
+                setDebugName(xrSwapchain.convertResourceView.Get(),
+                             fmt::format("Convert SRV[{}]", (void*)&xrSwapchain));
+            }
+        }
     }
 
     // Flush any pending work in the app context.

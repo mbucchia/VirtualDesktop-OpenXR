@@ -277,12 +277,14 @@ namespace pimax_openxr {
             uint32_t nextIndex{0};
 
             // Resources needed to resolve MSAA and/or format conversion or alpha correction.
-            int lastProcessedIndex{-1};
+            std::vector<int> lastProcessedIndex;
             bool needDownsample{false};
             std::vector<std::vector<ComPtr<ID3D11ShaderResourceView>>> imagesResourceView;
+            std::vector<std::vector<ComPtr<ID3D11RenderTargetView>>> renderTargetView;
             ComPtr<ID3D11Texture2D> resolved;
             ComPtr<ID3D11Buffer> convertConstants;
             ComPtr<ID3D11UnorderedAccessView> convertAccessView;
+            ComPtr<ID3D11ShaderResourceView> convertResourceView;
 
             // Resources needed for interop.
             std::vector<ComPtr<ID3D11Texture2D>> d3d11Images;
@@ -412,6 +414,8 @@ namespace pimax_openxr {
                                             uint32_t slice,
                                             XrCompositionLayerFlags compositionFlags,
                                             std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const;
+        void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
+        void ensureSwapchainIntermediateResources(Swapchain& xrSwapchain) const;
         void flushD3D11Context();
         void flushSubmissionContext();
         void serializeD3D11Frame();
@@ -586,6 +590,12 @@ namespace pimax_openxr {
         // Workaround: the AMD driver does not seem to like closing the handle for the shared fence when using
         // OpenGL. We keep it alive for the whole session.
         wil::shared_handle m_fenceHandleForAMDWorkaround;
+
+        // Common resources needed for sRGB color conversion.
+        ComPtr<ID3D11SamplerState> m_linearClampSampler;
+        ComPtr<ID3D11RasterizerState> m_noDepthRasterizer;
+        ComPtr<ID3D11VertexShader> m_fullQuadVS;
+        ComPtr<ID3D11PixelShader> m_colorConversionPS;
 
         // Frame state.
         std::condition_variable m_frameCondVar;
