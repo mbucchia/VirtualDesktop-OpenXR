@@ -122,6 +122,19 @@ namespace pimax_openxr {
                 pvr_destroyTextureSwapChain(m_pvrSession, tempSwapchain);
             }
 
+            // Workaround: PVR since Pimax Client 1.10 is not handling frame pipelining correctly.
+            // Ensure a single frame in-flight when the prediction is far off.
+            if (m_disableFramePipeliningQuirk) {
+                TraceLocalActivity(waitEndFrame);
+                TraceLoggingWriteStart(waitEndFrame,
+                                       "WaitEndFrame",
+                                       TLArg(m_frameWaited, "FrameWaited"),
+                                       TLArg(m_frameBegun, "FrameBegun"),
+                                       TLArg(m_frameCompleted, "FrameCompleted"));
+                m_frameCondVar.wait(lock, [&] { return m_frameCompleted == m_frameBegun; });
+                TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame");
+            }
+
             // Wait for PVR to be ready for the next frame.
             const long long pvrFrameId = m_frameWaited;
             {
