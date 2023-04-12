@@ -491,6 +491,7 @@ namespace pimax_openxr {
         std::string m_applicationName;
         bool m_needWorldLockedQuadLayerQuirk{false};
         bool m_disableFramePipeliningQuirk{false};
+        bool m_alwaysUseFrameIdZero{false};
 
         // Session state.
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;

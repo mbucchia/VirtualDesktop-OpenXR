@@ -39,7 +39,21 @@ namespace companion
         public ExperimentalSettings()
         {
             InitializeComponent();
+            LoadSettings();
+        }
 
+        private void ExperimentalSettings_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                Hide();
+            }
+        }
+
+        private void LoadSettings()
+        {
+            loading = true;
             SuspendLayout();
 
             Microsoft.Win32.RegistryKey key = null;
@@ -57,7 +71,7 @@ namespace companion
                 {
                     forceHalf.Checked = true;
                 }
-                else if(multiplier == 200)
+                else if (multiplier == 200)
                 {
                     forceThird.Checked = true;
                 }
@@ -67,6 +81,8 @@ namespace companion
                 }
                 // Convert value from microseconds to tenth of milliseconds.
                 timingBias.Value = multiplier == 0 ? ((int)key.GetValue("frame_time_override_offset", 0) / 100) : 0;
+                disableFramePipelining.Checked = (int)key.GetValue("quirk_disable_frame_pipelining", 0) == 1 ? true : false;
+                alwaysUseFrameIdZero.Checked = (int)key.GetValue("quirk_always_use_frame_id_zero", 0) == 1 ? true : false;
             }
             catch (Exception)
             {
@@ -87,15 +103,6 @@ namespace companion
             ResumeLayout();
 
             loading = false;
-        }
-
-        private void ExperimentalSettings_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (e.CloseReason == CloseReason.UserClosing)
-            {
-                e.Cancel = true;
-                Hide();
-            }
         }
 
         private void RefreshEnabledState()
@@ -189,17 +196,57 @@ namespace companion
             }
         }
 
+        private void disableFramePipelining_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshEnabledState();
+
+            if (loading)
+            {
+                return;
+            }
+
+            MainForm.WriteSetting("quirk_disable_frame_pipelining", disableFramePipelining.Checked ? 1 : 0);
+        }
+
+        private void alwaysUseFrameIdZero_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshEnabledState();
+
+            if (loading)
+            {
+                return;
+            }
+
+            MainForm.WriteSetting("quirk_always_use_frame_id_zero", alwaysUseFrameIdZero.Checked ? 1 : 0);
+        }
+
         private void restoreDefaults_Click(object sender, EventArgs e)
         {
-            enableFrameTiming.Checked = true;
-            forceHalf.Checked = forceThird.Checked = false;
-            filterLength.Value = 5;
-            timingBias.Value = 0;
+            Microsoft.Win32.RegistryKey key = null;
 
-            enableFrameTiming_CheckedChanged(null, null);
-            filterLength_Scroll(null, null);
-            timingBias_Scroll(null, null);
-            forceHalf_CheckedChanged(null, null);
+            try
+            {
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MainForm.RegPrefix);
+
+                key.DeleteValue("use_frame_timing_override", false);
+                key.DeleteValue("frame_time_filter_length", false);
+                key.DeleteValue("frame_time_override_multiplier", false);
+                key.DeleteValue("frame_time_override_offset", false);
+                key.DeleteValue("quirk_disable_frame_pipelining", false);
+                key.DeleteValue("quirk_always_use_frame_id_zero", false);
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                if (key != null)
+                {
+                    key.Close();
+                }
+            }
+
+            LoadSettings();
         }
     }
 }

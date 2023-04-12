@@ -136,7 +136,7 @@ namespace pimax_openxr {
             }
 
             // Wait for PVR to be ready for the next frame.
-            const long long pvrFrameId = m_frameWaited;
+            const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited : 0;
             {
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
@@ -247,7 +247,7 @@ namespace pimax_openxr {
             }
 
             // Tell PVR we are about to begin the frame.
-            const long long pvrFrameId = m_frameWaited - 1;
+            const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited - 1 : 0;
             {
                 TraceLocalActivity(beginFrame);
                 TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"));
@@ -758,7 +758,7 @@ namespace pimax_openxr {
                 pvr_setFloatConfig(m_pvrSession, "openvr_client_render_ms", renderMs);
             }
 
-            const long long pvrFrameId = m_frameBegun - 1;
+            const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameBegun - 1 : 0;
             TraceLocalActivity(endFrame);
             TraceLoggingWriteStart(endFrame,
                                    "PVR_EndFrame",

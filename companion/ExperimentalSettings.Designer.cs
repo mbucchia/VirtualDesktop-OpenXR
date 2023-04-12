@@ -32,15 +32,17 @@ namespace companion
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ExperimentalSettings));
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.enableFrameTiming = new System.Windows.Forms.CheckBox();
+            this.filterLengthValue = new System.Windows.Forms.TextBox();
             this.filterLengthLabel = new System.Windows.Forms.Label();
             this.filterLength = new System.Windows.Forms.TrackBar();
+            this.timingBiasValue = new System.Windows.Forms.TextBox();
             this.timingBiasLabel = new System.Windows.Forms.Label();
             this.timingBias = new System.Windows.Forms.TrackBar();
             this.forceRateLabel = new System.Windows.Forms.Label();
-            this.filterLengthValue = new System.Windows.Forms.TextBox();
-            this.timingBiasValue = new System.Windows.Forms.TextBox();
             this.forceHalf = new System.Windows.Forms.CheckBox();
             this.forceThird = new System.Windows.Forms.CheckBox();
+            this.disableFramePipelining = new System.Windows.Forms.CheckBox();
+            this.alwaysUseFrameIdZero = new System.Windows.Forms.CheckBox();
             this.restoreDefaults = new System.Windows.Forms.Button();
             this.flowLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filterLength)).BeginInit();
@@ -59,11 +61,13 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.forceRateLabel);
             this.flowLayoutPanel1.Controls.Add(this.forceHalf);
             this.flowLayoutPanel1.Controls.Add(this.forceThird);
+            this.flowLayoutPanel1.Controls.Add(this.disableFramePipelining);
+            this.flowLayoutPanel1.Controls.Add(this.alwaysUseFrameIdZero);
             this.flowLayoutPanel1.Controls.Add(this.restoreDefaults);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(300, 194);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(300, 248);
             this.flowLayoutPanel1.TabIndex = 0;
             // 
             // enableFrameTiming
@@ -78,6 +82,15 @@ namespace companion
             this.enableFrameTiming.Text = "Enable Smart Smoothing timing control (Requires restart)";
             this.enableFrameTiming.UseVisualStyleBackColor = true;
             this.enableFrameTiming.CheckedChanged += new System.EventHandler(this.enableFrameTiming_CheckedChanged);
+            // 
+            // filterLengthValue
+            // 
+            this.filterLengthValue.Location = new System.Drawing.Point(6, 35);
+            this.filterLengthValue.Margin = new System.Windows.Forms.Padding(6, 6, 3, 3);
+            this.filterLengthValue.Name = "filterLengthValue";
+            this.filterLengthValue.ReadOnly = true;
+            this.filterLengthValue.Size = new System.Drawing.Size(32, 20);
+            this.filterLengthValue.TabIndex = 1;
             // 
             // filterLengthLabel
             // 
@@ -104,20 +117,29 @@ namespace companion
             this.filterLength.Value = 5;
             this.filterLength.Scroll += new System.EventHandler(this.filterLength_Scroll);
             // 
+            // timingBiasValue
+            // 
+            this.timingBiasValue.Location = new System.Drawing.Point(6, 80);
+            this.timingBiasValue.Margin = new System.Windows.Forms.Padding(6, 3, 3, 3);
+            this.timingBiasValue.Name = "timingBiasValue";
+            this.timingBiasValue.ReadOnly = true;
+            this.timingBiasValue.Size = new System.Drawing.Size(32, 20);
+            this.timingBiasValue.TabIndex = 4;
+            // 
             // timingBiasLabel
             // 
             this.timingBiasLabel.AutoSize = true;
             this.timingBiasLabel.Location = new System.Drawing.Point(44, 77);
             this.timingBiasLabel.Name = "timingBiasLabel";
             this.timingBiasLabel.Padding = new System.Windows.Forms.Padding(0, 6, 0, 0);
-            this.timingBiasLabel.Size = new System.Drawing.Size(136, 19);
+            this.timingBiasLabel.Size = new System.Drawing.Size(110, 19);
             this.timingBiasLabel.TabIndex = 5;
             this.timingBiasLabel.Text = "Frame Time Bias (ms):";
             // 
             // timingBias
             // 
             this.flowLayoutPanel1.SetFlowBreak(this.timingBias, true);
-            this.timingBias.Location = new System.Drawing.Point(186, 80);
+            this.timingBias.Location = new System.Drawing.Point(160, 80);
             this.timingBias.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.timingBias.Maximum = 300;
             this.timingBias.Minimum = -300;
@@ -137,24 +159,6 @@ namespace companion
             this.forceRateLabel.Size = new System.Drawing.Size(158, 16);
             this.forceRateLabel.TabIndex = 7;
             this.forceRateLabel.Text = "Force fractional smoothing rate:";
-            // 
-            // filterLengthValue
-            // 
-            this.filterLengthValue.Location = new System.Drawing.Point(6, 35);
-            this.filterLengthValue.Margin = new System.Windows.Forms.Padding(6, 6, 3, 3);
-            this.filterLengthValue.Name = "filterLengthValue";
-            this.filterLengthValue.ReadOnly = true;
-            this.filterLengthValue.Size = new System.Drawing.Size(32, 20);
-            this.filterLengthValue.TabIndex = 1;
-            // 
-            // timingBiasValue
-            // 
-            this.timingBiasValue.Location = new System.Drawing.Point(6, 80);
-            this.timingBiasValue.Margin = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.timingBiasValue.Name = "timingBiasValue";
-            this.timingBiasValue.ReadOnly = true;
-            this.timingBiasValue.Size = new System.Drawing.Size(32, 20);
-            this.timingBiasValue.TabIndex = 4;
             // 
             // forceHalf
             // 
@@ -178,13 +182,39 @@ namespace companion
             this.forceThird.UseVisualStyleBackColor = true;
             this.forceThird.CheckedChanged += new System.EventHandler(this.forceThird_CheckedChanged);
             // 
+            // disableFramePipelining
+            // 
+            this.disableFramePipelining.AutoSize = true;
+            this.flowLayoutPanel1.SetFlowBreak(this.disableFramePipelining, true);
+            this.disableFramePipelining.Location = new System.Drawing.Point(3, 151);
+            this.disableFramePipelining.Name = "disableFramePipelining";
+            this.disableFramePipelining.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.disableFramePipelining.Size = new System.Drawing.Size(223, 17);
+            this.disableFramePipelining.TabIndex = 10;
+            this.disableFramePipelining.Text = "Disable frame pipelining (Requires restart)";
+            this.disableFramePipelining.UseVisualStyleBackColor = true;
+            this.disableFramePipelining.CheckedChanged += new System.EventHandler(this.disableFramePipelining_CheckedChanged);
+            // 
+            // alwaysUseFrameIdZero
+            // 
+            this.alwaysUseFrameIdZero.AutoSize = true;
+            this.flowLayoutPanel1.SetFlowBreak(this.alwaysUseFrameIdZero, true);
+            this.alwaysUseFrameIdZero.Location = new System.Drawing.Point(3, 174);
+            this.alwaysUseFrameIdZero.Name = "alwaysUseFrameIdZero";
+            this.alwaysUseFrameIdZero.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
+            this.alwaysUseFrameIdZero.Size = new System.Drawing.Size(227, 23);
+            this.alwaysUseFrameIdZero.TabIndex = 11;
+            this.alwaysUseFrameIdZero.Text = "Always use null frame ID (Requires restart)";
+            this.alwaysUseFrameIdZero.UseVisualStyleBackColor = true;
+            this.alwaysUseFrameIdZero.CheckedChanged += new System.EventHandler(this.alwaysUseFrameIdZero_CheckedChanged);
+            // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 151);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 203);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 3, 3, 3);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 10;
+            this.restoreDefaults.TabIndex = 12;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
@@ -193,7 +223,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(300, 194);
+            this.ClientSize = new System.Drawing.Size(300, 248);
             this.Controls.Add(this.flowLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -224,5 +254,7 @@ namespace companion
         private System.Windows.Forms.CheckBox forceHalf;
         private System.Windows.Forms.CheckBox forceThird;
         private System.Windows.Forms.Button restoreDefaults;
+        private System.Windows.Forms.CheckBox disableFramePipelining;
+        private System.Windows.Forms.CheckBox alwaysUseFrameIdZero;
     }
 }
