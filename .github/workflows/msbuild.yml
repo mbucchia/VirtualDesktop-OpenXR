@@ -78,4 +78,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Setup
-        path: installer/output/PimaxXR.msi
+        path: |
+          installer/output/PimaxXR.msi
+          bin/Win32/Release/pimax-openxr-32.pdb
+          bin/x64/Release/pimax-openxr.pdb
