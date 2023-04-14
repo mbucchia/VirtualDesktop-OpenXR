@@ -171,36 +171,6 @@ namespace pimax_openxr {
         TraceLoggingWrite(g_traceProvider, "PimaxXR", TLArg(runtimeVersion.c_str(), "Version"));
         m_telemetry.logVersion(runtimeVersion);
 
-        // Initialize PVR.
-
-        m_useFrameTimingOverride = getSetting("use_frame_timing_override").value_or(1);
-        if (m_useFrameTimingOverride) {
-            // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
-            // process) in order to remove PVR frame timing constraints.
-            DetourDllAttach(
-                "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
-
-            // Detour hack: we always ensure compatibility with Windows 10 in order to make pvr_waitToBeginFrame()
-            // behave as expected.
-            // This was discovered with the PVR_Sample, which specifies <supportedOS
-            // Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/> in its manifest.
-            // Without this manifest entry, VerifyVersionInfoW always returns Windows 8 compatibility only.
-            // https://social.msdn.microsoft.com/Forums/windows/en-US/298a1817-0af5-4efc-9663-db9a841a233b/verifyversioninfo-and-windows-10?forum=windowssdk
-            DetourDllAttach(
-                "kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
-        }
-
-        CHECK_PVRCMD(pvr_initialise(&m_pvr));
-
-        if (m_useFrameTimingOverride) {
-            DetourDllDetach(
-                "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
-        }
-
-        std::string_view versionString(pvr_getVersionString(m_pvr));
-        Log("PVR: %s\n", versionString.data());
-        TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
-
         // Identify the version of Pitool or Pimax Client.
         const auto clientVersion = getPimaxClientVersion();
         if (clientVersion) {
@@ -236,6 +206,35 @@ namespace pimax_openxr {
         } else {
             Log("Could not detect Pitool/Pimax Client version\n");
         }
+
+        // Initialize PVR.
+
+        // Detour hack: we always ensure compatibility with Windows 10 in order to make pvr_waitToBeginFrame()
+        // behave as expected.
+        // This was discovered with the PVR_Sample, which specifies <supportedOS
+        // Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/> in its manifest.
+        // Without this manifest entry, VerifyVersionInfoW always returns Windows 8 compatibility only.
+        // https://social.msdn.microsoft.com/Forums/windows/en-US/298a1817-0af5-4efc-9663-db9a841a233b/verifyversioninfo-and-windows-10?forum=windowssdk
+        DetourDllAttach("kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
+
+        m_useFrameTimingOverride = getSetting("use_frame_timing_override").value_or(1);
+        if (m_useFrameTimingOverride) {
+            // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
+            // process) in order to remove PVR frame timing constraints.
+            DetourDllAttach(
+                "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
+        }
+
+        CHECK_PVRCMD(pvr_initialise(&m_pvr));
+
+        if (m_useFrameTimingOverride) {
+            DetourDllDetach(
+                "kernel32.dll", "GetModuleFileNameA", hooked_GetModuleFileNameA, g_original_GetModuleFileNameA);
+        }
+
+        std::string_view versionString(pvr_getVersionString(m_pvr));
+        Log("PVR: %s\n", versionString.data());
+        TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
 
         // We want to log a warning if HAGS is on.
         const auto hwSchMode =
@@ -309,10 +308,7 @@ namespace pimax_openxr {
         }
         pvr_shutdown(m_pvr);
 
-        if (m_useFrameTimingOverride) {
-            DetourDllDetach(
-                "kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
-        }
+        DetourDllDetach("kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr
@@ -419,13 +415,6 @@ namespace pimax_openxr {
 
             registerInstanceExtension(std::string(extensionName));
         }
-
-        // Ensure there is no stale parallel projection settings.
-        CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
-
-        // Latch the state of parallel projection now. This is needed for computing the recommended swapchain sizes as
-        // part of xrGetSystem(). Note: we may reset this later in case the system does not use canted displays.
-        m_useParallelProjection = !pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0);
 
         m_instanceCreated = true;
         *instance = (XrInstance)1;
@@ -590,8 +579,6 @@ namespace pimax_openxr {
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
 
-        // This was originally protected with m_isVisibilityMaskSupported, however certain apps like FS 2020 have bugs
-        // that rely on the extension being present.
         m_extensionsTable.push_back( // Hidden area mesh.
             {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
 

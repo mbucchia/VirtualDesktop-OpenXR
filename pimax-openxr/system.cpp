@@ -96,6 +96,9 @@ namespace pimax_openxr {
             m_loggedProductName = true;
         }
 
+        // Ensure there is no stale parallel projection settings.
+        CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
+
         // Cache common information.
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
@@ -109,7 +112,8 @@ namespace pimax_openxr {
         const float cantingAngle = PVR::Quatf{m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose.Orientation}.Angle(
                                        m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose.Orientation) /
                                    2.f;
-        m_useParallelProjection = cantingAngle > 0.0001f && m_useParallelProjection;
+        m_useParallelProjection =
+            cantingAngle > 0.0001f && !pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0);
         if (m_useParallelProjection) {
             Log("Parallel projection is enabled\n");
 
