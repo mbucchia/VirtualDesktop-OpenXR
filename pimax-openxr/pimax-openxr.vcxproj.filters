@@ -121,6 +121,9 @@
     <ClCompile Include="mirror_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="eye_tracking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="pimax-openxr.json" />

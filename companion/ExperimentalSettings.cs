@@ -84,6 +84,7 @@ namespace companion
                 disableFramePipelining.Checked = (int)key.GetValue("quirk_disable_frame_pipelining", 0) == 1 ? true : false;
                 alwaysUseFrameIdZero.Checked = (int)key.GetValue("quirk_always_use_frame_id_zero", 0) == 1 ? true : false;
                 forceDisableParallelProjection.Checked = (int)key.GetValue("force_parallel_projection_state", 1) == 0 ? true : false;
+                droolonProjectionDistance.Value = (int)key.GetValue("droolon_projection_distance", 35);
 
                 // DO NOT FORGET TO ADD TO restoreDefaults_Click()!
             }
@@ -102,6 +103,7 @@ namespace companion
             RefreshEnabledState();
             filterLength_Scroll(null, null);
             timingBias_Scroll(null, null);
+            droolonProjectionDistance_Scroll(null, null);
 
             ResumeLayout();
 
@@ -250,6 +252,18 @@ namespace companion
             }
         }
 
+        private void droolonProjectionDistance_Scroll(object sender, EventArgs e)
+        {
+            droolonProjectionDistanceValue.Text = droolonProjectionDistance.Value != 0 ? (droolonProjectionDistance.Value / 100.0f).ToString("#.##") : "0";
+
+            if (loading)
+            {
+                return;
+            }
+
+            MainForm.WriteSetting("droolon_projection_distance", droolonProjectionDistance.Value);
+        }
+
         private void restoreDefaults_Click(object sender, EventArgs e)
         {
             Microsoft.Win32.RegistryKey key = null;
@@ -265,6 +279,7 @@ namespace companion
                 key.DeleteValue("quirk_disable_frame_pipelining", false);
                 key.DeleteValue("quirk_always_use_frame_id_zero", false);
                 key.DeleteValue("force_parallel_projection_state", false);
+                key.DeleteValue("droolon_projection_distance", false);
             }
             catch (Exception)
             {

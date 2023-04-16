@@ -73,6 +73,14 @@ namespace xr {
         return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
     }
 
+    static inline std::string ToString(pvrVector2f vec) {
+        return fmt::format("({:.3f}, {:.3f})", vec.x, vec.y);
+    }
+
+    static inline std::string ToString(XrVector2f vec) {
+        return fmt::format("({:.3f}, {:.3f})", vec.x, vec.y);
+    }
+
     static inline std::string ToString(XrFovf fov) {
         return fmt::format(
             "(l:{:.3f}, r:{:.3f}, u:{:.3f}, d:{:.3f})", fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown);
@@ -115,12 +123,34 @@ namespace xr {
         case pvr_app_adapter_mismatch:
             return "App Adapter Mismatch";
         case pvr_not_support:
-            return " Not Supported";
+            return "Not Supported";
 
         default:
             return fmt::format("pvrResult_{}", result);
         }
     }
+
+#ifndef NOASEEVRCLIENT
+    static inline std::string ToString(aSeeVRReturnCode result) {
+        switch (result) {
+        case aSeeVRReturnCode::success:
+            return "Success";
+        case aSeeVRReturnCode::bind_local_port_failed:
+            return "Bind Port Failed";
+        case aSeeVRReturnCode::permission_denied:
+            return "Permission Denied";
+        case aSeeVRReturnCode::invalid_value:
+            return "Invalid Value";
+        case aSeeVRReturnCode::invalid_parameter:
+            return "Invalid Parameter";
+        case aSeeVRReturnCode::failed:
+            return "Failed";
+
+        default:
+            return fmt::format("aSeeVRReturnCode_{}", result);
+        }
+    }
+#endif
 
     namespace math {
 

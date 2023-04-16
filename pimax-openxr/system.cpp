@@ -99,6 +99,27 @@ namespace pimax_openxr {
         // Ensure there is no stale parallel projection settings.
         CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
 
+        // Detect eye tracker. This can take a while, so only do it when the app is requesting it.
+        m_eyeTrackingType = EyeTracking::None;
+        if (true /* TODO: list extensions */) {
+            if (getSetting("debug_eye_tracker").value_or(0)) {
+                m_eyeTrackingType = EyeTracking::Simulated;
+            } else if (m_cachedHmdInfo.VendorId == 0x34A4 && m_cachedHmdInfo.ProductId == 0x0012) {
+                // Pimax Crystal uses the PVR SDK.
+                m_eyeTrackingType = EyeTracking::PVR;
+            }
+#ifndef NOASEEVRCLIENT
+            else if (initializeDroolon()) {
+                // Other Pimax headsets use the 7invensun SDK (aSeeVR).
+                m_eyeTrackingType = EyeTracking::aSeeVR;
+            }
+#endif
+        }
+
+        // Check that we have consent to share eye gaze data with applications.
+        m_isEyeTrackingAvailable =
+            m_eyeTrackingType != EyeTracking::None && getSetting("allow_eye_tracking").value_or(false);
+
         // Cache common information.
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
@@ -184,9 +205,7 @@ namespace pimax_openxr {
 
         properties->vendorId = m_cachedHmdInfo.VendorId;
 
-        // We include the "aapvr" string because some applications like OpenXR Toolkit rely on this string to
-        // identify Pimax.
-        sprintf_s(properties->systemName, sizeof(properties->systemName), "%s (aapvr)", m_cachedHmdInfo.ProductName);
+        sprintf_s(properties->systemName, sizeof(properties->systemName), "%s", m_cachedHmdInfo.ProductName);
         properties->systemId = systemId;
 
         properties->trackingProperties.positionTracking = XR_TRUE;

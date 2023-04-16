@@ -354,6 +354,13 @@ namespace pimax_openxr {
             int side;
         };
 
+        enum class EyeTracking {
+            None = 0,
+            PVR,
+            aSeeVR,
+            Simulated,
+        };
+
         // instance.cpp
         void initializeExtensionsTable();
         std::optional<int> getSetting(const std::string& value) const;
@@ -401,6 +408,20 @@ namespace pimax_openxr {
         locateSpaceToOrigin(const Space& xrSpace, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
         XrSpaceLocationFlags getHmdPose(XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
         XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
+
+        // eye_tracking.cpp
+        bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const;
+#ifndef NOASEEVRCLIENT
+        bool initializeDroolon();
+        void startDroolonTracking();
+        void stopDroolonTracking();
+        void setDroolonCoefficients(const aSeeVRCoefficient& coefficients);
+        void setDroolonReady(bool ready);
+        void setDroolonData(int64_t timestamp, const XrVector2f& gaze);
+        static void _7INVENSUN_CALL aSeeVRgetCoefficientCallback(const aSeeVRCoefficient* data, void* context);
+        static void _7INVENSUN_CALL aSeeVRstateCallback(const aSeeVRState* state, void* context);
+        static void _7INVENSUN_CALL aSeeVReyeDataCallback(const aSeeVREyeData* eyeData, void* context);
+#endif
 
         // d3d11_native.cpp
         XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings);
@@ -492,6 +513,16 @@ namespace pimax_openxr {
         bool m_needWorldLockedQuadLayerQuirk{false};
         bool m_disableFramePipeliningQuirk{false};
         bool m_alwaysUseFrameIdZero{false};
+        EyeTracking m_eyeTrackingType{EyeTracking::None};
+#ifndef NOASEEVRCLIENT
+        aSeeVRCoefficient m_droolonCoefficients{};
+        mutable std::mutex m_droolonMutex;
+        bool m_isDroolonReady{false};
+        double m_droolonTimestamp{0};
+        XrVector2f m_droolonGaze{};
+#endif
+        float m_droolonProjectionDistance{0.35f};
+        bool m_isEyeTrackingAvailable{false};
 
         // Session state.
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;

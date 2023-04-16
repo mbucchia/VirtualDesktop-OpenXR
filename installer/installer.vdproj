@@ -63,6 +63,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_7BC6A4A888E24DBE84476B1B60788435"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_7BEA2F19101F4E5C91E190ACB21B0B51"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -313,6 +319,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_7BC6A4A888E24DBE84476B1B60788435"
+            {
+            "SourcePath" = "8:..\\bin\\x64\\Release\\aSeeVRClient.dll"
+            "TargetName" = "8:aSeeVRClient.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_7BEA2F19101F4E5C91E190ACB21B0B51"
             {
             "SourcePath" = "8:..\\scripts\\PimaxOpenXR.wprp"
@@ -520,8 +546,8 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:PimaxXR"
-        "ProductCode" = "8:{C5DDA0FB-CB0B-4213-A6F2-9CBB8B959D6B}"
-        "PackageCode" = "8:{84DAD3BC-1118-4C05-8E59-2C7BDB319E9A}"
+        "ProductCode" = "8:{E031E78E-7C96-45C4-868C-01F36EA5C071}"
+        "PackageCode" = "8:{4006B8CE-D3D0-4FAC-8789-3D3F5E50D421}"
         "UpgradeCode" = "8:{462D4BAE-C6F9-4917-94BB-AF4A019B92E2}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"

@@ -44,10 +44,14 @@ namespace companion
             this.disableFramePipelining = new System.Windows.Forms.CheckBox();
             this.alwaysUseFrameIdZero = new System.Windows.Forms.CheckBox();
             this.forceDisableParallelProjection = new System.Windows.Forms.CheckBox();
+            this.droolonProjectionDistanceValue = new System.Windows.Forms.TextBox();
+            this.droolonProjectionDistanceLabel = new System.Windows.Forms.Label();
+            this.droolonProjectionDistance = new System.Windows.Forms.TrackBar();
             this.restoreDefaults = new System.Windows.Forms.Button();
             this.flowLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filterLength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.timingBias)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.droolonProjectionDistance)).BeginInit();
             this.SuspendLayout();
             // 
             // flowLayoutPanel1
@@ -65,11 +69,14 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.disableFramePipelining);
             this.flowLayoutPanel1.Controls.Add(this.alwaysUseFrameIdZero);
             this.flowLayoutPanel1.Controls.Add(this.forceDisableParallelProjection);
+            this.flowLayoutPanel1.Controls.Add(this.droolonProjectionDistanceValue);
+            this.flowLayoutPanel1.Controls.Add(this.droolonProjectionDistanceLabel);
+            this.flowLayoutPanel1.Controls.Add(this.droolonProjectionDistance);
             this.flowLayoutPanel1.Controls.Add(this.restoreDefaults);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(300, 275);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(300, 344);
             this.flowLayoutPanel1.TabIndex = 0;
             // 
             // enableFrameTiming
@@ -190,8 +197,8 @@ namespace companion
             this.flowLayoutPanel1.SetFlowBreak(this.disableFramePipelining, true);
             this.disableFramePipelining.Location = new System.Drawing.Point(3, 151);
             this.disableFramePipelining.Name = "disableFramePipelining";
-            this.disableFramePipelining.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.disableFramePipelining.Size = new System.Drawing.Size(223, 17);
+            this.disableFramePipelining.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
+            this.disableFramePipelining.Size = new System.Drawing.Size(223, 26);
             this.disableFramePipelining.TabIndex = 10;
             this.disableFramePipelining.Text = "Disable frame pipelining (Requires restart)";
             this.disableFramePipelining.UseVisualStyleBackColor = true;
@@ -201,7 +208,7 @@ namespace companion
             // 
             this.alwaysUseFrameIdZero.AutoSize = true;
             this.flowLayoutPanel1.SetFlowBreak(this.alwaysUseFrameIdZero, true);
-            this.alwaysUseFrameIdZero.Location = new System.Drawing.Point(3, 174);
+            this.alwaysUseFrameIdZero.Location = new System.Drawing.Point(3, 183);
             this.alwaysUseFrameIdZero.Name = "alwaysUseFrameIdZero";
             this.alwaysUseFrameIdZero.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
             this.alwaysUseFrameIdZero.Size = new System.Drawing.Size(227, 23);
@@ -213,22 +220,56 @@ namespace companion
             // forceDisableParallelProjection
             // 
             this.forceDisableParallelProjection.AutoSize = true;
-            this.forceDisableParallelProjection.Location = new System.Drawing.Point(3, 203);
+            this.forceDisableParallelProjection.Location = new System.Drawing.Point(3, 212);
             this.forceDisableParallelProjection.Name = "forceDisableParallelProjection";
-            this.forceDisableParallelProjection.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
-            this.forceDisableParallelProjection.Size = new System.Drawing.Size(268, 23);
+            this.forceDisableParallelProjection.Padding = new System.Windows.Forms.Padding(3, 6, 0, 9);
+            this.forceDisableParallelProjection.Size = new System.Drawing.Size(268, 32);
             this.forceDisableParallelProjection.TabIndex = 12;
             this.forceDisableParallelProjection.Text = "Force disabling parallel projection (Requires restart)";
             this.forceDisableParallelProjection.UseVisualStyleBackColor = true;
             this.forceDisableParallelProjection.CheckedChanged += new System.EventHandler(this.forceDisableParallelProjection_CheckedChanged);
             // 
+            // droolonProjectionDistanceValue
+            // 
+            this.droolonProjectionDistanceValue.Location = new System.Drawing.Point(6, 253);
+            this.droolonProjectionDistanceValue.Margin = new System.Windows.Forms.Padding(6, 6, 3, 3);
+            this.droolonProjectionDistanceValue.Name = "droolonProjectionDistanceValue";
+            this.droolonProjectionDistanceValue.ReadOnly = true;
+            this.droolonProjectionDistanceValue.Size = new System.Drawing.Size(32, 20);
+            this.droolonProjectionDistanceValue.TabIndex = 13;
+            // 
+            // droolonProjectionDistanceLabel
+            // 
+            this.droolonProjectionDistanceLabel.AutoSize = true;
+            this.droolonProjectionDistanceLabel.Location = new System.Drawing.Point(44, 247);
+            this.droolonProjectionDistanceLabel.Name = "droolonProjectionDistanceLabel";
+            this.droolonProjectionDistanceLabel.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
+            this.droolonProjectionDistanceLabel.Size = new System.Drawing.Size(133, 22);
+            this.droolonProjectionDistanceLabel.TabIndex = 14;
+            this.droolonProjectionDistanceLabel.Text = "Droolon Proj. Distance: (m)";
+            // 
+            // droolonProjectionDistance
+            // 
+            this.flowLayoutPanel1.SetFlowBreak(this.droolonProjectionDistance, true);
+            this.droolonProjectionDistance.LargeChange = 10;
+            this.droolonProjectionDistance.Location = new System.Drawing.Point(183, 250);
+            this.droolonProjectionDistance.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.droolonProjectionDistance.Maximum = 200;
+            this.droolonProjectionDistance.Minimum = 10;
+            this.droolonProjectionDistance.Name = "droolonProjectionDistance";
+            this.droolonProjectionDistance.Size = new System.Drawing.Size(104, 45);
+            this.droolonProjectionDistance.TabIndex = 15;
+            this.droolonProjectionDistance.TickFrequency = 10;
+            this.droolonProjectionDistance.Value = 10;
+            this.droolonProjectionDistance.Scroll += new System.EventHandler(this.droolonProjectionDistance_Scroll);
+            // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 232);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 298);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 3, 3, 3);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 13;
+            this.restoreDefaults.TabIndex = 16;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
@@ -237,7 +278,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(300, 275);
+            this.ClientSize = new System.Drawing.Size(300, 344);
             this.Controls.Add(this.flowLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -250,6 +291,7 @@ namespace companion
             this.flowLayoutPanel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filterLength)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.timingBias)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.droolonProjectionDistance)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -271,5 +313,8 @@ namespace companion
         private System.Windows.Forms.CheckBox disableFramePipelining;
         private System.Windows.Forms.CheckBox alwaysUseFrameIdZero;
         private System.Windows.Forms.CheckBox forceDisableParallelProjection;
+        private System.Windows.Forms.Label droolonProjectionDistanceLabel;
+        private System.Windows.Forms.TrackBar droolonProjectionDistance;
+        private System.Windows.Forms.TextBox droolonProjectionDistanceValue;
     }
 }

@@ -105,15 +105,15 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\aSeeVRClient\include;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_64.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_64.lib;aSeeVRClient.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\external\aSeeVRClient\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -123,12 +123,14 @@ copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
 copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_64.dll $(OutDir)
+copy $(SolutionDir)\external\aSeeVRClient\bin\aSeeVRClient.dll $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
 $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(OutDir)\pimax-openxr-curl.dll
 $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(OutDir)\PlatformSDK_64.dll
+$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(OutDir)\aSeeVRClient.dll
 $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
@@ -164,7 +166,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>RUNTIME_NAMESPACE=pimax_openxr;NOCURL;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RUNTIME_NAMESPACE=pimax_openxr;NOASEEVRCLIENT;NOCURL;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -231,7 +233,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\aSeeVRClient\include;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -240,8 +242,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_64.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;d3dcompiler.lib;ntdll.lib;PlatformSDK_64.lib;aSeeVRClient.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\external\aSeeVRClient\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -251,12 +253,14 @@ copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
 copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_64.dll $(OutDir)
+copy $(SolutionDir)\external\aSeeVRClient\bin\aSeeVRClient.dll $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
 $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(OutDir)\pimax-openxr-curl.dll
 $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(OutDir)\PlatformSDK_64.dll
+$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(OutDir)\aSeeVRClient.dll
 $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Pimax (unofficial)" /du "https://github.com/mbucchia/Pimax-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
@@ -294,7 +298,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>RUNTIME_NAMESPACE=pimax_openxr;NOCURL;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RUNTIME_NAMESPACE=pimax_openxr;NOASEEVRCLIENT;NOCURL;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -372,6 +376,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClCompile Include="d3d11_native.cpp" />
     <ClCompile Include="d3d12_interop.cpp" />
     <ClCompile Include="display_refresh_rate.cpp" />
+    <ClCompile Include="eye_tracking.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="framework\dispatch.cpp" />
     <ClCompile Include="framework\dispatch.gen.cpp" />

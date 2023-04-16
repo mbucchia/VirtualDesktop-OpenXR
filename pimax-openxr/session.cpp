@@ -230,6 +230,13 @@ namespace pimax_openxr {
 
         m_telemetry.logUsage(pvr_getTimeSeconds(m_pvr) - m_sessionStartTime, m_sessionTotalFrameCount);
 
+#ifndef NOASEEVRCLIENT
+        // Stop the eye tracker.
+        if (m_eyeTrackingType == EyeTracking::aSeeVR) {
+            stopDroolonTracking();
+        }
+#endif
+
         // Destroy hand trackers (tied to session).
         while (m_handTrackers.size()) {
             CHECK_XRCMD(xrDestroyHandTrackerEXT(*m_handTrackers.begin()));
@@ -295,6 +302,12 @@ namespace pimax_openxr {
         if (m_sessionState != XR_SESSION_STATE_READY) {
             return XR_ERROR_SESSION_NOT_READY;
         }
+
+#ifndef NOASEEVRCLIENT
+        if (m_eyeTrackingType == EyeTracking::aSeeVR) {
+            startDroolonTracking();
+        }
+#endif
 
         m_sessionBegun = true;
         updateSessionState();
@@ -466,6 +479,8 @@ namespace pimax_openxr {
 
         m_useMirrorWindow = getSetting("mirror_window").value_or(0);
 
+        m_droolonProjectionDistance = getSetting("droolon_projection_distance").value_or(35) / 100.f;
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
@@ -477,7 +492,8 @@ namespace pimax_openxr {
             TLArg(m_frameTimeOverrideOffsetUs, "FrameTimeOverrideOffset"),
             TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
             TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"),
-            TLArg(m_useMirrorWindow, "MirrorWindow"));
+            TLArg(m_useMirrorWindow, "MirrorWindow"),
+            TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"));
     }
 
     // Create guardian resources.

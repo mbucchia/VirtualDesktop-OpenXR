@@ -111,6 +111,12 @@ using Microsoft::WRL::ComPtr;
 // FMT formatter.
 #include <fmt/format.h>
 
+#ifndef NOASEEVRCLIENT
+// aSeeVRClient for Droolon eye tracking.
+#include <aSeeVRClient.h>
+#include <aSeeVRUtility.h>
+#endif
+
 #ifndef NOCURL
 // libcurl
 #include <curl/curl.h>

@@ -311,6 +311,7 @@ namespace companion
                 guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
                 guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
                 guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
+                allowEyeTracking.Checked = (int)key.GetValue("allow_eye_tracking", 0) == 1 ? true : false;
                 mirrorMode.Checked = (int)key.GetValue("mirror_window", 0) == 1 ? true : false;
                 enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 0) == 1 ? true : false;
 
@@ -341,8 +342,8 @@ namespace companion
         private void RefreshEnabledState()
         {
             runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = swapGripAimPoses.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
-                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled =
-                telemetryLabel.Enabled = runtimePimax.Checked;
+                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = allowEyeTracking.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled =
+                pitoolLabel.Enabled = telemetryLabel.Enabled = runtimePimax.Checked;
             guardianLabel1.Enabled = guardianLabel2.Enabled = guardianRadius.Enabled = guardianRadiusValue.Enabled = guardianThreshold.Enabled = guardianThresholdValue.Enabled = guardian.Enabled && guardian.Checked;
         }
 
@@ -455,6 +456,16 @@ namespace companion
             }
         }
 
+        private void allowEyeTracking_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("allow_eye_tracking", allowEyeTracking.Checked ? 1 : 0);
+        }
+
         private void mirrorMode_CheckedChanged(object sender, EventArgs e)
         {
             if (loading)
@@ -491,6 +502,7 @@ namespace companion
                 key.DeleteValue("guardian_radius", false);
                 key.DeleteValue("guardian_threshold", false);
                 key.DeleteValue("mirror_window", false);
+                key.DeleteValue("allow_eye_tracking", false);
             }
             catch (Exception)
             {
