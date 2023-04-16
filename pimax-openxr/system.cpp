@@ -101,7 +101,7 @@ namespace pimax_openxr {
 
         // Detect eye tracker. This can take a while, so only do it when the app is requesting it.
         m_eyeTrackingType = EyeTracking::None;
-        if (true /* TODO: list extensions */) {
+        if (has_XR_EXT_eye_gaze_interaction) {
             if (getSetting("debug_eye_tracker").value_or(0)) {
                 m_eyeTrackingType = EyeTracking::Simulated;
             } else if (m_cachedHmdInfo.VendorId == 0x34A4 && m_cachedHmdInfo.ProductId == 0x0012) {
@@ -193,14 +193,21 @@ namespace pimax_openxr {
 
         XrSystemHandTrackingPropertiesEXT* handTrackingProperties =
             reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(properties->next);
-        if (has_XR_EXT_hand_tracking) {
-            while (handTrackingProperties) {
-                if (handTrackingProperties->type == XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT) {
-                    break;
-                }
-                handTrackingProperties =
-                    reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(handTrackingProperties->next);
+        while (handTrackingProperties) {
+            if (handTrackingProperties->type == XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT) {
+                break;
             }
+            handTrackingProperties = reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(handTrackingProperties->next);
+        }
+
+        XrSystemEyeGazeInteractionPropertiesEXT* eyeGazeInteractionProperties =
+            reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(properties->next);
+        while (eyeGazeInteractionProperties) {
+            if (eyeGazeInteractionProperties->type == XR_TYPE_SYSTEM_EYE_GAZE_INTERACTION_PROPERTIES_EXT) {
+                break;
+            }
+            eyeGazeInteractionProperties =
+                reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(eyeGazeInteractionProperties->next);
         }
 
         properties->vendorId = m_cachedHmdInfo.VendorId;
@@ -234,6 +241,16 @@ namespace pimax_openxr {
                               "xrGetSystemProperties",
                               TLArg((int)properties->systemId, "SystemId"),
                               TLArg(!!handTrackingProperties->supportsHandTracking, "SupportsHandTracking"));
+        }
+
+        if (has_XR_EXT_eye_gaze_interaction && eyeGazeInteractionProperties) {
+            eyeGazeInteractionProperties->supportsEyeGazeInteraction = m_isEyeTrackingAvailable ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrGetSystemProperties",
+                TLArg((int)properties->systemId, "SystemId"),
+                TLArg(!!eyeGazeInteractionProperties->supportsEyeGazeInteraction, "SupportsEyeGazeInteraction"));
         }
 
         return XR_SUCCESS;

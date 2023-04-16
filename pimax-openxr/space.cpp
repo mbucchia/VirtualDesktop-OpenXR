@@ -211,6 +211,14 @@ namespace pimax_openxr {
             velocity = reinterpret_cast<XrSpaceVelocity*>(velocity->next);
         }
 
+        XrEyeGazeSampleTimeEXT* gazeSampleTime = reinterpret_cast<XrEyeGazeSampleTimeEXT*>(location->next);
+        while (gazeSampleTime) {
+            if (gazeSampleTime->type == XR_TYPE_EYE_GAZE_SAMPLE_TIME_EXT) {
+                break;
+            }
+            gazeSampleTime = reinterpret_cast<XrEyeGazeSampleTimeEXT*>(gazeSampleTime->next);
+        }
+
         Space& xrSpace = *(Space*)space;
         Space& xrBaseSpace = *(Space*)baseSpace;
 
@@ -222,9 +230,13 @@ namespace pimax_openxr {
         if (xrSpace.referenceType != xrBaseSpace.referenceType ||
             (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_MAX_ENUM && xrSpace.action != xrBaseSpace.action &&
              xrSpace.subActionPath != xrBaseSpace.subActionPath)) {
-            flags1 = locateSpaceToOrigin(xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr);
-            flags2 = locateSpaceToOrigin(
-                xrBaseSpace, time, baseSpaceToVirtual, velocity ? &baseSpaceToVirtualVelocity : nullptr);
+            flags1 = locateSpaceToOrigin(
+                xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr, gazeSampleTime);
+            flags2 = locateSpaceToOrigin(xrBaseSpace,
+                                         time,
+                                         baseSpaceToVirtual,
+                                         velocity ? &baseSpaceToVirtualVelocity : nullptr,
+                                         gazeSampleTime);
         } else {
             // Optimize the case of locating against the same reference space or same action space.
             flags1 = flags2 = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT |
@@ -383,7 +395,8 @@ namespace pimax_openxr {
     XrSpaceLocationFlags OpenXrRuntime::locateSpaceToOrigin(const Space& xrSpace,
                                                             XrTime time,
                                                             XrPosef& pose,
-                                                            XrSpaceVelocity* velocity) const {
+                                                            XrSpaceVelocity* velocity,
+                                                            XrEyeGazeSampleTimeEXT* gazeSampleTime) const {
         XrSpaceLocationFlags result = 0;
 
         if (velocity) {
@@ -423,19 +436,26 @@ namespace pimax_openxr {
                 const std::string& fullPath = source.first;
                 TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(fullPath.c_str(), "ActionSourcePath"));
 
-                const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
-                const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
-                const int side = getActionSide(fullPath);
-                if ((isGripPose || isAimPose) && side >= 0) {
-                    result = getControllerPose(side, time, pose, velocity);
+                if (!isActionEyeTracker(fullPath)) {
+                    const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
+                    const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
+                    const int side = getActionSide(fullPath);
+                    if ((isGripPose || isAimPose) && side >= 0) {
+                        result = getControllerPose(side, time, pose, velocity);
 
-                    // Apply the pose offsets.
-                    const bool useAimPose = m_swapGripAimPoses ? isGripPose : isAimPose;
-                    if (useAimPose) {
-                        pose = Pose::Multiply(m_controllerAimPose[side], pose);
-                    } else {
-                        pose = Pose::Multiply(m_controllerGripPose[side], pose);
+                        // Apply the pose offsets.
+                        const bool useAimPose = m_swapGripAimPoses ? isGripPose : isAimPose;
+                        if (useAimPose) {
+                            pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                        } else {
+                            pose = Pose::Multiply(m_controllerGripPose[side], pose);
+                        }
+
+                        // Per spec we must consistently pick one source. We pick the first one.
+                        break;
                     }
+                } else {
+                    result = getEyeTrackerPose(time, pose, gazeSampleTime);
 
                     // Per spec we must consistently pick one source. We pick the first one.
                     break;
@@ -532,6 +552,41 @@ namespace pimax_openxr {
         }
 
         return locationFlags;
+    }
+
+    XrSpaceLocationFlags OpenXrRuntime::getEyeTrackerPose(XrTime time,
+                                                          XrPosef& pose,
+                                                          XrEyeGazeSampleTimeEXT* sampleTime) const {
+        if (!m_isEyeTrackingAvailable) {
+            return 0;
+        }
+
+        XrVector3f eyeGazeVector{0, 0, -1};
+        double pvrSampleTime;
+        if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, pvrSampleTime)) {
+            return 0;
+        }
+
+        const XrPosef eyeGaze = Pose::MakePose(
+            Quaternion::RotationRollPitchYaw({-tan(eyeGazeVector.y), -tan(eyeGazeVector.x), 0.f}), XrVector3f{0, 0, 0});
+
+        // TODO: Need optimization here, in all likelyhood, the caller is looking for eye gaze relative to VIEW
+        // space,
+        // in which case we are doing 2 back-to-back getHmdPose() that are cancelling each other.
+        XrPosef headPose;
+        if (!Pose::IsPoseValid(getHmdPose(time, headPose, nullptr))) {
+            return 0;
+        }
+
+        // Combine poses.
+        pose = Pose::Multiply(eyeGaze, headPose);
+
+        if (sampleTime) {
+            sampleTime->time = pvrTimeToXrTime(pvrSampleTime);
+        }
+
+        return XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
+               XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
     }
 
 } // namespace pimax_openxr

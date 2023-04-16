@@ -377,6 +377,7 @@ namespace pimax_openxr {
         void rebindControllerActions(int side);
         std::string getXrPath(XrPath path) const;
         int getActionSide(const std::string& fullPath, bool allowExtraPaths = false) const;
+        bool isActionEyeTracker(const std::string& fullPath) const;
         XrVector2f handleJoystickDeadzone(pvrVector2f raw) const;
         void handleBuiltinActions(bool wasRecenteringPressed = false);
 
@@ -404,10 +405,14 @@ namespace pimax_openxr {
         std::optional<std::string> remapMicrosoftMotionControllerToSimpleController(const std::string& path) const;
 
         // space.cpp
-        XrSpaceLocationFlags
-        locateSpaceToOrigin(const Space& xrSpace, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
+        XrSpaceLocationFlags locateSpaceToOrigin(const Space& xrSpace,
+                                                 XrTime time,
+                                                 XrPosef& pose,
+                                                 XrSpaceVelocity* velocity,
+                                                 XrEyeGazeSampleTimeEXT* gazeSampleTime) const;
         XrSpaceLocationFlags getHmdPose(XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
         XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
+        XrSpaceLocationFlags getEyeTrackerPose(XrTime time, XrPosef& pose, XrEyeGazeSampleTimeEXT* sampleTime) const;
 
         // eye_tracking.cpp
         bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const;

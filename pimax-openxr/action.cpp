@@ -356,23 +356,47 @@ namespace pimax_openxr {
             return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
         }
 
-        const auto checkValidPathIt =
-            m_controllerValidPathsTable.find(getXrPath(suggestedBindings->interactionProfile));
-        if (checkValidPathIt == m_controllerValidPathsTable.cend()) {
-            return XR_ERROR_PATH_UNSUPPORTED;
-        }
-
-        std::vector<XrActionSuggestedBinding> bindings;
-        for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
-            const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
-            if (getActionSide(path, true) < 0 || !checkValidPathIt->second(path)) {
+        const std::string& interactionProfile = getXrPath(suggestedBindings->interactionProfile);
+        if (interactionProfile != "/interaction_profiles/ext/eye_gaze_interaction") {
+            // Set up to use the controller mappings when a controller is rebinding.
+            const auto checkValidPathIt = m_controllerValidPathsTable.find(interactionProfile);
+            if (checkValidPathIt == m_controllerValidPathsTable.cend()) {
                 return XR_ERROR_PATH_UNSUPPORTED;
             }
 
-            bindings.push_back(suggestedBindings->suggestedBindings[i]);
-        }
+            std::vector<XrActionSuggestedBinding> bindings;
+            for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
+                const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
+                if (getActionSide(path, true) < 0 || !checkValidPathIt->second(path)) {
+                    return XR_ERROR_PATH_UNSUPPORTED;
+                }
 
-        m_suggestedBindings.insert_or_assign(getXrPath(suggestedBindings->interactionProfile), bindings);
+                bindings.push_back(suggestedBindings->suggestedBindings[i]);
+            }
+
+            m_suggestedBindings.insert_or_assign(getXrPath(suggestedBindings->interactionProfile), bindings);
+        } else {
+            // Only allow this if the extension is enabled.
+            if (!has_XR_EXT_eye_gaze_interaction) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+
+            LOG_TELEMETRY_ONCE(logFeature("EyeGazeInteraction"));
+
+            // Eye tracker does not go through the controller mappings. Instead, we directly bind the action source.
+            for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
+                const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
+                if (!isActionEyeTracker(path)) {
+                    return XR_ERROR_PATH_UNSUPPORTED;
+                }
+
+                Action& xrAction = *(Action*)suggestedBindings->suggestedBindings[i].action;
+
+                ActionSource source{};
+                source.realPath = path;
+                xrAction.actionSources.insert_or_assign(path, source);
+            }
+        }
 
         return XR_SUCCESS;
     }
@@ -450,14 +474,16 @@ namespace pimax_openxr {
             return XR_ERROR_PATH_INVALID;
         }
 
-        const int side = getActionSide(topLevelPath, true);
-        if (side < 0) {
-            return XR_ERROR_PATH_UNSUPPORTED;
-        }
-
         interactionProfile->interactionProfile = XR_NULL_PATH;
-        if (side == 0 || side == 1) {
-            interactionProfile->interactionProfile = m_currentInteractionProfile[side];
+        if (topLevelPath == "/user/hand/left" || topLevelPath == "/user/hand/right") {
+            interactionProfile->interactionProfile = m_currentInteractionProfile[getActionSide(topLevelPath)];
+        } else if (topLevelPath == "/user/eyes_ext") {
+            CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE,
+                                       "/interaction_profiles/ext/eye_gaze_interaction",
+                                       &interactionProfile->interactionProfile));
+        } else if (topLevelPath == "/user/head" || topLevelPath == "/user/gamepad") {
+        } else {
+            return XR_ERROR_PATH_UNSUPPORTED;
         }
 
         TraceLoggingWrite(g_traceProvider,
@@ -829,10 +855,17 @@ namespace pimax_openxr {
             const std::string& fullPath = source.first;
             TraceLoggingWrite(g_traceProvider, "xrGetActionStatePose", TLArg(fullPath.c_str(), "ActionSourcePath"));
 
-            // We only support hands paths, not gamepad etc.
-            const int side = getActionSide(fullPath);
-            if (side >= 0) {
-                state->isActive = m_isControllerActive[side] ? XR_TRUE : XR_FALSE;
+            // We only support hands paths and eye tracker, not gamepad etc.
+            if (!isActionEyeTracker(fullPath)) {
+                const int side = getActionSide(fullPath);
+                if (side >= 0) {
+                    state->isActive = m_isControllerActive[side] ? XR_TRUE : XR_FALSE;
+
+                    // Per spec we must consistently pick one source. We pick the first one.
+                    break;
+                }
+            } else {
+                state->isActive = m_isEyeTrackingAvailable ? XR_TRUE : XR_FALSE;
 
                 // Per spec we must consistently pick one source. We pick the first one.
                 break;
@@ -1068,20 +1101,43 @@ namespace pimax_openxr {
 
         // Build the string.
         std::string localizedName;
-        const int side = getActionSide(path);
-        if (side >= 0) {
+        if (!isActionEyeTracker(path)) {
+            const int side = getActionSide(path);
+            if (side >= 0) {
+                bool needSpace = false;
+
+                if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT)) {
+                    localizedName += side == 0 ? "Left Hand" : "Right Hand";
+                    needSpace = true;
+                }
+
+                if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT)) {
+                    if (needSpace) {
+                        localizedName += " ";
+                    }
+                    localizedName += m_localizedControllerType[side];
+                    needSpace = true;
+                }
+
+                if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT)) {
+                    if (needSpace) {
+                        localizedName += " ";
+                    }
+                    if (m_cachedControllerType[side] == "vive_controller") {
+                        localizedName += getViveControllerLocalizedSourceName(path);
+                    } else if (m_cachedControllerType[side] == "knuckles") {
+                        localizedName += getIndexControllerLocalizedSourceName(path);
+                    } else {
+                        localizedName += getSimpleControllerLocalizedSourceName(path);
+                    }
+                    needSpace = true;
+                }
+            }
+        } else {
             bool needSpace = false;
 
-            if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT)) {
-                localizedName += side == 0 ? "Left Hand" : "Right Hand";
-                needSpace = true;
-            }
-
             if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT)) {
-                if (needSpace) {
-                    localizedName += " ";
-                }
-                localizedName += m_localizedControllerType[side];
+                localizedName += "Eye Gaze Interaction";
                 needSpace = true;
             }
 
@@ -1089,13 +1145,7 @@ namespace pimax_openxr {
                 if (needSpace) {
                     localizedName += " ";
                 }
-                if (m_cachedControllerType[side] == "vive_controller") {
-                    localizedName += getViveControllerLocalizedSourceName(path);
-                } else if (m_cachedControllerType[side] == "knuckles") {
-                    localizedName += getIndexControllerLocalizedSourceName(path);
-                } else {
-                    localizedName += getSimpleControllerLocalizedSourceName(path);
-                }
+                localizedName += "Eye Tracker";
                 needSpace = true;
             }
         }
@@ -1470,11 +1520,16 @@ namespace pimax_openxr {
             return 0;
         } else if (startsWith(fullPath, "/user/hand/right")) {
             return 1;
-        } else if (allowExtraPaths && (startsWith(fullPath, "/user/head") || startsWith(fullPath, "/user/gamepad"))) {
+        } else if (allowExtraPaths && (startsWith(fullPath, "/user/head") || startsWith(fullPath, "/user/gamepad") ||
+                                       startsWith(fullPath, "/user/eyes_ext"))) {
             return 2;
         }
 
         return -1;
+    }
+
+    bool OpenXrRuntime::isActionEyeTracker(const std::string& fullPath) const {
+        return fullPath == "/user/eyes_ext/input/gaze_ext/pose";
     }
 
     XrVector2f OpenXrRuntime::handleJoystickDeadzone(pvrVector2f raw) const {

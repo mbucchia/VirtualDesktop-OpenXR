@@ -157,7 +157,7 @@ namespace pimax_openxr {
 
         XrPosef baseSpaceToVirtual = Pose::Identity();
         XrPosef basePose = Pose::Identity();
-        const auto flags1 = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr);
+        const auto flags1 = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
         const auto flags2 = getControllerPose(xrHandTracker.side, locateInfo->time, basePose, nullptr);
 
         pvrSkeletalData skeletalData{};
