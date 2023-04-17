@@ -170,7 +170,7 @@ namespace pimax_openxr {
                     endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
                     endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
                     endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger/touch") ||
-                    endsWith(path, "/input/thumbstick") ||
+                    endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
                     endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
                     endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch") ||
                     endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest") ||
