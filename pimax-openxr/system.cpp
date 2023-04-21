@@ -113,7 +113,8 @@ namespace pimax_openxr {
                                        m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose.Orientation) /
                                    2.f;
         m_useParallelProjection =
-            cantingAngle > 0.0001f && !pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0);
+            cantingAngle > 0.0001f && getSetting("force_parallel_projection_state")
+                                          .value_or(!pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0));
         if (m_useParallelProjection) {
             Log("Parallel projection is enabled\n");
 
