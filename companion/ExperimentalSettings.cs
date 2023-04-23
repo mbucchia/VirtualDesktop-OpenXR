@@ -83,6 +83,7 @@ namespace companion
                 timingBias.Value = multiplier == 0 ? ((int)key.GetValue("frame_time_override_offset", 0) / 100) : 0;
                 disableFramePipelining.Checked = (int)key.GetValue("quirk_disable_frame_pipelining", 0) == 1 ? true : false;
                 alwaysUseFrameIdZero.Checked = (int)key.GetValue("quirk_always_use_frame_id_zero", 0) == 1 ? true : false;
+                forceDisableParallelProjection.Checked = (int)key.GetValue("force_parallel_projection_state", 1) == 0 ? true : false;
             }
             catch (Exception)
             {
@@ -198,8 +199,6 @@ namespace companion
 
         private void disableFramePipelining_CheckedChanged(object sender, EventArgs e)
         {
-            RefreshEnabledState();
-
             if (loading)
             {
                 return;
@@ -210,14 +209,43 @@ namespace companion
 
         private void alwaysUseFrameIdZero_CheckedChanged(object sender, EventArgs e)
         {
-            RefreshEnabledState();
-
             if (loading)
             {
                 return;
             }
 
             MainForm.WriteSetting("quirk_always_use_frame_id_zero", alwaysUseFrameIdZero.Checked ? 1 : 0);
+        }
+
+        private void forceDisableParallelProjection_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            if (forceDisableParallelProjection.Checked)
+            {
+                MainForm.WriteSetting("force_parallel_projection_state", 0);
+            } else
+            {
+                Microsoft.Win32.RegistryKey key = null;
+                try
+                {
+                    key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MainForm.RegPrefix);
+                    key.DeleteValue("force_parallel_projection_state", false);
+                }
+                catch (Exception)
+                {
+                }
+                finally
+                {
+                    if (key != null)
+                    {
+                        key.Close();
+                    }
+                }
+            }
         }
 
         private void restoreDefaults_Click(object sender, EventArgs e)
@@ -234,6 +262,7 @@ namespace companion
                 key.DeleteValue("frame_time_override_offset", false);
                 key.DeleteValue("quirk_disable_frame_pipelining", false);
                 key.DeleteValue("quirk_always_use_frame_id_zero", false);
+                key.DeleteValue("force_parallel_projection_state", false);
             }
             catch (Exception)
             {

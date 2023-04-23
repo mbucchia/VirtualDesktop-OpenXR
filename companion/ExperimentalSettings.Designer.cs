@@ -43,6 +43,7 @@ namespace companion
             this.forceThird = new System.Windows.Forms.CheckBox();
             this.disableFramePipelining = new System.Windows.Forms.CheckBox();
             this.alwaysUseFrameIdZero = new System.Windows.Forms.CheckBox();
+            this.forceDisableParallelProjection = new System.Windows.Forms.CheckBox();
             this.restoreDefaults = new System.Windows.Forms.Button();
             this.flowLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filterLength)).BeginInit();
@@ -63,11 +64,12 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.forceThird);
             this.flowLayoutPanel1.Controls.Add(this.disableFramePipelining);
             this.flowLayoutPanel1.Controls.Add(this.alwaysUseFrameIdZero);
+            this.flowLayoutPanel1.Controls.Add(this.forceDisableParallelProjection);
             this.flowLayoutPanel1.Controls.Add(this.restoreDefaults);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(300, 248);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(300, 275);
             this.flowLayoutPanel1.TabIndex = 0;
             // 
             // enableFrameTiming
@@ -208,13 +210,25 @@ namespace companion
             this.alwaysUseFrameIdZero.UseVisualStyleBackColor = true;
             this.alwaysUseFrameIdZero.CheckedChanged += new System.EventHandler(this.alwaysUseFrameIdZero_CheckedChanged);
             // 
+            // forceDisableParallelProjection
+            // 
+            this.forceDisableParallelProjection.AutoSize = true;
+            this.forceDisableParallelProjection.Location = new System.Drawing.Point(3, 203);
+            this.forceDisableParallelProjection.Name = "forceDisableParallelProjection";
+            this.forceDisableParallelProjection.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
+            this.forceDisableParallelProjection.Size = new System.Drawing.Size(268, 23);
+            this.forceDisableParallelProjection.TabIndex = 12;
+            this.forceDisableParallelProjection.Text = "Force disabling parallel projection (Requires restart)";
+            this.forceDisableParallelProjection.UseVisualStyleBackColor = true;
+            this.forceDisableParallelProjection.CheckedChanged += new System.EventHandler(this.forceDisableParallelProjection_CheckedChanged);
+            // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 203);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 232);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 3, 3, 3);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 12;
+            this.restoreDefaults.TabIndex = 13;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
@@ -223,7 +237,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(300, 248);
+            this.ClientSize = new System.Drawing.Size(300, 275);
             this.Controls.Add(this.flowLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -256,5 +270,6 @@ namespace companion
         private System.Windows.Forms.Button restoreDefaults;
         private System.Windows.Forms.CheckBox disableFramePipelining;
         private System.Windows.Forms.CheckBox alwaysUseFrameIdZero;
+        private System.Windows.Forms.CheckBox forceDisableParallelProjection;
     }
 }

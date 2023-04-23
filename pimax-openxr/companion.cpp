@@ -26,6 +26,8 @@
 #include "runtime.h"
 #include "utils.h"
 
+using namespace pimax_openxr::utils;
+
 struct RuntimeStatus {
     bool valid;
 
@@ -65,9 +67,10 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
     const auto fov = PVR::RadToDegree(atan(eyeInfo[xr::StereoView::Left].Fov.LeftTan) +
                                       atan(eyeInfo[xr::StereoView::Right].Fov.RightTan) + cantingAngle * 2.f);
     const auto useParallelProjection =
-        cantingAngle > 0.0001f && !pvr_getIntConfig(pvrSession, "steamvr_use_native_fov", 0);
+        cantingAngle > 0.0001f &&
+        RegGetDword(HKEY_LOCAL_MACHINE, "SOFTWARE\\PimaxXR", "force_parallel_projection_state")
+            .value_or(!pvr_getIntConfig(pvrSession, "steamvr_use_native_fov", 0));
 
-    pvrFovPort fovForResolution = eyeInfo[xr::StereoView::Left].Fov;
     if (useParallelProjection) {
         // Per Pimax, we must set this value for parallel projection to work properly.
         CHECK_PVRCMD(pvr_setIntConfig(pvrSession, "view_rotation_fix", 1));
@@ -76,6 +79,8 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
         CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Left, &eyeInfo[xr::StereoView::Left]));
         CHECK_PVRCMD(pvr_getEyeRenderInfo(pvrSession, pvrEye_Right, &eyeInfo[xr::StereoView::Right]));
     }
+
+    const pvrFovPort fovForResolution = eyeInfo[xr::StereoView::Left].Fov;
 
     pvrSizei viewportSize;
     CHECK_PVRCMD(pvr_getFovTextureSize(pvrSession, pvrEye_Left, fovForResolution, 1.f, &viewportSize));
