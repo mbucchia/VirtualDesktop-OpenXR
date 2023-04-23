@@ -65,6 +65,7 @@ namespace companion
             this.mirrorMode = new System.Windows.Forms.CheckBox();
             this.telemetryLabel = new System.Windows.Forms.Label();
             this.enableTelemetry = new System.Windows.Forms.CheckBox();
+            this.restoreDefaults = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
@@ -96,7 +97,7 @@ namespace companion
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 709);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 756);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -105,7 +106,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.startTrace);
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 635);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 682);
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
@@ -200,7 +201,7 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.gotoDownloads);
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 691);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 738);
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 16);
@@ -254,11 +255,12 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.mirrorMode);
             this.flowLayoutPanel4.Controls.Add(this.telemetryLabel);
             this.flowLayoutPanel4.Controls.Add(this.enableTelemetry);
+            this.flowLayoutPanel4.Controls.Add(this.restoreDefaults);
             this.flowLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 149);
             this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
-            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 482);
+            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 529);
             this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
@@ -289,10 +291,10 @@ namespace companion
             this.pitoolLabel.Location = new System.Drawing.Point(3, 13);
             this.pitoolLabel.Name = "pitoolLabel";
             this.pitoolLabel.Padding = new System.Windows.Forms.Padding(3, 10, 0, 0);
-            this.pitoolLabel.Size = new System.Drawing.Size(389, 36);
+            this.pitoolLabel.Size = new System.Drawing.Size(368, 36);
             this.pitoolLabel.TabIndex = 5;
-            this.pitoolLabel.Text = "Use PiTool to set refresh rate, resolution, FOV, enable Smart Smoothing, Parallel" +
-    " Projection, etc...";
+            this.pitoolLabel.Text = "Use PiTool or Pimax Client to set refresh rate, resolution, FOV, enable Smart Smo" +
+    "othing, Parallel Projection, etc...";
             // 
             // runtimeStatusLabel
             // 
@@ -525,6 +527,17 @@ namespace companion
             this.enableTelemetry.UseVisualStyleBackColor = true;
             this.enableTelemetry.CheckedChanged += new System.EventHandler(this.enableTelemetry_CheckedChanged);
             // 
+            // restoreDefaults
+            // 
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 482);
+            this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
+            this.restoreDefaults.Name = "restoreDefaults";
+            this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
+            this.restoreDefaults.TabIndex = 25;
+            this.restoreDefaults.Text = "Restore defaults";
+            this.restoreDefaults.UseVisualStyleBackColor = true;
+            this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
+            // 
             // pictureBox1
             // 
             this.pictureBox1.BackColor = System.Drawing.Color.White;
@@ -541,7 +554,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(406, 709);
+            this.ClientSize = new System.Drawing.Size(406, 756);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -580,7 +593,6 @@ namespace companion
         private System.Windows.Forms.LinkLabel gotoDownloads;
         private System.Windows.Forms.LinkLabel reportIssues;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel4;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label versionString;
         private System.Windows.Forms.CheckBox recenterMode;
         private System.Windows.Forms.Label pitoolLabel;
@@ -603,6 +615,8 @@ namespace companion
         private System.Windows.Forms.Label runtimeStatusLabel;
         private System.Windows.Forms.Label recenterLabel;
         private System.Windows.Forms.CheckBox mirrorMode;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button restoreDefaults;
     }
 }
 

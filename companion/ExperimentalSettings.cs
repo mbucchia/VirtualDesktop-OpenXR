@@ -84,6 +84,8 @@ namespace companion
                 disableFramePipelining.Checked = (int)key.GetValue("quirk_disable_frame_pipelining", 0) == 1 ? true : false;
                 alwaysUseFrameIdZero.Checked = (int)key.GetValue("quirk_always_use_frame_id_zero", 0) == 1 ? true : false;
                 forceDisableParallelProjection.Checked = (int)key.GetValue("force_parallel_projection_state", 1) == 0 ? true : false;
+
+                // DO NOT FORGET TO ADD TO restoreDefaults_Click()!
             }
             catch (Exception)
             {

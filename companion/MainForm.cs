@@ -153,37 +153,7 @@ namespace companion
             }
 
             // Read the PimaxXR configuration.
-            try
-            {
-                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
-
-                // Must match the defaults in the runtime!
-                recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
-                swapGripAimPoses.Checked = (int)key.GetValue("swap_grip_aim_poses", 0) == 1 ? true : false;
-                controllerEmulation.SelectedIndex = (int)key.GetValue("force_interaction_profile", 0);
-                joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
-                guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
-                guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
-                guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
-                mirrorMode.Checked = (int)key.GetValue("mirror_window", 0) == 1 ? true : false;
-                enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 0) == 1 ? true : false;
-            }
-            catch (Exception)
-            {
-                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                if (key != null)
-                {
-                    key.Close();
-                }
-            }
-
-            RefreshEnabledState();
-            joystickDeadzone_Scroll(null, null);
-            guardianRadius_Scroll(null, null);
-            guardianThreshold_Scroll(null, null);
+            LoadSettings();
 
             ResumeLayout();
 
@@ -322,6 +292,52 @@ namespace companion
             }
         }
 
+        private void LoadSettings()
+        {
+            loading = true;
+            SuspendLayout();
+
+            Microsoft.Win32.RegistryKey key = null;
+
+            try
+            {
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
+
+                // Must match the defaults in the runtime!
+                recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
+                swapGripAimPoses.Checked = (int)key.GetValue("swap_grip_aim_poses", 0) == 1 ? true : false;
+                controllerEmulation.SelectedIndex = (int)key.GetValue("force_interaction_profile", 0);
+                joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
+                guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
+                guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
+                guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
+                mirrorMode.Checked = (int)key.GetValue("mirror_window", 0) == 1 ? true : false;
+                enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 0) == 1 ? true : false;
+
+                // DO NOT FORGET TO ADD TO restoreDefaults_Click()!
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (key != null)
+                {
+                    key.Close();
+                }
+            }
+
+            RefreshEnabledState();
+            joystickDeadzone_Scroll(null, null);
+            guardianRadius_Scroll(null, null);
+            guardianThreshold_Scroll(null, null);
+
+            ResumeLayout();
+
+            loading = false;
+        }
+
         private void RefreshEnabledState()
         {
             runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = swapGripAimPoses.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
@@ -457,6 +473,37 @@ namespace companion
             }
 
             WriteSetting("enable_telemetry", enableTelemetry.Checked ? 1 : 0);
+        }
+
+        private void restoreDefaults_Click(object sender, EventArgs e)
+        {
+            Microsoft.Win32.RegistryKey key = null;
+
+            try
+            {
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MainForm.RegPrefix);
+
+                key.DeleteValue("recenter_on_startup", false);
+                key.DeleteValue("swap_grip_aim_poses", false);
+                key.DeleteValue("force_interaction_profile", false);
+                key.DeleteValue("joystick_deadzone", false);
+                key.DeleteValue("guardian", false);
+                key.DeleteValue("guardian_radius", false);
+                key.DeleteValue("guardian_threshold", false);
+                key.DeleteValue("mirror_window", false);
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                if (key != null)
+                {
+                    key.Close();
+                }
+            }
+
+            LoadSettings();
         }
 
         private void openLogs_Click(object sender, EventArgs e)
