@@ -389,20 +389,32 @@ namespace pimax_openxr {
         bool mapPathToIndexControllerInputState(const Action& xrAction,
                                                 const std::string& path,
                                                 ActionSource& source) const;
+        bool mapPathToCrystalControllerInputState(const Action& xrAction,
+                                                  const std::string& path,
+                                                  ActionSource& source) const;
         bool mapPathToSimpleControllerInputState(const Action& xrAction,
                                                  const std::string& path,
                                                  ActionSource& source) const;
         std::string getViveControllerLocalizedSourceName(const std::string& path) const;
         std::string getIndexControllerLocalizedSourceName(const std::string& path) const;
+        std::string getCrystalControllerLocalizedSourceName(const std::string& path) const;
         std::string getSimpleControllerLocalizedSourceName(const std::string& path) const;
         std::optional<std::string> remapSimpleControllerToViveController(const std::string& path) const;
         std::optional<std::string> remapOculusTouchControllerToViveController(const std::string& path) const;
         std::optional<std::string> remapMicrosoftMotionControllerToViveController(const std::string& path) const;
+        std::optional<std::string> remapIndexControllerToViveController(const std::string& path) const;
         std::optional<std::string> remapSimpleControllerToIndexController(const std::string& path) const;
         std::optional<std::string> remapOculusTouchControllerToIndexController(const std::string& path) const;
         std::optional<std::string> remapMicrosoftMotionControllerToIndexController(const std::string& path) const;
+        std::optional<std::string> remapViveControllerToIndexController(const std::string& path) const;
+        std::optional<std::string> remapSimpleControllerToCrystalController(const std::string& path) const;
+        std::optional<std::string> remapMicrosoftMotionControllerToCrystalController(const std::string& path) const;
+        std::optional<std::string> remapViveControllerToCrystalController(const std::string& path) const;
+        std::optional<std::string> remapIndexControllerToCrystalController(const std::string& path) const;
         std::optional<std::string> remapOculusTouchControllerToSimpleController(const std::string& path) const;
         std::optional<std::string> remapMicrosoftMotionControllerToSimpleController(const std::string& path) const;
+        std::optional<std::string> remapViveControllerToSimpleController(const std::string& path) const;
+        std::optional<std::string> remapIndexControllerToSimpleController(const std::string& path) const;
 
         // space.cpp
         XrSpaceLocationFlags locateSpaceToOrigin(const Space& xrSpace,

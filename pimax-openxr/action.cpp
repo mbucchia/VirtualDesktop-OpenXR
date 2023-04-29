@@ -1127,6 +1127,8 @@ namespace pimax_openxr {
                         localizedName += getViveControllerLocalizedSourceName(path);
                     } else if (m_cachedControllerType[side] == "knuckles") {
                         localizedName += getIndexControllerLocalizedSourceName(path);
+                    } else if (m_cachedControllerType[side] == "pimax_crystal") {
+                        localizedName += getCrystalControllerLocalizedSourceName(path);
                     } else {
                         localizedName += getSimpleControllerLocalizedSourceName(path);
                     }
@@ -1347,16 +1349,21 @@ namespace pimax_openxr {
                 m_localizedControllerType[side] = "Vive Controller";
                 aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-45.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
-                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                              {PVR::DegreeToRad(-32.f), PVR::DegreeToRad(0.f), PVR::DegreeToRad(0.f)}),
+                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-32.f), 0, 0}),
                                           XrVector3f{0.03f, -0.062f, -0.1f});
             } else if (m_cachedControllerType[side] == "knuckles") {
                 preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
                 m_localizedControllerType[side] = "Index Controller";
                 aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
-                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                              {PVR::DegreeToRad(-32.f), PVR::DegreeToRad(0.f), PVR::DegreeToRad(0.f)}),
+                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-32.f), 0, 0}),
+                                          XrVector3f{0.03f, -0.062f, -0.1f});
+            } else if (m_cachedControllerType[side] == "pimax_crystal") {
+                preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+                m_localizedControllerType[side] = "Crystal Controller";
+                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
+                                         XrVector3f{0, 0, -0.05f});
+                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-32.f), 0, 0}),
                                           XrVector3f{0.03f, -0.062f, -0.1f});
             } else {
                 // Fallback to simple controller.
