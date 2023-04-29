@@ -968,15 +968,19 @@ namespace pimax_openxr {
                                                                 0);
             m_isControllerActive[side] = size > 0;
             if (m_isControllerActive[side]) {
-                m_cachedControllerType[side].resize(size, 0);
-                pvr_getTrackedDeviceStringProperty(m_pvrSession,
-                                                   side == 0 ? pvrTrackedDevice_LeftController
-                                                             : pvrTrackedDevice_RightController,
-                                                   pvrTrackedDeviceProp_ControllerType_String,
-                                                   m_cachedControllerType[side].data(),
-                                                   (int)m_cachedControllerType[side].size() + 1);
-                // Remove trailing 0.
-                m_cachedControllerType[side].resize(size - 1, 0);
+                if (m_debugControllerType.empty()) {
+                    m_cachedControllerType[side].resize(size, 0);
+                    pvr_getTrackedDeviceStringProperty(m_pvrSession,
+                                                       side == 0 ? pvrTrackedDevice_LeftController
+                                                                 : pvrTrackedDevice_RightController,
+                                                       pvrTrackedDeviceProp_ControllerType_String,
+                                                       m_cachedControllerType[side].data(),
+                                                       (int)m_cachedControllerType[side].size() + 1);
+                    // Remove trailing 0.
+                    m_cachedControllerType[side].resize(size - 1, 0);
+                } else {
+                    m_cachedControllerType[side] = m_debugControllerType;
+                }
             } else {
                 m_cachedControllerType[side].clear();
             }
@@ -1477,6 +1481,8 @@ namespace pimax_openxr {
 
         const auto prevInterationProfile = m_currentInteractionProfile[side];
         if (!actualInteractionProfile.empty()) {
+            Log("Using interaction profile: %s (%s)\n", actualInteractionProfile.c_str(), side == 0 ? "Left" : "Right");
+
             CHECK_XRCMD(
                 xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
 

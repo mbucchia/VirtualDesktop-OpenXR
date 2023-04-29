@@ -589,6 +589,7 @@ namespace pimax_openxr {
         bool m_currentInteractionProfileDirty{false};
         std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
         std::optional<ForcedInteractionProfile> m_lastForcedInteractionProfile;
+        std::string m_debugControllerType;
         std::optional<double> m_isRecenteringPressed;
         int64_t m_frameTimeOverrideOffsetUs{0};
         uint64_t m_frameTimeOverrideUs{0};

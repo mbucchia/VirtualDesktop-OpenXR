@@ -503,6 +503,17 @@ namespace pimax_openxr {
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"));
 
+        const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
+        if (debugControllerType == 1) {
+            m_debugControllerType = "vive_controller";
+        } else if (debugControllerType == 2) {
+            m_debugControllerType = "knuckles";
+        } else if (debugControllerType == 3) {
+            m_debugControllerType = "pimax_crystal";
+        } else {
+            m_debugControllerType.clear();
+        }
+
         m_debugFocusViews = getSetting("debug_focus_view").value_or(0);
     }
 
