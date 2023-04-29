@@ -125,14 +125,30 @@ namespace pimax_openxr {
             // Workaround: PVR since Pimax Client 1.10 is not handling frame pipelining correctly.
             // Ensure a single frame in-flight when the prediction is far off.
             if (m_disableFramePipeliningQuirk) {
+                // Make sure we have a timeout to avoid deadlock if an app submits a bad frame (xrEndFrame() fails).
+                auto timeout = 100ms;
+                double amount = 0.0;
+                if (m_lastFrameWaitedTime) {
+                    const double now = pvr_getTimeSeconds(m_pvr);
+                    const double nextFrameTime = m_lastFrameWaitedTime.value() + m_frameDuration;
+                    if (nextFrameTime > now) {
+                        amount = nextFrameTime - now;
+                        timeout = std::chrono::milliseconds((uint64_t)(amount * 1e3));
+                    } else {
+                        timeout = 0ms;
+                    }
+                }
+
                 TraceLocalActivity(waitEndFrame);
                 TraceLoggingWriteStart(waitEndFrame,
                                        "WaitEndFrame",
                                        TLArg(m_frameWaited, "FrameWaited"),
                                        TLArg(m_frameBegun, "FrameBegun"),
-                                       TLArg(m_frameCompleted, "FrameCompleted"));
-                m_frameCondVar.wait(lock, [&] { return m_frameCompleted == m_frameBegun; });
-                TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame");
+                                       TLArg(m_frameCompleted, "FrameCompleted"),
+                                       TLArg(amount, "Amount"));
+                const bool timedOut =
+                    !m_frameCondVar.wait_for(lock, timeout, [&] { return m_frameCompleted == m_frameBegun; });
+                TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame", TLArg(timedOut, "TimedOut"));
             }
 
             // Wait for PVR to be ready for the next frame.
@@ -156,13 +172,13 @@ namespace pimax_openxr {
                 waitTimer.stop();
             }
 
-            const double now = pvr_getTimeSeconds(m_pvr);
+            m_lastFrameWaitedTime = pvr_getTimeSeconds(m_pvr);
             double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, pvrFrameId);
             TraceLoggingWrite(g_traceProvider,
                               "WaitFrame",
-                              TLArg(now, "Now"),
+                              TLArg(m_lastFrameWaitedTime.value(), "Now"),
                               TLArg(predictedDisplayTime, "PredictedDisplayTime"),
-                              TLArg(predictedDisplayTime - now, "PhotonTime"),
+                              TLArg(predictedDisplayTime - m_lastFrameWaitedTime.value(), "PhotonTime"),
                               TLArg(waitTimer.query(), "WaitDurationUs"));
 
             // Setup the app frame for use and the next frame for this call.
