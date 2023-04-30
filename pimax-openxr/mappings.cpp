@@ -488,10 +488,10 @@ namespace pimax_openxr {
         } else if (path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/menu/system") {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_ApplicationMenu;
-        } else if (path == "/user/hand/left/input/a/click" || path == "/user/hand/left/input/a") {
+        } else if (path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a") {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_A;
-        } else if (path == "/user/hand/left/input/b/click" || path == "/user/hand/left/input/b") {
+        } else if (path == "/user/hand/right/input/b/click" || path == "/user/hand/right/input/b") {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_B;
         } else if (path == "/user/hand/right/input/system/click" || path == "/user/hand/right/input/system") {
