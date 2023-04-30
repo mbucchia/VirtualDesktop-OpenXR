@@ -121,7 +121,7 @@ namespace pimax_openxr {
             TraceLoggingWriteStop(
                 connect, "aSeeVRClient", TLArg("Connect", "Operation"), TLArg(xr::ToString(status).c_str(), "Status"));
             if (status != aSeeVRReturnCode::success) {
-                Log(fmt::format("Failed to connect to Droolon service: {}", xr::ToString(status).c_str()).c_str());
+                Log(fmt::format("Failed to connect to Droolon service: {}\n", xr::ToString(status).c_str()).c_str());
                 return false;
             }
         }

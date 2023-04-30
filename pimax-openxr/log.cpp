@@ -76,7 +76,7 @@ namespace pimax_openxr::log {
             InternalLog(fmt, va, true);
             va_end(va);
             if (g_globalErrorCount == k_maxLoggedErrors) {
-                Log("Maximum number of errors logged. Going silent.");
+                Log("Maximum number of errors logged. Going silent.\n");
             }
         }
     }
