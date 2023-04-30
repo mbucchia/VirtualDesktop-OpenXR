@@ -1401,6 +1401,12 @@ namespace pimax_openxr {
                     actualInteractionProfile = "/interaction_profiles/oculus/touch_controller";
                 } else if (hasMicrosoftMotionControllerProfile) {
                     actualInteractionProfile = "/interaction_profiles/microsoft/motion_controller";
+                } else if (m_suggestedBindings.find("/interaction_profiles/valve/index_controller") !=
+                           m_suggestedBindings.cend()) {
+                    actualInteractionProfile = "/interaction_profiles/valve/index_controller";
+                } else if (m_suggestedBindings.find("/interaction_profiles/htc/vive_controller") !=
+                           m_suggestedBindings.cend()) {
+                    actualInteractionProfile = "/interaction_profiles/htc/vive_controller";
                 } else if (m_suggestedBindings.find("/interaction_profiles/khr/simple_controller") !=
                            m_suggestedBindings.cend()) {
                     actualInteractionProfile = "/interaction_profiles/khr/simple_controller";
