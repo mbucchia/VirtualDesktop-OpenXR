@@ -199,8 +199,10 @@ namespace pimax_openxr {
 
             // Quirk for frame pipelining timeout.
             // - Pimax Client 1.10 and above;
-            m_disableFramePipeliningQuirk =
-                getSetting("quirk_disable_frame_pipelining").value_or(!isPitool && intermediate >= 10);
+            //
+            // However, Pimax is giving test versions of Pimax Client with version numbers going backwards, therefore we
+            // must simply enable the quick for all Pimax Client versiosn.
+            m_disableFramePipeliningQuirk = getSetting("quirk_disable_frame_pipelining").value_or(!isPitool);
 
             m_alwaysUseFrameIdZero = getSetting("quirk_always_use_frame_id_zero").value_or(0);
         } else {
