@@ -334,7 +334,8 @@ namespace pimax_openxr {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
-        if (viewCapacityInput < (viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO
+        if (viewCapacityInput &&
+            viewCapacityInput < (viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO
                                      ? xr::StereoView::Count
                                      : xr::QuadView::Count)) {
             return XR_ERROR_SIZE_INSUFFICIENT;
