@@ -313,37 +313,36 @@ def makeREstring(strings, default=None):
     return default
 
 if __name__ == '__main__':
-    registry = Registry()
-    registry.loadFile(os.path.join(sdk_dir, 'specification', 'registry', 'xr.xml'))
-
     conventions = OpenXRConventions()
     featuresPat = '.*'
     extensionsPat = makeREstring(EXTENSIONS)
 
-    registry.setGenerator(DispatchGenCppOutputGenerator(diagFile=None))
-    registry.apiGen(AutomaticSourceGeneratorOptions(
-            conventions       = conventions,
-            filename          = 'dispatch.gen.cpp',
-            directory         = cur_dir,
-            apiname           = 'openxr',
-            profile           = None,
-            versions          = featuresPat,
-            emitversions      = featuresPat,
-            defaultExtensions = 'openxr',
-            addExtensions     = None,
-            removeExtensions  = None,
-            emitExtensions    = extensionsPat))
+    registry = Registry(DispatchGenCppOutputGenerator(diagFile=None),
+                        AutomaticSourceGeneratorOptions(conventions       = conventions,
+                                                        filename          = 'dispatch.gen.cpp',
+                                                        directory         = cur_dir,
+                                                        apiname           = 'openxr',
+                                                        profile           = None,
+                                                        versions          = featuresPat,
+                                                        emitversions      = featuresPat,
+                                                        defaultExtensions = 'openxr',
+                                                        addExtensions     = None,
+                                                        removeExtensions  = None,
+                                                        emitExtensions    = extensionsPat))
+    registry.loadFile(os.path.join(sdk_dir, 'specification', 'registry', 'xr.xml'))
+    registry.apiGen()
 
-    registry.setGenerator(DispatchGenHOutputGenerator(diagFile=None))
-    registry.apiGen(AutomaticSourceGeneratorOptions(
-            conventions       = conventions,
-            filename          = 'dispatch.gen.h',
-            directory         = cur_dir,
-            apiname           = 'openxr',
-            profile           = None,
-            versions          = featuresPat,
-            emitversions      = featuresPat,
-            defaultExtensions = 'openxr',
-            addExtensions     = None,
-            removeExtensions  = None,
-            emitExtensions    = extensionsPat))
+    registry = Registry(DispatchGenHOutputGenerator(diagFile=None),
+                        AutomaticSourceGeneratorOptions(conventions       = conventions,
+                                                        filename          = 'dispatch.gen.h',
+                                                        directory         = cur_dir,
+                                                        apiname           = 'openxr',
+                                                        profile           = None,
+                                                        versions          = featuresPat,
+                                                        emitversions      = featuresPat,
+                                                        defaultExtensions = 'openxr',
+                                                        addExtensions     = None,
+                                                        removeExtensions  = None,
+                                                        emitExtensions    = extensionsPat))
+    registry.loadFile(os.path.join(sdk_dir, 'specification', 'registry', 'xr.xml'))
+    registry.apiGen()
