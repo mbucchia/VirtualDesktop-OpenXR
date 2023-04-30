@@ -6,7 +6,7 @@
 	url = https://github.com/KhronosGroup/OpenXR-SDK-Source.git
 [submodule "external/OpenXR-MixedReality"]
 	path = external/OpenXR-MixedReality
-	url = https://github.com/microsoft/OpenXR-MixedReality.git
+	url = https://github.com/mbucchia/OpenXR-MixedReality.git
 [submodule "external/PVR"]
 	path = external/PVR
 	url = https://github.com/mbucchia/PVR.git
