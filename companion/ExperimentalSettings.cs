@@ -51,7 +51,7 @@ namespace companion
             }
         }
 
-        private void LoadSettings()
+        public void LoadSettings()
         {
             loading = true;
             SuspendLayout();
@@ -85,14 +85,20 @@ namespace companion
                 alwaysUseFrameIdZero.Checked = (int)key.GetValue("quirk_always_use_frame_id_zero", 0) == 1 ? true : false;
                 forceDisableParallelProjection.Checked = (int)key.GetValue("force_parallel_projection_state", 1) == 0 ? true : false;
                 droolonProjectionDistance.Value = (int)key.GetValue("droolon_projection_distance", 35);
-                enableQuadViews.Checked = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
+                focusDensity.Enabled = focusDensityLabel.Enabled = focusDensityValue.Enabled =
+                    peripheralDensity.Enabled = peripheralDensityLabel.Enabled = peripheralDensityValue.Enabled =
+                    horizontalSection1.Enabled = horizontalSection1Label.Enabled = horizontalSection1Value.Enabled =
+                    horizontalSection2.Enabled = horizontalSection2Label.Enabled = horizontalSection2Value.Enabled =
+                    verticalSection1.Enabled = verticalSection1Label.Enabled = verticalSection1Value.Enabled =
+                    verticalSection2.Enabled = verticalSection2Label.Enabled = verticalSection2Value.Enabled =
+                preferFoveated.Enabled = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
+                preferFoveated.Checked = (int)key.GetValue("prefer_foveated_rendering", 0) == 1 ? true : false;
                 focusDensity.Value = (int)key.GetValue("focus_density", 1000);
                 peripheralDensity.Value = (int)key.GetValue("peripheral_density", 600);
                 horizontalSection1.Value = (int)key.GetValue("focus_horizontal_section", 650);
                 horizontalSection2.Value = (int)key.GetValue("focus_horizontal_section_foveated", 330);
                 verticalSection1.Value = (int)key.GetValue("focus_vertical_section", 700);
                 verticalSection2.Value = (int)key.GetValue("focus_vertical_section_foveated", 350);
-                preferFoveated.Checked = (int)key.GetValue("prefer_foveated_rendering", 0) == 1 ? true : false;
 
                 // DO NOT FORGET TO ADD TO restoreDefaults_Click()!
             }
@@ -128,13 +134,6 @@ namespace companion
             forceRateLabel.Enabled = forceHalf.Enabled = forceThird.Enabled = enableFrameTiming.Checked;
             filterLength.Enabled = filterLengthLabel.Enabled = filterLengthValue.Enabled =
                 timingBias.Enabled = timingBiasLabel.Enabled = timingBiasValue.Enabled = enableFrameTiming.Checked && !(forceHalf.Checked || forceThird.Checked);
-            focusDensity.Enabled = focusDensityLabel.Enabled = focusDensityValue.Enabled =
-                peripheralDensity.Enabled = peripheralDensityLabel.Enabled = peripheralDensityValue.Enabled =
-                horizontalSection1.Enabled = horizontalSection1Label.Enabled = horizontalSection1Value.Enabled =
-                horizontalSection2.Enabled = horizontalSection2Label.Enabled = horizontalSection2Value.Enabled =
-                verticalSection1.Enabled = verticalSection1Label.Enabled = verticalSection1Value.Enabled =
-                verticalSection2.Enabled = verticalSection2Label.Enabled = verticalSection2Value.Enabled =
-                preferFoveated.Enabled = enableQuadViews.Checked;
         }
 
         private void enableFrameTiming_CheckedChanged(object sender, EventArgs e)
@@ -251,7 +250,8 @@ namespace companion
             if (forceDisableParallelProjection.Checked)
             {
                 MainForm.WriteSetting("force_parallel_projection_state", 0);
-            } else
+            }
+            else
             {
                 Microsoft.Win32.RegistryKey key = null;
                 try
@@ -282,18 +282,6 @@ namespace companion
             }
 
             MainForm.WriteSetting("droolon_projection_distance", droolonProjectionDistance.Value);
-        }
-
-        private void enableQuadViews_CheckedChanged(object sender, EventArgs e)
-        {
-            RefreshEnabledState();
-
-            if (loading)
-            {
-                return;
-            }
-
-            MainForm.WriteSetting("disable_quad_views", enableQuadViews.Checked ? 0 : 1);
         }
 
         private void focusDensity_Scroll(object sender, EventArgs e)
@@ -406,7 +394,6 @@ namespace companion
                 key.DeleteValue("quirk_always_use_frame_id_zero", false);
                 key.DeleteValue("force_parallel_projection_state", false);
                 key.DeleteValue("droolon_projection_distance", false);
-                key.DeleteValue("disable_quad_views", false);
                 key.DeleteValue("focus_density", false);
                 key.DeleteValue("peripheral_density", false);
                 key.DeleteValue("focus_horizontal_section", false);

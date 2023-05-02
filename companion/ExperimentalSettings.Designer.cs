@@ -47,7 +47,7 @@ namespace companion
             this.droolonProjectionDistanceValue = new System.Windows.Forms.TextBox();
             this.droolonProjectionDistanceLabel = new System.Windows.Forms.Label();
             this.droolonProjectionDistance = new System.Windows.Forms.TrackBar();
-            this.enableQuadViews = new System.Windows.Forms.CheckBox();
+            this.preferFoveated = new System.Windows.Forms.CheckBox();
             this.focusDensityValue = new System.Windows.Forms.TextBox();
             this.focusDensityLabel = new System.Windows.Forms.Label();
             this.focusDensity = new System.Windows.Forms.TrackBar();
@@ -66,7 +66,6 @@ namespace companion
             this.verticalSection2Value = new System.Windows.Forms.TextBox();
             this.verticalSection2Label = new System.Windows.Forms.Label();
             this.verticalSection2 = new System.Windows.Forms.TrackBar();
-            this.preferFoveated = new System.Windows.Forms.CheckBox();
             this.noRestartLabel = new System.Windows.Forms.Label();
             this.restoreDefaults = new System.Windows.Forms.Button();
             this.flowLayoutPanel1.SuspendLayout();
@@ -99,7 +98,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.droolonProjectionDistanceValue);
             this.flowLayoutPanel1.Controls.Add(this.droolonProjectionDistanceLabel);
             this.flowLayoutPanel1.Controls.Add(this.droolonProjectionDistance);
-            this.flowLayoutPanel1.Controls.Add(this.enableQuadViews);
+            this.flowLayoutPanel1.Controls.Add(this.preferFoveated);
             this.flowLayoutPanel1.Controls.Add(this.focusDensityValue);
             this.flowLayoutPanel1.Controls.Add(this.focusDensityLabel);
             this.flowLayoutPanel1.Controls.Add(this.focusDensity);
@@ -118,13 +117,12 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.verticalSection2Value);
             this.flowLayoutPanel1.Controls.Add(this.verticalSection2Label);
             this.flowLayoutPanel1.Controls.Add(this.verticalSection2);
-            this.flowLayoutPanel1.Controls.Add(this.preferFoveated);
             this.flowLayoutPanel1.Controls.Add(this.noRestartLabel);
             this.flowLayoutPanel1.Controls.Add(this.restoreDefaults);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(341, 699);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(341, 676);
             this.flowLayoutPanel1.TabIndex = 0;
             // 
             // enableFrameTiming
@@ -313,19 +311,18 @@ namespace companion
             this.droolonProjectionDistance.Value = 10;
             this.droolonProjectionDistance.Scroll += new System.EventHandler(this.droolonProjectionDistance_Scroll);
             // 
-            // enableQuadViews
+            // preferFoveated
             // 
-            this.enableQuadViews.AutoSize = true;
-            this.flowLayoutPanel1.SetFlowBreak(this.enableQuadViews, true);
-            this.enableQuadViews.Location = new System.Drawing.Point(3, 292);
-            this.enableQuadViews.Margin = new System.Windows.Forms.Padding(3, 0, 3, 0);
-            this.enableQuadViews.Name = "enableQuadViews";
-            this.enableQuadViews.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
-            this.enableQuadViews.Size = new System.Drawing.Size(163, 20);
-            this.enableQuadViews.TabIndex = 16;
-            this.enableQuadViews.Text = "Enable VARJO_quad_views";
-            this.enableQuadViews.UseVisualStyleBackColor = true;
-            this.enableQuadViews.CheckedChanged += new System.EventHandler(this.enableQuadViews_CheckedChanged);
+            this.preferFoveated.AutoSize = true;
+            this.flowLayoutPanel1.SetFlowBreak(this.preferFoveated, true);
+            this.preferFoveated.Location = new System.Drawing.Point(3, 295);
+            this.preferFoveated.Name = "preferFoveated";
+            this.preferFoveated.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.preferFoveated.Size = new System.Drawing.Size(285, 17);
+            this.preferFoveated.TabIndex = 16;
+            this.preferFoveated.Text = "Prefer Quad Views foveated rendering (when possible)";
+            this.preferFoveated.UseVisualStyleBackColor = true;
+            this.preferFoveated.CheckedChanged += new System.EventHandler(this.preferFoveated_CheckedChanged);
             // 
             // focusDensityValue
             // 
@@ -525,39 +522,26 @@ namespace companion
             this.verticalSection2.Value = 10;
             this.verticalSection2.Scroll += new System.EventHandler(this.verticalSection2_Scroll);
             // 
-            // preferFoveated
-            // 
-            this.preferFoveated.AutoSize = true;
-            this.flowLayoutPanel1.SetFlowBreak(this.preferFoveated, true);
-            this.preferFoveated.Location = new System.Drawing.Point(3, 612);
-            this.preferFoveated.Name = "preferFoveated";
-            this.preferFoveated.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.preferFoveated.Size = new System.Drawing.Size(225, 17);
-            this.preferFoveated.TabIndex = 35;
-            this.preferFoveated.Text = "Prefer foveated rendering (when possible)";
-            this.preferFoveated.UseVisualStyleBackColor = true;
-            this.preferFoveated.CheckedChanged += new System.EventHandler(this.preferFoveated_CheckedChanged);
-            // 
             // noRestartLabel
             // 
             this.noRestartLabel.AutoSize = true;
             this.flowLayoutPanel1.SetFlowBreak(this.noRestartLabel, true);
             this.noRestartLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.noRestartLabel.Location = new System.Drawing.Point(2, 632);
+            this.noRestartLabel.Location = new System.Drawing.Point(2, 609);
             this.noRestartLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.noRestartLabel.Name = "noRestartLabel";
             this.noRestartLabel.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
             this.noRestartLabel.Size = new System.Drawing.Size(204, 16);
-            this.noRestartLabel.TabIndex = 36;
+            this.noRestartLabel.TabIndex = 35;
             this.noRestartLabel.Text = "(*): Settings taking effect without a restart";
             // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 654);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 631);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 6, 3, 3);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 37;
+            this.restoreDefaults.TabIndex = 36;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
@@ -566,7 +550,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(341, 699);
+            this.ClientSize = new System.Drawing.Size(341, 676);
             this.Controls.Add(this.flowLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -610,7 +594,6 @@ namespace companion
         private System.Windows.Forms.Label droolonProjectionDistanceLabel;
         private System.Windows.Forms.TrackBar droolonProjectionDistance;
         private System.Windows.Forms.TextBox droolonProjectionDistanceValue;
-        private System.Windows.Forms.CheckBox enableQuadViews;
         private System.Windows.Forms.TextBox focusDensityValue;
         private System.Windows.Forms.Label focusDensityLabel;
         private System.Windows.Forms.TrackBar focusDensity;

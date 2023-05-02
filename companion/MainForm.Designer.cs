@@ -63,6 +63,7 @@ namespace companion
             this.guardianLabel2 = new System.Windows.Forms.Label();
             this.guardianThreshold = new System.Windows.Forms.TrackBar();
             this.allowEyeTracking = new System.Windows.Forms.CheckBox();
+            this.enableQuadViews = new System.Windows.Forms.CheckBox();
             this.mirrorMode = new System.Windows.Forms.CheckBox();
             this.telemetryLabel = new System.Windows.Forms.Label();
             this.enableTelemetry = new System.Windows.Forms.CheckBox();
@@ -98,7 +99,7 @@ namespace companion
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 776);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 801);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -107,7 +108,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.startTrace);
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 702);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 727);
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
@@ -202,7 +203,7 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.gotoDownloads);
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 758);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 783);
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 16);
@@ -254,6 +255,7 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.guardianLabel2);
             this.flowLayoutPanel4.Controls.Add(this.guardianThreshold);
             this.flowLayoutPanel4.Controls.Add(this.allowEyeTracking);
+            this.flowLayoutPanel4.Controls.Add(this.enableQuadViews);
             this.flowLayoutPanel4.Controls.Add(this.mirrorMode);
             this.flowLayoutPanel4.Controls.Add(this.telemetryLabel);
             this.flowLayoutPanel4.Controls.Add(this.enableTelemetry);
@@ -262,7 +264,7 @@ namespace companion
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 149);
             this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
-            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 549);
+            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 574);
             this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
@@ -503,15 +505,28 @@ namespace companion
             this.allowEyeTracking.UseVisualStyleBackColor = true;
             this.allowEyeTracking.CheckedChanged += new System.EventHandler(this.allowEyeTracking_CheckedChanged);
             // 
+            // enableQuadViews
+            // 
+            this.enableQuadViews.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.enableQuadViews, true);
+            this.enableQuadViews.Location = new System.Drawing.Point(3, 411);
+            this.enableQuadViews.Name = "enableQuadViews";
+            this.enableQuadViews.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.enableQuadViews.Size = new System.Drawing.Size(306, 17);
+            this.enableQuadViews.TabIndex = 23;
+            this.enableQuadViews.Text = "Enable Quad Views rendering (with supported applications)";
+            this.enableQuadViews.UseVisualStyleBackColor = true;
+            this.enableQuadViews.CheckedChanged += new System.EventHandler(this.enableQuadViews_CheckedChanged);
+            // 
             // mirrorMode
             // 
             this.mirrorMode.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.mirrorMode, true);
-            this.mirrorMode.Location = new System.Drawing.Point(3, 411);
+            this.mirrorMode.Location = new System.Drawing.Point(3, 434);
             this.mirrorMode.Name = "mirrorMode";
             this.mirrorMode.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.mirrorMode.Size = new System.Drawing.Size(123, 17);
-            this.mirrorMode.TabIndex = 23;
+            this.mirrorMode.TabIndex = 24;
             this.mirrorMode.Text = "Show mirror window";
             this.mirrorMode.UseVisualStyleBackColor = true;
             this.mirrorMode.CheckedChanged += new System.EventHandler(this.mirrorMode_CheckedChanged);
@@ -520,11 +535,11 @@ namespace companion
             // 
             this.telemetryLabel.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.telemetryLabel, true);
-            this.telemetryLabel.Location = new System.Drawing.Point(3, 431);
+            this.telemetryLabel.Location = new System.Drawing.Point(3, 454);
             this.telemetryLabel.Name = "telemetryLabel";
             this.telemetryLabel.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
             this.telemetryLabel.Size = new System.Drawing.Size(395, 35);
-            this.telemetryLabel.TabIndex = 24;
+            this.telemetryLabel.TabIndex = 25;
             this.telemetryLabel.Text = "Our telemetry does not affect performance, is anonymous and helps the developer w" +
     "ith application support.";
             // 
@@ -532,23 +547,23 @@ namespace companion
             // 
             this.enableTelemetry.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableTelemetry, true);
-            this.enableTelemetry.Location = new System.Drawing.Point(2, 468);
+            this.enableTelemetry.Location = new System.Drawing.Point(2, 491);
             this.enableTelemetry.Margin = new System.Windows.Forms.Padding(2);
             this.enableTelemetry.Name = "enableTelemetry";
             this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
             this.enableTelemetry.Size = new System.Drawing.Size(139, 23);
-            this.enableTelemetry.TabIndex = 25;
+            this.enableTelemetry.TabIndex = 26;
             this.enableTelemetry.Text = "Enable usage telemetry";
             this.enableTelemetry.UseVisualStyleBackColor = true;
             this.enableTelemetry.CheckedChanged += new System.EventHandler(this.enableTelemetry_CheckedChanged);
             // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 505);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 528);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 26;
+            this.restoreDefaults.TabIndex = 27;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
@@ -569,7 +584,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(406, 776);
+            this.ClientSize = new System.Drawing.Size(406, 801);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -633,6 +648,7 @@ namespace companion
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button restoreDefaults;
         private System.Windows.Forms.CheckBox allowEyeTracking;
+        private System.Windows.Forms.CheckBox enableQuadViews;
     }
 }
 
