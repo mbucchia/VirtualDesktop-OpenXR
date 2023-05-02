@@ -87,12 +87,12 @@ namespace companion
                 droolonProjectionDistance.Value = (int)key.GetValue("droolon_projection_distance", 35);
                 enableQuadViews.Checked = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
                 focusDensity.Value = (int)key.GetValue("focus_density", 1000);
-                peripheralDensity.Value = (int)key.GetValue("peripheral_density", 500);
-                horizontalSection1.Value = (int)key.GetValue("focus_horizontal_section", 750);
-                horizontalSection2.Value = (int)key.GetValue("focus_horizontal_section_foveated", 500);
+                peripheralDensity.Value = (int)key.GetValue("peripheral_density", 600);
+                horizontalSection1.Value = (int)key.GetValue("focus_horizontal_section", 650);
+                horizontalSection2.Value = (int)key.GetValue("focus_horizontal_section_foveated", 330);
                 verticalSection1.Value = (int)key.GetValue("focus_vertical_section", 700);
-                verticalSection2.Value = (int)key.GetValue("focus_vertical_section_foveated", 500);
-                preferFoveated.Checked = (int)key.GetValue("prefer_foveated_rendering", 1) == 1 ? true : false;
+                verticalSection2.Value = (int)key.GetValue("focus_vertical_section_foveated", 350);
+                preferFoveated.Checked = (int)key.GetValue("prefer_foveated_rendering", 0) == 1 ? true : false;
 
                 // DO NOT FORGET TO ADD TO restoreDefaults_Click()!
             }

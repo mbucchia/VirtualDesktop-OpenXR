@@ -167,13 +167,13 @@ namespace pimax_openxr {
         if (has_XR_VARJO_quad_views) {
             // Latch the configuration for quad views and foveated rendering.
             m_focusPixelDensity = getSetting("focus_density").value_or(1000) / 1e3f;
-            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(500) / 1e3f;
-            m_horizontalFovSection[0] = getSetting("focus_horizontal_section").value_or(750) / 1e3f;
-            m_horizontalFovSection[1] = getSetting("focus_horizontal_section_foveated").value_or(500) / 1e3f;
+            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(600) / 1e3f;
+            m_horizontalFovSection[0] = getSetting("focus_horizontal_section").value_or(650) / 1e3f;
+            m_horizontalFovSection[1] = getSetting("focus_horizontal_section_foveated").value_or(330) / 1e3f;
             m_verticalFovSection[0] = getSetting("focus_vertical_section").value_or(700) / 1e3f;
-            m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(500) / 1e3f;
+            m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(350) / 1e3f;
             m_preferFoveatedRendering =
-                m_eyeTrackingType != EyeTracking::None && getSetting("prefer_foveated_rendering").value_or(true);
+                m_eyeTrackingType != EyeTracking::None && getSetting("prefer_foveated_rendering").value_or(false);
 
             TraceLoggingWrite(g_traceProvider,
                               "PXR_Config",
