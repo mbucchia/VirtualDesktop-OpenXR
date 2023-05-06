@@ -141,13 +141,12 @@ namespace pimax_openxr {
 
         {
             const bool enableLighthouse = !!pvr_getIntConfig(m_pvrSession, "enable_lighthouse_tracking", 0);
-            const int fovLevel = pvr_getIntConfig(m_pvrSession, "fov_level", 1);
 
             TraceLoggingWrite(
                 g_traceProvider,
                 "PVR_Config",
                 TLArg(enableLighthouse, "EnableLighthouse"),
-                TLArg(fovLevel, "FovLevel"),
+                TLArg(m_fovLevel, "FovLevel"),
                 TLArg(m_useParallelProjection, "UseParallelProjection"),
                 TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
                 TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"));
@@ -157,7 +156,7 @@ namespace pimax_openxr {
                                     : isOpenGLSession() ? "OpenGL"
                                                         : "D3D11",
                                     enableLighthouse,
-                                    fovLevel,
+                                    m_fovLevel,
                                     m_useParallelProjection,
                                     m_useMirrorWindow);
         }

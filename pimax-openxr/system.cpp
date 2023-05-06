@@ -148,6 +148,7 @@ namespace pimax_openxr {
             CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
             CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
         }
+        m_fovLevel = pvr_getIntConfig(m_pvrSession, "fov_level", 0);
 
         for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
             m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
@@ -174,6 +175,12 @@ namespace pimax_openxr {
             m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(350) / 1e3f;
             m_preferFoveatedRendering =
                 m_eyeTrackingType != EyeTracking::None && getSetting("prefer_foveated_rendering").value_or(false);
+
+            // The horizontal sections are relative to small FOV level, transpose them into the current FOV level.
+            // Each FOV level adds 20 degree.
+            const float horizontalScale[4] = {1.333f, 1.166f, 1.f, 0.833f};
+            m_horizontalFovSection[0] /= horizontalScale[std::clamp(m_fovLevel, 0, 4)];
+            m_horizontalFovSection[1] /= horizontalScale[std::clamp(m_fovLevel, 0, 4)];
 
             TraceLoggingWrite(g_traceProvider,
                               "PXR_Config",
@@ -202,6 +209,8 @@ namespace pimax_openxr {
 
                     // Calculate the "resting" gaze position.
                     ProjectPoint(view, {0.f, 0.f, -1.f}, projectedGaze[eye]);
+                    m_centerOfFov[eye].x = (projectedGaze[eye].x + 1.f) / 2.f;
+                    m_centerOfFov[eye].y = (1.f - projectedGaze[eye].y) / 2.f;
                 }
             }
 
@@ -221,11 +230,11 @@ namespace pimax_openxr {
                     std::tie(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight) = Fov::Lerp(
                         std::make_pair(m_cachedEyeFov[eye].angleLeft, m_cachedEyeFov[eye].angleRight),
                         std::make_pair(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight),
-                        (projectedGaze[eye].x + 1.f) / 2.f);
+                        m_centerOfFov[eye].x);
                     std::tie(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp) = Fov::Lerp(
                         std::make_pair(m_cachedEyeFov[eye].angleDown, m_cachedEyeFov[eye].angleUp),
                         std::make_pair(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp),
-                        (1.f - projectedGaze[eye].y) / 2.f);
+                        m_centerOfFov[eye].y);
                 }
             }
         } else {

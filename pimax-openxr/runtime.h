@@ -568,10 +568,12 @@ namespace pimax_openxr {
         XrSpace m_originSpace{XR_NULL_HANDLE};
         XrSpace m_viewSpace{XR_NULL_HANDLE};
         bool m_useParallelProjection{false};
+        int m_fovLevel{0};
         // [0] = left, [1] = right
         // [2] = left focus non-foveated, [3] = right focus non-foveated,
         // [4] = left focus foveated, [5] = right focus foveated
         XrFovf m_cachedEyeFov[xr::QuadView::Count + 2];
+        XrVector2f m_centerOfFov[xr::StereoView::Count];
         float m_joystickDeadzone{0.f};
         bool m_swapGripAimPoses{false};
         std::set<XrActionSet> m_activeActionSets;

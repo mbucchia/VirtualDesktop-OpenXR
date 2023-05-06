@@ -414,16 +414,26 @@ namespace pimax_openxr {
 
                     } else {
                         // Shift FOV according to the eye gaze.
-                        // TODO: Need to widen the FOV when near the edges of the headset.
+                        // We also widen the FOV when near the edges of the headset to make sure there's enough overlap
+                        // between the two eyes.
+                        const float MaxWidenAngle = PVR::DegreeToRad(7.f);
+                        constexpr float Deadzone = 0.15f;
+                        const XrVector2f centerOfFov{(projectedGaze.x + 1.f) / 2.f, (1.f - projectedGaze.y) / 2.f};
+                        const XrVector2f v = centerOfFov - m_centerOfFov[i - 2];
+                        const float distanceFromCenter = std::sqrt(v.x * v.x + v.y * v.y);
+                        const float widenHalfAngle =
+                            std::clamp(distanceFromCenter - Deadzone, 0.f, 0.5f) * MaxWidenAngle;
                         XrFovf globalFov = m_cachedEyeFov[i % xr::StereoView::Count];
                         std::tie(views[i].fov.angleLeft, views[i].fov.angleRight) =
                             Fov::Lerp(std::make_pair(globalFov.angleLeft, globalFov.angleRight),
-                                      std::make_pair(m_cachedEyeFov[i + 2].angleLeft, m_cachedEyeFov[i + 2].angleRight),
-                                      (projectedGaze.x + 1.f) / 2.f);
+                                      std::make_pair(m_cachedEyeFov[i + 2].angleLeft - widenHalfAngle,
+                                                     m_cachedEyeFov[i + 2].angleRight + widenHalfAngle),
+                                      centerOfFov.x);
                         std::tie(views[i].fov.angleDown, views[i].fov.angleUp) =
                             Fov::Lerp(std::make_pair(globalFov.angleDown, globalFov.angleUp),
-                                      std::make_pair(m_cachedEyeFov[i + 2].angleDown, m_cachedEyeFov[i + 2].angleUp),
-                                      (1.f - projectedGaze.y) / 2.f);
+                                      std::make_pair(m_cachedEyeFov[i + 2].angleDown - widenHalfAngle,
+                                                     m_cachedEyeFov[i + 2].angleUp + widenHalfAngle),
+                                      centerOfFov.y);
                     }
 
                     TraceLoggingWrite(g_traceProvider,
