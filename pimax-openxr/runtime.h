@@ -670,7 +670,6 @@ namespace pimax_openxr {
         uint64_t m_lastGpuFrameTimeUs{0};
         pvrInputState m_cachedInputState;
         bool m_actionsSyncedThisFrame{false};
-        std::optional<double> m_lastFrameWaitedTime;
         XrTime m_lastPredictedDisplayTime{0};
 
         // Statistics.
