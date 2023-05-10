@@ -204,7 +204,8 @@ namespace pimax_openxr {
             // must simply enable the quick for all Pimax Client versiosn.
             m_disableFramePipeliningQuirk = getSetting("quirk_disable_frame_pipelining").value_or(!isPitool);
 
-            m_alwaysUseFrameIdZero = getSetting("quirk_always_use_frame_id_zero").value_or(0);
+            m_alwaysUseFrameIdZero =
+                getSetting("quirk_always_use_frame_id_zero").value_or(m_disableFramePipeliningQuirk);
         } else {
             Log("Could not detect Pitool/Pimax Client version\n");
         }
