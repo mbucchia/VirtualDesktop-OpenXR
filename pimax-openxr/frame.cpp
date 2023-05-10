@@ -123,7 +123,8 @@ namespace pimax_openxr {
             }
 
             // Workaround: PVR since Pimax Client 1.10 is not handling frame pipelining correctly.
-            // Ensure a single frame in-flight when the prediction is far off.
+            // Ensure a single frame in-flight.
+            bool skipPvrWait = false;
             if (m_disableFramePipeliningQuirk) {
                 TraceLocalActivity(waitEndFrame);
                 TraceLoggingWriteStart(waitEndFrame,
@@ -131,13 +132,16 @@ namespace pimax_openxr {
                                        TLArg(m_frameWaited, "FrameWaited"),
                                        TLArg(m_frameBegun, "FrameBegun"),
                                        TLArg(m_frameCompleted, "FrameCompleted"));
-                m_frameCondVar.wait(lock, [&] { return m_frameCompleted == m_frameBegun; });
-                TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame");
+                const bool timedOut =
+                    !m_frameCondVar.wait_for(lock, 200ms, [&] { return m_frameCompleted == m_frameBegun; });
+                TraceLoggingWriteStop(waitEndFrame, "WaitEndFrame", TLArg(timedOut, "TimedOut"));
+
+                skipPvrWait = timedOut;
             }
 
             // Wait for PVR to be ready for the next frame.
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited : 0;
-            {
+            if (!skipPvrWait) {
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
                 // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
