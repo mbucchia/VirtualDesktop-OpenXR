@@ -32,27 +32,6 @@
 
 namespace {
 
-    // Compute shaders for converting D32_S8 to D32 depth formats.
-    // Only keep the depth component.
-    const std::string_view DepthConvertShaderHlsl =
-        R"_(
-Texture2D in_texture : register(t0);
-Texture2DArray in_texture_array : register(t0);
-RWTexture2D<float> out_texture : register(u0);
-
-[numthreads(8, 8, 1)]
-void main(uint2 pos : SV_DispatchThreadID)
-{
-    out_texture[pos] = in_texture[pos].x;
-}
-
-[numthreads(8, 8, 1)]
-void mainForArray(uint2 pos : SV_DispatchThreadID)
-{
-    out_texture[pos] = in_texture_array[float3(pos, 0)].x;
-}
-    )_";
-
     // Compute shaders for correcting alpha channel.
     // Clear the alpha channel or premultiply each component.
     const std::string_view AlphaCorrectShaderHlsl =
@@ -290,7 +269,7 @@ namespace pimax_openxr {
             0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_pvrSubmissionFence.ReleaseAndGetAddressOf())));
         m_fenceValue = 0;
 
-        // Create the resources for depth conversion and alpha correction.
+        // Create the resources for alpha correction.
         const auto compileShader = [&](const std::string_view& code,
                                        const std::string_view& type,
                                        const std::string_view& entry,
@@ -322,22 +301,6 @@ namespace pimax_openxr {
         };
 
         ComPtr<ID3DBlob> shaderBytes;
-        {
-            compileShader(DepthConvertShaderHlsl, "cs_5_0", "main", shaderBytes.ReleaseAndGetAddressOf());
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
-                                                                   shaderBytes->GetBufferSize(),
-                                                                   nullptr,
-                                                                   m_depthConvertShader[0].ReleaseAndGetAddressOf()));
-            setDebugName(m_depthConvertShader[0].Get(), "DepthConvert CS");
-        }
-        {
-            compileShader(DepthConvertShaderHlsl, "cs_5_0", "mainForArray", shaderBytes.ReleaseAndGetAddressOf());
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
-                                                                   shaderBytes->GetBufferSize(),
-                                                                   nullptr,
-                                                                   m_depthConvertShader[1].ReleaseAndGetAddressOf()));
-            setDebugName(m_depthConvertShader[1].Get(), "DepthConvert CS");
-        }
         {
             compileShader(AlphaCorrectShaderHlsl, "cs_5_0", "main", shaderBytes.ReleaseAndGetAddressOf());
             CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
@@ -443,8 +406,7 @@ namespace pimax_openxr {
         }
 
         m_dxgiSwapchain.Reset();
-        for (int i = 0; i < ARRAYSIZE(m_depthConvertShader); i++) {
-            m_depthConvertShader[i].Reset();
+        for (int i = 0; i < ARRAYSIZE(m_alphaCorrectShader); i++) {
             m_alphaCorrectShader[i].Reset();
         }
 
@@ -457,39 +419,6 @@ namespace pimax_openxr {
     std::vector<HANDLE> OpenXrRuntime::getSwapchainImages(Swapchain& xrSwapchain) {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
-
-        // PVR does not properly support certain depth format, and we will need an intermediate texture for the
-        // app to use, then perform additional conversion steps during xrEndFrame().
-        D3D11_TEXTURE2D_DESC desc{};
-        if (!initialized && xrSwapchain.needDepthConvert) {
-            // FIXME: Today we only do convert from D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
-            // corresponding formats below.
-
-            desc.ArraySize = xrSwapchain.xrDesc.arraySize;
-            desc.Format = DXGI_FORMAT_R32G8X24_TYPELESS;
-            desc.Width = xrSwapchain.xrDesc.width;
-            desc.Height = xrSwapchain.xrDesc.height;
-            desc.MipLevels = xrSwapchain.xrDesc.mipCount;
-            desc.SampleDesc.Count = xrSwapchain.xrDesc.sampleCount;
-
-            // The texture may be sampled by our conversion shader.
-            desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-
-            if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
-                desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-            }
-            if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                desc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
-            }
-            if (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
-                desc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
-            }
-
-            // Make the texture shareable in case the application needs to share it and since we need to support
-            // D3D12 interop.
-            // We don't use NT handles since they are less permissive in terms of formats.
-            desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
-        }
 
         // Query the textures for the swapchain.
         std::vector<HANDLE> handles;
@@ -520,17 +449,7 @@ namespace pimax_openxr {
                                       TLArg(desc.MiscFlags, "MiscFlags"));
                 }
 
-                if (xrSwapchain.needDepthConvert) {
-                    // Create the intermediate texture if needed.
-                    ComPtr<ID3D11Texture2D> intermediateTexture;
-                    CHECK_HRCMD(m_pvrSubmissionDevice->CreateTexture2D(
-                        &desc, nullptr, intermediateTexture.ReleaseAndGetAddressOf()));
-                    setDebugName(intermediateTexture.Get(), fmt::format("App Texture[{}, {}]", i, (void*)&xrSwapchain));
-
-                    xrSwapchain.images.push_back(intermediateTexture);
-                } else {
-                    xrSwapchain.images.push_back(swapchainTexture);
-                }
+                xrSwapchain.images.push_back(swapchainTexture);
                 for (uint32_t i = 0; i < xrSwapchain.xrDesc.arraySize; i++) {
                     xrSwapchain.imagesResourceView[i].push_back({});
                     xrSwapchain.renderTargetView[i].push_back({});
@@ -538,7 +457,7 @@ namespace pimax_openxr {
             }
 
             // Export the HANDLE.
-            const auto texture = !xrSwapchain.needDepthConvert ? xrSwapchain.slices[0][i] : xrSwapchain.images[i].Get();
+            const auto texture = xrSwapchain.slices[0][i];
 
             ComPtr<IDXGIResource1> dxgiResource;
             CHECK_HRCMD(texture->QueryInterface(IID_PPV_ARGS(dxgiResource.ReleaseAndGetAddressOf())));
@@ -633,15 +552,15 @@ namespace pimax_openxr {
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
         const bool needPremultiplyAlpha = (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
         const bool needCopy = xrSwapchain.lastProcessedIndex[slice] == lastReleasedIndex ||
-                              (slice > 0 && !(xrSwapchain.needDepthConvert || needClearAlpha || needPremultiplyAlpha));
+                              (slice > 0 && !(needClearAlpha || needPremultiplyAlpha));
 
         if (needCopy) {
             // Circumvent some of PVR's limitations:
             // - For texture arrays, we must do a copy to slice 0 into another swapchain.
             // - Committing into a swapchain automatically acquires the next image. When an app renders certain
             //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current PVR swapchain
-            //   image. All the processing needed (eg: depth conversion or alpha correction) was done during initial
-            //   processing (the first time we saw the last released image), so no need to redo it.
+            //   image. All the processing needed (eg: alpha correction) was done during initial processing (the first
+            //   time we saw the last released image), so no need to redo it.
             m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex],
                                                           0,
                                                           0,
@@ -650,18 +569,14 @@ namespace pimax_openxr {
                                                           xrSwapchain.slices[0][lastReleasedIndex],
                                                           slice,
                                                           nullptr);
-        } else if (xrSwapchain.needDepthConvert || needClearAlpha || needPremultiplyAlpha) {
+        } else if (needClearAlpha || needPremultiplyAlpha) {
             // Circumvent some of PVR's limitations:
-            // - For unsupported depth format, we must do a conversion.
             // - For alpha-blended layers, we must pre-process the alpha channel.
-            // For unsupported depth formats or alpha-blended with texture arrays, we must also output into slice 0 of
+            // For alpha-blended layers with texture arrays, we must also output into slice 0 of
             // another swapchain (see other branch above).
             //
             // One more difficulty: because we use a compute shader, we cannot use an SRGB format as destination. We
             // might need to do a conversion pass at the very end.
-
-            // FIXME: Today we only do convert from D32_FLOAT_S8X24 to D32_FLOAT, so we hard-code the
-            // corresponding formats below.
 
             ensureSwapchainIntermediateResources(xrSwapchain);
 
@@ -671,8 +586,7 @@ namespace pimax_openxr {
 
                 desc.ViewDimension = xrSwapchain.xrDesc.arraySize == 1 ? D3D11_SRV_DIMENSION_TEXTURE2D
                                                                        : D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-                desc.Format = !xrSwapchain.needDepthConvert ? xrSwapchain.dxgiFormatForSubmission
-                                                            : DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+                desc.Format = xrSwapchain.dxgiFormatForSubmission;
                 desc.Texture2DArray.ArraySize = 1;
                 desc.Texture2DArray.MipLevels = xrSwapchain.xrDesc.mipCount;
                 desc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, slice, desc.Texture2DArray.MipLevels);
@@ -687,9 +601,7 @@ namespace pimax_openxr {
 
             // 0: shader for Tex2D, 1: shader for Tex2DArray.
             const int shaderToUse = xrSwapchain.xrDesc.arraySize == 1 ? 0 : 1;
-            if (xrSwapchain.needDepthConvert) {
-                m_pvrSubmissionContext->CSSetShader(m_depthConvertShader[shaderToUse].Get(), nullptr, 0);
-            } else {
+            {
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
                 CHECK_HRCMD(m_pvrSubmissionContext->Map(
                     xrSwapchain.convertConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
@@ -819,9 +731,7 @@ namespace pimax_openxr {
             {
                 D3D11_TEXTURE2D_DESC desc{};
                 desc.ArraySize = 1;
-                if (xrSwapchain.needDepthConvert) {
-                    desc.Format = DXGI_FORMAT_R32_TYPELESS;
-                } else if (!isSRGBDestination) {
+                if (!isSRGBDestination) {
                     desc.Format = getTypelessFormat(xrSwapchain.dxgiFormatForSubmission);
                 } else {
                     // Use a non-SRGB format that has enough precision to avoid loss of colors.
@@ -853,9 +763,7 @@ namespace pimax_openxr {
                 D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
 
                 desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-                if (xrSwapchain.needDepthConvert) {
-                    desc.Format = DXGI_FORMAT_R32_FLOAT;
-                } else if (!isSRGBDestination) {
+                if (!isSRGBDestination) {
                     desc.Format = xrSwapchain.dxgiFormatForSubmission;
                 } else {
                     desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;

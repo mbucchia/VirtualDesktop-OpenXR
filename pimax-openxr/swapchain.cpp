@@ -194,8 +194,8 @@ namespace pimax_openxr {
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".
                 // We could go and check every supported render target formats to find a possibly higher count, but we
                 // do not bother.
-                // TODO: We do not support MSAA swapchains today, as they are incompatible with our depth conversion and
-                // alpha correction shaders.
+                // TODO: We do not support MSAA swapchains today, as they are incompatible with our alpha correction
+                // shaders.
                 views[i].maxSwapchainSampleCount = 1;
                 views[i].recommendedSwapchainSampleCount = 1;
 
@@ -418,20 +418,12 @@ namespace pimax_openxr {
             desc.BindFlags |= pvrTextureBind_DX_UnorderedAccess;
         }
 
-        // There are 2 situations in PVR where we cannot use the PVR swapchain alone:
+        // There are situations in PVR where we cannot use the PVR swapchain alone:
         // - PVR does not let you submit a slice of a texture array and always reads from the first slice.
         //   To mitigate this, we will create several swapchains with ArraySize=1 and we will make copies during
         //   xrEndFrame().
-        //
-        // - PVR does not like the D32_FLOAT_S8X24 format.
-        //   To mitigate this, we will create a D32_FLOAT swapchain and perform a conversion during xrEndFrame().
 
         pvrTextureSwapChain pvrSwapchain{};
-        bool needDepthConvert = false;
-        if (desc.Format == PVR_FORMAT_D32_FLOAT_S8X24_UINT) {
-            desc.Format = PVR_FORMAT_D32_FLOAT;
-            needDepthConvert = true;
-        }
         CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &pvrSwapchain));
 
         // Create the internal struct.
@@ -445,7 +437,6 @@ namespace pimax_openxr {
         xrSwapchain.pvrDesc = desc;
         xrSwapchain.xrDesc = *createInfo;
         xrSwapchain.dxgiFormatForSubmission = dxgiFormatForSubmission;
-        xrSwapchain.needDepthConvert = needDepthConvert;
 
         // Lazily-filled state.
         for (int i = 1; i < desc.ArraySize; i++) {
@@ -461,10 +452,7 @@ namespace pimax_openxr {
         // Maintain a list of known swapchains for validation and cleanup.
         m_swapchains.insert(*swapchain);
 
-        TraceLoggingWrite(g_traceProvider,
-                          "xrCreateSwapchain",
-                          TLXArg(*swapchain, "Swapchain"),
-                          TLArg(needDepthConvert, "needDepthConvert"));
+        TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain", TLXArg(*swapchain, "Swapchain"));
 
         return XR_SUCCESS;
     }
@@ -605,7 +593,7 @@ namespace pimax_openxr {
 
         // Query the image index from PVR.
         int imageIndex = xrSwapchain.nextIndex;
-        if (!xrSwapchain.needDepthConvert && xrSwapchain.acquiredIndices.empty()) {
+        if (xrSwapchain.acquiredIndices.empty()) {
             // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a
             // bug.
             CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &imageIndex));

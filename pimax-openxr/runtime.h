@@ -258,6 +258,7 @@ namespace pimax_openxr {
             // limitation.
             std::vector<pvrTextureSwapChain> pvrSwapchain;
             int pvrSwapchainLength{0};
+            std::vector<ComPtr<ID3D11Texture2D>> images;
 
             // The cached textures used for copy between swapchains.
             std::vector<std::vector<ID3D11Texture2D*>> slices;
@@ -266,19 +267,13 @@ namespace pimax_openxr {
             std::deque<int> acquiredIndices;
             int lastWaitedIndex{-1};
             int lastReleasedIndex{-1};
+            uint32_t nextIndex{0};
 
             // Whether a static image swapchain has been acquired at least once.
             bool frozen{false};
 
-            // Certain depth formats require use to go through an intermediate texture and convert the
-            // texture later. We manage our own set of textures and image index.
-            bool needDepthConvert{false};
-            std::vector<ComPtr<ID3D11Texture2D>> images;
-            uint32_t nextIndex{0};
-
             // Resources needed to resolve MSAA and/or format conversion or alpha correction.
             std::vector<int> lastProcessedIndex;
-            bool needDownsample{false};
             std::vector<std::vector<ComPtr<ID3D11ShaderResourceView>>> imagesResourceView;
             std::vector<std::vector<ComPtr<ID3D11RenderTargetView>>> renderTargetView;
             ComPtr<ID3D11Texture2D> resolved;
@@ -551,7 +546,6 @@ namespace pimax_openxr {
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
         ComPtr<ID3D11DeviceContext4> m_pvrSubmissionContext;
         ComPtr<ID3D11Fence> m_pvrSubmissionFence;
-        ComPtr<ID3D11ComputeShader> m_depthConvertShader[2];
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
