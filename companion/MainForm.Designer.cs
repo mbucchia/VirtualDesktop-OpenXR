@@ -29,6 +29,7 @@ namespace companion
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
@@ -70,6 +71,7 @@ namespace companion
             this.enableTelemetry = new System.Windows.Forms.CheckBox();
             this.restoreDefaults = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.tableLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel3.SuspendLayout();
@@ -664,6 +666,7 @@ namespace companion
         private System.Windows.Forms.CheckBox enableQuadViews;
         private System.Windows.Forms.CheckBox enableUltraleap;
         private System.Windows.Forms.LinkLabel downloadUltraleap;
+        private System.Windows.Forms.ToolTip toolTip;
     }
 }
 

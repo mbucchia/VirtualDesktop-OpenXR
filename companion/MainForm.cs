@@ -182,6 +182,24 @@ namespace companion
             // Read the PimaxXR configuration.
             LoadSettings();
 
+            toolTip.SetToolTip(recenterMode, "When enabled, the position of your headset will be calibrated every time an application is started");
+            toolTip.SetToolTip(controllerEmulation, "Forces an application to \"see\" the specified motion controller type");
+            toolTip.SetToolTip(controllerEmulationLabel, "Forces an application to \"see\" the specified motion controller type");
+            toolTip.SetToolTip(joystickDeadzoneValue, "Specifies the deadzone (activation threshold) for the motion controller joysticks");
+            toolTip.SetToolTip(joystickLabel, "Specifies the deadzone (activation threshold) for the motion controller joysticks");
+            toolTip.SetToolTip(joystickDeadzone, "Specifies the deadzone (activation threshold) for the motion controller joysticks");
+            toolTip.SetToolTip(guardian, "When enabled, a circle will appear if you get too far away from your initial standing position");
+            toolTip.SetToolTip(guardianRadiusValue, "Specifies the radius (distance from your starting position) of the playspace guardian to draw");
+            toolTip.SetToolTip(guardianLabel1, "Specifies the radius (distance from your starting position) of the playspace guardian to draw");
+            toolTip.SetToolTip(guardianRadius, "Specifies the radius (distance from your starting position) of the playspace guardian to draw");
+            toolTip.SetToolTip(guardianThresholdValue, "Specifies how far from your starting position you can walk before the playspace guardian appears");
+            toolTip.SetToolTip(guardianLabel2, "Specifies how far from your starting position you can walk before the playspace guardian appears");
+            toolTip.SetToolTip(guardianThreshold, "Specifies how far from your starting position you can walk before the playspace guardian appears");
+            toolTip.SetToolTip(allowEyeTracking, "When enabled, the eye tracker (if any) of your headset can be used by applications or for foveated rendering");
+            toolTip.SetToolTip(enableQuadViews, "When enabled, supported applications can take advantage of multi-view to offer foveated rendering");
+            toolTip.SetToolTip(enableUltraleap, "When installed and enabled, the hand tracker (if any) of your headset can be used by applications\nNOTE: This option precludes finger sensing with Index motion controllers");
+            toolTip.SetToolTip(mirrorMode, "When enabled, a desktop window will be opened and mirror the view from the left eye of your headset");
+
             ResumeLayout();
 
             GetRuntimeStatus();
