@@ -73,6 +73,7 @@ namespace companion
         private string pimaxRuntimePath = "";
         private string pimax32RuntimePath = "";
         private string steamRuntimePath = "";
+        private string ultraleapLayerPath = "";
 
         public MainForm()
         {
@@ -152,6 +153,32 @@ namespace companion
                 MessageBox.Show(this, "Unable to identify the active OpenXR runtime: " + activeRuntime, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
+            // Locate the Ultraleap API layer.
+            try
+            {
+                key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("SOFTWARE\\Khronos\\OpenXR\\1\\ApiLayers\\Implicit");
+                var existingValues = key.GetValueNames();
+                foreach (var value in existingValues)
+                {
+                    if (value.EndsWith("\\UltraleapHandTracking.json"))
+                    {
+                        ultraleapLayerPath = value;
+                        enableUltraleap.Checked = (int)key.GetValue(value, 0) == 0 ? true : false;
+                        break;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                if (key != null)
+                {
+                    key.Close();
+                }
+            }
+
             // Read the PimaxXR configuration.
             LoadSettings();
 
@@ -174,7 +201,7 @@ namespace companion
                 // https://stackoverflow.com/questions/9620278/how-do-i-make-calls-to-a-rest-api-using-c
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
                 request.Method = "GET";
-                request.UserAgent = "PimaxXR/Updated";
+                request.UserAgent = "PimaxXR/Updater";
                 try
                 {
                     WebResponse webResponse = request.GetResponse();
@@ -305,7 +332,6 @@ namespace companion
 
                 // Must match the defaults in the runtime!
                 recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
-                swapGripAimPoses.Checked = (int)key.GetValue("swap_grip_aim_poses", 0) == 1 ? true : false;
                 controllerEmulation.SelectedIndex = (int)key.GetValue("force_interaction_profile", 0);
                 joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
                 guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
@@ -342,10 +368,12 @@ namespace companion
 
         private void RefreshEnabledState()
         {
-            runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = swapGripAimPoses.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
+            runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
                 joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = allowEyeTracking.Enabled = enableQuadViews.Enabled =
-                mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = telemetryLabel.Enabled = runtimePimax.Checked;
+                downloadUltraleap.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = telemetryLabel.Enabled =
+                runtimePimax.Checked;
             guardianLabel1.Enabled = guardianLabel2.Enabled = guardianRadius.Enabled = guardianRadiusValue.Enabled = guardianThreshold.Enabled = guardianThresholdValue.Enabled = guardian.Enabled && guardian.Checked;
+            enableUltraleap.Enabled = runtimePimax.Checked && ultraleapLayerPath != "";
         }
 
         private void runtimePimax_CheckedChanged(object sender, EventArgs e)
@@ -376,16 +404,6 @@ namespace companion
             }
 
             WriteSetting("recenter_on_startup", recenterMode.Checked ? 1 : 0);
-        }
-
-        private void swapGripAimPoses_CheckedChanged(object sender, EventArgs e)
-        {
-            if (loading)
-            {
-                return;
-            }
-
-            WriteSetting("swap_grip_aim_poses", swapGripAimPoses.Checked ? 1 : 0);
         }
 
         private void controllerEmulation_SelectedIndexChanged(object sender, EventArgs e)
@@ -475,6 +493,42 @@ namespace companion
             }
 
             MainForm.WriteSetting("disable_quad_views", enableQuadViews.Checked ? 0 : 1);
+        }
+
+        private void enableUltraleap_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            Microsoft.Win32.RegistryKey key = null;
+
+            try
+            {
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey("SOFTWARE\\Khronos\\OpenXR\\1\\ApiLayers\\Implicit");
+                key.SetValue(ultraleapLayerPath, enableUltraleap.Checked ? 0 : 1, Microsoft.Win32.RegistryValueKind.DWord);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (key != null)
+                {
+                    key.Close();
+                }
+            }
+        }
+
+        private void downloadUltraleap_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            string githubReleases = "https://developer.leapmotion.com/tracking-software-download";
+
+            downloadUltraleap.LinkVisited = true;
+            MessageBox.Show(this, "You will now be taken to the download page for the Ultraleap tracking software.\nOnce installed, please restart the PimaxXR Control Center.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            System.Diagnostics.Process.Start(githubReleases);
         }
 
         private void mirrorMode_CheckedChanged(object sender, EventArgs e)
