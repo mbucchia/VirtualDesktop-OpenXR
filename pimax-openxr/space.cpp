@@ -641,10 +641,6 @@ namespace pimax_openxr {
     XrSpaceLocationFlags OpenXrRuntime::getEyeTrackerPose(XrTime time,
                                                           XrPosef& pose,
                                                           XrEyeGazeSampleTimeEXT* sampleTime) const {
-        if (!m_isEyeTrackingAvailable) {
-            return 0;
-        }
-
         XrVector3f eyeGazeVector{0, 0, -1};
         double pvrSampleTime;
         if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, pvrSampleTime)) {

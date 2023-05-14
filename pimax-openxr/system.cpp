@@ -100,7 +100,11 @@ namespace pimax_openxr {
         // Ensure there is no stale parallel projection settings.
         CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
 
+        // Check that we have consent to share eye gaze data with applications.
+        m_isEyeTrackingAvailable = getSetting("allow_eye_tracking").value_or(false);
+
         // Detect eye tracker. This can take a while, so only do it when the app is requesting it.
+        m_preferFoveatedRendering = getSetting("prefer_foveated_rendering").value_or(false);
         m_eyeTrackingType = EyeTracking::None;
         if ((has_XR_VARJO_quad_views && (has_XR_VARJO_foveated_rendering || m_preferFoveatedRendering)) ||
             has_XR_EXT_eye_gaze_interaction) {
@@ -117,10 +121,9 @@ namespace pimax_openxr {
             }
 #endif
         }
-
-        // Check that we have consent to share eye gaze data with applications.
-        m_isEyeTrackingAvailable =
-            m_eyeTrackingType != EyeTracking::None && getSetting("allow_eye_tracking").value_or(false);
+        if (m_eyeTrackingType == EyeTracking::None) {
+            m_isEyeTrackingAvailable = m_preferFoveatedRendering = false;
+        }
 
         // Cache common information.
         CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
@@ -173,8 +176,6 @@ namespace pimax_openxr {
             m_horizontalFovSection[1] = getSetting("focus_horizontal_section_foveated").value_or(330) / 1e3f;
             m_verticalFovSection[0] = getSetting("focus_vertical_section").value_or(700) / 1e3f;
             m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(350) / 1e3f;
-            m_preferFoveatedRendering =
-                m_eyeTrackingType != EyeTracking::None && getSetting("prefer_foveated_rendering").value_or(false);
 
             // The horizontal sections are relative to small FOV level, transpose them into the current FOV level.
             // Each FOV level adds 20 degree.

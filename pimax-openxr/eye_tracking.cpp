@@ -35,6 +35,10 @@ namespace pimax_openxr {
     using namespace xr::math;
 
     bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const {
+        if (!m_isEyeTrackingAvailable) {
+            return false;
+        }
+
         if (m_eyeTrackingType == EyeTracking::PVR) {
             pvrEyeTrackingInfo state{};
             CHECK_PVRCMD(pvr_getEyeTrackingInfo(m_pvrSession, xrTimeToPvrTime(time), &state));
