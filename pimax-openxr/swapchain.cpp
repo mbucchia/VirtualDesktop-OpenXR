@@ -38,10 +38,10 @@ namespace pimax_openxr {
                                                           uint32_t* viewConfigurationTypeCountOutput,
                                                           XrViewConfigurationType* viewConfigurationTypes) {
         std::vector<XrViewConfigurationType> types;
-        types.push_back(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO);
         if (has_XR_VARJO_quad_views) {
             types.push_back(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO);
         }
+        types.push_back(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO);
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateViewConfigurations",
