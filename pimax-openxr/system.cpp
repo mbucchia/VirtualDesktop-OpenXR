@@ -345,7 +345,7 @@ namespace pimax_openxr {
         }
 
         if (has_XR_VARJO_foveated_rendering && foveatedProperties) {
-            foveatedProperties->supportsFoveatedRendering = m_eyeTrackingType != EyeTracking::None ? XR_TRUE : XR_FALSE;
+            foveatedProperties->supportsFoveatedRendering = m_isEyeTrackingAvailable ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
