@@ -210,6 +210,8 @@ namespace pimax_openxr {
             Log("Could not detect Pitool/Pimax Client version\n");
         }
 
+        m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(true);
+
         // Initialize PVR.
 
         // Detour hack: we always ensure compatibility with Windows 10 in order to make pvr_waitToBeginFrame()

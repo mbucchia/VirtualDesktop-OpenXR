@@ -261,7 +261,7 @@ namespace pimax_openxr {
             std::vector<ComPtr<ID3D11Texture2D>> images;
 
             // The cached textures used for copy between swapchains.
-            std::vector<std::vector<ID3D11Texture2D*>> slices;
+            std::vector<std::vector<ComPtr<ID3D11Texture2D>>> slices;
 
             // The last manipulated swapchain image index.
             std::deque<int> acquiredIndices;
@@ -440,6 +440,7 @@ namespace pimax_openxr {
         XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings);
         void cleanupD3D11();
         void initializeSubmissionDevice(const std::string& appGraphicsApi);
+        void initializeSubmissionResources();
         void cleanupSubmissionDevice();
         std::vector<HANDLE> getSwapchainImages(Swapchain& xrSwapchain);
         XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain, XrSwapchainImageD3D11KHR* d3d11Images, uint32_t count);
@@ -447,7 +448,7 @@ namespace pimax_openxr {
                                             uint32_t layerIndex,
                                             uint32_t slice,
                                             XrCompositionLayerFlags compositionFlags,
-                                            std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const;
+                                            std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void ensureSwapchainIntermediateResources(Swapchain& xrSwapchain) const;
         void flushD3D11Context();
@@ -526,6 +527,7 @@ namespace pimax_openxr {
         bool m_needWorldLockedQuadLayerQuirk{false};
         bool m_disableFramePipeliningQuirk{false};
         bool m_alwaysUseFrameIdZero{false};
+        bool m_useApplicationDeviceForSubmission{true};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
 #ifndef NOASEEVRCLIENT
         aSeeVRCoefficient m_droolonCoefficients{};
@@ -546,6 +548,7 @@ namespace pimax_openxr {
         // Session state.
         ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
         ComPtr<ID3D11DeviceContext4> m_pvrSubmissionContext;
+        ComPtr<ID3DDeviceContextState> m_pvrSubmissionContextState;
         ComPtr<ID3D11Fence> m_pvrSubmissionFence;
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
@@ -616,6 +619,7 @@ namespace pimax_openxr {
         // Graphics API interop.
         ComPtr<ID3D11Device5> m_d3d11Device;
         ComPtr<ID3D11DeviceContext4> m_d3d11Context;
+        ComPtr<ID3DDeviceContextState> m_d3d11ContextState;
         ComPtr<ID3D12Device> m_d3d12Device;
         ComPtr<ID3D12CommandQueue> m_d3d12CommandQueue;
         ComPtr<ID3D12CommandAllocator> m_d3d12CommandAllocator;

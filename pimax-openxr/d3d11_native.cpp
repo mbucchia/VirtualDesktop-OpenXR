@@ -195,8 +195,36 @@ namespace pimax_openxr {
         d3dBindings.device->GetImmediateContext(deviceContext.ReleaseAndGetAddressOf());
         CHECK_HRCMD(deviceContext->QueryInterface(m_d3d11Context.ReleaseAndGetAddressOf()));
 
-        // Create the resources that PVR will be using.
-        initializeSubmissionDevice("D3D11");
+        if (m_useApplicationDeviceForSubmission) {
+            // Try reusing the application device to avoid fence synchronization every frame.
+            const std::string deviceName = xr::wide_to_utf8(desc.Description);
+            TraceLoggingWrite(
+                g_traceProvider, "xrCreateSession", TLArg("D3D11", "Api"), TLArg(deviceName.c_str(), "AdapterName"));
+            Log("Using D3D11 on adapter: %s\n", deviceName.c_str());
+
+            m_pvrSubmissionDevice = m_d3d11Device;
+            m_pvrSubmissionContext = m_d3d11Context;
+
+            UINT creationFlags = 0;
+            if (m_pvrSubmissionDevice->GetCreationFlags() & D3D11_CREATE_DEVICE_SINGLETHREADED) {
+                creationFlags |= D3D11_1_CREATE_DEVICE_CONTEXT_STATE_SINGLETHREADED;
+            }
+            const D3D_FEATURE_LEVEL featureLevel = m_pvrSubmissionDevice->GetFeatureLevel();
+
+            CHECK_HRCMD(
+                m_pvrSubmissionDevice->CreateDeviceContextState(creationFlags,
+                                                                &featureLevel,
+                                                                1,
+                                                                D3D11_SDK_VERSION,
+                                                                __uuidof(ID3D11Device),
+                                                                nullptr,
+                                                                m_pvrSubmissionContextState.ReleaseAndGetAddressOf()));
+
+            initializeSubmissionResources();
+        } else {
+            // Create the resources that PVR will be using.
+            initializeSubmissionDevice("D3D11");
+        }
 
         // We will use a shared fence to synchronize between the application context and the PVR (submission) context
         // context.
@@ -261,9 +289,10 @@ namespace pimax_openxr {
         CHECK_HRCMD(device->QueryInterface(m_pvrSubmissionDevice.ReleaseAndGetAddressOf()));
         CHECK_HRCMD(deviceContext->QueryInterface(m_pvrSubmissionContext.ReleaseAndGetAddressOf()));
 
-        ComPtr<IDXGIDevice> dxgiDevice;
-        CHECK_HRCMD(device->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
+        initializeSubmissionResources();
+    }
 
+    void OpenXrRuntime::initializeSubmissionResources() {
         // Create the synchronization fence to serialize work between the application device and submission device.
         CHECK_HRCMD(m_pvrSubmissionDevice->CreateFence(
             0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_pvrSubmissionFence.ReleaseAndGetAddressOf())));
@@ -380,6 +409,12 @@ namespace pimax_openxr {
             swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
             swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
+            ComPtr<IDXGIDevice> dxgiDevice;
+            CHECK_HRCMD(m_pvrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
+
+            ComPtr<IDXGIAdapter> dxgiAdapter;
+            CHECK_HRCMD(dxgiDevice->GetAdapter(dxgiAdapter.ReleaseAndGetAddressOf()));
+
             ComPtr<IDXGIFactory2> dxgiFactory;
             CHECK_HRCMD(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
             CHECK_HRCMD(dxgiFactory->CreateSwapChainForComposition(
@@ -394,6 +429,7 @@ namespace pimax_openxr {
             m_gpuTimerApp[i].reset();
         }
 
+        m_d3d11ContextState.Reset();
         m_d3d11Context.Reset();
         m_d3d11Device.Reset();
     }
@@ -411,6 +447,7 @@ namespace pimax_openxr {
         }
 
         m_pvrSubmissionFence.Reset();
+        m_pvrSubmissionContextState.Reset();
         m_pvrSubmissionContext.Reset();
         m_pvrSubmissionDevice.Reset();
     }
@@ -424,10 +461,13 @@ namespace pimax_openxr {
         std::vector<HANDLE> handles;
         for (int i = 0; i < xrSwapchain.pvrSwapchainLength; i++) {
             if (!initialized) {
-                ID3D11Texture2D* swapchainTexture;
-                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                    m_pvrSession, xrSwapchain.pvrSwapchain[0], i, IID_PPV_ARGS(&swapchainTexture)));
-                setDebugName(swapchainTexture, fmt::format("PVR Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
+                ComPtr<ID3D11Texture2D> swapchainTexture;
+                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(m_pvrSession,
+                                                             xrSwapchain.pvrSwapchain[0],
+                                                             i,
+                                                             IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
+                setDebugName(swapchainTexture.Get(),
+                             fmt::format("PVR Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
                 xrSwapchain.slices[0].push_back(swapchainTexture);
                 if (i == 0) {
@@ -477,6 +517,7 @@ namespace pimax_openxr {
                                                     uint32_t count) {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
+        const bool skipSharing = m_pvrSubmissionDevice == m_d3d11Device;
 
         std::vector<HANDLE> textureHandles;
         if (!initialized) {
@@ -491,10 +532,18 @@ namespace pimax_openxr {
             }
 
             if (!initialized) {
-                // Create an imported texture on the application device.
                 ComPtr<ID3D11Texture2D> d3d11Texture;
-                CHECK_HRCMD(m_d3d11Device->OpenSharedResource(textureHandles[i],
-                                                              IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                if (!skipSharing) {
+                    // Create an imported texture on the application device.
+                    CHECK_HRCMD(m_d3d11Device->OpenSharedResource(textureHandles[i],
+                                                                  IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                } else {
+                    CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(m_pvrSession,
+                                                                 xrSwapchain.pvrSwapchain[0],
+                                                                 i,
+                                                                 IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                }
+
                 setDebugName(d3d11Texture.Get(), fmt::format("App Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
                 xrSwapchain.d3d11Images.push_back(d3d11Texture);
@@ -531,12 +580,11 @@ namespace pimax_openxr {
     }
 
     // Prepare a PVR swapchain to be used by PVR.
-    void
-    OpenXrRuntime::prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
-                                                  uint32_t layerIndex,
-                                                  uint32_t slice,
-                                                  XrCompositionLayerFlags compositionFlags,
-                                                  std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) const {
+    void OpenXrRuntime::prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
+                                                       uint32_t layerIndex,
+                                                       uint32_t slice,
+                                                       XrCompositionLayerFlags compositionFlags,
+                                                       std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) {
         // If the texture was never used or already committed, do nothing.
         if (xrSwapchain.slices[0].empty() || committed.count(std::make_pair(xrSwapchain.pvrSwapchain[0], slice))) {
             return;
@@ -561,12 +609,12 @@ namespace pimax_openxr {
             //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current PVR swapchain
             //   image. All the processing needed (eg: alpha correction) was done during initial processing (the first
             //   time we saw the last released image), so no need to redo it.
-            m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex],
+            m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex].Get(),
                                                           0,
                                                           0,
                                                           0,
                                                           0,
-                                                          xrSwapchain.slices[0][lastReleasedIndex],
+                                                          xrSwapchain.slices[0][lastReleasedIndex].Get(),
                                                           slice,
                                                           nullptr);
         } else if (needClearAlpha || needPremultiplyAlpha) {
@@ -597,6 +645,13 @@ namespace pimax_openxr {
                     xrSwapchain.imagesResourceView[slice][lastReleasedIndex].ReleaseAndGetAddressOf()));
                 setDebugName(xrSwapchain.imagesResourceView[slice][lastReleasedIndex].Get(),
                              fmt::format("Convert SRV[{}, {}, {}]", slice, lastReleasedIndex, (void*)&xrSwapchain));
+            }
+
+            // We are about to do something destructive to the application context. Save the context. It will be
+            // restored at the end of xrEndFrame().
+            if (m_d3d11Device == m_pvrSubmissionDevice && !m_d3d11ContextState) {
+                m_pvrSubmissionContext->SwapDeviceContextState(m_pvrSubmissionContextState.Get(),
+                                                               m_d3d11ContextState.ReleaseAndGetAddressOf());
             }
 
             // 0: shader for Tex2D, 1: shader for Tex2DArray.
@@ -635,7 +690,7 @@ namespace pimax_openxr {
             // Final copy into the PVR texture.
             if (!isSRGBFormat(xrSwapchain.dxgiFormatForSubmission)) {
                 m_pvrSubmissionContext->CopySubresourceRegion(
-                    xrSwapchain.slices[slice][pvrDestIndex], 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
+                    xrSwapchain.slices[slice][pvrDestIndex].Get(), 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
             } else {
                 // Lazily create RTV.
                 if (!xrSwapchain.renderTargetView[slice][pvrDestIndex]) {
@@ -651,7 +706,7 @@ namespace pimax_openxr {
                     desc.Texture2DArray.FirstArraySlice = slice;
 
                     CHECK_HRCMD(m_pvrSubmissionDevice->CreateRenderTargetView(
-                        xrSwapchain.slices[slice][pvrDestIndex],
+                        xrSwapchain.slices[slice][pvrDestIndex].Get(),
                         &desc,
                         xrSwapchain.renderTargetView[slice][pvrDestIndex].ReleaseAndGetAddressOf()));
                     setDebugName(xrSwapchain.renderTargetView[slice][lastReleasedIndex].Get(),
@@ -713,10 +768,11 @@ namespace pimax_openxr {
 
             // Query the textures for the swapchain.
             for (int i = 0; i < count; i++) {
-                ID3D11Texture2D* texture = nullptr;
+                ComPtr<ID3D11Texture2D> texture;
                 CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                    m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(&texture)));
-                setDebugName(texture, fmt::format("Runtime Sliced Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
+                    m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(texture.ReleaseAndGetAddressOf())));
+                setDebugName(texture.Get(),
+                             fmt::format("Runtime Slice Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
 
                 xrSwapchain.slices[slice].push_back(texture);
             }
@@ -821,11 +877,14 @@ namespace pimax_openxr {
 
     // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.
     void OpenXrRuntime::serializeD3D11Frame() {
-        m_fenceValue++;
-        TraceLoggingWrite(g_traceProvider, "xrEndFrame_Sync", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        CHECK_HRCMD(m_d3d11Context->Signal(m_d3d11Fence.Get(), m_fenceValue));
+        if (m_pvrSubmissionDevice != m_d3d11Device) {
+            m_fenceValue++;
+            TraceLoggingWrite(
+                g_traceProvider, "xrEndFrame_Sync", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
+            CHECK_HRCMD(m_d3d11Context->Signal(m_d3d11Fence.Get(), m_fenceValue));
 
-        waitOnSubmissionDevice();
+            waitOnSubmissionDevice();
+        }
     }
 
     void OpenXrRuntime::waitOnSubmissionDevice() {

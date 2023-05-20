@@ -565,11 +565,11 @@ namespace pimax_openxr {
                 // Copy and commit the guardian texture to the swapchain.
                 int imageIndex = -1;
                 CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_guardianSwapchain, &imageIndex));
-                ID3D11Texture2D* swapchainTexture;
+                ComPtr<ID3D11Texture2D> swapchainTexture;
                 CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                    m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(&swapchainTexture)));
+                    m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
 
-                m_pvrSubmissionContext->CopyResource(swapchainTexture, texture.Get());
+                m_pvrSubmissionContext->CopyResource(swapchainTexture.Get(), texture.Get());
                 m_pvrSubmissionContext->Flush();
                 CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
             } else {

@@ -386,6 +386,14 @@ namespace pimax_openxr {
                 serializeD3D11Frame();
             }
 
+            // Ensure that we always restore the application device context if needed.
+            auto scopeGuard = MakeScopeGuard([&] {
+                if (m_d3d11ContextState) {
+                    m_d3d11Context->SwapDeviceContextState(m_d3d11ContextState.Get(), nullptr);
+                    m_d3d11ContextState.Reset();
+                }
+            });
+
             // Handle recentering via keyboard input when the app does not poll for motion controllers.
             if (!m_actionsSyncedThisFrame) {
                 handleBuiltinActions();

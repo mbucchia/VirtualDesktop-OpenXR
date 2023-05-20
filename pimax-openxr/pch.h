@@ -97,6 +97,7 @@ using Microsoft::WRL::ComPtr;
 #include <XrMath.h>
 #include <XrStereoView.h>
 #include <XrToString.h>
+#include <ScopeGuard.h>
 
 // This header is not compatible with XR_NO_PROTOTYPES... We make a couple of symbols for now.
 #define xrStringToPath(...) XR_ERROR_RUNTIME_FAILURE
