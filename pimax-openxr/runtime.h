@@ -362,6 +362,7 @@ namespace pimax_openxr {
 
         // system.cpp
         void fillDisplayDeviceInfo();
+        void ensurePvrSession();
 
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);

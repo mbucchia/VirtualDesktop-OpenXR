@@ -271,6 +271,20 @@ namespace pimax_openxr {
         m_sessionStopping = false;
         m_sessionExiting = false;
 
+        // Workaround: PVR ties the last use D3D device to the PVR session, and therefore we must teardown the previous
+        // PVR session to clear that state. Because OpenComposite tends to call many API in unconventional order, we
+        // reset the session here.
+        {
+            // Workaround: the environment doesn't appear to be cleared when re-initializing PVR. Clear the one pointer
+            // we care about.
+            m_pvrSession->envh->pvr_dxgl_interface = nullptr;
+
+            pvr_destroySession(m_pvrSession);
+            m_pvrSession = nullptr;
+
+            ensurePvrSession();
+        }
+
         return XR_SUCCESS;
     }
 

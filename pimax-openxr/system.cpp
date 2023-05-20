@@ -97,6 +97,8 @@ namespace pimax_openxr {
             m_loggedProductName = true;
         }
 
+        // Important: anything below that set some state into the PVR session must be duplicated to ensurePvrSession().
+
         // Ensure there is no stale parallel projection settings.
         CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
 
@@ -430,6 +432,14 @@ namespace pimax_openxr {
         m_frameDuration = 1.0 / info.refresh_rate;
 
         memcpy(&m_adapterLuid, &info.luid, sizeof(LUID));
+    }
+
+    void OpenXrRuntime::ensurePvrSession() {
+        if (!m_pvrSession) {
+            CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
+            CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", m_useParallelProjection));
+            CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
+        }
     }
 
 } // namespace pimax_openxr
