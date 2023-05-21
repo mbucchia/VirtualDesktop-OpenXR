@@ -195,6 +195,7 @@ namespace companion
             toolTip.SetToolTip(guardianThresholdValue, "Specifies how far from your starting position you can walk before the playspace guardian appears");
             toolTip.SetToolTip(guardianLabel2, "Specifies how far from your starting position you can walk before the playspace guardian appears");
             toolTip.SetToolTip(guardianThreshold, "Specifies how far from your starting position you can walk before the playspace guardian appears");
+            toolTip.SetToolTip(preferFramerate, "When enabled, maximizing the usage of your GPU will be preferred, at the cost of extra frame latency");
             toolTip.SetToolTip(allowEyeTracking, "When enabled, the eye tracker (if any) of your headset can be used by applications or for foveated rendering");
             toolTip.SetToolTip(enableQuadViews, "When enabled, supported applications can take advantage of multi-view to offer foveated rendering");
             toolTip.SetToolTip(enableUltraleap, "When installed and enabled, the hand tracker (if any) of your headset can be used by applications\nNOTE: This option precludes finger sensing with Index motion controllers");
@@ -355,6 +356,7 @@ namespace companion
                 guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
                 guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
                 guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
+                preferFramerate.Checked = (int)key.GetValue("defer_frame_wait", 1) == 1 ? true : false;
                 allowEyeTracking.Checked = (int)key.GetValue("allow_eye_tracking", 0) == 1 ? true : false;
                 enableQuadViews.Checked = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
                 mirrorMode.Checked = (int)key.GetValue("mirror_window", 0) == 1 ? true : false;
@@ -387,7 +389,7 @@ namespace companion
         private void RefreshEnabledState()
         {
             runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
-                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = allowEyeTracking.Enabled = enableQuadViews.Enabled =
+                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = preferFramerate.Enabled = allowEyeTracking.Enabled = enableQuadViews.Enabled =
                 downloadUltraleap.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = telemetryLabel.Enabled =
                 runtimePimax.Checked;
             guardianLabel1.Enabled = guardianLabel2.Enabled = guardianRadius.Enabled = guardianRadiusValue.Enabled = guardianThreshold.Enabled = guardianThresholdValue.Enabled = guardian.Enabled && guardian.Checked;
@@ -491,6 +493,15 @@ namespace companion
                 guardianRadius.Value = guardianThreshold.Value;
                 guardianRadius_Scroll(null, null);
             }
+        }
+        private void preferFramerate_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("defer_frame_wait", preferFramerate.Checked ? 1 : 0);
         }
 
         private void allowEyeTracking_CheckedChanged(object sender, EventArgs e)

@@ -502,6 +502,8 @@ namespace pimax_openxr {
 
         m_droolonProjectionDistance = getSetting("droolon_projection_distance").value_or(35) / 100.f;
 
+        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(true);
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",

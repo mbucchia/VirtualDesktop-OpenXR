@@ -604,6 +604,8 @@ namespace pimax_openxr {
         pvrMirrorTexture m_pvrMirrorSwapChain{nullptr};
         ComPtr<ID3D11Texture2D> m_mirrorTexture;
         bool m_debugFocusViews{false};
+        bool m_useDeferredFrameWait{true};
+        bool m_useDeferredFrameWaitThisFrame{false};
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;

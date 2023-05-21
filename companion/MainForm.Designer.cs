@@ -62,6 +62,7 @@ namespace companion
             this.guardianThresholdValue = new System.Windows.Forms.TextBox();
             this.guardianLabel2 = new System.Windows.Forms.Label();
             this.guardianThreshold = new System.Windows.Forms.TrackBar();
+            this.preferFramerate = new System.Windows.Forms.CheckBox();
             this.allowEyeTracking = new System.Windows.Forms.CheckBox();
             this.enableQuadViews = new System.Windows.Forms.CheckBox();
             this.enableUltraleap = new System.Windows.Forms.CheckBox();
@@ -102,7 +103,7 @@ namespace companion
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 825);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 841);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -111,7 +112,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.startTrace);
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 751);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 767);
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
@@ -206,7 +207,7 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.gotoDownloads);
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 807);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 823);
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 16);
@@ -256,6 +257,7 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.guardianThresholdValue);
             this.flowLayoutPanel4.Controls.Add(this.guardianLabel2);
             this.flowLayoutPanel4.Controls.Add(this.guardianThreshold);
+            this.flowLayoutPanel4.Controls.Add(this.preferFramerate);
             this.flowLayoutPanel4.Controls.Add(this.allowEyeTracking);
             this.flowLayoutPanel4.Controls.Add(this.enableQuadViews);
             this.flowLayoutPanel4.Controls.Add(this.enableUltraleap);
@@ -268,7 +270,7 @@ namespace companion
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 149);
             this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
-            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 598);
+            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 614);
             this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
@@ -482,15 +484,28 @@ namespace companion
             this.guardianThreshold.Value = 100;
             this.guardianThreshold.Scroll += new System.EventHandler(this.guardianThreshold_Scroll);
             // 
+            // preferFramerate
+            // 
+            this.preferFramerate.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.preferFramerate, true);
+            this.preferFramerate.Location = new System.Drawing.Point(3, 367);
+            this.preferFramerate.Name = "preferFramerate";
+            this.preferFramerate.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.preferFramerate.Size = new System.Drawing.Size(232, 17);
+            this.preferFramerate.TabIndex = 21;
+            this.preferFramerate.Text = "Prefer framerate over latency (Turbo Mode)";
+            this.preferFramerate.UseVisualStyleBackColor = true;
+            this.preferFramerate.CheckedChanged += new System.EventHandler(this.preferFramerate_CheckedChanged);
+            // 
             // allowEyeTracking
             // 
             this.allowEyeTracking.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.allowEyeTracking, true);
-            this.allowEyeTracking.Location = new System.Drawing.Point(3, 367);
+            this.allowEyeTracking.Location = new System.Drawing.Point(3, 390);
             this.allowEyeTracking.Name = "allowEyeTracking";
             this.allowEyeTracking.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.allowEyeTracking.Size = new System.Drawing.Size(160, 17);
-            this.allowEyeTracking.TabIndex = 21;
+            this.allowEyeTracking.TabIndex = 22;
             this.allowEyeTracking.Text = "Allow use of the eye tracker";
             this.allowEyeTracking.UseVisualStyleBackColor = true;
             this.allowEyeTracking.CheckedChanged += new System.EventHandler(this.allowEyeTracking_CheckedChanged);
@@ -499,11 +514,11 @@ namespace companion
             // 
             this.enableQuadViews.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableQuadViews, true);
-            this.enableQuadViews.Location = new System.Drawing.Point(3, 390);
+            this.enableQuadViews.Location = new System.Drawing.Point(3, 413);
             this.enableQuadViews.Name = "enableQuadViews";
             this.enableQuadViews.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableQuadViews.Size = new System.Drawing.Size(306, 17);
-            this.enableQuadViews.TabIndex = 22;
+            this.enableQuadViews.TabIndex = 23;
             this.enableQuadViews.Text = "Enable Quad Views rendering (with supported applications)";
             this.enableQuadViews.UseVisualStyleBackColor = true;
             this.enableQuadViews.CheckedChanged += new System.EventHandler(this.enableQuadViews_CheckedChanged);
@@ -512,11 +527,11 @@ namespace companion
             // 
             this.enableUltraleap.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableUltraleap, true);
-            this.enableUltraleap.Location = new System.Drawing.Point(3, 413);
+            this.enableUltraleap.Location = new System.Drawing.Point(3, 436);
             this.enableUltraleap.Name = "enableUltraleap";
             this.enableUltraleap.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableUltraleap.Size = new System.Drawing.Size(310, 17);
-            this.enableUltraleap.TabIndex = 23;
+            this.enableUltraleap.TabIndex = 24;
             this.enableUltraleap.Text = "Enable Hand Tracking module (with supported applications)";
             this.enableUltraleap.UseVisualStyleBackColor = true;
             this.enableUltraleap.CheckedChanged += new System.EventHandler(this.enableUltraleap_CheckedChanged);
@@ -525,11 +540,11 @@ namespace companion
             // 
             this.downloadUltraleap.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.downloadUltraleap, true);
-            this.downloadUltraleap.Location = new System.Drawing.Point(3, 433);
+            this.downloadUltraleap.Location = new System.Drawing.Point(3, 456);
             this.downloadUltraleap.Name = "downloadUltraleap";
             this.downloadUltraleap.Padding = new System.Windows.Forms.Padding(18, 0, 0, 0);
             this.downloadUltraleap.Size = new System.Drawing.Size(283, 13);
-            this.downloadUltraleap.TabIndex = 24;
+            this.downloadUltraleap.TabIndex = 25;
             this.downloadUltraleap.TabStop = true;
             this.downloadUltraleap.Text = "Download or update Ultraleap Hand Tracking software";
             this.downloadUltraleap.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.downloadUltraleap_LinkClicked);
@@ -538,11 +553,11 @@ namespace companion
             // 
             this.mirrorMode.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.mirrorMode, true);
-            this.mirrorMode.Location = new System.Drawing.Point(3, 449);
+            this.mirrorMode.Location = new System.Drawing.Point(3, 472);
             this.mirrorMode.Name = "mirrorMode";
             this.mirrorMode.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
             this.mirrorMode.Size = new System.Drawing.Size(123, 20);
-            this.mirrorMode.TabIndex = 25;
+            this.mirrorMode.TabIndex = 26;
             this.mirrorMode.Text = "Show mirror window";
             this.mirrorMode.UseVisualStyleBackColor = true;
             this.mirrorMode.CheckedChanged += new System.EventHandler(this.mirrorMode_CheckedChanged);
@@ -551,11 +566,11 @@ namespace companion
             // 
             this.telemetryLabel.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.telemetryLabel, true);
-            this.telemetryLabel.Location = new System.Drawing.Point(3, 472);
+            this.telemetryLabel.Location = new System.Drawing.Point(3, 495);
             this.telemetryLabel.Name = "telemetryLabel";
             this.telemetryLabel.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
             this.telemetryLabel.Size = new System.Drawing.Size(395, 35);
-            this.telemetryLabel.TabIndex = 26;
+            this.telemetryLabel.TabIndex = 27;
             this.telemetryLabel.Text = "Our telemetry does not affect performance, is anonymous and helps the developer w" +
     "ith application support.";
             // 
@@ -563,23 +578,23 @@ namespace companion
             // 
             this.enableTelemetry.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableTelemetry, true);
-            this.enableTelemetry.Location = new System.Drawing.Point(2, 509);
+            this.enableTelemetry.Location = new System.Drawing.Point(2, 532);
             this.enableTelemetry.Margin = new System.Windows.Forms.Padding(2);
             this.enableTelemetry.Name = "enableTelemetry";
             this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
             this.enableTelemetry.Size = new System.Drawing.Size(139, 23);
-            this.enableTelemetry.TabIndex = 27;
+            this.enableTelemetry.TabIndex = 28;
             this.enableTelemetry.Text = "Enable usage telemetry";
             this.enableTelemetry.UseVisualStyleBackColor = true;
             this.enableTelemetry.CheckedChanged += new System.EventHandler(this.enableTelemetry_CheckedChanged);
             // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 546);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 569);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 28;
+            this.restoreDefaults.TabIndex = 29;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);
@@ -600,7 +615,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(406, 825);
+            this.ClientSize = new System.Drawing.Size(406, 841);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -667,6 +682,7 @@ namespace companion
         private System.Windows.Forms.CheckBox enableUltraleap;
         private System.Windows.Forms.LinkLabel downloadUltraleap;
         private System.Windows.Forms.ToolTip toolTip;
+        private System.Windows.Forms.CheckBox preferFramerate;
     }
 }
 

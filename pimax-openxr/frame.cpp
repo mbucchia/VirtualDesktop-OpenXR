@@ -141,19 +141,23 @@ namespace pimax_openxr {
 
             // Wait for PVR to be ready for the next frame.
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited : 0;
-            if (!skipPvrWait) {
-                TraceLocalActivity(waitToBeginFrame);
-                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
-                // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
-                // message:
-                //   [PVR] wait rendering complete event failed:258
-                // Let's ignore this for now and hope for the best.
-                const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
-                if (result != pvr_success) {
-                    ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+            if (!m_useDeferredFrameWaitThisFrame) {
+                if (!skipPvrWait) {
+                    TraceLocalActivity(waitToBeginFrame);
+                    TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
+                    // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
+                    // message:
+                    //   [PVR] wait rendering complete event failed:258
+                    // Let's ignore this for now and hope for the best.
+                    const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
+                    if (result != pvr_success) {
+                        ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                    }
+                    TraceLoggingWriteStop(
+                        waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
                 }
-                TraceLoggingWriteStop(
-                    waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+            } else {
+                TraceLoggingWrite(g_traceProvider, "PVR_WaitToBeginFrame_Deferred", TLArg(pvrFrameId, "FrameIndex"));
             }
 
             if (IsTraceEnabled()) {
@@ -252,7 +256,7 @@ namespace pimax_openxr {
 
             // Tell PVR we are about to begin the frame.
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited - 1 : 0;
-            {
+            if (!m_useDeferredFrameWaitThisFrame) {
                 TraceLocalActivity(beginFrame);
                 TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"));
                 // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
@@ -264,6 +268,8 @@ namespace pimax_openxr {
                     ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
                 }
                 TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+            } else {
+                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Deferred", TLArg(pvrFrameId, "FrameIndex"));
             }
 
             // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
@@ -810,6 +816,42 @@ namespace pimax_openxr {
             }
 
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameBegun - 1 : 0;
+
+            // Perform deferred frame wait (aka Turbo Mode) just before pvr_endFrame().
+            if (m_useDeferredFrameWaitThisFrame) {
+                {
+                    TraceLocalActivity(waitToBeginFrame);
+                    TraceLoggingWriteStart(waitToBeginFrame,
+                                           "PVR_WaitToBeginFrame",
+                                           TLArg(pvrFrameId, "FrameIndex"),
+                                           TLArg(true, "Deferred"));
+                    // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
+                    // message:
+                    //   [PVR] wait rendering complete event failed:258
+                    // Let's ignore this for now and hope for the best.
+                    const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
+                    if (result != pvr_success) {
+                        ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                    }
+                    TraceLoggingWriteStop(
+                        waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                }
+                {
+                    TraceLocalActivity(beginFrame);
+                    TraceLoggingWriteStart(
+                        beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"), TLArg(true, "Deferred"));
+                    // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
+                    // message:
+                    //   [PVR] wait rendering complete event failed:258
+                    // Let's ignore this for now and hope for the best.
+                    const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
+                    if (result != pvr_success) {
+                        ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                    }
+                    TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                }
+            }
+
             TraceLocalActivity(endFrame);
             TraceLoggingWriteStart(endFrame,
                                    "PVR_EndFrame",
@@ -837,6 +879,8 @@ namespace pimax_openxr {
             updateSessionState();
 
             m_currentTimerIndex = (m_currentTimerIndex + 1) % k_numGpuTimers;
+
+            m_useDeferredFrameWaitThisFrame = m_useDeferredFrameWait;
 
             m_sessionTotalFrameCount++;
 
