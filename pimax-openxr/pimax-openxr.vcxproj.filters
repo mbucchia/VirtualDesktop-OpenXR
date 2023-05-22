@@ -12,6 +12,9 @@
     <Filter Include="Framework">
       <UniqueIdentifier>{060fbbc6-44b1-4494-b904-cb9719cec138}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{73ee9eb9-ee06-4f4a-8e05-87a550165032}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -132,8 +135,25 @@
     </None>
     <None Include="packages.config" />
     <None Include="pimax-openxr-32.json" />
+    <None Include="AlphaBlending.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="FullScreenQuadVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PassthroughPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="AlphaBlendingCS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="AlphaBlendingTexArrayCS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

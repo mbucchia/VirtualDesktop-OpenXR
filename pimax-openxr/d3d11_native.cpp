@@ -26,102 +26,14 @@
 #include "runtime.h"
 #include "utils.h"
 
+#include "AlphaBlendingCS.h"
+#include "AlphaBlendingTexArrayCS.h"
+#include "FullScreenQuadVS.h"
+#include "PassthroughPS.h"
+
 // Implements native support to submit swapchains to PVR.
 // Implements the necessary support for the XR_KHR_D3D11_enable extension:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_D3D11_enable
-
-namespace {
-
-    // Compute shaders for correcting alpha channel.
-    // Clear the alpha channel or premultiply each component.
-    const std::string_view AlphaCorrectShaderHlsl =
-        R"_(
-cbuffer config : register(b0) {
-    int mode; // bit 0 = clear alpha, bit 1 = premultiply alpha.
-};
-Texture2D in_texture : register(t0);
-Texture2DArray in_texture_array : register(t0);
-RWTexture2D<float4> out_texture : register(u0);
-
-float4 processAlpha(float4 input)
-{
-    float4 output = input;
-    if (mode & 1) {
-      output.a = 1;
-    }
-    if (mode & 2) {
-      output.rgb = output.rgb * output.a;
-    }
-    return output;
-}
-
-[numthreads(8, 8, 1)]
-void main(uint2 pos : SV_DispatchThreadID)
-{
-    out_texture[pos] = processAlpha(in_texture[pos]);
-}
-
-[numthreads(8, 8, 1)]
-void mainForArray(uint2 pos : SV_DispatchThreadID)
-{
-    out_texture[pos] = processAlpha(in_texture_array[float3(pos, 0)]);
-}
-    )_";
-
-    // Vertex and pixel shader for color conversion.
-    const std::string_view FullQuadColorConversionShader = R"_(
-void vsMain(in uint id : SV_VertexID, out float4 position : SV_POSITION, out float2 texcoord : TEXCOORD0)
-{
-    texcoord = float2((id == 1) ? 2.0 : 0.0, (id == 2) ? 2.0 : 0.0);
-    position = float4(texcoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
-}
-
-SamplerState sourceSampler : register(s0);
-Texture2D sourceTexture : register(t0);
-
-float4 psMain(in float4 position : SV_POSITION, in float2 texcoord : TEXCOORD0) : SV_TARGET {
-    return sourceTexture.Sample(sourceSampler, texcoord);
-}
-)_";
-
-    DXGI_FORMAT getTypelessFormat(DXGI_FORMAT format) {
-        switch (format) {
-        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        case DXGI_FORMAT_R8G8B8A8_UNORM:
-            return DXGI_FORMAT_R8G8B8A8_TYPELESS;
-        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8A8_UNORM:
-            return DXGI_FORMAT_B8G8R8A8_TYPELESS;
-        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8X8_UNORM:
-            return DXGI_FORMAT_B8G8R8X8_TYPELESS;
-        case DXGI_FORMAT_R16G16B16A16_FLOAT:
-            return DXGI_FORMAT_R16G16B16A16_TYPELESS;
-        case DXGI_FORMAT_D32_FLOAT:
-            return DXGI_FORMAT_R32_TYPELESS;
-        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-            return DXGI_FORMAT_R32G8X24_TYPELESS;
-        case DXGI_FORMAT_D24_UNORM_S8_UINT:
-            return DXGI_FORMAT_R24G8_TYPELESS;
-        case DXGI_FORMAT_D16_UNORM:
-            return DXGI_FORMAT_R16_TYPELESS;
-        }
-
-        return format;
-    }
-
-    bool isSRGBFormat(DXGI_FORMAT format) {
-        switch (format) {
-        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-            return true;
-        }
-
-        return false;
-    }
-
-} // namespace
 
 namespace pimax_openxr {
 
@@ -299,69 +211,20 @@ namespace pimax_openxr {
         m_fenceValue = 0;
 
         // Create the resources for alpha correction.
-        const auto compileShader = [&](const std::string_view& code,
-                                       const std::string_view& type,
-                                       const std::string_view& entry,
-                                       ID3DBlob** shaderBytes) {
-            ComPtr<ID3DBlob> errMsgs;
-            DWORD flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#ifdef _DEBUG
-            flags |= D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
-#else
-            flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
-#endif
-
-            const HRESULT hr = D3DCompile(code.data(),
-                                          code.size(),
-                                          nullptr,
-                                          nullptr,
-                                          nullptr,
-                                          entry.data(),
-                                          type.data(),
-                                          flags,
-                                          0,
-                                          shaderBytes,
-                                          errMsgs.ReleaseAndGetAddressOf());
-            if (FAILED(hr)) {
-                std::string errMsg((const char*)errMsgs->GetBufferPointer(), errMsgs->GetBufferSize());
-                ErrorLog("D3DCompile failed %X: %s\n", hr, errMsg.c_str());
-                CHECK_HRESULT(hr, "D3DCompile failed");
-            }
-        };
-
-        ComPtr<ID3DBlob> shaderBytes;
-        {
-            compileShader(AlphaCorrectShaderHlsl, "cs_5_0", "main", shaderBytes.ReleaseAndGetAddressOf());
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
-                                                                   shaderBytes->GetBufferSize(),
-                                                                   nullptr,
-                                                                   m_alphaCorrectShader[0].ReleaseAndGetAddressOf()));
-            setDebugName(m_alphaCorrectShader[0].Get(), "AlphaCorrect CS");
-        }
-        {
-            compileShader(AlphaCorrectShaderHlsl, "cs_5_0", "mainForArray", shaderBytes.ReleaseAndGetAddressOf());
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(shaderBytes->GetBufferPointer(),
-                                                                   shaderBytes->GetBufferSize(),
-                                                                   nullptr,
-                                                                   m_alphaCorrectShader[1].ReleaseAndGetAddressOf()));
-            setDebugName(m_alphaCorrectShader[1].Get(), "AlphaCorrect CS");
-        }
-        {
-            compileShader(FullQuadColorConversionShader, "vs_5_0", "vsMain", shaderBytes.ReleaseAndGetAddressOf());
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreateVertexShader(shaderBytes->GetBufferPointer(),
-                                                                  shaderBytes->GetBufferSize(),
-                                                                  nullptr,
-                                                                  m_fullQuadVS.ReleaseAndGetAddressOf()));
-            setDebugName(m_fullQuadVS.Get(), "FullQuad VS");
-        }
-        {
-            compileShader(FullQuadColorConversionShader, "ps_5_0", "psMain", shaderBytes.ReleaseAndGetAddressOf());
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreatePixelShader(shaderBytes->GetBufferPointer(),
-                                                                 shaderBytes->GetBufferSize(),
-                                                                 nullptr,
-                                                                 m_colorConversionPS.ReleaseAndGetAddressOf()));
-            setDebugName(m_fullQuadVS.Get(), "ColorConversion PS");
-        }
+        CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(
+            g_AlphaBlendingCS, sizeof(g_AlphaBlendingCS), nullptr, m_alphaCorrectShader[0].ReleaseAndGetAddressOf()));
+        setDebugName(m_alphaCorrectShader[0].Get(), "AlphaBlending CS");
+        CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(g_AlphaBlendingTexArrayCS,
+                                                               sizeof(g_AlphaBlendingTexArrayCS),
+                                                               nullptr,
+                                                               m_alphaCorrectShader[1].ReleaseAndGetAddressOf()));
+        setDebugName(m_alphaCorrectShader[1].Get(), "AlphaBlending CS");
+        CHECK_HRCMD(m_pvrSubmissionDevice->CreateVertexShader(
+            g_FullScreenQuadVS, sizeof(g_FullScreenQuadVS), nullptr, m_fullQuadVS.ReleaseAndGetAddressOf()));
+        setDebugName(m_fullQuadVS.Get(), "FullQuad VS");
+        CHECK_HRCMD(m_pvrSubmissionDevice->CreatePixelShader(
+            g_PassthroughPS, sizeof(g_PassthroughPS), nullptr, m_colorConversionPS.ReleaseAndGetAddressOf()));
+        setDebugName(m_fullQuadVS.Get(), "ColorConversion PS");
 
         {
             D3D11_SAMPLER_DESC desc;
@@ -660,7 +523,7 @@ namespace pimax_openxr {
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
                 CHECK_HRCMD(m_pvrSubmissionContext->Map(
                     xrSwapchain.convertConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
-                *(uint32_t*)mappedResources.pData = (needClearAlpha ? 1 : 0) | (needPremultiplyAlpha ? 2 : 0);
+                *(uint32_t*)mappedResources.pData = (needClearAlpha ? 0x1 : 0) | (needPremultiplyAlpha ? 0x2 : 0);
                 m_pvrSubmissionContext->Unmap(xrSwapchain.convertConstants.Get(), 0);
                 m_pvrSubmissionContext->CSSetConstantBuffers(0, 1, xrSwapchain.convertConstants.GetAddressOf());
 

@@ -206,7 +206,9 @@ namespace xr {
 
         } // namespace Fov
 
-        static bool ProjectPoint(const XrView& eyeInViewSpace, const XrVector3f& forward, XrVector2f& projectedPosition) {
+        static bool ProjectPoint(const XrView& eyeInViewSpace,
+                                 const XrVector3f& forward,
+                                 XrVector2f& projectedPosition) {
             // 1) Compute the view space to camera transform for this eye.
             const auto cameraProjection = xr::math::ComposeProjectionMatrix(eyeInViewSpace.fov, {0.001f, 100.f});
             const auto cameraView = xr::math::LoadXrPose(eyeInViewSpace.pose);
@@ -510,6 +512,43 @@ namespace pimax_openxr::utils {
         xrVector3f.z = pvrVector3f.z;
 
         return xrVector3f;
+    }
+
+    static DXGI_FORMAT getTypelessFormat(DXGI_FORMAT format) {
+        switch (format) {
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case DXGI_FORMAT_R8G8B8A8_UNORM:
+            return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8A8_UNORM:
+            return DXGI_FORMAT_B8G8R8A8_TYPELESS;
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8X8_UNORM:
+            return DXGI_FORMAT_B8G8R8X8_TYPELESS;
+        case DXGI_FORMAT_R16G16B16A16_FLOAT:
+            return DXGI_FORMAT_R16G16B16A16_TYPELESS;
+        case DXGI_FORMAT_D32_FLOAT:
+            return DXGI_FORMAT_R32_TYPELESS;
+        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+            return DXGI_FORMAT_R32G8X24_TYPELESS;
+        case DXGI_FORMAT_D24_UNORM_S8_UINT:
+            return DXGI_FORMAT_R24G8_TYPELESS;
+        case DXGI_FORMAT_D16_UNORM:
+            return DXGI_FORMAT_R16_TYPELESS;
+        }
+
+        return format;
+    }
+
+    static bool isSRGBFormat(DXGI_FORMAT format) {
+        switch (format) {
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+            return true;
+        }
+
+        return false;
     }
 
     static pvrTextureFormat dxgiToPvrTextureFormat(DXGI_FORMAT format) {

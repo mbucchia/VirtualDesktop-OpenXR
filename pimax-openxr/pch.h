@@ -65,7 +65,6 @@ using Microsoft::WRL::ComPtr;
 #include <d3d11_4.h>
 #include <d3d12.h>
 #include <dxgi1_2.h>
-#include <d3dcompiler.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
 #include <GL/GL.h>
