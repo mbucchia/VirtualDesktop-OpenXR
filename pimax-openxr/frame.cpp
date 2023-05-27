@@ -519,6 +519,7 @@ namespace pimax_openxr {
                                                        i,
                                                        proj->views[viewIndex].subImage.imageArrayIndex,
                                                        frameEndInfo->layers[i]->layerFlags,
+                                                       viewIndex >= xr::StereoView::Count,
                                                        committedSwapchainImages);
                         layer->EyeFov.ColorTexture[pvrViewIndex] =
                             xrSwapchain.pvrSwapchain[proj->views[viewIndex].subImage.imageArrayIndex];
@@ -594,6 +595,7 @@ namespace pimax_openxr {
                                                                    i,
                                                                    depth->subImage.imageArrayIndex,
                                                                    0,
+                                                                   false,
                                                                    committedSwapchainImages);
                                     layer->EyeFovDepth.DepthTexture[pvrViewIndex] =
                                         xrDepthSwapchain.pvrSwapchain[depth->subImage.imageArrayIndex];
@@ -670,6 +672,7 @@ namespace pimax_openxr {
                                                    i,
                                                    quad->subImage.imageArrayIndex,
                                                    frameEndInfo->layers[i]->layerFlags,
+                                                   false,
                                                    committedSwapchainImages);
                     layer->Quad.ColorTexture = xrSwapchain.pvrSwapchain[quad->subImage.imageArrayIndex];
 

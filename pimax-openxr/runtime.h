@@ -448,6 +448,7 @@ namespace pimax_openxr {
                                             uint32_t layerIndex,
                                             uint32_t slice,
                                             XrCompositionLayerFlags compositionFlags,
+                                            bool isFocusView,
                                             std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void ensureSwapchainIntermediateResources(Swapchain& xrSwapchain) const;

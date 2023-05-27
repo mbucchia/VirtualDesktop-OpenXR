@@ -447,6 +447,7 @@ namespace pimax_openxr {
                                                        uint32_t layerIndex,
                                                        uint32_t slice,
                                                        XrCompositionLayerFlags compositionFlags,
+                                                       bool isFocusView,
                                                        std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) {
         // If the texture was never used or already committed, do nothing.
         if (xrSwapchain.slices[0].empty() || committed.count(std::make_pair(xrSwapchain.pvrSwapchain[0], slice))) {
@@ -463,7 +464,7 @@ namespace pimax_openxr {
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
         const bool needPremultiplyAlpha = (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
         const bool needCopy = xrSwapchain.lastProcessedIndex[slice] == lastReleasedIndex ||
-                              (slice > 0 && !(needClearAlpha || needPremultiplyAlpha));
+                              (slice > 0 && !(isFocusView || needClearAlpha || needPremultiplyAlpha));
 
         if (needCopy) {
             // Circumvent some of PVR's limitations:
@@ -480,7 +481,7 @@ namespace pimax_openxr {
                                                           xrSwapchain.slices[0][lastReleasedIndex].Get(),
                                                           slice,
                                                           nullptr);
-        } else if (needClearAlpha || needPremultiplyAlpha) {
+        } else if (isFocusView || needClearAlpha || needPremultiplyAlpha) {
             // Circumvent some of PVR's limitations:
             // - For alpha-blended layers, we must pre-process the alpha channel.
             // For alpha-blended layers with texture arrays, we must also output into slice 0 of
@@ -523,7 +524,8 @@ namespace pimax_openxr {
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
                 CHECK_HRCMD(m_pvrSubmissionContext->Map(
                     xrSwapchain.convertConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
-                *(uint32_t*)mappedResources.pData = (needClearAlpha ? 0x1 : 0) | (needPremultiplyAlpha ? 0x2 : 0);
+                *(uint32_t*)mappedResources.pData =
+                    (needClearAlpha ? 0x1 : 0) | (needPremultiplyAlpha ? 0x2 : 0) | (isFocusView ? 0x4 : 0);
                 m_pvrSubmissionContext->Unmap(xrSwapchain.convertConstants.Get(), 0);
                 m_pvrSubmissionContext->CSSetConstantBuffers(0, 1, xrSwapchain.convertConstants.GetAddressOf());
 
@@ -535,8 +537,8 @@ namespace pimax_openxr {
             m_pvrSubmissionContext->CSSetUnorderedAccessViews(
                 0, 1, xrSwapchain.convertAccessView.GetAddressOf(), nullptr);
 
-            m_pvrSubmissionContext->Dispatch((unsigned int)std::ceil(xrSwapchain.xrDesc.width / 8),
-                                             (unsigned int)std::ceil(xrSwapchain.xrDesc.height / 8),
+            m_pvrSubmissionContext->Dispatch((unsigned int)std::ceil(xrSwapchain.xrDesc.width / 32),
+                                             (unsigned int)std::ceil(xrSwapchain.xrDesc.height / 32),
                                              1);
 
             // Unbind all resources to avoid D3D validation errors.
