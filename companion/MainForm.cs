@@ -589,12 +589,12 @@ namespace companion
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MainForm.RegPrefix);
 
                 key.DeleteValue("recenter_on_startup", false);
-                key.DeleteValue("swap_grip_aim_poses", false);
                 key.DeleteValue("force_interaction_profile", false);
                 key.DeleteValue("joystick_deadzone", false);
                 key.DeleteValue("guardian", false);
                 key.DeleteValue("guardian_radius", false);
                 key.DeleteValue("guardian_threshold", false);
+                key.DeleteValue("defer_frame_wait", false);
                 key.DeleteValue("mirror_window", false);
                 key.DeleteValue("allow_eye_tracking", false);
                 key.DeleteValue("disable_quad_views", false);
