@@ -464,7 +464,10 @@ namespace pimax_openxr {
 
         const bool needClearAlpha =
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
-        const bool needPremultiplyAlpha = (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
+        // Workaround: this is questionable, but an app should always submit layer 0 without alpha-blending (ie: alpha = 1).
+        // This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
+        const bool needPremultiplyAlpha = (m_honorPremultiplyFlagOnProj0 || layerIndex > 0) &&
+                                          (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
         const bool needCopy = xrSwapchain.lastProcessedIndex[slice] == lastReleasedIndex ||
                               (slice > 0 && !(postProcessFocusView || needClearAlpha || needPremultiplyAlpha));
 

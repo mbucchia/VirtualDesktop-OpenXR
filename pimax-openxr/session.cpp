@@ -506,6 +506,8 @@ namespace pimax_openxr {
 
         m_postProcessFocusView = getSetting("postprocess_focus_view").value_or(false);
 
+        m_honorPremultiplyFlagOnProj0 = getSetting("honor_premultiply_flag_on_proj0").value_or(false);
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
@@ -520,7 +522,8 @@ namespace pimax_openxr {
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"),
             TLArg(m_useDeferredFrameWait, "UseDeferredFrameWait"),
-            TLArg(m_postProcessFocusView, "PostProcessFocusView"));
+            TLArg(m_postProcessFocusView, "PostProcessFocusView"),
+            TLArg(m_honorPremultiplyFlagOnProj0, "HonorPremultiplyFlagOnProj0"));
 
         const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
         if (debugControllerType == 1) {
