@@ -460,11 +460,13 @@ namespace pimax_openxr {
         CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &pvrDestIndex));
         const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
 
+        const bool postProcessFocusView = m_postProcessFocusView && isFocusView;
+
         const bool needClearAlpha =
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
         const bool needPremultiplyAlpha = (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
         const bool needCopy = xrSwapchain.lastProcessedIndex[slice] == lastReleasedIndex ||
-                              (slice > 0 && !(isFocusView || needClearAlpha || needPremultiplyAlpha));
+                              (slice > 0 && !(postProcessFocusView || needClearAlpha || needPremultiplyAlpha));
 
         if (needCopy) {
             // Circumvent some of PVR's limitations:
@@ -481,7 +483,7 @@ namespace pimax_openxr {
                                                           xrSwapchain.slices[0][lastReleasedIndex].Get(),
                                                           slice,
                                                           nullptr);
-        } else if (isFocusView || needClearAlpha || needPremultiplyAlpha) {
+        } else if (postProcessFocusView || needClearAlpha || needPremultiplyAlpha) {
             // Circumvent some of PVR's limitations:
             // - For alpha-blended layers, we must pre-process the alpha channel.
             // For alpha-blended layers with texture arrays, we must also output into slice 0 of
@@ -525,7 +527,7 @@ namespace pimax_openxr {
                 CHECK_HRCMD(m_pvrSubmissionContext->Map(
                     xrSwapchain.convertConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
                 *(uint32_t*)mappedResources.pData =
-                    (needClearAlpha ? 0x1 : 0) | (needPremultiplyAlpha ? 0x2 : 0) | (isFocusView ? 0x4 : 0);
+                    (needClearAlpha ? 0x1 : 0) | (needPremultiplyAlpha ? 0x2 : 0) | (postProcessFocusView ? 0x4 : 0);
                 m_pvrSubmissionContext->Unmap(xrSwapchain.convertConstants.Get(), 0);
                 m_pvrSubmissionContext->CSSetConstantBuffers(0, 1, xrSwapchain.convertConstants.GetAddressOf());
 

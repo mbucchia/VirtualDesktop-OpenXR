@@ -607,6 +607,7 @@ namespace pimax_openxr {
         bool m_debugFocusViews{false};
         bool m_useDeferredFrameWait{true};
         bool m_useDeferredFrameWaitThisFrame{false};
+        bool m_postProcessFocusView{false};
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;

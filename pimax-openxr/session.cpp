@@ -504,6 +504,8 @@ namespace pimax_openxr {
 
         m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(true);
 
+        m_postProcessFocusView = getSetting("postprocess_focus_view").value_or(false);
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
@@ -516,7 +518,9 @@ namespace pimax_openxr {
             TLArg(m_frameTimeOverrideUs, "FrameTimeOverride"),
             TLArg(m_frameTimeFilterLength, "FrameTimeFilterLength"),
             TLArg(m_useMirrorWindow, "MirrorWindow"),
-            TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"));
+            TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"),
+            TLArg(m_useDeferredFrameWait, "UseDeferredFrameWait"),
+            TLArg(m_postProcessFocusView, "PostProcessFocusView"));
 
         const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
         if (debugControllerType == 1) {
@@ -568,8 +572,10 @@ namespace pimax_openxr {
                 int imageIndex = -1;
                 CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_guardianSwapchain, &imageIndex));
                 ComPtr<ID3D11Texture2D> swapchainTexture;
-                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                    m_pvrSession, m_guardianSwapchain, imageIndex, IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
+                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(m_pvrSession,
+                                                             m_guardianSwapchain,
+                                                             imageIndex,
+                                                             IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
 
                 m_pvrSubmissionContext->CopyResource(swapchainTexture.Get(), texture.Get());
                 m_pvrSubmissionContext->Flush();
