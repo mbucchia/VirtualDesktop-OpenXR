@@ -149,7 +149,9 @@ namespace pimax_openxr {
                     // message:
                     //   [PVR] wait rendering complete event failed:258
                     // Let's ignore this for now and hope for the best.
+                    lock.unlock();
                     const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
+                    lock.lock();
                     if (result != pvr_success) {
                         ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
                     }
