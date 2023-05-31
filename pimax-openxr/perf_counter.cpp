@@ -51,6 +51,10 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (performanceCounter->QuadPart <= 0) {
+            return XR_ERROR_TIME_INVALID;
+        }
+
         double pvrTime = (double)performanceCounter->QuadPart / m_qpcFrequency.QuadPart;
         pvrTime += m_pvrTimeFromQpcTimeOffset;
 
