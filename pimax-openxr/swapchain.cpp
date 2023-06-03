@@ -226,8 +226,8 @@ namespace pimax_openxr {
                                                    fov,
                                                    pixelDensity,
                                                    &viewportSize));
-                views[i].recommendedImageRectWidth = viewportSize.w;
-                views[i].recommendedImageRectHeight = viewportSize.h;
+                views[i].recommendedImageRectWidth = std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth);
+                views[i].recommendedImageRectHeight = std::min((uint32_t)viewportSize.h, views[i].maxImageRectHeight);
 
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateViewConfigurationViews",
