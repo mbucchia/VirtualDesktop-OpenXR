@@ -86,7 +86,7 @@ namespace pimax_openxr {
 
             TraceLoggingWrite(g_traceProvider,
                               "App_Statistics",
-                              TLArg(m_frameCompleted, "FrameId"),
+                              TLArg(m_frameCompleted - 1, "FrameId"),
                               TLArg(m_lastCpuFrameTimeUs, "AppFrameCpuTime"));
 
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
@@ -144,7 +144,7 @@ namespace pimax_openxr {
             if (!m_useDeferredFrameWaitThisFrame) {
                 if (!skipPvrWait) {
                     TraceLocalActivity(waitToBeginFrame);
-                    TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameIndex"));
+                    TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameId"));
                     // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
                     // message:
                     //   [PVR] wait rendering complete event failed:258
@@ -159,7 +159,7 @@ namespace pimax_openxr {
                         waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
                 }
             } else {
-                TraceLoggingWrite(g_traceProvider, "PVR_WaitToBeginFrame_Deferred", TLArg(pvrFrameId, "FrameIndex"));
+                TraceLoggingWrite(g_traceProvider, "PVR_WaitToBeginFrame_Deferred", TLArg(pvrFrameId, "FrameId"));
             }
 
             if (IsTraceEnabled()) {
@@ -260,7 +260,7 @@ namespace pimax_openxr {
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited - 1 : 0;
             if (!m_useDeferredFrameWaitThisFrame) {
                 TraceLocalActivity(beginFrame);
-                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"));
+                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
                 // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
                 // message:
                 //   [PVR] wait rendering complete event failed:258
@@ -271,7 +271,7 @@ namespace pimax_openxr {
                 }
                 TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
             } else {
-                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Deferred", TLArg(pvrFrameId, "FrameIndex"));
+                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Deferred", TLArg(pvrFrameId, "FrameId"));
             }
 
             // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
@@ -298,7 +298,7 @@ namespace pimax_openxr {
 
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
-                                  TLArg(m_frameCompleted, "FrameId"),
+                                  TLArg(m_frameCompleted - 1, "FrameId"),
                                   TLArg(m_renderTimerApp.query(), "AppRenderCpuTime"));
 
                 if (m_frameCompleted >= k_numGpuTimers) {
@@ -828,7 +828,7 @@ namespace pimax_openxr {
                     TraceLocalActivity(waitToBeginFrame);
                     TraceLoggingWriteStart(waitToBeginFrame,
                                            "PVR_WaitToBeginFrame",
-                                           TLArg(pvrFrameId, "FrameIndex"),
+                                           TLArg(pvrFrameId, "FrameId"),
                                            TLArg(true, "Deferred"));
                     // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
                     // message:
@@ -844,7 +844,7 @@ namespace pimax_openxr {
                 {
                     TraceLocalActivity(beginFrame);
                     TraceLoggingWriteStart(
-                        beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameIndex"), TLArg(true, "Deferred"));
+                        beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"), TLArg(true, "Deferred"));
                     // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
                     // message:
                     //   [PVR] wait rendering complete event failed:258
@@ -860,7 +860,7 @@ namespace pimax_openxr {
             TraceLocalActivity(endFrame);
             TraceLoggingWriteStart(endFrame,
                                    "PVR_EndFrame",
-                                   TLArg(pvrFrameId, "FrameIndex"),
+                                   TLArg(pvrFrameId, "FrameId"),
                                    TLArg(layers.size(), "NumLayers"),
                                    TLArg(m_frameTimes.size(), "MeasuredFps"),
                                    TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
