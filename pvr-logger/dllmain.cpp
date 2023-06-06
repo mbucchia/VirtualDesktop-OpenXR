@@ -426,6 +426,95 @@ namespace {
         return result;
     }
 
+    pvrResult wrapper_waitToBeginFrame(pvrHmdHandle hmdh, long long frameIndex) {
+        TraceLocalActivity(local);
+
+        TraceLoggingWriteStart(local, "PVR_waitToBeginFrame", TLArg(frameIndex));
+        const auto& result = g_realPvrInterface.waitToBeginFrame(hmdh, frameIndex);
+        TraceLoggingWriteStop(local, "PVR_waitToBeginFrame", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
+    pvrResult wrapper_submitFrame(pvrHmdHandle hmdh,
+                                  long long frameIndex,
+                                  pvrLayerHeader const* const* layerPtrList,
+                                  unsigned int layerCount) {
+        TraceLocalActivity(local);
+
+        // Frame rate counter for convenience.
+        static std::deque<double> frameTimes;
+        const auto now = g_realPvrInterface.getTimeSeconds();
+        frameTimes.push_back(now);
+        while (now - frameTimes.front() >= 1.0) {
+            frameTimes.pop_front();
+        }
+
+        TraceLoggingWriteStart(
+            local, "PVR_submitFrame", TLArg(frameIndex), TLArg(layerCount), TLArg(frameTimes.size(), "Fps"));
+        for (uint32_t i = 0; i < layerCount; i++) {
+            const auto* const eyeFov = (pvrLayerEyeFov*)layerPtrList[i];
+            const auto* const quad = (pvrLayerQuad*)layerPtrList[i];
+            const auto* const eyeFovDepth = (pvrLayerEyeFovDepth*)layerPtrList[i];
+
+            switch (layerPtrList[i]->Type) {
+            case pvrLayerType_EyeFov:
+            case pvrLayerType_EyeFovDepth:
+                for (uint32_t eye = 0; eye < pvrEye_Count; eye++) {
+                    TraceLoggingWriteTagged(
+                        local,
+                        "PVR_submitFrame_Layer",
+                        TLArg(layerPtrList[i]->Type == pvrLayerType_EyeFovDepth ? "EyeFovDepth" : "EyeFov", "Type"),
+                        TLArg((int)eyeFov->Header.Flags, "Flags"));
+                    if (layerPtrList[i]->Type == pvrLayerType_EyeFovDepth) {
+                        TraceLoggingWriteTagged(
+                            local,
+                            "PVR_submitFrame_LayerView",
+                            TLArg(eye, "Eye"),
+                            TLPArg(eyeFovDepth->ColorTexture[eye], "ColorTexture"),
+                            TLArg(ToString(eyeFovDepth->RenderPose[eye]).c_str(), "RenderPose"),
+                            TLArg(ToString(eyeFovDepth->Fov[eye]).c_str(), "Fov"),
+                            TLPArg(eyeFovDepth->DepthTexture[eye], "DepthTexture"),
+                            TLArg(ToString(eyeFovDepth->DepthProjectionDesc).c_str(), "DepthProjectionDesc"),
+                            TLArg(ToString(eyeFovDepth->Viewport[eye]).c_str(), "Viewport"),
+                            TLArg(eyeFovDepth->SensorSampleTime, "SensorSampleTime"));
+                    } else {
+                        TraceLoggingWriteTagged(local,
+                                                "PVR_submitFrame_LayerView",
+                                                TLArg(eye, "Eye"),
+                                                TLPArg(eyeFov->ColorTexture[eye], "ColorTexture"),
+                                                TLArg(ToString(eyeFov->RenderPose[eye]).c_str(), "RenderPose"),
+                                                TLArg(ToString(eyeFov->Fov[eye]).c_str(), "Fov"),
+                                                TLArg(ToString(eyeFov->Viewport[eye]).c_str(), "Viewport"),
+                                                TLArg(eyeFov->SensorSampleTime, "SensorSampleTime"));
+                    }
+                }
+                break;
+
+            case pvrLayerType_Quad:
+                TraceLoggingWriteTagged(local,
+                                        "PVR_submitFrame_Layer",
+                                        TLArg("Quad", "Type"),
+                                        TLArg((int)quad->Header.Flags, "Flags"),
+                                        TLPArg(quad->ColorTexture, "ColorTexture"),
+                                        TLArg(ToString(quad->QuadPoseCenter).c_str(), "PoseCenter"),
+                                        TLArg(ToString(quad->QuadSize).c_str(), "Size"),
+                                        TLArg(ToString(quad->Viewport).c_str(), "Viewport"));
+                break;
+
+            default:
+                TraceLoggingWriteTagged(local,
+                                        "PVR_submitFrame_Layer",
+                                        TLArg(fmt::format("Unknown_{}", (int)layerPtrList[i]->Type).c_str(), "Type"));
+                break;
+            }
+        }
+        const auto& result = g_realPvrInterface.submitFrame(hmdh, frameIndex, layerPtrList, layerCount);
+        TraceLoggingWriteStop(local, "PVR_submitFrame", TLArg(ToString(result).c_str(), "result"));
+
+        return result;
+    }
+
     float wrapper_getFloatConfig(pvrHmdHandle hmdh, const char* key, float def_val) {
         TraceLocalActivity(local);
 
@@ -720,6 +809,8 @@ namespace {
                     result->getPredictedDisplayTime = wrapper_getPredictedDisplayTime;
                     result->beginFrame = wrapper_beginFrame;
                     result->endFrame = wrapper_endFrame;
+                    result->waitToBeginFrame = wrapper_waitToBeginFrame;
+                    result->submitFrame = wrapper_submitFrame;
                     result->getFloatConfig = wrapper_getFloatConfig;
                     result->setFloatConfig = wrapper_setFloatConfig;
                     result->getIntConfig = wrapper_getIntConfig;
@@ -728,8 +819,9 @@ namespace {
                     result->setStringConfig = wrapper_setStringConfig;
                     result->getVector3fConfig = wrapper_getVector3fConfig;
                     result->setVector3fConfig = wrapper_setVector3fConfig;
-                    result->getQuatfConfig = wrapper_getQuatfConfig;
-                    result->setQuatfConfig = wrapper_setQuatfConfig;
+                    // XXX: Causes issues for some reasons.
+                    //result->getQuatfConfig = wrapper_getQuatfConfig;
+                    //result->setQuatfConfig = wrapper_setQuatfConfig;
                     result->getInt64Config = wrapper_getInt64Config;
                     result->setInt64Config = wrapper_setInt64Config;
                     result->getTrackedDeviceFloatProperty = wrapper_getTrackedDeviceFloatProperty;
