@@ -937,18 +937,52 @@ namespace pimax_openxr {
 
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
+        std::optional<long long> lastWaitedFrameId;
         while (true) {
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameCompleted : 0;
             {
-                TraceLocalActivity(waitToBeginFrame);
-                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameId"));
-                // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xrWaitFrame().
-                const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
-                if (result != pvr_success) {
-                    ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                // PVR doesn't like gaps in frame ID, but these can happen when an app intentionally discard a frame. So
+                // we make sure we never skip a frame ID.
+                for (long long frameId = lastWaitedFrameId.value_or(pvrFrameId - 1) + 1; frameId <= pvrFrameId;
+                     frameId++) {
+                    TraceLocalActivity(waitToBeginFrame);
+                    TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(frameId, "FrameId"));
+                    // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xrWaitFrame().
+                    const auto result = pvr_waitToBeginFrame(m_pvrSession, frameId);
+                    if (result != pvr_success) {
+                        ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                    }
+                    TraceLoggingWriteStop(
+                        waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+
+                    // PVR requires us to complete each frame...
+                    if (frameId != pvrFrameId) {
+                        {
+                            TraceLocalActivity(beginFrame);
+                            TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(frameId, "FrameId"));
+                            // Workaround: PVR will occasionally fail with result code -1 (undocumented). See
+                            // xBeginFrame().
+                            const auto result = pvr_beginFrame(m_pvrSession, frameId);
+                            if (result != pvr_success) {
+                                ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                            }
+                            TraceLoggingWriteStop(
+                                beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                        }
+                        {
+                            pvrLayer_Union dummyLayer{};
+                            dummyLayer.Header.Type = pvrLayerType_Disabled;
+                            pvrLayerHeader* layers[1] = {(pvrLayerHeader*)&dummyLayer};
+
+                            TraceLocalActivity(endFrame);
+                            TraceLoggingWriteStart(
+                                endFrame, "PVR_EndFrame", TLArg(frameId, "FrameId"), TLArg(1, "NumLayers"));
+                            CHECK_PVRCMD(pvr_endFrame(m_pvrSession, frameId, layers, 1));
+                            TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+                        }
+                    }
                 }
-                TraceLoggingWriteStop(
-                    waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                lastWaitedFrameId = pvrFrameId;
             }
             m_lastWaitToBeginFrameTime = std::chrono::high_resolution_clock::now();
 
