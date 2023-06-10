@@ -613,6 +613,7 @@ namespace pimax_openxr {
         bool m_useDeferredFrameWaitThisFrame{false};
         bool m_postProcessFocusView{false};
         bool m_honorPremultiplyFlagOnProj0{false};
+        bool m_useRunningStart{true};
 
         bool m_useAsyncSubmission{false};
         bool m_needStartAsyncSubmissionThread{false};

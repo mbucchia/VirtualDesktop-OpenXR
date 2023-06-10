@@ -166,7 +166,7 @@ namespace pimax_openxr {
                 }
             } else {
                 if (!m_useDeferredFrameWaitThisFrame) {
-                    waitForAsyncSubmissionIdle(true /* doRunningStart */);
+                    waitForAsyncSubmissionIdle(m_useRunningStart);
                 }
                 TraceLoggingWrite(g_traceProvider, "AcquiredFrame", TLArg(pvrFrameId, "FrameId"));
             }
@@ -978,21 +978,23 @@ namespace pimax_openxr {
 
     void OpenXrRuntime::waitForAsyncSubmissionIdle(bool doRunningStart) {
         TraceLocalActivity(waitToBeginFrame);
-        TraceLoggingWriteStart(waitToBeginFrame, "WaitForAsyncSubmissionIdle");
+        TraceLoggingWriteStart(waitToBeginFrame, "WaitForAsyncSubmissionIdle", TLArg(doRunningStart, "DoRunningStart"));
 
         std::unique_lock lock(m_asyncSubmissionMutex);
 
+        bool wokeUpEarly = false;
         if (doRunningStart) {
             constexpr double RunningStart = 0.002;
             const auto timeout =
                 m_lastWaitToBeginFrameTime + std::chrono::duration<double>(m_frameDuration - RunningStart);
 
-            m_asyncSubmissionCondVar.wait_until(lock, timeout, [&] { return m_layersForAsyncSubmission.empty(); });
+            wokeUpEarly =
+                !m_asyncSubmissionCondVar.wait_until(lock, timeout, [&] { return m_layersForAsyncSubmission.empty(); });
         } else {
             m_asyncSubmissionCondVar.wait(lock, [&] { return m_layersForAsyncSubmission.empty(); });
         }
 
-        TraceLoggingWriteStop(waitToBeginFrame, "WaitForAsyncSubmissionIdle");
+        TraceLoggingWriteStop(waitToBeginFrame, "WaitForAsyncSubmissionIdle", TLArg(wokeUpEarly, "WokeUpForRunningStart"));
     }
 
 } // namespace pimax_openxr
