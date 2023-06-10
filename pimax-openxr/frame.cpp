@@ -863,10 +863,9 @@ namespace pimax_openxr {
                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
 
-                    {
-                        std::unique_lock lock3(m_asyncSubmissionMutex);
-                        m_layersForAsyncSubmission = layersAllocator;
-                    }
+                    std::unique_lock lock3(m_asyncSubmissionMutex);
+                    m_layersForAsyncSubmission = layersAllocator;
+
                     m_asyncSubmissionCondVar.notify_all();
 
                     // From this point, we know that the asynchronous thread may be executing, and we shall not use the
@@ -928,13 +927,14 @@ namespace pimax_openxr {
                 TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
             }
 
-            // Mark us as ready to accept a new frame.
-            m_layersForAsyncSubmission.clear();
-            m_asyncSubmissionCondVar.notify_all();
-
-            // Wait for the frame.
             {
                 std::unique_lock lock(m_asyncSubmissionMutex);
+
+                // Mark us as ready to accept a new frame.
+                m_layersForAsyncSubmission.clear();
+                m_asyncSubmissionCondVar.notify_all();
+
+                // Wait for the frame.
                 m_asyncSubmissionCondVar.wait(
                     lock, [&] { return m_terminateAsyncThread || !m_layersForAsyncSubmission.empty(); });
             }
@@ -994,7 +994,8 @@ namespace pimax_openxr {
             m_asyncSubmissionCondVar.wait(lock, [&] { return m_layersForAsyncSubmission.empty(); });
         }
 
-        TraceLoggingWriteStop(waitToBeginFrame, "WaitForAsyncSubmissionIdle", TLArg(wokeUpEarly, "WokeUpForRunningStart"));
+        TraceLoggingWriteStop(
+            waitToBeginFrame, "WaitForAsyncSubmissionIdle", TLArg(wokeUpEarly, "WokeUpForRunningStart"));
     }
 
 } // namespace pimax_openxr

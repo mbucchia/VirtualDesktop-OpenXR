@@ -216,8 +216,12 @@ namespace pimax_openxr {
         }
 
         if (m_useAsyncSubmission) {
-            m_terminateAsyncThread = true;
-            m_asyncSubmissionCondVar.notify_all();
+            {
+                std::unique_lock lock(m_asyncSubmissionMutex);
+
+                m_terminateAsyncThread = true;
+                m_asyncSubmissionCondVar.notify_all();
+            }
             m_asyncSubmissionThread.join();
             m_asyncSubmissionThread = {};
         }
