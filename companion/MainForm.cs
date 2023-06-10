@@ -356,7 +356,7 @@ namespace companion
                 guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
                 guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
                 guardianThreshold.Value = (int)key.GetValue("guardian_threshold", 1100) / 10;
-                preferFramerate.Checked = (int)key.GetValue("defer_frame_wait", 1) == 1 ? true : false;
+                preferFramerate.Checked = (int)key.GetValue("defer_frame_wait", 0) == 1 ? true : false;
                 allowEyeTracking.Checked = (int)key.GetValue("allow_eye_tracking", 0) == 1 ? true : false;
                 enableQuadViews.Checked = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
                 mirrorMode.Checked = (int)key.GetValue("mirror_window", 0) == 1 ? true : false;

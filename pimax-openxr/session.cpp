@@ -134,7 +134,7 @@ namespace pimax_openxr {
         }
 
         // Read configuration and set up the session accordingly.
-        if (getSetting("recenter_on_startup").value_or(1)) {
+        if (getSetting("recenter_on_startup").value_or(true)) {
             CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
         }
         refreshSettings();
@@ -448,7 +448,6 @@ namespace pimax_openxr {
         // Value is in unit of hundredth.
         m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
 
-        m_swapGripAimPoses = getSetting("swap_grip_aim_poses").value_or(0);
         const auto forcedInteractionProfile = getSetting("force_interaction_profile").value_or(0);
         if (forcedInteractionProfile == 1) {
             m_forcedInteractionProfile = ForcedInteractionProfile::OculusTouchController;
@@ -458,7 +457,7 @@ namespace pimax_openxr {
             m_forcedInteractionProfile.reset();
         }
 
-        if (getSetting("guardian").value_or(1)) {
+        if (getSetting("guardian").value_or(true)) {
             m_guardianThreshold = getSetting("guardian_threshold").value_or(1100) / 1e3f;
             m_guardianRadius = getSetting("guardian_radius").value_or(1600) / 1e3f;
         } else {
@@ -510,21 +509,22 @@ namespace pimax_openxr {
 
         m_frameTimeFilterLength = getSetting("frame_time_filter_length").value_or(5);
 
-        m_useMirrorWindow = getSetting("mirror_window").value_or(0);
+        m_useMirrorWindow = getSetting("mirror_window").value_or(false);
 
         m_droolonProjectionDistance = getSetting("droolon_projection_distance").value_or(35) / 100.f;
 
-        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(true);
+        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(false);
 
         m_postProcessFocusView = getSetting("postprocess_focus_view").value_or(false);
 
         m_honorPremultiplyFlagOnProj0 = getSetting("honor_premultiply_flag_on_proj0").value_or(false);
 
+        m_swapGripAimPoses = getSetting("quirk_swap_grip_aim_poses").value_or(false);
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
             TLArg(m_joystickDeadzone, "JoystickDeadzone"),
-            TLArg(m_swapGripAimPoses, "SwapGripAimPoses"),
             TLArg((int)m_forcedInteractionProfile.value_or((ForcedInteractionProfile)-1), "ForcedInteractionProfile"),
             TLArg(m_guardianThreshold, "GuardianThreshold"),
             TLArg(m_guardianRadius, "GuardianRadius"),
@@ -535,7 +535,8 @@ namespace pimax_openxr {
             TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"),
             TLArg(m_useDeferredFrameWait, "UseDeferredFrameWait"),
             TLArg(m_postProcessFocusView, "PostProcessFocusView"),
-            TLArg(m_honorPremultiplyFlagOnProj0, "HonorPremultiplyFlagOnProj0"));
+            TLArg(m_honorPremultiplyFlagOnProj0, "HonorPremultiplyFlagOnProj0"),
+            TLArg(m_swapGripAimPoses, "SwapGripAimPoses"));
 
         const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
         if (debugControllerType == 1) {
@@ -548,7 +549,7 @@ namespace pimax_openxr {
             m_debugControllerType.clear();
         }
 
-        m_debugFocusViews = getSetting("debug_focus_view").value_or(0);
+        m_debugFocusViews = getSetting("debug_focus_view").value_or(false);
     }
 
     // Create guardian resources.

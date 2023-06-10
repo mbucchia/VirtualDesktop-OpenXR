@@ -162,7 +162,7 @@ namespace pimax_openxr {
         fmt::format("PimaxXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
 
     OpenXrRuntime::OpenXrRuntime() {
-        if (getSetting("enable_telemetry").value_or(0)) {
+        if (getSetting("enable_telemetry").value_or(false)) {
             m_telemetry.initialize();
         }
 
@@ -221,7 +221,7 @@ namespace pimax_openxr {
         // https://social.msdn.microsoft.com/Forums/windows/en-US/298a1817-0af5-4efc-9663-db9a841a233b/verifyversioninfo-and-windows-10?forum=windowssdk
         DetourDllAttach("kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
 
-        m_useFrameTimingOverride = getSetting("use_frame_timing_override").value_or(1);
+        m_useFrameTimingOverride = getSetting("quirk_frame_timing_override").value_or(false);
         if (m_useFrameTimingOverride) {
             // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
             // process) in order to remove PVR frame timing constraints.
@@ -597,7 +597,7 @@ namespace pimax_openxr {
         m_extensionsTable.push_back( // Eye tracking.
             {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
 
-        if (!getSetting("disable_quad_views").value_or(1)) {
+        if (!getSetting("disable_quad_views").value_or(true)) {
             m_extensionsTable.push_back( // Quad views.
                 {XR_VARJO_QUAD_VIEWS_EXTENSION_NAME, XR_VARJO_quad_views_SPEC_VERSION});
             m_extensionsTable.push_back( // Foveated rendering with quad views.

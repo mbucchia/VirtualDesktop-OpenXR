@@ -110,7 +110,7 @@ namespace pimax_openxr {
         m_eyeTrackingType = EyeTracking::None;
         if ((has_XR_VARJO_quad_views && (has_XR_VARJO_foveated_rendering || m_preferFoveatedRendering)) ||
             has_XR_EXT_eye_gaze_interaction) {
-            if (getSetting("debug_eye_tracker").value_or(0)) {
+            if (getSetting("debug_eye_tracker").value_or(false)) {
                 m_eyeTrackingType = EyeTracking::Simulated;
             } else if (m_cachedHmdInfo.VendorId == 0x34A4 && m_cachedHmdInfo.ProductId == 0x0012) {
                 // Pimax Crystal uses the PVR SDK.

@@ -64,7 +64,7 @@ namespace companion
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MainForm.RegPrefix);
 
                 // Must match the defaults in the runtime!
-                enableFrameTiming.Checked = (int)key.GetValue("use_frame_timing_override", 1) == 1 ? true : false;
+                enableFrameTiming.Checked = (int)key.GetValue("quirk_frame_timing_override", 0) == 1 ? true : false;
                 filterLength.Value = (int)key.GetValue("frame_time_filter_length", 5);
                 var multiplier = (int)key.GetValue("frame_time_override_multiplier", 0);
                 if (multiplier == 100)
@@ -145,7 +145,7 @@ namespace companion
                 return;
             }
 
-            MainForm.WriteSetting("use_frame_timing_override", enableFrameTiming.Checked ? 1 : 0);
+            MainForm.WriteSetting("quirk_frame_timing_override", enableFrameTiming.Checked ? 1 : 0);
         }
 
         private void filterLength_Scroll(object sender, EventArgs e)
@@ -386,7 +386,7 @@ namespace companion
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MainForm.RegPrefix);
 
-                key.DeleteValue("use_frame_timing_override", false);
+                key.DeleteValue("quirk_frame_timing_override", false);
                 key.DeleteValue("frame_time_filter_length", false);
                 key.DeleteValue("frame_time_override_multiplier", false);
                 key.DeleteValue("frame_time_override_offset", false);
