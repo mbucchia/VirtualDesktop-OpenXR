@@ -90,10 +90,10 @@ namespace pimax_openxr {
             {
                 // Use the mouse to simulate eye tracking.
                 RECT rect;
-                rect.left = 300;
-                rect.right = 700;
-                rect.top = 300;
-                rect.bottom = 700;
+                rect.left = 1;
+                rect.right = 999;
+                rect.top = 1;
+                rect.bottom = 999;
                 ClipCursor(&rect);
 
                 POINT pt{};
