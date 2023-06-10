@@ -215,7 +215,7 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (m_useAsyncSubmission) {
+        if (m_useAsyncSubmission && !m_needStartAsyncSubmissionThread) {
             {
                 std::unique_lock lock(m_asyncSubmissionMutex);
 
