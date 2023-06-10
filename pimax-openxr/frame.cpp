@@ -122,6 +122,12 @@ namespace pimax_openxr {
                 pvr_destroyTextureSwapChain(m_pvrSession, tempSwapchain);
             }
 
+            if (m_needStartAsyncSubmissionThread) {
+                m_terminateAsyncThread = false;
+                m_asyncSubmissionThread = std::thread([&]() { asyncSubmissionThread(); });
+                m_needStartAsyncSubmissionThread = false;
+            }
+
             // Workaround: PVR since Pimax Client 1.10 is not handling frame pipelining correctly.
             // Ensure a single frame in-flight.
             bool skipPvrWait = false;
@@ -141,7 +147,7 @@ namespace pimax_openxr {
 
             // Wait for PVR to be ready for the next frame.
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited : 0;
-            if (!m_useDeferredFrameWaitThisFrame) {
+            if (!m_useAsyncSubmission) {
                 if (!skipPvrWait) {
                     TraceLocalActivity(waitToBeginFrame);
                     TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameId"));
@@ -159,7 +165,10 @@ namespace pimax_openxr {
                         waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
                 }
             } else {
-                TraceLoggingWrite(g_traceProvider, "PVR_WaitToBeginFrame_Deferred", TLArg(pvrFrameId, "FrameId"));
+                if (!m_useDeferredFrameWaitThisFrame) {
+                    waitForAsyncSubmissionIdle(true /* doRunningStart */);
+                }
+                TraceLoggingWrite(g_traceProvider, "AcquiredFrame", TLArg(pvrFrameId, "FrameId"));
             }
 
             if (IsTraceEnabled()) {
@@ -258,7 +267,7 @@ namespace pimax_openxr {
 
             // Tell PVR we are about to begin the frame.
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameWaited - 1 : 0;
-            if (!m_useDeferredFrameWaitThisFrame) {
+            if (!m_useAsyncSubmission) {
                 TraceLocalActivity(beginFrame);
                 TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
                 // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
@@ -270,8 +279,6 @@ namespace pimax_openxr {
                     ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
                 }
                 TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
-            } else {
-                TraceLoggingWrite(g_traceProvider, "PVR_BeginFrame_Deferred", TLArg(pvrFrameId, "FrameId"));
             }
 
             // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
@@ -321,7 +328,7 @@ namespace pimax_openxr {
                               TLArg(m_frameWaited, "FrameWaited"),
                               TLArg(m_frameBegun, "FrameBegun"),
                               TLArg(m_frameCompleted, "FrameCompleted"));
-            m_frameCondVar.notify_one();
+            m_frameCondVar.notify_all();
 
             TraceLoggingWrite(
                 g_traceProvider,
@@ -365,6 +372,13 @@ namespace pimax_openxr {
 
         if (frameEndInfo->layerCount > pvrMaxLayerCount) {
             return XR_ERROR_LAYER_LIMIT_EXCEEDED;
+        }
+
+        // Make sure the previous frame finished submission.
+        if (m_useAsyncSubmission) {
+            waitForAsyncSubmissionIdle();
+
+            // From this point, we know that the asynchronous thread is waiting, and we may use the submission context.
         }
 
         // Critical section.
@@ -421,7 +435,6 @@ namespace pimax_openxr {
                 frameEndInfo->layerCount *
                     (m_primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO ? 2 : 1) +
                 1);
-            std::vector<pvrLayerHeader*> layers;
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 if (!frameEndInfo->layers[i]) {
                     return XR_ERROR_LAYER_INVALID;
@@ -472,14 +485,11 @@ namespace pimax_openxr {
                     for (uint32_t viewIndex = 0; viewIndex < viewCount; viewIndex++) {
                         // Quad views uses 2 stereo layers.
                         if (viewIndex == xr::StereoView::Count) {
-                            // Push the first (peripheral) layer.
+                            // Push this layer and start a new one.
                             const auto flags = layer->Header.Flags;
                             if (!m_debugFocusViews) {
-                                layers.push_back(&layer->Header);
+                                layersAllocator.push_back({});
                             }
-
-                            // Start a new layer.
-                            layersAllocator.push_back({});
                             layer = &layersAllocator.back();
                             layer->Header.Flags = flags;
                             layer->Header.Type = pvrLayerType_EyeFov;
@@ -713,11 +723,6 @@ namespace pimax_openxr {
                 } else {
                     return XR_ERROR_LAYER_INVALID;
                 }
-
-                // Warning: quad views might have created 2 layers above!
-                // One of them was pushed already to the list of layers.
-
-                layers.push_back(&layer->Header);
             }
 
             {
@@ -756,14 +761,13 @@ namespace pimax_openxr {
                         layer.Header.Flags |= pvrLayerFlag_HeadLocked;
                     }
                     layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
-
-                    // If there are too many layer, prioritize the guardian to be safe.
-                    if (layers.size() < pvrMaxLayerCount) {
-                        layers.push_back(&layer.Header);
-                    } else {
-                        layers[pvrMaxLayerCount - 1] = &layer.Header;
-                    }
                 }
+            }
+
+            // Add a dummy layer so we can still call pvr_endFrame() for timing purposes.
+            if (layersAllocator.empty()) {
+                layersAllocator.push_back({});
+                layersAllocator.back().Header.Type = pvrLayerType_Disabled;
             }
 
             if (IsTraceEnabled()) {
@@ -775,13 +779,6 @@ namespace pimax_openxr {
             m_frameTimes.push_back(now);
             while (now - m_frameTimes.front() >= 1.0) {
                 m_frameTimes.pop_front();
-            }
-
-            // Add a dummy layer so we can still call pvr_endFrame() for timing purposes.
-            pvrLayerHeader dummyLayer{};
-            if (layers.empty()) {
-                dummyLayer.Type = pvrLayerType_Disabled;
-                layers.push_back(&dummyLayer);
             }
 
             // Submit the layers to PVR.
@@ -821,52 +818,28 @@ namespace pimax_openxr {
             }
 
             const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameBegun - 1 : 0;
+            if (!m_useAsyncSubmission) {
+                std::vector<pvrLayerHeader*> layers;
+                for (auto& layer : layersAllocator) {
+                    layers.push_back(&layer.Header);
 
-            // Perform deferred frame wait (aka Turbo Mode) just before pvr_endFrame().
-            if (m_useDeferredFrameWaitThisFrame) {
-                {
-                    TraceLocalActivity(waitToBeginFrame);
-                    TraceLoggingWriteStart(waitToBeginFrame,
-                                           "PVR_WaitToBeginFrame",
-                                           TLArg(pvrFrameId, "FrameId"),
-                                           TLArg(true, "Deferred"));
-                    // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
-                    // message:
-                    //   [PVR] wait rendering complete event failed:258
-                    // Let's ignore this for now and hope for the best.
-                    const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
-                    if (result != pvr_success) {
-                        ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                    if (layers.size() == pvrMaxLayerCount) {
+                        ErrorLog("Too many layers in this frame (%u)\n", layersAllocator.size());
+                        break;
                     }
-                    TraceLoggingWriteStop(
-                        waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
                 }
-                {
-                    TraceLocalActivity(beginFrame);
-                    TraceLoggingWriteStart(
-                        beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"), TLArg(true, "Deferred"));
-                    // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
-                    // message:
-                    //   [PVR] wait rendering complete event failed:258
-                    // Let's ignore this for now and hope for the best.
-                    const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
-                    if (result != pvr_success) {
-                        ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
-                    }
-                    TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
-                }
+
+                TraceLocalActivity(endFrame);
+                TraceLoggingWriteStart(endFrame,
+                                       "PVR_EndFrame",
+                                       TLArg(pvrFrameId, "FrameId"),
+                                       TLArg(layers.size(), "NumLayers"),
+                                       TLArg(m_frameTimes.size(), "MeasuredFps"),
+                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
+                CHECK_PVRCMD(pvr_endFrame(m_pvrSession, pvrFrameId, layers.data(), (unsigned int)layers.size()));
+                TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
             }
-
-            TraceLocalActivity(endFrame);
-            TraceLoggingWriteStart(endFrame,
-                                   "PVR_EndFrame",
-                                   TLArg(pvrFrameId, "FrameId"),
-                                   TLArg(layers.size(), "NumLayers"),
-                                   TLArg(m_frameTimes.size(), "MeasuredFps"),
-                                   TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
-                                   TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
-            CHECK_PVRCMD(pvr_endFrame(m_pvrSession, pvrFrameId, layers.data(), (unsigned int)layers.size()));
-            TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
 
             // Defer initialization of mirror window resources until they are first needed.
             if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
@@ -878,6 +851,26 @@ namespace pimax_openxr {
             if (m_dxgiSwapchain) {
                 m_dxgiSwapchain->Present(0, 0);
                 m_pvrSubmissionContext->Flush();
+            }
+
+            if (m_useAsyncSubmission) {
+                {
+                    TraceLoggingWrite(g_traceProvider,
+                                      "SubmitLayers",
+                                      TLArg(pvrFrameId, "FrameId"),
+                                      TLArg(m_frameTimes.size(), "MeasuredFps"),
+                                      TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                      TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
+
+                    {
+                        std::unique_lock lock3(m_asyncSubmissionMutex);
+                        m_layersForAsyncSubmission = layersAllocator;
+                    }
+                    m_asyncSubmissionCondVar.notify_all();
+
+                    // From this point, we know that the asynchronous thread may be executing, and we shall not use the
+                    // submission context.
+                }
             }
 
             m_frameCompleted = m_frameBegun;
@@ -895,10 +888,97 @@ namespace pimax_openxr {
                               TLArg(m_frameWaited, "FrameWaited"),
                               TLArg(m_frameBegun, "FrameBegun"),
                               TLArg(m_frameCompleted, "FrameCompleted"));
-            m_frameCondVar.notify_one();
+            m_frameCondVar.notify_all();
         }
 
         return XR_SUCCESS;
+    }
+
+    void OpenXrRuntime::asyncSubmissionThread() {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "AsyncSubmissionThread");
+
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+        while (true) {
+            const long long pvrFrameId = !m_alwaysUseFrameIdZero ? m_frameCompleted : 0;
+            {
+                TraceLocalActivity(waitToBeginFrame);
+                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameId"));
+                // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xrWaitFrame().
+                const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
+                if (result != pvr_success) {
+                    ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                }
+                TraceLoggingWriteStop(
+                    waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+            }
+            m_lastWaitToBeginFrameTime = std::chrono::high_resolution_clock::now();
+
+            {
+                TraceLocalActivity(beginFrame);
+                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
+                // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xBeginFrame().
+                const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
+                if (result != pvr_success) {
+                    ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                }
+                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+            }
+
+            // Mark us as ready to accept a new frame.
+            m_layersForAsyncSubmission.clear();
+            m_asyncSubmissionCondVar.notify_all();
+
+            // Wait for the frame.
+            {
+                std::unique_lock lock(m_asyncSubmissionMutex);
+                m_asyncSubmissionCondVar.wait(
+                    lock, [&] { return m_terminateAsyncThread || !m_layersForAsyncSubmission.empty(); });
+            }
+            if (m_terminateAsyncThread) {
+                break;
+            }
+
+            {
+                std::vector<pvrLayerHeader*> layers;
+                for (auto& layer : m_layersForAsyncSubmission) {
+                    layers.push_back(&layer.Header);
+
+                    if (layers.size() == pvrMaxLayerCount) {
+                        ErrorLog("Too many layers in this frame (%u)\n", m_layersForAsyncSubmission.size());
+                        break;
+                    }
+                }
+
+                TraceLocalActivity(endFrame);
+                TraceLoggingWriteStart(
+                    endFrame, "PVR_EndFrame", TLArg(pvrFrameId, "FrameId"), TLArg(layers.size(), "NumLayers"));
+                CHECK_PVRCMD(pvr_endFrame(m_pvrSession, pvrFrameId, layers.data(), (unsigned int)layers.size()));
+                TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+            }
+        }
+
+        TraceLoggingWriteStop(local, "AsyncSubmissionThread");
+    }
+
+    void OpenXrRuntime::waitForAsyncSubmissionIdle(bool doRunningStart) {
+        TraceLocalActivity(waitToBeginFrame);
+        TraceLoggingWriteStart(waitToBeginFrame, "WaitForAsyncSubmissionIdle");
+
+        std::unique_lock lock(m_asyncSubmissionMutex);
+
+        if (doRunningStart) {
+            constexpr double RunningStart = 0.002;
+            const auto timeout =
+                m_lastWaitToBeginFrameTime + std::chrono::duration<double>(m_frameDuration - RunningStart);
+
+            m_asyncSubmissionCondVar.wait_until(lock, timeout, [&] { return m_layersForAsyncSubmission.empty(); });
+        } else {
+            m_asyncSubmissionCondVar.wait(lock, [&] { return m_layersForAsyncSubmission.empty(); });
+        }
+
+        TraceLoggingWriteStop(waitToBeginFrame, "WaitForAsyncSubmissionIdle");
     }
 
 } // namespace pimax_openxr

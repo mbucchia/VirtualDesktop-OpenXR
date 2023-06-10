@@ -215,6 +215,13 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (m_useAsyncSubmission) {
+            m_terminateAsyncThread = true;
+            m_asyncSubmissionCondVar.notify_all();
+            m_asyncSubmissionThread.join();
+            m_asyncSubmissionThread = {};
+        }
+
         // Shutdown the mirror window.
         if (m_mirrorWindowThread.joinable()) {
             // Avoid race conditions where the window will not receive the message.
@@ -225,6 +232,7 @@ namespace pimax_openxr {
                 PostMessage(m_mirrorWindowHwnd, WM_CLOSE, 0, 0);
             }
             m_mirrorWindowThread.join();
+            m_mirrorWindowThread = {};
         }
 
         m_telemetry.logUsage(pvr_getTimeSeconds(m_pvr) - m_sessionStartTime, m_sessionTotalFrameCount);
@@ -329,6 +337,10 @@ namespace pimax_openxr {
             Log("Beginning session with quad views\n");
             LOG_TELEMETRY_ONCE(logFeature("QuadViews"));
         }
+
+        m_useAsyncSubmission = getSetting("async_submission").value_or(true);
+        m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
+        // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
 
         m_sessionBegun = true;
         updateSessionState();

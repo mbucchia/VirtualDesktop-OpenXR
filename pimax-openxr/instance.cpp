@@ -198,9 +198,9 @@ namespace pimax_openxr {
                     .value_or((isPitool && release >= 283) || (!isPitool && intermediate <= 10));
 
             // Quirk for frame pipelining timeout.
-            // - Pimax Client 1.10 and above;
+            // - Pimax Client 1.10;
             m_disableFramePipeliningQuirk =
-                getSetting("quirk_disable_frame_pipelining").value_or(!isPitool && intermediate >= 10);
+                getSetting("quirk_disable_frame_pipelining").value_or(!isPitool && intermediate == 10);
 
             m_alwaysUseFrameIdZero =
                 getSetting("quirk_always_use_frame_id_zero").value_or(m_disableFramePipeliningQuirk);
@@ -208,7 +208,8 @@ namespace pimax_openxr {
             Log("Could not detect Pitool/Pimax Client version\n");
         }
 
-        m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(true);
+        // Note: this is not compatible with async_submission=1!
+        m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
 
         // Initialize PVR.
 

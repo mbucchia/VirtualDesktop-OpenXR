@@ -436,6 +436,10 @@ namespace pimax_openxr {
         static void _7INVENSUN_CALL aSeeVReyeDataCallback(const aSeeVREyeData* eyeData, void* context);
 #endif
 
+        // frame.cpp
+        void asyncSubmissionThread();
+        void waitForAsyncSubmissionIdle(bool doRunningStart = false);
+
         // d3d11_native.cpp
         XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings);
         void cleanupD3D11();
@@ -609,6 +613,15 @@ namespace pimax_openxr {
         bool m_useDeferredFrameWaitThisFrame{false};
         bool m_postProcessFocusView{false};
         bool m_honorPremultiplyFlagOnProj0{false};
+
+        bool m_useAsyncSubmission{false};
+        bool m_needStartAsyncSubmissionThread{false};
+        bool m_terminateAsyncThread{false};
+        std::thread m_asyncSubmissionThread;
+        std::mutex m_asyncSubmissionMutex;
+        std::condition_variable m_asyncSubmissionCondVar;
+        std::vector<pvrLayer_Union> m_layersForAsyncSubmission;
+        std::chrono::high_resolution_clock::time_point m_lastWaitToBeginFrameTime{};
 
         // Synchronization. Locks must be acquired in this order.
         std::mutex m_swapchainsLock;

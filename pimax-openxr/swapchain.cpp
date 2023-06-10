@@ -477,6 +477,9 @@ namespace pimax_openxr {
         } else {
             flushD3D11Context();
         }
+        if (m_useAsyncSubmission) {
+            waitForAsyncSubmissionIdle();
+        }
         flushSubmissionContext();
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
