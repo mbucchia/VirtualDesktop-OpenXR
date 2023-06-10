@@ -440,11 +440,18 @@ namespace pimax_openxr {
             }
 
             if (m_sessionState != oldSessionState) {
+                TraceLoggingWrite(g_traceProvider,
+                                  "PXR_State",
+                                  TLArg(xr::ToCString(oldSessionState), "From"),
+                                  TLArg(xr::ToCString(m_sessionState), "To"));
+
                 m_sessionEventQueue.push_back(std::make_pair(m_sessionState, pvr_getTimeSeconds(m_pvr)));
             } else {
                 break;
             }
         }
+
+        TraceLoggingWrite(g_traceProvider, "PXR_State", TLArg(xr::ToCString(m_sessionState), "Current"));
     }
 
     // Read dynamic settings from the registry.
