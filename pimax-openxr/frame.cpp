@@ -374,13 +374,6 @@ namespace pimax_openxr {
             return XR_ERROR_LAYER_LIMIT_EXCEEDED;
         }
 
-        // Make sure the previous frame finished submission.
-        if (m_useAsyncSubmission) {
-            waitForAsyncSubmissionIdle();
-
-            // From this point, we know that the asynchronous thread is waiting, and we may use the submission context.
-        }
-
         // Critical section.
         {
             std::unique_lock lock1(m_swapchainsLock);
@@ -395,6 +388,14 @@ namespace pimax_openxr {
                 if (m_gpuTimerApp[m_currentTimerIndex]) {
                     m_gpuTimerApp[m_currentTimerIndex]->stop();
                 }
+            }
+
+            // Make sure the previous frame finished submission.
+            if (m_useAsyncSubmission) {
+                waitForAsyncSubmissionIdle();
+
+                // From this point, we know that the asynchronous thread is waiting, and we may use the submission
+                // context.
             }
 
             // Serializes the app work between D3D12/Vulkan and D3D11.
@@ -915,7 +916,8 @@ namespace pimax_openxr {
             }
             m_lastWaitToBeginFrameTime = std::chrono::high_resolution_clock::now();
 
-            {
+            // We either begin the frame immediately, or do it just-in-time before pvr_endFrame().
+            if (!m_useFrameTimingOverride) {
                 TraceLocalActivity(beginFrame);
                 TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
                 // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xBeginFrame().
@@ -940,6 +942,18 @@ namespace pimax_openxr {
                 break;
             }
 
+            // Deferring the call to pvr_beginFrame() prevents PVR from measuring the frame and lets us override it via
+            // openvr_render_ms.
+            if (m_useFrameTimingOverride) {
+                TraceLocalActivity(beginFrame);
+                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
+                // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xBeginFrame().
+                const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
+                if (result != pvr_success) {
+                    ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
+                }
+                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+            }
             {
                 std::vector<pvrLayerHeader*> layers;
                 for (auto& layer : m_layersForAsyncSubmission) {

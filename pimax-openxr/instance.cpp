@@ -221,7 +221,7 @@ namespace pimax_openxr {
         // https://social.msdn.microsoft.com/Forums/windows/en-US/298a1817-0af5-4efc-9663-db9a841a233b/verifyversioninfo-and-windows-10?forum=windowssdk
         DetourDllAttach("kernel32.dll", "VerifyVersionInfoW", hooked_VerifyVersionInfoW, g_original_VerifyVersionInfoW);
 
-        m_useFrameTimingOverride = getSetting("quirk_frame_timing_override").value_or(false);
+        m_useFrameTimingOverride = getSetting("quirk_frame_timing_override").value_or(true);
         if (m_useFrameTimingOverride) {
             // Detour hack: during initialization of the PVR client, we pretend to be "vrserver" (the SteamVR core
             // process) in order to remove PVR frame timing constraints.
