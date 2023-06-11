@@ -579,14 +579,25 @@ namespace pimax_openxr {
         if (state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT);
         } else {
-            pose.orientation = Quaternion::Identity();
+            if (m_lastValidHmdPose) {
+                locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
+                pose.orientation = m_lastValidHmdPose.value().orientation;
+            } else {
+                pose.orientation = Quaternion::Identity();
+            }
         }
         // For 9-axis setups, we propagate the Orientation bit to Position.
         if (state.StatusFlags & pvrStatus_PositionTracked || state.StatusFlags & pvrStatus_OrientationTracked) {
             locationFlags |= (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
         } else {
-            pose.position = {};
+            if (m_lastValidHmdPose) {
+                locationFlags |= XR_SPACE_LOCATION_POSITION_VALID_BIT;
+                pose.position = m_lastValidHmdPose.value().position;
+            } else {
+                pose.position = {};
+            }
         }
+        m_lastValidHmdPose = pose;
 
         if (velocity) {
             velocity->velocityFlags = 0;

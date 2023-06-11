@@ -689,6 +689,7 @@ namespace pimax_openxr {
         pvrInputState m_cachedInputState;
         bool m_actionsSyncedThisFrame{false};
         XrTime m_lastPredictedDisplayTime{0};
+        mutable std::optional<XrPosef> m_lastValidHmdPose;
 
         // FOV submission correction.
         bool m_needFocusFovCorrectionQuirk{false};
