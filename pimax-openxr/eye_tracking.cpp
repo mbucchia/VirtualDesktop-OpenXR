@@ -61,9 +61,11 @@ namespace pimax_openxr {
                 atan((state.GazeTan[xr::StereoView::Left].y + state.GazeTan[xr::StereoView::Right].y) / 2.f);
 
             // Use polar coordinates to create a unit vector.
-            unitVector = {cos(angleHorizontal) * cos(angleVertical),
-                          sin(angleHorizontal) * cos(angleVertical),
-                          sin(angleVertical)};
+            unitVector = {
+                sin(angleHorizontal) * cos(angleVertical),
+                -sin(angleVertical),
+                -cos(angleHorizontal) * cos(angleVertical),
+            };
 
             sampleTime = state.TimeInSeconds;
 
