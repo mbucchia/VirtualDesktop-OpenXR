@@ -10,7 +10,13 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 
 # Details and instructions on the Wiki: https://github.com/mbucchia/Pimax-OpenXR/wiki
 
-# Contributors
+## Donate
+
+Donations are welcome and totally optional. Please use [my GitHub sponsorship page](https://github.com/sponsors/mbucchia) to make one-time or recurring donations!
+
+Thank you!
+
+## Contributors
 
 Logo and icons designed by Smitty.
 
@@ -21,6 +27,6 @@ Special thanks to the following individuals for their contributions:
 - DJSlane
 - TommyVR
 
-# Very special thanks
+## Very special thanks
 
-Very special thanks to Pimax for providing me with a Pimax 8KX for development.
+Very special thanks to Pimax for providing me with a Pimax 8KX and a Pimax Crystal for development.
