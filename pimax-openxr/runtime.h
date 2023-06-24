@@ -524,11 +524,6 @@ namespace pimax_openxr {
         LARGE_INTEGER m_qpcFrequency{};
         double m_pvrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
-        std::map<XrPath, std::string> m_strings;
-        std::set<XrActionSet> m_actionSets;
-        std::set<XrAction> m_actions;
-        std::set<XrAction> m_actionsForCleanup;
-        std::set<XrHandTrackerEXT> m_handTrackers;
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         using CheckValidPathFunction = std::function<bool(const std::string&)>;
         std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
@@ -574,10 +569,6 @@ namespace pimax_openxr {
         bool m_sessionLossPending{false};
         bool m_sessionStopping{false};
         bool m_sessionExiting{false};
-        std::set<XrSwapchain> m_swapchains;
-        std::set<XrSpace> m_spaces;
-        Space* m_originSpace{nullptr};
-        Space* m_viewSpace{nullptr};
         bool m_useParallelProjection{false};
         int m_fovLevel{0};
         // [0] = left, [1] = right
@@ -585,9 +576,17 @@ namespace pimax_openxr {
         // [4] = left focus foveated, [5] = right focus foveated
         XrFovf m_cachedEyeFov[xr::QuadView::Count + 2];
         XrVector2f m_centerOfFov[xr::StereoView::Count];
-        float m_joystickDeadzone{0.f};
-        bool m_swapGripAimPoses{false};
+        std::mutex m_actionsAndSpacesMutex;
+        std::map<XrPath, std::string> m_strings; // protected by actionsAndSpacesMutex
+        std::set<XrActionSet> m_actionSets;
         std::set<XrActionSet> m_activeActionSets;
+        std::set<XrAction> m_actions;
+        std::set<XrAction> m_actionsForCleanup;
+        std::mutex m_handTrackersMutex;
+        std::set<XrHandTrackerEXT> m_handTrackers;
+        std::set<XrSpace> m_spaces;
+        Space* m_originSpace{nullptr};
+        Space* m_viewSpace{nullptr};
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
         bool m_isControllerActive[2]{false, false};
         std::string m_cachedControllerType[2];
@@ -605,22 +604,30 @@ namespace pimax_openxr {
         int64_t m_frameTimeOverrideOffsetUs{0};
         uint64_t m_frameTimeOverrideUs{0};
         size_t m_frameTimeFilterLength{3};
-        std::deque<uint64_t> m_frameTimeFilter;
+        float m_joystickDeadzone{0.f};
+        bool m_swapGripAimPoses{false};
+        bool m_useDeferredFrameWait{true};
+        bool m_useDeferredFrameWaitThisFrame{false};
+        bool m_honorPremultiplyFlagOnProj0{false};
+        bool m_useRunningStart{true};
+        bool m_debugFocusViews{false};
+        bool m_postProcessFocusView{true};
+
+        // Swapchains and other graphics stuff.
+        std::mutex m_swapchainsMutex;
+        std::set<XrSwapchain> m_swapchains;
+
+        // Mirror window.
         bool m_useMirrorWindow{false};
-        std::mutex m_mirrorWindowLock;
+        std::mutex m_mirrorWindowMutex;
         HWND m_mirrorWindowHwnd{nullptr};
         bool m_mirrorWindowReady{false};
         std::thread m_mirrorWindowThread;
         ComPtr<IDXGISwapChain1> m_mirrorWindowSwapchain;
         pvrMirrorTexture m_pvrMirrorSwapChain{nullptr};
         ComPtr<ID3D11Texture2D> m_mirrorTexture;
-        bool m_debugFocusViews{false};
-        bool m_useDeferredFrameWait{true};
-        bool m_useDeferredFrameWaitThisFrame{false};
-        bool m_postProcessFocusView{true};
-        bool m_honorPremultiplyFlagOnProj0{false};
-        bool m_useRunningStart{true};
 
+        // Async submittion thread.
         bool m_useAsyncSubmission{false};
         bool m_needStartAsyncSubmissionThread{false};
         bool m_terminateAsyncThread{false};
@@ -629,10 +636,6 @@ namespace pimax_openxr {
         std::condition_variable m_asyncSubmissionCondVar;
         std::vector<pvrLayer_Union> m_layersForAsyncSubmission;
         std::chrono::high_resolution_clock::time_point m_lastWaitToBeginFrameTime{};
-
-        // Synchronization. Locks must be acquired in this order.
-        std::mutex m_swapchainsLock;
-        std::mutex m_frameLock;
 
         // Guardian state.
         pvrTextureSwapChain m_guardianSwapchain{nullptr};
@@ -686,6 +689,7 @@ namespace pimax_openxr {
         ComPtr<ID3D11PixelShader> m_colorConversionPS;
 
         // Frame state.
+        std::mutex m_frameMutex;
         std::condition_variable m_frameCondVar;
         uint64_t m_frameWaited{0};
         uint64_t m_frameBegun{0};
@@ -696,11 +700,11 @@ namespace pimax_openxr {
         bool m_actionsSyncedThisFrame{false};
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
+        std::deque<uint64_t> m_frameTimeFilter;
 
         // FOV submission correction.
         bool m_needFocusFovCorrectionQuirk{false};
-        std::mutex m_focusFovMutex;
-        std::map<XrTime, std::pair<XrFovf, XrFovf>> m_focusFovForDisplayTime;
+        std::map<XrTime, std::pair<XrFovf, XrFovf>> m_focusFovForDisplayTime; // protected by actionsAndSpacesMutex
 
         // Statistics.
         AppInsights m_telemetry;

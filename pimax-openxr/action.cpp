@@ -80,6 +80,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         *path = stringToPath(pathString, true /* validate */);
         if (*path == XR_NULL_PATH) {
             return XR_ERROR_PATH_FORMAT_INVALID;
@@ -102,6 +104,8 @@ namespace pimax_openxr {
         if (instance != XR_NULL_PATH && (!m_instanceCreated || instance != (XrInstance)1)) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         const auto it = m_strings.find(path);
         if (it == m_strings.cend()) {
@@ -157,6 +161,8 @@ namespace pimax_openxr {
             return XR_ERROR_LOCALIZED_NAME_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         for (const auto& entry : m_actionSets) {
             const ActionSet& xrActionSet = *(ActionSet*)entry;
 
@@ -188,6 +194,8 @@ namespace pimax_openxr {
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroyActionSet
     XrResult OpenXrRuntime::xrDestroyActionSet(XrActionSet actionSet) {
         TraceLoggingWrite(g_traceProvider, "xrDestroyActionSet", TLXArg(actionSet, "ActionSet"));
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_actionSets.count(actionSet)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -229,6 +237,8 @@ namespace pimax_openxr {
             createInfo->actionType != XR_ACTION_TYPE_VIBRATION_OUTPUT) {
             return XR_ERROR_VALIDATION_FAILURE;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_actionSets.count(actionSet)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -300,6 +310,8 @@ namespace pimax_openxr {
     XrResult OpenXrRuntime::xrDestroyAction(XrAction action) {
         TraceLoggingWrite(g_traceProvider, "xrDestroyAction", TLXArg(action, "Action"));
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         if (!m_actions.count(action)) {
             return XR_ERROR_HANDLE_INVALID;
         }
@@ -337,6 +349,8 @@ namespace pimax_openxr {
                               TLXArg(suggestedBindings->suggestedBindings[i].action, "Action"),
                               TLArg(getXrPath(suggestedBindings->suggestedBindings[i].binding).c_str(), "Path"));
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (m_activeActionSets.size()) {
             return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
@@ -408,6 +422,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         if (m_activeActionSets.size()) {
             return XR_ERROR_ACTIONSETS_ALREADY_ATTACHED;
         }
@@ -450,6 +466,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (m_activeActionSets.empty()) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
@@ -494,6 +512,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_actions.count(getInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -592,6 +612,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_actions.count(getInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -701,6 +723,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         if (!m_actions.count(getInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
         }
@@ -807,6 +831,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         if (!m_actions.count(getInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
         }
@@ -878,6 +904,9 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        // TODO: Try to reduce contention here.
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         bool doSide[2] = {false, false};
         for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
@@ -1018,6 +1047,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         if (!m_actions.count(enumerateInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
         }
@@ -1073,6 +1104,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (m_activeActionSets.empty()) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
@@ -1174,6 +1207,8 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         if (!m_actions.count(hapticActionInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
         }
@@ -1260,6 +1295,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_actions.count(hapticActionInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;

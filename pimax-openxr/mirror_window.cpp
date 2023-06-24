@@ -111,7 +111,7 @@ namespace pimax_openxr {
 
             // Free resources ASAP.
             {
-                std::unique_lock lock(m_mirrorWindowLock);
+                std::unique_lock lock(m_mirrorWindowMutex);
                 m_mirrorWindowSwapchain.Reset();
                 m_mirrorTexture.Reset();
                 pvr_destroyMirrorTexture(m_pvrSession, m_pvrMirrorSwapChain);
@@ -122,7 +122,7 @@ namespace pimax_openxr {
     }
 
     void OpenXrRuntime::updateMirrorWindow() {
-        std::unique_lock lock(m_mirrorWindowLock);
+        std::unique_lock lock(m_mirrorWindowMutex);
 
         if (!m_mirrorWindowSwapchain) {
             return;

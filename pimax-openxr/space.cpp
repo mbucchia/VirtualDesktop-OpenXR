@@ -102,6 +102,8 @@ namespace pimax_openxr {
             return XR_ERROR_POSE_INVALID;
         }
 
+        std::unique_lock lock(m_actionsAndSpacesMutex);
+
         // Create the internal struct.
         Space& xrSpace = *new Space;
         xrSpace.referenceType = createInfo->referenceSpaceType;
@@ -135,6 +137,8 @@ namespace pimax_openxr {
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (createInfo->action != XR_NULL_HANDLE) {
             if (!m_actions.count(createInfo->action)) {
@@ -201,6 +205,8 @@ namespace pimax_openxr {
                           TLArg(time, "Time"));
 
         location->locationFlags = 0;
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_spaces.count(space) || !m_spaces.count(baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -284,6 +290,8 @@ namespace pimax_openxr {
                                      : xr::QuadView::Count)) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_spaces.count(viewLocateInfo->space)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -390,8 +398,6 @@ namespace pimax_openxr {
                     // xrEndFrame(). We must keep track of the correct values for each frame.
                     if (m_needFocusFovCorrectionQuirk &&
                         viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
-                        std::unique_lock lock(m_focusFovMutex);
-
                         m_focusFovForDisplayTime.insert_or_assign(
                             viewLocateInfo->displayTime,
                             std::make_pair(views[xr::QuadView::FocusLeft].fov, views[xr::QuadView::FocusRight].fov));
@@ -410,6 +416,8 @@ namespace pimax_openxr {
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroySpace
     XrResult OpenXrRuntime::xrDestroySpace(XrSpace space) {
         TraceLoggingWrite(g_traceProvider, "xrDestroySpace", TLXArg(space, "Space"));
+
+        std::unique_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_spaces.count(space)) {
             return XR_ERROR_HANDLE_INVALID;

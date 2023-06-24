@@ -353,8 +353,6 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        std::unique_lock lock(m_swapchainsLock);
-
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateSwapchain",
                           TLXArg(session, "Session"),
@@ -450,7 +448,11 @@ namespace pimax_openxr {
         *swapchain = (XrSwapchain)&xrSwapchain;
 
         // Maintain a list of known swapchains for validation and cleanup.
-        m_swapchains.insert(*swapchain);
+        {
+            std::unique_lock lock(m_swapchainsMutex);
+
+            m_swapchains.insert(*swapchain);
+        }
 
         TraceLoggingWrite(g_traceProvider, "xrCreateSwapchain", TLXArg(*swapchain, "Swapchain"));
 
@@ -459,9 +461,9 @@ namespace pimax_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroySwapchain
     XrResult OpenXrRuntime::xrDestroySwapchain(XrSwapchain swapchain) {
-        std::unique_lock lock(m_swapchainsLock);
-
         TraceLoggingWrite(g_traceProvider, "xrDestroySwapchain", TLXArg(swapchain, "Swapchain"));
+
+        std::unique_lock lock(m_swapchainsMutex);
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -530,12 +532,12 @@ namespace pimax_openxr {
                                                        uint32_t imageCapacityInput,
                                                        uint32_t* imageCountOutput,
                                                        XrSwapchainImageBaseHeader* images) {
-        std::unique_lock lock(m_swapchainsLock);
-
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateSwapchainImages",
                           TLXArg(swapchain, "Swapchain"),
                           TLArg(imageCapacityInput, "ImageCapacityInput"));
+
+        std::unique_lock lock(m_swapchainsMutex);
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -579,9 +581,9 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        std::unique_lock lock(m_swapchainsLock);
-
         TraceLoggingWrite(g_traceProvider, "xrAcquireSwapchainImage", TLXArg(swapchain, "Swapchain"));
+
+        std::unique_lock lock(m_swapchainsMutex);
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -621,12 +623,12 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        std::unique_lock lock(m_swapchainsLock);
-
         TraceLoggingWrite(g_traceProvider,
                           "xrWaitSwapchainImage",
                           TLXArg(swapchain, "Swapchain"),
                           TLArg(waitInfo->timeout, "Timeout"));
+
+        std::unique_lock lock(m_swapchainsMutex);
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -652,9 +654,9 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        std::unique_lock lock(m_swapchainsLock);
-
         TraceLoggingWrite(g_traceProvider, "xrReleaseSwapchainImage", TLXArg(swapchain, "Swapchain"));
+
+        std::unique_lock lock(m_swapchainsMutex);
 
         if (!m_swapchains.count(swapchain)) {
             return XR_ERROR_HANDLE_INVALID;

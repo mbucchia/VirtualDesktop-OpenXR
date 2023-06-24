@@ -64,6 +64,8 @@ namespace pimax_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        std::unique_lock lock(m_handTrackersMutex);
+
         HandTracker& xrHandTracker = *new HandTracker;
         xrHandTracker.side = createInfo->hand == XR_HAND_LEFT_EXT ? 0 : 1;
 
@@ -84,6 +86,8 @@ namespace pimax_openxr {
         if (!has_XR_EXT_hand_tracking) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
+
+        std::unique_lock lock(m_handTrackersMutex);
 
         if (!m_handTrackers.count(handTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -115,6 +119,8 @@ namespace pimax_openxr {
         if (!has_XR_EXT_hand_tracking) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
+
+        std::unique_lock lock(m_handTrackersMutex);
 
         if (!m_handTrackers.count(handTracker) || !m_spaces.count(locateInfo->baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;

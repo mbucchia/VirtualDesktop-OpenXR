@@ -79,7 +79,7 @@ namespace pimax_openxr {
                 waitTimer.start();
             }
 
-            std::unique_lock lock(m_frameLock);
+            std::unique_lock lock(m_frameMutex);
 
             m_frameTimerApp.stop();
             m_lastCpuFrameTimeUs = m_frameTimerApp.query();
@@ -243,7 +243,7 @@ namespace pimax_openxr {
                 waitTimer.start();
             }
 
-            std::unique_lock lock(m_frameLock);
+            std::unique_lock lock(m_frameMutex);
 
             if (m_frameWaited == m_frameCompleted || m_frameBegun == m_frameWaited) {
                 return XR_ERROR_CALL_ORDER_INVALID;
@@ -376,8 +376,8 @@ namespace pimax_openxr {
 
         // Critical section.
         {
-            std::unique_lock lock1(m_swapchainsLock);
-            std::unique_lock lock2(m_frameLock);
+            std::unique_lock lock1(m_swapchainsMutex);
+            std::unique_lock lock2(m_frameMutex);
 
             if (m_frameBegun == m_frameCompleted) {
                 return XR_ERROR_CALL_ORDER_INVALID;
@@ -440,6 +440,8 @@ namespace pimax_openxr {
                 if (!frameEndInfo->layers[i]) {
                     return XR_ERROR_LAYER_INVALID;
                 }
+
+                std::unique_lock lock3(m_actionsAndSpacesMutex);
 
                 if (!m_spaces.count(frameEndInfo->layers[i]->space)) {
                     return XR_ERROR_HANDLE_INVALID;
@@ -561,8 +563,6 @@ namespace pimax_openxr {
                         if (m_needFocusFovCorrectionQuirk && viewIndex >= xr::StereoView::Count) {
                             // Quirk for DCS World: the application does not pass the correct FOV for the focus views in
                             // xrEndFrame(). We must keep track of the correct values for each frame.
-                            std::unique_lock lock(m_focusFovMutex);
-
                             const auto& cit = m_focusFovForDisplayTime.find(frameEndInfo->displayTime);
                             if (cit != m_focusFovForDisplayTime.cend()) {
                                 const XrFovf& patchedFov =
@@ -890,7 +890,7 @@ namespace pimax_openxr {
                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
                                       TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
 
-                    std::unique_lock lock3(m_asyncSubmissionMutex);
+                    std::unique_lock lock(m_asyncSubmissionMutex);
                     m_layersForAsyncSubmission = layersAllocator;
 
                     m_asyncSubmissionCondVar.notify_all();
@@ -910,8 +910,6 @@ namespace pimax_openxr {
             m_sessionTotalFrameCount++;
 
             if (m_needFocusFovCorrectionQuirk) {
-                std::unique_lock lock(m_focusFovMutex);
-
                 // Delete all entries older than 1s.
                 while (!m_focusFovForDisplayTime.empty() &&
                        m_focusFovForDisplayTime.cbegin()->first < frameEndInfo->displayTime - 1'000'000'000) {
