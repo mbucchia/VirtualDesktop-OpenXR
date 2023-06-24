@@ -526,7 +526,7 @@ namespace pimax_openxr {
 
         m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(false);
 
-        m_postProcessFocusView = getSetting("postprocess_focus_view").value_or(false);
+        m_postProcessFocusView = getSetting("postprocess_focus_view").value_or(true);
 
         m_honorPremultiplyFlagOnProj0 = getSetting("honor_premultiply_flag_on_proj0").value_or(false);
 

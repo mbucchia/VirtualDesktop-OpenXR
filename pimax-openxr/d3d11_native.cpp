@@ -40,6 +40,12 @@ namespace pimax_openxr {
     using namespace pimax_openxr::log;
     using namespace pimax_openxr::utils;
 
+    struct AlphaBlendingCSConstants {
+        alignas(4) bool ignoreAlpha;
+        alignas(4) bool isUnpremultipliedAlpha;
+        alignas(4) bool isFocusView;
+    };
+
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetD3D11GraphicsRequirementsKHR
     XrResult OpenXrRuntime::xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
                                                               XrSystemId systemId,
@@ -526,11 +532,15 @@ namespace pimax_openxr {
             // 0: shader for Tex2D, 1: shader for Tex2DArray.
             const int shaderToUse = xrSwapchain.xrDesc.arraySize == 1 ? 0 : 1;
             {
+                AlphaBlendingCSConstants constants{};
+                constants.ignoreAlpha = needClearAlpha;
+                constants.isUnpremultipliedAlpha = needPremultiplyAlpha;
+                constants.isFocusView = postProcessFocusView;
+
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
                 CHECK_HRCMD(m_pvrSubmissionContext->Map(
                     xrSwapchain.convertConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
-                *(uint32_t*)mappedResources.pData =
-                    (needClearAlpha ? 0x1 : 0) | (needPremultiplyAlpha ? 0x2 : 0) | (postProcessFocusView ? 0x4 : 0);
+                memcpy(mappedResources.pData, &constants, sizeof(constants));
                 m_pvrSubmissionContext->Unmap(xrSwapchain.convertConstants.Get(), 0);
                 m_pvrSubmissionContext->CSSetConstantBuffers(0, 1, xrSwapchain.convertConstants.GetAddressOf());
 

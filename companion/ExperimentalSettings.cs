@@ -77,7 +77,7 @@ namespace companion
                 }
                 else
                 {
-                    forceHalf.Checked = forceThird.Checked = true;
+                    forceHalf.Checked = forceThird.Checked = false;
                 }
                 // Convert value from microseconds to tenth of milliseconds.
                 timingBias.Value = multiplier == 0 ? ((int)key.GetValue("frame_time_override_offset", 0) / 100) : 0;
