@@ -252,7 +252,7 @@ namespace pimax_openxr {
         // We must apply the transforms in order of the bone structure:
         // https://github.com/ValveSoftware/openvr/wiki/Hand-Skeleton#bone-structure
         XrVector3f barycenter{};
-        XrPosef accumulatedPose = Pose::Multiply(m_controllerHandPose[xrHandTracker.side], basePose);
+        XrPosef accumulatedPose = basePose;
         XrPosef wristPose;
         for (uint32_t i = 0; i < locations->jointCount; i++) {
             accumulatedPose = Pose::Multiply(pvrPoseToXrPose(skeletalData.boneTransforms[i]), accumulatedPose);

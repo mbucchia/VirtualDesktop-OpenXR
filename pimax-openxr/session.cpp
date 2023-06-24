@@ -172,8 +172,8 @@ namespace pimax_openxr {
         m_frameTimes.clear();
 
         m_isControllerActive[0] = m_isControllerActive[1] = false;
-        m_controllerAimPose[0] = m_controllerGripPose[0] = m_controllerHandPose[0] = m_controllerAimPose[1] =
-            m_controllerGripPose[1] = m_controllerHandPose[1] = Pose::Identity();
+        m_controllerAimPose[0] = m_controllerGripPose[0] = m_controllerAimPose[1] = m_controllerGripPose[1] =
+            Pose::Identity();
         rebindControllerActions(0);
         rebindControllerActions(1);
         m_activeActionSets.clear();
@@ -499,19 +499,9 @@ namespace pimax_openxr {
                        getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
                        getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
 
-        const auto oldControllerHandOffset = m_controllerHandOffset;
-        m_controllerHandOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("hand_pose_rot_x").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("hand_pose_rot_y").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("hand_pose_rot_z").value_or(0.f))}),
-            XrVector3f{getSetting("hand_pose_offset_x").value_or(0) / 1000.f,
-                       getSetting("hand_pose_offset_y").value_or(0) / 1000.f,
-                       getSetting("hand_pose_offset_z").value_or(0) / 1000.f});
-
         // Force re-evaluating poses.
         if (!Pose::Equals(oldControllerAimOffset, m_controllerAimOffset) ||
-            !Pose::Equals(oldControllerGripOffset, m_controllerGripOffset) ||
-            !Pose::Equals(oldControllerHandOffset, m_controllerHandOffset)) {
+            !Pose::Equals(oldControllerGripOffset, m_controllerGripOffset)) {
             m_cachedControllerType[0].clear();
             m_cachedControllerType[1].clear();
         }

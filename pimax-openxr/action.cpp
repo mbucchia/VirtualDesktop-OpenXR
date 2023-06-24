@@ -1314,7 +1314,6 @@ namespace pimax_openxr {
         std::string actualInteractionProfile;
         XrPosef gripPose = Pose::Identity();
         XrPosef aimPose = Pose::Identity();
-        XrPosef handPose = Pose::Identity();
 
         // Remove all old bindings for this controller.
         for (const auto& action : m_actions) {
@@ -1334,24 +1333,27 @@ namespace pimax_openxr {
             if (m_cachedControllerType[side] == "vive_controller") {
                 preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
                 m_localizedControllerType[side] = "Vive Controller";
-                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-45.f), 0, 0}),
+                gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(8.f), 0, 0}),
+                                          XrVector3f{0, 0, 0});
+                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(5.f), 0, 0}),
                                          XrVector3f{0, 0, -0.05f});
-                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-32.f), 0, 0}),
-                                          XrVector3f{0.03f, -0.062f, -0.1f});
             } else if (m_cachedControllerType[side] == "knuckles") {
                 preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
                 m_localizedControllerType[side] = "Index Controller";
-                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
+                gripPose = Pose::MakePose(
+                    Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(20.f), 0, PVR::DegreeToRad(2.f)}),
+                                         XrVector3f{0, 0, 0});
+                aimPose = Pose::MakePose(
+                    Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), PVR::DegreeToRad(-15.f), 0}),
                                          XrVector3f{0, 0, -0.05f});
-                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-32.f), 0, 0}),
-                                          XrVector3f{0.03f, -0.062f, -0.1f});
             } else if (m_cachedControllerType[side] == "pimax_crystal") {
                 preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
                 m_localizedControllerType[side] = "Crystal Controller";
-                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), 0, 0}),
-                                         XrVector3f{0, 0, -0.05f});
-                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-32.f), 0, 0}),
-                                          XrVector3f{0.03f, -0.062f, -0.1f});
+                gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                              {PVR::DegreeToRad(40.f), PVR::DegreeToRad(5.f), PVR::DegreeToRad(10.f)}),
+                                         XrVector3f{0, 0, 0});
+                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-5.f), 0, 0}),
+                                         XrVector3f{0, 0.03f, -0.06f});
             } else {
                 // Fallback to simple controller.
                 preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
@@ -1476,7 +1478,6 @@ namespace pimax_openxr {
 
             auto adjustedGripPose = Pose::Multiply(m_controllerGripOffset, gripPose);
             auto adjustedAimPose = Pose::Multiply(m_controllerAimOffset, aimPose);
-            auto adjustedHandPose = Pose::Multiply(m_controllerHandOffset, handPose);
             if (side == 1) {
                 const auto flipHandedness = [&](XrPosef& pose) {
                     // Mirror pose along the X axis.
@@ -1487,12 +1488,10 @@ namespace pimax_openxr {
                 };
                 flipHandedness(adjustedGripPose);
                 flipHandedness(adjustedAimPose);
-                flipHandedness(adjustedHandPose);
             }
 
             m_controllerGripPose[side] = adjustedGripPose;
             m_controllerAimPose[side] = adjustedAimPose;
-            m_controllerHandPose[side] = adjustedHandPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
             m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();
