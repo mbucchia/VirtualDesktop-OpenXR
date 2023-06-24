@@ -372,6 +372,7 @@ namespace pimax_openxr {
         // action.cpp
         void rebindControllerActions(int side);
         std::string getXrPath(XrPath path) const;
+        XrPath stringToPath(const std::string& path, bool validate = false);
         int getActionSide(const std::string& fullPath, bool allowExtraPaths = false) const;
         bool isActionEyeTracker(const std::string& fullPath) const;
         XrVector2f handleJoystickDeadzone(pvrVector2f raw) const;
@@ -413,6 +414,13 @@ namespace pimax_openxr {
         std::optional<std::string> remapIndexControllerToSimpleController(const std::string& path) const;
 
         // space.cpp
+
+        XrSpaceLocationFlags locateSpace(const Space& xrSpace,
+                                         const Space& xrBaseSpace,
+                                         XrTime time,
+                                         XrPosef& pose,
+                                         XrSpaceVelocity* velocity = nullptr,
+                                         XrEyeGazeSampleTimeEXT* gazeSampleTime = nullptr) const;
         XrSpaceLocationFlags locateSpaceToOrigin(const Space& xrSpace,
                                                  XrTime time,
                                                  XrPosef& pose,
@@ -568,8 +576,8 @@ namespace pimax_openxr {
         bool m_sessionExiting{false};
         std::set<XrSwapchain> m_swapchains;
         std::set<XrSpace> m_spaces;
-        XrSpace m_originSpace{XR_NULL_HANDLE};
-        XrSpace m_viewSpace{XR_NULL_HANDLE};
+        Space* m_originSpace{nullptr};
+        Space* m_viewSpace{nullptr};
         bool m_useParallelProjection{false};
         int m_fovLevel{0};
         // [0] = left, [1] = right
@@ -630,7 +638,7 @@ namespace pimax_openxr {
 
         // Guardian state.
         pvrTextureSwapChain m_guardianSwapchain{nullptr};
-        XrSpace m_guardianSpace{XR_NULL_HANDLE};
+        Space *m_guardianSpace{nullptr};
         XrExtent2Di m_guardianExtent{};
         float m_guardianThreshold{1.1f};
         float m_guardianRadius{1.6f};

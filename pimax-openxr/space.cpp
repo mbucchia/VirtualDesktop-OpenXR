@@ -229,63 +229,7 @@ namespace pimax_openxr {
         Space& xrSpace = *(Space*)space;
         Space& xrBaseSpace = *(Space*)baseSpace;
 
-        XrPosef spaceToVirtual = Pose::Identity();
-        XrSpaceVelocity spaceToVirtualVelocity{};
-        XrPosef baseSpaceToVirtual = Pose::Identity();
-        XrSpaceVelocity baseSpaceToVirtualVelocity{};
-        XrSpaceLocationFlags flags1, flags2;
-        if (xrSpace.referenceType != xrBaseSpace.referenceType ||
-            (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_MAX_ENUM && xrSpace.action != xrBaseSpace.action &&
-             xrSpace.subActionPath != xrBaseSpace.subActionPath)) {
-            flags1 = locateSpaceToOrigin(
-                xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr, gazeSampleTime);
-            flags2 = locateSpaceToOrigin(xrBaseSpace,
-                                         time,
-                                         baseSpaceToVirtual,
-                                         velocity ? &baseSpaceToVirtualVelocity : nullptr,
-                                         gazeSampleTime);
-        } else {
-            // Optimize the case of locating against the same reference space or same action space.
-            flags1 = flags2 = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT |
-                              XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
-            spaceToVirtual = xrSpace.poseInSpace;
-            baseSpaceToVirtual = xrBaseSpace.poseInSpace;
-            if (velocity) {
-                spaceToVirtualVelocity.velocityFlags = baseSpaceToVirtualVelocity.velocityFlags =
-                    XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-                spaceToVirtualVelocity.angularVelocity = spaceToVirtualVelocity.linearVelocity =
-                    baseSpaceToVirtualVelocity.angularVelocity = baseSpaceToVirtualVelocity.linearVelocity = {};
-            }
-        }
-
-        // If either pose is not valid, we cannot locate.
-        if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags2))) {
-            TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(0, "LocationFlags"));
-            return XR_SUCCESS;
-        }
-
-        location->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
-
-        // Both poses need to be tracked for the location to be tracked.
-        if (Pose::IsPoseTracked(flags1) && Pose::IsPoseTracked(flags2)) {
-            location->locationFlags |=
-                XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
-        }
-
-        // Combine the poses.
-        location->pose = Pose::Multiply(spaceToVirtual, Pose::Invert(baseSpaceToVirtual));
-        if (velocity) {
-            velocity->velocityFlags = spaceToVirtualVelocity.velocityFlags & baseSpaceToVirtualVelocity.velocityFlags;
-            if (velocity->velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT) {
-                velocity->angularVelocity =
-                    spaceToVirtualVelocity.angularVelocity - baseSpaceToVirtualVelocity.angularVelocity;
-            }
-            if (velocity->velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT) {
-                // TODO: Does not account for centripetral forces.
-                velocity->linearVelocity =
-                    spaceToVirtualVelocity.linearVelocity - baseSpaceToVirtualVelocity.linearVelocity;
-            }
-        }
+        location->locationFlags = locateSpace(xrSpace, xrBaseSpace, time, location->pose, velocity, gazeSampleTime);
 
         if (!velocity) {
             TraceLoggingWrite(g_traceProvider,
@@ -341,6 +285,10 @@ namespace pimax_openxr {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
+        if (!m_spaces.count(viewLocateInfo->space)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
         *viewCountOutput =
             (viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO ? xr::StereoView::Count
                                                                                                 : xr::QuadView::Count);
@@ -368,13 +316,9 @@ namespace pimax_openxr {
             }
 
             // Get the HMD pose in the base space.
-            XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-            const auto result =
-                xrLocateSpace(m_viewSpace, viewLocateInfo->space, viewLocateInfo->displayTime, &location);
-            if (XR_FAILED(result)) {
-                return result;
-            }
-            viewState->viewStateFlags = location.locationFlags;
+            XrPosef headPose;
+            viewState->viewStateFlags =
+                locateSpace(*m_viewSpace, *(Space*)viewLocateInfo->space, viewLocateInfo->displayTime, headPose);
 
             // Query the eye tracker if needed.
             bool isGazeValid = false;
@@ -392,7 +336,7 @@ namespace pimax_openxr {
                 hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
 
                 pvrPosef eyePoses[xr::StereoView::Count]{{}, {}};
-                pvr_calcEyePoses(m_pvr, xrPoseToPvrPose(location.pose), hmdToEyePose, eyePoses);
+                pvr_calcEyePoses(m_pvr, xrPoseToPvrPose(headPose), hmdToEyePose, eyePoses);
 
                 TraceLoggingWrite(g_traceProvider, "xrLocateViews", TLArg(viewState->viewStateFlags, "ViewStateFlags"));
 
@@ -477,6 +421,72 @@ namespace pimax_openxr {
         m_spaces.erase(space);
 
         return XR_SUCCESS;
+    }
+
+    XrSpaceLocationFlags OpenXrRuntime::locateSpace(const Space& xrSpace,
+                                                    const Space& xrBaseSpace,
+                                                    XrTime time,
+                                                    XrPosef& pose,
+                                                    XrSpaceVelocity* velocity,
+                                                    XrEyeGazeSampleTimeEXT* gazeSampleTime) const {
+        XrPosef spaceToVirtual = Pose::Identity();
+        XrSpaceVelocity spaceToVirtualVelocity{};
+        XrPosef baseSpaceToVirtual = Pose::Identity();
+        XrSpaceVelocity baseSpaceToVirtualVelocity{};
+        XrSpaceLocationFlags flags1, flags2, locationFlags;
+        if (xrSpace.referenceType != xrBaseSpace.referenceType ||
+            (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_MAX_ENUM && xrSpace.action != xrBaseSpace.action &&
+             xrSpace.subActionPath != xrBaseSpace.subActionPath)) {
+            flags1 = locateSpaceToOrigin(
+                xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr, gazeSampleTime);
+            flags2 = locateSpaceToOrigin(xrBaseSpace,
+                                         time,
+                                         baseSpaceToVirtual,
+                                         velocity ? &baseSpaceToVirtualVelocity : nullptr,
+                                         gazeSampleTime);
+        } else {
+            // Optimize the case of locating against the same reference space or same action space.
+            flags1 = flags2 = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT |
+                              XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+            spaceToVirtual = xrSpace.poseInSpace;
+            baseSpaceToVirtual = xrBaseSpace.poseInSpace;
+            if (velocity) {
+                spaceToVirtualVelocity.velocityFlags = baseSpaceToVirtualVelocity.velocityFlags =
+                    XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+                spaceToVirtualVelocity.angularVelocity = spaceToVirtualVelocity.linearVelocity =
+                    baseSpaceToVirtualVelocity.angularVelocity = baseSpaceToVirtualVelocity.linearVelocity = {};
+            }
+        }
+
+        // If either pose is not valid, we cannot locate.
+        if (!(Pose::IsPoseValid(flags1) && Pose::IsPoseValid(flags2))) {
+            pose = Pose::Identity();
+            return 0;
+        }
+
+        locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+
+        // Both poses need to be tracked for the location to be tracked.
+        if (Pose::IsPoseTracked(flags1) && Pose::IsPoseTracked(flags2)) {
+            locationFlags |= XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+        }
+
+        // Combine the poses.
+        pose = Pose::Multiply(spaceToVirtual, Pose::Invert(baseSpaceToVirtual));
+        if (velocity) {
+            velocity->velocityFlags = spaceToVirtualVelocity.velocityFlags & baseSpaceToVirtualVelocity.velocityFlags;
+            if (velocity->velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT) {
+                velocity->angularVelocity =
+                    spaceToVirtualVelocity.angularVelocity - baseSpaceToVirtualVelocity.angularVelocity;
+            }
+            if (velocity->velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT) {
+                // TODO: Does not account for centripetral forces.
+                velocity->linearVelocity =
+                    spaceToVirtualVelocity.linearVelocity - baseSpaceToVirtualVelocity.linearVelocity;
+            }
+        }
+
+        return locationFlags;
     }
 
     XrSpaceLocationFlags OpenXrRuntime::locateSpaceToOrigin(const Space& xrSpace,

@@ -183,18 +183,12 @@ namespace pimax_openxr {
 
         try {
             // Create a reference space with the origin and the HMD pose.
-            {
-                XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
-                spaceInfo.poseInReferenceSpace = Pose::Identity();
-                spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-                CHECK_XRCMD(xrCreateReferenceSpace((XrSession)1, &spaceInfo, &m_originSpace));
-            }
-            {
-                XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
-                spaceInfo.poseInReferenceSpace = Pose::Identity();
-                spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
-                CHECK_XRCMD(xrCreateReferenceSpace((XrSession)1, &spaceInfo, &m_viewSpace));
-            }
+            m_originSpace = new Space;
+            m_originSpace->referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+            m_originSpace->poseInSpace = Pose::Identity();
+            m_viewSpace = new Space;
+            m_viewSpace->referenceType = XR_REFERENCE_SPACE_TYPE_VIEW;
+            m_viewSpace->poseInSpace = Pose::Identity();
         } catch (std::exception& exc) {
             m_sessionCreated = false;
             throw exc;
@@ -249,17 +243,29 @@ namespace pimax_openxr {
 #endif
 
         // Destroy hand trackers (tied to session).
-        while (m_handTrackers.size()) {
-            CHECK_XRCMD(xrDestroyHandTrackerEXT(*m_handTrackers.begin()));
+        for (auto handTracker : m_handTrackers) {
+            HandTracker* xrHandTracker = (HandTracker*)handTracker;
+            delete xrHandTracker;
         }
+        m_handTrackers.clear();
 
         // Destroy action spaces (tied to session).
-        while (m_spaces.size()) {
-            CHECK_XRCMD(xrDestroySpace(*m_spaces.begin()));
+        for (auto space : m_spaces) {
+            Space* xrSpace = (Space*)space;
+            delete xrSpace;
         }
+        m_spaces.clear();
+        if (m_guardianSpace) {
+            delete m_guardianSpace;
+        }
+        delete m_originSpace;
+        delete m_viewSpace;
+        m_guardianSpace = m_originSpace = m_viewSpace = nullptr;
 
         // Destroy all swapchains (tied to session).
         while (m_swapchains.size()) {
+            // TODO: Ideally we do not invoke OpenXR public APIs to avoid confusing event tracing and possible
+            // deadlocks.
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
         }
         if (m_guardianSwapchain) {
@@ -618,15 +624,10 @@ namespace pimax_openxr {
         }
 
         // Create the guardian reference space, 1m below eyesight, flat on the floor.
-        Space& xrSpace = *new Space;
-        xrSpace.referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-        xrSpace.poseInSpace =
+        m_guardianSpace = new Space;
+        m_guardianSpace->referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+        m_guardianSpace->poseInSpace =
             Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-90.f), 0.f, 0.f}), XrVector3f{0, -1, 0});
-
-        m_guardianSpace = (XrSpace)&xrSpace;
-
-        // Maintain a list of known spaces for validation and cleanup.
-        m_spaces.insert(m_guardianSpace);
     }
 
 } // namespace pimax_openxr

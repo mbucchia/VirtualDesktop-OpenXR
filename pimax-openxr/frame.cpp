@@ -441,6 +441,10 @@ namespace pimax_openxr {
                     return XR_ERROR_LAYER_INVALID;
                 }
 
+                if (!m_spaces.count(frameEndInfo->layers[i]->space)) {
+                    return XR_ERROR_HANDLE_INVALID;
+                }
+
                 layersAllocator.push_back({});
                 auto* layer = &layersAllocator.back();
                 layer->Header.Flags = 0;
@@ -548,10 +552,10 @@ namespace pimax_openxr {
                             proj->views[viewIndex].subImage.imageRect.extent.height;
 
                         // Fill out pose and FOV information.
-                        XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-                        CHECK_XRCMD(xrLocateSpace(proj->space, m_originSpace, frameEndInfo->displayTime, &location));
+                        XrPosef layerPose;
+                        locateSpace(*(Space*)proj->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
                         layer->EyeFov.RenderPose[pvrViewIndex] =
-                            xrPoseToPvrPose(Pose::Multiply(proj->views[viewIndex].pose, location.pose));
+                            xrPoseToPvrPose(Pose::Multiply(proj->views[viewIndex].pose, layerPose));
 
                         XrFovf fov = proj->views[viewIndex].fov;
                         if (m_needFocusFovCorrectionQuirk && viewIndex >= xr::StereoView::Count) {
@@ -728,16 +732,15 @@ namespace pimax_openxr {
 
                     // Fill out pose and quad information.
                     if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
-                        XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+                        XrPosef layerPose;
                         if (!m_needWorldLockedQuadLayerQuirk) {
-                            CHECK_XRCMD(
-                                xrLocateSpace(quad->space, m_originSpace, frameEndInfo->displayTime, &location));
+                            locateSpace(*(Space*)quad->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
                         } else {
                             // Workaround: use head-locked quads, otherwise PVR seems to misplace them in space.
-                            CHECK_XRCMD(xrLocateSpace(quad->space, m_viewSpace, frameEndInfo->displayTime, &location));
+                            locateSpace(*(Space*)quad->space, *m_viewSpace, frameEndInfo->displayTime, layerPose);
                             layer->Header.Flags |= pvrLayerFlag_HeadLocked;
                         }
-                        layer->Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, location.pose));
+                        layer->Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, layerPose));
                     } else {
                         layer->Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
                         layer->Header.Flags |= pvrLayerFlag_HeadLocked;
@@ -752,19 +755,19 @@ namespace pimax_openxr {
 
             {
                 // Defer initialization of guardian resources until they are first needed.
-                if (m_guardianSpace == XR_NULL_HANDLE) {
+                if (!m_guardianSpace) {
                     initializeGuardianResources();
                 }
 
                 // Measure the floor distance between the center of the guardian and the headset.
-                XrSpaceLocation viewToBase{XR_TYPE_SPACE_LOCATION};
-                CHECK_XRCMD(xrLocateSpace(m_viewSpace, m_originSpace, frameEndInfo->displayTime, &viewToBase));
-                XrSpaceLocation guardianToBase{XR_TYPE_SPACE_LOCATION};
-                CHECK_XRCMD(xrLocateSpace(m_guardianSpace, m_originSpace, frameEndInfo->displayTime, &guardianToBase));
-                if (Pose::IsPoseValid(viewToBase.locationFlags) && Pose::IsPoseValid(guardianToBase.locationFlags) &&
-                    Length(XrVector3f{guardianToBase.pose.position.x, 0.f, guardianToBase.pose.position.z} -
-                           XrVector3f{viewToBase.pose.position.x, 0.f, viewToBase.pose.position.z}) >
-                        m_guardianThreshold) {
+                XrPosef viewToOrigin;
+                XrSpaceLocationFlags locationFlags =
+                    locateSpace(*m_viewSpace, *m_originSpace, frameEndInfo->displayTime, viewToOrigin);
+                XrPosef guardianToOrigin;
+                locateSpace(*m_guardianSpace, *m_originSpace, frameEndInfo->displayTime, guardianToOrigin);
+                if (Pose::IsPoseValid(locationFlags) &&
+                    Length(XrVector3f{guardianToOrigin.position.x, 0.f, guardianToOrigin.position.z} -
+                           XrVector3f{viewToOrigin.position.x, 0.f, viewToOrigin.position.z}) > m_guardianThreshold) {
                     // Draw the guardian on top of everything.
                     layersAllocator.push_back({});
                     auto& layer = layersAllocator.back();
@@ -778,11 +781,11 @@ namespace pimax_openxr {
                     // Place the guardian in 3D space as a 2D overlay.
                     XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
                     if (!m_needWorldLockedQuadLayerQuirk) {
-                        layer.Quad.QuadPoseCenter = xrPoseToPvrPose(guardianToBase.pose);
+                        layer.Quad.QuadPoseCenter = xrPoseToPvrPose(guardianToOrigin);
                     } else {
                         // Workaround: use head-locked quads, otherwise PVR seems to misplace them in space.
                         layer.Quad.QuadPoseCenter =
-                            xrPoseToPvrPose(Pose::Multiply(guardianToBase.pose, Pose::Invert(viewToBase.pose)));
+                            xrPoseToPvrPose(Pose::Multiply(guardianToOrigin, Pose::Invert(viewToOrigin)));
                         layer.Header.Flags |= pvrLayerFlag_HeadLocked;
                     }
                     layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;

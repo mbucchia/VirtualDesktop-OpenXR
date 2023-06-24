@@ -80,24 +80,9 @@ namespace pimax_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        std::string_view str(pathString);
-
-        bool found = false;
-        for (auto entry : m_strings) {
-            if (entry.second == str) {
-                *path = entry.first;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            if (str.length() >= XR_MAX_PATH_LENGTH || !validatePath(pathString)) {
-                return XR_ERROR_PATH_FORMAT_INVALID;
-            }
-
-            *path = (XrPath)++m_stringIndex;
-            m_strings.insert_or_assign(*path, str);
+        *path = stringToPath(pathString, true /* validate */);
+        if (*path == XR_NULL_PATH) {
+            return XR_ERROR_PATH_FORMAT_INVALID;
         }
 
         TraceLoggingWrite(g_traceProvider, "xrStringToPath", TLArg(*path, "Path"));
@@ -478,9 +463,7 @@ namespace pimax_openxr {
         if (topLevelPath == "/user/hand/left" || topLevelPath == "/user/hand/right") {
             interactionProfile->interactionProfile = m_currentInteractionProfile[getActionSide(topLevelPath)];
         } else if (topLevelPath == "/user/eyes_ext") {
-            CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE,
-                                       "/interaction_profiles/ext/eye_gaze_interaction",
-                                       &interactionProfile->interactionProfile));
+            interactionProfile->interactionProfile = stringToPath("/interaction_profiles/ext/eye_gaze_interaction");
         } else if (topLevelPath == "/user/head" || topLevelPath == "/user/gamepad") {
         } else {
             return XR_ERROR_PATH_UNSUPPORTED;
@@ -1055,7 +1038,7 @@ namespace pimax_openxr {
         if (sourceCapacityInput && sources) {
             uint32_t i = 0;
             for (const auto& source : xrAction.actionSources) {
-                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, source.second.realPath.c_str(), &sources[i]));
+                sources[i] = stringToPath(source.second.realPath.c_str());
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateBoundSourcesForAction",
                                   TLArg(source.first.c_str(), "Source"),
@@ -1489,8 +1472,7 @@ namespace pimax_openxr {
         if (!actualInteractionProfile.empty()) {
             Log("Using interaction profile: %s (%s)\n", actualInteractionProfile.c_str(), side == 0 ? "Left" : "Right");
 
-            CHECK_XRCMD(
-                xrStringToPath(XR_NULL_HANDLE, actualInteractionProfile.c_str(), &m_currentInteractionProfile[side]));
+            m_currentInteractionProfile[side] = stringToPath(actualInteractionProfile.c_str());
 
             auto adjustedGripPose = Pose::Multiply(m_controllerGripOffset, gripPose);
             auto adjustedAimPose = Pose::Multiply(m_controllerAimOffset, aimPose);
@@ -1532,6 +1514,22 @@ namespace pimax_openxr {
         }
 
         return it->second;
+    }
+
+    XrPath OpenXrRuntime::stringToPath(const std::string& path, bool validate) {
+        for (auto entry : m_strings) {
+            if (entry.second == path) {
+                return entry.first;
+            }
+        }
+
+        if (path.length() >= XR_MAX_PATH_LENGTH || !validatePath(path)) {
+            return XR_NULL_PATH;
+        }
+
+        m_stringIndex++;
+        m_strings.insert_or_assign(m_stringIndex, path);
+        return (XrPath)m_stringIndex;
     }
 
     int OpenXrRuntime::getActionSide(const std::string& fullPath, bool allowExtraPaths) const {

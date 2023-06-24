@@ -295,11 +295,14 @@ namespace pimax_openxr {
             Action* xrAction = (Action*)action;
             delete xrAction;
         }
-        while (m_actionSets.size()) {
-            CHECK_XRCMD(xrDestroyActionSet(*m_actionSets.begin()));
+        for (auto actionSet : m_actionSets) {
+            ActionSet* xrActionSet = (ActionSet*)actionSet;
+            delete xrActionSet;
         }
 
         if (m_sessionCreated) {
+            // TODO: Ideally we do not invoke OpenXR public APIs to avoid confusing event tracing and possible
+            // deadlocks.
             xrDestroySession((XrSession)1);
         }
 
