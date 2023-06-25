@@ -269,7 +269,8 @@ namespace pimax_openxr {
 
         for (uint32_t i = 0; i < createInfo->countSubactionPaths; i++) {
             const std::string& subactionPath = getXrPath(createInfo->subactionPaths[i]);
-            if (subactionPath != "/user/hand/left" && subactionPath != "/user/hand/right") {
+            if (subactionPath != "/user/hand/left" && subactionPath != "/user/hand/right" &&
+                (!has_XR_EXT_eye_gaze_interaction || subactionPath != "/user/eyes_ext")) {
                 return XR_ERROR_PATH_UNSUPPORTED;
             }
         }
@@ -1340,18 +1341,18 @@ namespace pimax_openxr {
             } else if (m_cachedControllerType[side] == "knuckles") {
                 preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
                 m_localizedControllerType[side] = "Index Controller";
-                gripPose = Pose::MakePose(
-                    Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(20.f), 0, PVR::DegreeToRad(2.f)}),
-                                         XrVector3f{0, 0, 0});
+                gripPose =
+                    Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(20.f), 0, PVR::DegreeToRad(2.f)}),
+                                   XrVector3f{0, 0, 0});
                 aimPose = Pose::MakePose(
                     Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), PVR::DegreeToRad(-15.f), 0}),
-                                         XrVector3f{0, 0, -0.05f});
+                    XrVector3f{0, 0, -0.05f});
             } else if (m_cachedControllerType[side] == "pimax_crystal") {
                 preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
                 m_localizedControllerType[side] = "Crystal Controller";
                 gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
                                               {PVR::DegreeToRad(40.f), PVR::DegreeToRad(5.f), PVR::DegreeToRad(10.f)}),
-                                         XrVector3f{0, 0, 0});
+                                          XrVector3f{0, 0, 0});
                 aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-5.f), 0, 0}),
                                          XrVector3f{0, 0.03f, -0.06f});
             } else {
@@ -1545,7 +1546,7 @@ namespace pimax_openxr {
     }
 
     bool OpenXrRuntime::isActionEyeTracker(const std::string& fullPath) const {
-        return fullPath == "/user/eyes_ext/input/gaze_ext/pose";
+        return fullPath == "/user/eyes_ext/input/gaze_ext/pose" || fullPath == "/user/eyes_ext/input/gaze_ext";
     }
 
     XrVector2f OpenXrRuntime::handleJoystickDeadzone(pvrVector2f raw) const {
