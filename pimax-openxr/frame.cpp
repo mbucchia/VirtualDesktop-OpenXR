@@ -330,16 +330,17 @@ namespace pimax_openxr {
                               TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_all();
 
-            const bool isAswActive = pvr_getIntConfig(m_pvrSession, "asw_active", 0);
+            m_isSmartSmoothingEnabled = pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0);
+            m_isSmartSmoothingActive = pvr_getIntConfig(m_pvrSession, "asw_active", 0);
             TraceLoggingWrite(
                 g_traceProvider,
                 "PVR_Status",
-                TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
+                TLArg(m_isSmartSmoothingEnabled, "EnableSmartSmoothing"),
                 TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"),
                 TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_available", 0), "SmartSmoothingAvailable"),
-                TLArg(isAswActive, "SmartSmoothingActive"));
+                TLArg(m_isSmartSmoothingActive, "SmartSmoothingActive"));
 
-            if (isAswActive) {
+            if (m_isSmartSmoothingActive) {
                 // TODO: For now we assume 1/2 only. Pimax used to have a 1/3 mode, which we would need to accommodate
                 // if they re-enabled it.
                 m_predictedFrameDuration = m_idealFrameDuration * 2.f;
@@ -439,6 +440,8 @@ namespace pimax_openxr {
 
             std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
 
+            bool firstProjectionLayer = true;
+
             // Construct the list of layers.
             std::vector<pvrLayer_Union> layersAllocator;
             layersAllocator.reserve(
@@ -499,6 +502,10 @@ namespace pimax_openxr {
                     layer->Header.Type = pvrLayerType_EyeFov;
 
                     for (uint32_t viewIndex = 0; viewIndex < viewCount; viewIndex++) {
+                        if (viewIndex == 0) {
+                            m_proj0Extent = proj->views[viewIndex].subImage.imageRect.extent;
+                        }
+
                         // Quad views uses 2 stereo layers.
                         if (viewIndex == xr::StereoView::Count) {
                             // Push this layer and start a new one.
@@ -671,6 +678,8 @@ namespace pimax_openxr {
                     // Warning: quad views might have created 2 layers above!
                     // One of them was pushed already to the list of layers.
 
+                    firstProjectionLayer = false;
+
                 } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD) {
                     const XrCompositionLayerQuad* quad =
                         reinterpret_cast<const XrCompositionLayerQuad*>(frameEndInfo->layers[i]);
@@ -759,6 +768,43 @@ namespace pimax_openxr {
                     layer->Quad.QuadSize.y = quad->size.height;
                 } else {
                     return XR_ERROR_LAYER_INVALID;
+                }
+            }
+
+            {
+                // Defer initialization of overlay resources until they are first needed.
+                if (!m_overlaySwapchain) {
+                    initializeOverlayResources();
+                }
+
+                if (m_isOverlayVisible) {
+                    refreshOverlay();
+
+                    // Draw the overlay on top of everything but below the guardian (see below).
+                    layersAllocator.push_back({});
+                    auto& layer = layersAllocator.back();
+                    layer.Header.Type = pvrLayerType_Quad;
+                    layer.Header.Flags = 0;
+                    layer.Quad.ColorTexture = m_overlaySwapchain;
+                    layer.Quad.Viewport.x = layer.Quad.Viewport.y = 0;
+                    layer.Quad.Viewport.width = m_overlayExtent.width;
+                    layer.Quad.Viewport.height = m_overlayExtent.height;
+
+                    // Place the guardian in 3D space as a 2D overlay.
+                    XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+                    if (!m_needWorldLockedQuadLayerQuirk) {
+                        layer.Quad.QuadPoseCenter = xrPoseToPvrPose(m_overlayPose);
+                    } else {
+                        // Workaround: use head-locked quads, otherwise PVR seems to misplace them in space.
+                        XrPosef viewToOrigin;
+                        XrSpaceLocationFlags locationFlags =
+                            locateSpace(*m_viewSpace, *m_originSpace, frameEndInfo->displayTime, viewToOrigin);
+                        layer.Quad.QuadPoseCenter =
+                            xrPoseToPvrPose(Pose::Multiply(m_overlayPose, Pose::Invert(viewToOrigin)));
+                        layer.Header.Flags |= pvrLayerFlag_HeadLocked;
+                    }
+                    layer.Quad.QuadSize.x = 0.5f;
+                    layer.Quad.QuadSize.y = layer.Quad.QuadSize.x * ((float)m_overlayExtent.height / m_overlayExtent.width);
                 }
             }
 

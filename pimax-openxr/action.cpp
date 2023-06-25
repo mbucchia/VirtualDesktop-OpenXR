@@ -937,6 +937,7 @@ namespace pimax_openxr {
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
         CHECK_PVRCMD(pvr_getInputState(m_pvrSession, &m_cachedInputState));
         bool wasRecenteringPressed = false;
+        bool wasSystemPressed = false;
         for (uint32_t side = 0; side < 2; side++) {
             if (!doSide[side]) {
                 continue;
@@ -1017,11 +1018,12 @@ namespace pimax_openxr {
                 wasRecenteringPressed || (((m_cachedInputState.HandButtons[side] & pvrButton_System) ||
                                            (m_cachedInputState.HandButtons[side] & pvrButton_ApplicationMenu)) &&
                                           (m_cachedInputState.HandButtons[side] & pvrButton_Trigger));
+            wasSystemPressed = wasSystemPressed || (m_cachedInputState.HandButtons[side] & pvrButton_System);
         }
         m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
         // Execute built-in actions.
-        handleBuiltinActions(wasRecenteringPressed);
+        handleBuiltinActions(wasRecenteringPressed, wasSystemPressed);
         m_actionsSyncedThisFrame = true;
 
         return XR_SUCCESS;
@@ -1596,25 +1598,61 @@ namespace pimax_openxr {
         return {normalizedInput.x * scaling, normalizedInput.y * scaling};
     }
 
-    void OpenXrRuntime::handleBuiltinActions(bool wasRecenteringPressed) {
+    void OpenXrRuntime::handleBuiltinActions(bool wasRecenteringPressed, bool wasSystemPressed) {
+        const auto now = pvr_getTimeSeconds(m_pvr);
+
         wasRecenteringPressed =
             wasRecenteringPressed ||
             (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_MENU) < 0 && GetAsyncKeyState(VK_SPACE) < 0);
         if (wasRecenteringPressed) {
-            const auto now = pvr_getTimeSeconds(m_pvr);
             if (m_isRecenteringPressed) {
-                // Requires a 3 seconds press.
-                if (now - m_isRecenteringPressed.value() > 2.f) {
+                // Requires a 2 seconds press.
+                if (now - m_isRecenteringPressed.value() >= 2.f) {
                     // Recenter view.
                     TraceLoggingWrite(g_traceProvider, "PVR_RecenterTrackingOrigin");
                     CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+                    m_isRecenteringPressed.reset();
                 }
             } else {
                 m_isRecenteringPressed = now;
             }
-            wasRecenteringPressed = true;
         } else {
             m_isRecenteringPressed.reset();
+        }
+
+        if (wasSystemPressed) {
+            if (m_isSystemPressed) {
+                // Requires a 1 second press.
+                if (now - m_isSystemPressed.value() >= 1.f) {
+                    m_isOverlayVisible = !m_isOverlayVisible;
+                    TraceLoggingWrite(
+                        g_traceProvider, "PVR_ToggleOverlay", TLArg(m_isOverlayVisible, "IsOverlayVisible"));
+
+                    if (m_isOverlayVisible) {
+                        // Spawn in front of the user.
+                        XrPosef viewToOrigin;
+                        XrSpaceLocationFlags locationFlags =
+                            locateSpace(*m_viewSpace, *m_originSpace, m_lastPredictedDisplayTime, viewToOrigin);
+                        if (Pose::IsPoseValid(locationFlags)) {
+                            m_overlayPose = Pose::Multiply(Pose::Translation({0, 0, -1.f}), viewToOrigin);
+
+                            // Gravity align (remove roll).
+                            PVR::Quatf q = PVR::Quatf(m_overlayPose.orientation.x,
+                                                      m_overlayPose.orientation.y,
+                                                      m_overlayPose.orientation.z,
+                                                      m_overlayPose.orientation.w);
+                            float yaw, pitch, roll;
+                            q.GetYawPitchRoll(&yaw, &pitch, &roll);
+                            m_overlayPose.orientation = Quaternion::RotationRollPitchYaw({pitch, yaw, 0.f});
+                        }
+                    }
+                    m_isSystemPressed.reset();
+                }
+            } else {
+                m_isSystemPressed = now;
+            }
+        } else {
+            m_isSystemPressed.reset();
         }
     }
 

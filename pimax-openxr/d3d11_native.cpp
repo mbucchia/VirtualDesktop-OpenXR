@@ -260,6 +260,15 @@ namespace pimax_openxr {
                 std::make_unique<D3D11GpuTimer>(m_pvrSubmissionDevice.Get(), m_pvrSubmissionContext.Get());
         }
 
+        // Create the resources for drawing text.
+        CHECK_HRCMD(FW1CreateFactory(FW1_VERSION, m_fontWrapperFactory.ReleaseAndGetAddressOf()));
+        if (FAILED(m_fontWrapperFactory->CreateFontWrapper(
+                m_pvrSubmissionDevice.Get(), L"Segoe UI Symbol", m_fontNormal.ReleaseAndGetAddressOf()))) {
+            // Fallback to Arial - won't have symbols but will have text.
+            CHECK_HRCMD(m_fontWrapperFactory->CreateFontWrapper(
+                m_pvrSubmissionDevice.Get(), L"Arial", m_fontNormal.ReleaseAndGetAddressOf()));
+        }
+
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
         // not see our OpenXR frames.
         HMODULE renderdocModule;
@@ -470,8 +479,8 @@ namespace pimax_openxr {
 
         const bool needClearAlpha =
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
-        // Workaround: this is questionable, but an app should always submit layer 0 without alpha-blending (ie: alpha = 1).
-        // This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
+        // Workaround: this is questionable, but an app should always submit layer 0 without alpha-blending (ie: alpha =
+        // 1). This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
         const bool needPremultiplyAlpha = (m_honorPremultiplyFlagOnProj0 || layerIndex > 0) &&
                                           (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
         const bool needCopy = xrSwapchain.lastProcessedIndex[slice] == lastReleasedIndex ||

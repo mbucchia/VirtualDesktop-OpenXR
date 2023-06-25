@@ -124,3 +124,6 @@ using Microsoft::WRL::ComPtr;
 
 // DirectXTex
 #include <DirectXTex.h>
+
+// Text drawing.
+#include <FW1FontWrapper.h>

@@ -273,6 +273,11 @@ namespace pimax_openxr {
             pvr_destroyTextureSwapChain(m_pvrSession, m_guardianSwapchain);
             m_guardianSwapchain = nullptr;
         }
+        if (m_overlaySwapchain) {
+            pvr_destroyTextureSwapChain(m_pvrSession, m_overlaySwapchain);
+            m_overlaySwapchain = nullptr;
+        }
+        m_overlayBackground.Reset();
 
         // We do not destroy actionsets and actions, since they are tied to the instance.
 

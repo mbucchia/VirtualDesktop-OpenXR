@@ -105,20 +105,21 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\aSeeVRClient\include;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source;$(SolutionDir)\external\aSeeVRClient\include;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;PlatformSDK_64.lib;aSeeVRClient.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\external\aSeeVRClient\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;PlatformSDK_64.lib;aSeeVRClient.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\external\aSeeVRClient\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)\$(ProjectName).json $(OutDir)
 copy $(ProjectDir)\guardian.png $(OutDir)
+copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
@@ -170,20 +171,21 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;PlatformSDK_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;PlatformSDK_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
 copy $(ProjectDir)\guardian.png $(OutDir)
+copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_32.dll $(OutDir)
@@ -233,7 +235,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\aSeeVRClient\include;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source;$(SolutionDir)\external\aSeeVRClient\include;$(SolutionDir)\prebuilt\curl-7_83_1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -242,13 +244,14 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;PlatformSDK_64.lib;aSeeVRClient.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\external\aSeeVRClient\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;PlatformSDK_64.lib;aSeeVRClient.lib;pimax-openxr-curl_imp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib;$(SolutionDir)\external\aSeeVRClient\lib;$(SolutionDir)\prebuilt\curl-7_83_1\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)\$(ProjectName).json $(OutDir)
 copy $(ProjectDir)\guardian.png $(OutDir)
+copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\prebuilt\curl-7_83_1\bin\pimax-openxr-curl.dll $(OutDir)
@@ -302,7 +305,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\PVR;$(VULKAN_SDK)\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -311,13 +314,14 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;PlatformSDK_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;PlatformSDK_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(VULKAN_SDK)\lib32;$(SolutionDir)\prebuilt\vulkan32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>pimax-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
 copy $(ProjectDir)\guardian.png $(OutDir)
+copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\PimaxOpenXR.wprp $(OutDir)
 copy $(SolutionDir)\external\PVR\Lib\PlatformSDK_32.dll $(OutDir)
@@ -386,6 +390,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClCompile Include="log.cpp" />
     <ClCompile Include="mappings.cpp" />
     <ClCompile Include="opengl_interop.cpp" />
+    <ClCompile Include="overlay.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
