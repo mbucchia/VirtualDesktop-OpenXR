@@ -218,6 +218,7 @@ namespace pimax_openxr {
             }
             m_asyncSubmissionThread.join();
             m_asyncSubmissionThread = {};
+            m_needStartAsyncSubmissionThread = true;
         }
 
         // Shutdown the mirror window.

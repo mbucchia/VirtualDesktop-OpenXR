@@ -479,7 +479,7 @@ namespace pimax_openxr {
         } else {
             flushD3D11Context();
         }
-        if (m_useAsyncSubmission) {
+        if (m_useAsyncSubmission && !m_needStartAsyncSubmissionThread) {
             waitForAsyncSubmissionIdle();
         }
         flushSubmissionContext();
