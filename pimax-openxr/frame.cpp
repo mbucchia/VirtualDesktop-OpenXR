@@ -194,7 +194,7 @@ namespace pimax_openxr {
             m_lastPredictedDisplayTime = frameState->predictedDisplayTime;
 
             // We always use the native frame duration, regardless of Smart Smoothing.
-            frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_frameDuration);
+            frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_predictedFrameDuration);
 
             m_frameTimerApp.start();
 
@@ -330,13 +330,22 @@ namespace pimax_openxr {
                               TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_all();
 
+            const bool isAswActive = pvr_getIntConfig(m_pvrSession, "asw_active", 0);
             TraceLoggingWrite(
                 g_traceProvider,
                 "PVR_Status",
                 TLArg(!!pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0), "EnableSmartSmoothing"),
                 TLArg(pvr_getIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", 1), "CompulsiveSmoothingRate"),
                 TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_available", 0), "SmartSmoothingAvailable"),
-                TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_active", 0), "SmartSmoothingActive"));
+                TLArg(isAswActive, "SmartSmoothingActive"));
+
+            if (isAswActive) {
+                // TODO: For now we assume 1/2 only. Pimax used to have a 1/3 mode, which we would need to accommodate
+                // if they re-enabled it.
+                m_predictedFrameDuration = m_idealFrameDuration * 2.f;
+            } else {
+                m_predictedFrameDuration = m_idealFrameDuration;
+            }
         }
 
         return !frameDiscarded ? XR_SUCCESS : XR_FRAME_DISCARDED;
@@ -1058,7 +1067,7 @@ namespace pimax_openxr {
         if (doRunningStart) {
             constexpr double RunningStart = 0.002;
             const auto timeout =
-                m_lastWaitToBeginFrameTime + std::chrono::duration<double>(m_frameDuration - RunningStart);
+                m_lastWaitToBeginFrameTime + std::chrono::duration<double>(m_predictedFrameDuration - RunningStart);
 
             wokeUpEarly =
                 !m_asyncSubmissionCondVar.wait_until(lock, timeout, [&] { return m_layersForAsyncSubmission.empty(); });

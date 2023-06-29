@@ -429,7 +429,7 @@ namespace pimax_openxr {
 
         // We also store the expected frame duration.
         m_displayRefreshRate = info.refresh_rate;
-        m_frameDuration = 1.0 / info.refresh_rate;
+        m_idealFrameDuration = m_predictedFrameDuration = 1.0 / info.refresh_rate;
 
         memcpy(&m_adapterLuid, &info.luid, sizeof(LUID));
     }

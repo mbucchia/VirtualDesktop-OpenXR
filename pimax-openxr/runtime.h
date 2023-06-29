@@ -517,7 +517,8 @@ namespace pimax_openxr {
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
         float m_displayRefreshRate{0};
-        double m_frameDuration{0};
+        double m_idealFrameDuration{0};
+        double m_predictedFrameDuration{0};
         pvrHmdInfo m_cachedHmdInfo{};
         pvrEyeRenderInfo m_cachedEyeInfo[xr::StereoView::Count]{};
         float m_floorHeight{0.f};

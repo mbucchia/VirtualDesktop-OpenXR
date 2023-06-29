@@ -513,7 +513,7 @@ namespace pimax_openxr {
         // Multiplier is a percentage. Convert to milliseconds (*10) then convert the whole expression (including frame
         // duration) from milliseconds to microseconds.
         m_frameTimeOverrideUs =
-            (uint64_t)(getSetting("frame_time_override_multiplier").value_or(0) * 10.f * m_frameDuration * 1000.f);
+            (uint64_t)(getSetting("frame_time_override_multiplier").value_or(0) * 10.f * m_idealFrameDuration * 1000.f);
 
         m_frameTimeFilterLength = getSetting("frame_time_filter_length").value_or(5);
 
