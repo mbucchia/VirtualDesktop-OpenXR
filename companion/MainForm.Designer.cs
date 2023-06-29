@@ -491,9 +491,9 @@ namespace companion
             this.preferFramerate.Location = new System.Drawing.Point(3, 367);
             this.preferFramerate.Name = "preferFramerate";
             this.preferFramerate.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.preferFramerate.Size = new System.Drawing.Size(232, 17);
+            this.preferFramerate.Size = new System.Drawing.Size(338, 17);
             this.preferFramerate.TabIndex = 21;
-            this.preferFramerate.Text = "Prefer framerate over latency (Turbo Mode)";
+            this.preferFramerate.Text = "Prefer framerate over latency (incompatible with Smart Smoothing)";
             this.preferFramerate.UseVisualStyleBackColor = true;
             this.preferFramerate.CheckedChanged += new System.EventHandler(this.preferFramerate_CheckedChanged);
             // 

@@ -195,7 +195,7 @@ namespace companion
             toolTip.SetToolTip(guardianThresholdValue, "Specifies how far from your starting position you can walk before the playspace guardian appears");
             toolTip.SetToolTip(guardianLabel2, "Specifies how far from your starting position you can walk before the playspace guardian appears");
             toolTip.SetToolTip(guardianThreshold, "Specifies how far from your starting position you can walk before the playspace guardian appears");
-            toolTip.SetToolTip(preferFramerate, "When enabled, maximizing the usage of your GPU will be preferred, at the cost of extra frame latency");
+            toolTip.SetToolTip(preferFramerate, "When enabled, maximizing the usage of your GPU will be preferred, at the cost of extra frame latency\nNOTE: This option precludes usage of Smart Smoothing");
             toolTip.SetToolTip(allowEyeTracking, "When enabled, the eye tracker (if any) of your headset can be used by applications or for foveated rendering");
             toolTip.SetToolTip(enableQuadViews, "When enabled, supported applications can take advantage of multi-view to offer foveated rendering");
             toolTip.SetToolTip(enableUltraleap, "When installed and enabled, the hand tracker (if any) of your headset can be used by applications\nNOTE: This option precludes finger sensing with Index motion controllers");
