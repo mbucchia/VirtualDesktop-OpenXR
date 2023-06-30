@@ -965,13 +965,6 @@ namespace pimax_openxr {
                 TLArg(m_cachedInputState.fingerRing[side], "RingFinger"),
                 TLArg(m_cachedInputState.fingerPinky[side], "PinkyFinger"));
 
-            // Propagate the input state to the entire action state.
-            for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
-                ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
-
-                xrActionSet.cachedInputState = m_cachedInputState;
-            }
-
             // Look for changes in controller/interaction profiles.
             const auto lastControllerType = m_cachedControllerType[side];
             const int size = pvr_getTrackedDeviceStringProperty(m_pvrSession,
@@ -1019,6 +1012,19 @@ namespace pimax_openxr {
                                            (m_cachedInputState.HandButtons[side] & pvrButton_ApplicationMenu)) &&
                                           (m_cachedInputState.HandButtons[side] & pvrButton_Trigger));
             wasSystemPressed = wasSystemPressed || (m_cachedInputState.HandButtons[side] & pvrButton_System);
+
+            // When any built-in action is requested, block the unwanted input for the app.
+            if (wasRecenteringPressed || wasSystemPressed) {
+                m_cachedInputState.HandButtons[side] &= ~(pvrButton_ApplicationMenu | pvrButton_Trigger);
+                m_cachedInputState.HandTouches[side] &= ~(pvrButton_ApplicationMenu | pvrButton_Trigger);
+            }
+
+            // Propagate the input state to the entire action state.
+            for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
+                ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
+
+                xrActionSet.cachedInputState = m_cachedInputState;
+            }
         }
         m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
@@ -1612,47 +1618,49 @@ namespace pimax_openxr {
                     TraceLoggingWrite(g_traceProvider, "PVR_RecenterTrackingOrigin");
                     CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
                     m_isRecenteringPressed.reset();
+                    m_isSystemPressed.reset();
                 }
             } else {
                 m_isRecenteringPressed = now;
             }
         } else {
             m_isRecenteringPressed.reset();
-        }
 
-        if (wasSystemPressed) {
-            if (m_isSystemPressed) {
-                // Requires a 1 second press.
-                if (now - m_isSystemPressed.value() >= 1.f) {
-                    m_isOverlayVisible = !m_isOverlayVisible;
-                    TraceLoggingWrite(
-                        g_traceProvider, "PVR_ToggleOverlay", TLArg(m_isOverlayVisible, "IsOverlayVisible"));
+            if (wasSystemPressed) {
+                if (m_isSystemPressed) {
+                    // Requires a 1 second press.
+                    if (now - m_isSystemPressed.value() >= 1.f) {
+                        m_isOverlayVisible = !m_isOverlayVisible;
+                        TraceLoggingWrite(
+                            g_traceProvider, "PVR_ToggleOverlay", TLArg(m_isOverlayVisible, "IsOverlayVisible"));
 
-                    if (m_isOverlayVisible) {
-                        // Spawn in front of the user.
-                        XrPosef viewToOrigin;
-                        XrSpaceLocationFlags locationFlags =
-                            locateSpace(*m_viewSpace, *m_originSpace, m_lastPredictedDisplayTime, viewToOrigin);
-                        if (Pose::IsPoseValid(locationFlags)) {
-                            m_overlayPose = Pose::Multiply(Pose::Translation({0, 0, -1.f}), viewToOrigin);
+                        if (m_isOverlayVisible) {
+                            // Spawn in front of the user.
+                            XrPosef viewToOrigin;
+                            XrSpaceLocationFlags locationFlags =
+                                locateSpace(*m_viewSpace, *m_originSpace, m_lastPredictedDisplayTime, viewToOrigin);
+                            if (Pose::IsPoseValid(locationFlags)) {
+                                m_overlayPose = Pose::Multiply(Pose::Translation({0, 0, -1.f}), viewToOrigin);
 
-                            // Gravity align (remove roll).
-                            PVR::Quatf q = PVR::Quatf(m_overlayPose.orientation.x,
-                                                      m_overlayPose.orientation.y,
-                                                      m_overlayPose.orientation.z,
-                                                      m_overlayPose.orientation.w);
-                            float yaw, pitch, roll;
-                            q.GetYawPitchRoll(&yaw, &pitch, &roll);
-                            m_overlayPose.orientation = Quaternion::RotationRollPitchYaw({pitch, yaw, 0.f});
+                                // Gravity align (remove roll).
+                                PVR::Quatf q = PVR::Quatf(m_overlayPose.orientation.x,
+                                                          m_overlayPose.orientation.y,
+                                                          m_overlayPose.orientation.z,
+                                                          m_overlayPose.orientation.w);
+                                float yaw, pitch, roll;
+                                q.GetYawPitchRoll(&yaw, &pitch, &roll);
+                                m_overlayPose.orientation = Quaternion::RotationRollPitchYaw({pitch, yaw, 0.f});
+                            }
                         }
+                        m_isSystemPressed.reset();
+                        m_isRecenteringPressed.reset();
                     }
-                    m_isSystemPressed.reset();
+                } else {
+                    m_isSystemPressed = now;
                 }
             } else {
-                m_isSystemPressed = now;
+                m_isSystemPressed.reset();
             }
-        } else {
-            m_isSystemPressed.reset();
         }
     }
 
