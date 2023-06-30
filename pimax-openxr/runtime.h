@@ -503,7 +503,7 @@ namespace pimax_openxr {
 
         // mirror_window.cpp
         void createMirrorWindow();
-        void updateMirrorWindow();
+        void updateMirrorWindow(bool preferSRGB = false);
         LRESULT CALLBACK mirrorWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

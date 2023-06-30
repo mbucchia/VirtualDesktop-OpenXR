@@ -440,7 +440,8 @@ namespace pimax_openxr {
 
             std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
 
-            bool firstProjectionLayer = true;
+            bool isProj0SRGB = false;
+            bool isFirstProjectionLayer = true;
 
             // Construct the list of layers.
             std::vector<pvrLayer_Union> layersAllocator;
@@ -545,6 +546,10 @@ namespace pimax_openxr {
 
                         if (proj->views[viewIndex].subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize) {
                             return XR_ERROR_VALIDATION_FAILURE;
+                        }
+
+                        if (isFirstProjectionLayer) {
+                            isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
                         }
 
                         const uint32_t pvrViewIndex = viewIndex % xr::StereoView::Count;
@@ -678,7 +683,7 @@ namespace pimax_openxr {
                     // Warning: quad views might have created 2 layers above!
                     // One of them was pushed already to the list of layers.
 
-                    firstProjectionLayer = false;
+                    isFirstProjectionLayer = false;
 
                 } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD) {
                     const XrCompositionLayerQuad* quad =
@@ -928,7 +933,7 @@ namespace pimax_openxr {
             if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
                 createMirrorWindow();
             }
-            updateMirrorWindow();
+            updateMirrorWindow(isProj0SRGB);
 
             // When using RenderDoc, signal a frame through the dummy swapchain.
             if (m_dxgiSwapchain) {

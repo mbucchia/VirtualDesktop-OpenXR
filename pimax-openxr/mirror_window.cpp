@@ -68,37 +68,6 @@ namespace pimax_openxr {
             CHECK_MSG(m_mirrorWindowHwnd, "Failed to CreateWindowW()");
             m_mirrorWindowReady = true;
 
-            // Create the swapchain.
-            ComPtr<IDXGIFactory2> dxgiFactory;
-            {
-                ComPtr<IDXGIDevice1> dxgiDevice;
-                CHECK_HRCMD(m_pvrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
-
-                ComPtr<IDXGIAdapter> dxgiAdapter;
-                CHECK_HRCMD(dxgiDevice->GetAdapter(&dxgiAdapter));
-                CHECK_HRCMD(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
-            }
-
-            RECT rect = {0, 0, defaultWidth, defaultHeight};
-            AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
-            const auto width = rect.right - rect.left;
-            const auto height = rect.bottom - rect.top;
-
-            DXGI_SWAP_CHAIN_DESC1 swapchainDesc{};
-            swapchainDesc.Width = width;
-            swapchainDesc.Height = height;
-            swapchainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-            swapchainDesc.SampleDesc.Count = 1;
-            swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            swapchainDesc.BufferCount = 2;
-            swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-            CHECK_HRCMD(dxgiFactory->CreateSwapChainForHwnd(m_pvrSubmissionDevice.Get(),
-                                                            m_mirrorWindowHwnd,
-                                                            &swapchainDesc,
-                                                            nullptr,
-                                                            nullptr,
-                                                            m_mirrorWindowSwapchain.ReleaseAndGetAddressOf()));
-
             ShowWindow(m_mirrorWindowHwnd, SW_SHOW);
             UpdateWindow(m_mirrorWindowHwnd);
 
@@ -121,10 +90,10 @@ namespace pimax_openxr {
         });
     }
 
-    void OpenXrRuntime::updateMirrorWindow() {
+    void OpenXrRuntime::updateMirrorWindow(bool preferSRGB) {
         std::unique_lock lock(m_mirrorWindowMutex);
 
-        if (!m_mirrorWindowSwapchain) {
+        if (!m_mirrorWindowReady) {
             return;
         }
 
@@ -139,12 +108,44 @@ namespace pimax_openxr {
             return;
         }
 
-        // Check for resizing or initial creation.
+        // Workaround: PVR does not seem to correctly write to non-SRGB, so for now we always prefer non-SRGB.
+        preferSRGB = false;
+
+        bool isSRGB = preferSRGB;
         D3D11_TEXTURE2D_DESC mirrorDesc;
         if (m_mirrorTexture) {
             m_mirrorTexture->GetDesc(&mirrorDesc);
+            isSRGB = isSRGBFormat(mirrorDesc.Format);
         }
-        if (!m_mirrorTexture || mirrorDesc.Width != width || mirrorDesc.Height != height) {
+
+        // Create the DXGI swapchain for the window.
+        if (!m_mirrorWindowSwapchain || preferSRGB != isSRGB) {
+            ComPtr<IDXGIFactory2> dxgiFactory;
+            ComPtr<IDXGIDevice1> dxgiDevice;
+            CHECK_HRCMD(m_pvrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
+
+            ComPtr<IDXGIAdapter> dxgiAdapter;
+            CHECK_HRCMD(dxgiDevice->GetAdapter(&dxgiAdapter));
+            CHECK_HRCMD(dxgiAdapter->GetParent(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
+
+            DXGI_SWAP_CHAIN_DESC1 swapchainDesc{};
+            swapchainDesc.Width = width;
+            swapchainDesc.Height = height;
+            swapchainDesc.Format = preferSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+            swapchainDesc.SampleDesc.Count = 1;
+            swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+            swapchainDesc.BufferCount = 2;
+            swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+            CHECK_HRCMD(dxgiFactory->CreateSwapChainForHwnd(m_pvrSubmissionDevice.Get(),
+                                                            m_mirrorWindowHwnd,
+                                                            &swapchainDesc,
+                                                            nullptr,
+                                                            nullptr,
+                                                            m_mirrorWindowSwapchain.ReleaseAndGetAddressOf()));
+        }
+
+        // Check for resizing or initial creation.
+        if (!m_mirrorTexture || mirrorDesc.Width != width || mirrorDesc.Height != height || preferSRGB != isSRGB) {
             TraceLoggingWrite(g_traceProvider, "MirrorWindow", TLArg(width, "Width"), TLArg(height, "Height"));
 
             CHECK_HRCMD(m_mirrorWindowSwapchain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
@@ -156,7 +157,8 @@ namespace pimax_openxr {
             }
 
             pvrMirrorTextureDesc mirrorDesc;
-            mirrorDesc.Format = pvrTextureFormat::PVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+            mirrorDesc.Format = preferSRGB ? pvrTextureFormat::PVR_FORMAT_R8G8B8A8_UNORM_SRGB
+                                           : pvrTextureFormat::PVR_FORMAT_R8G8B8A8_UNORM;
             mirrorDesc.Width = width;
             mirrorDesc.Height = height;
             mirrorDesc.SampleCount = 1;
