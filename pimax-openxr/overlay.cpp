@@ -151,18 +151,18 @@ namespace pimax_openxr {
 
             m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
                                      std::wstring(buf, buf + strlen(buf)).c_str(),
-                                     200,
-                                     600,
-                                     12,
+                                     200.f,
+                                     600.f,
+                                     12.f,
                                      color,
                                      FW1_LEFT | FW1_NOFLUSH);
         }
 
         m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
                                  getBatteryLevel(pvrTrackedDevice_HMD).c_str(),
-                                 150,
-                                 726,
-                                 744,
+                                 150.f,
+                                 726.f,
+                                 744.f,
                                  color,
                                  FW1_CENTER | FW1_NOFLUSH);
 
@@ -173,36 +173,36 @@ namespace pimax_openxr {
                     ? getBatteryLevel(side == 0 ? pvrTrackedDevice_LeftController : pvrTrackedDevice_RightController)
                           .c_str()
                     : L"-",
-                150,
-                side == 0 ? 204 : 1278,
-                744,
+                150.f,
+                side == 0 ? 204.f : 1278.f,
+                744.f,
                 color,
                 FW1_CENTER | FW1_NOFLUSH);
         }
 
-        const int fps = m_frameTimes.size();
+        const auto fps = m_frameTimes.size();
         m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
                                  fmt::format(L"{}", fps).c_str(),
-                                 150,
-                                 1400,
-                                 1098,
+                                 150.f,
+                                 1400.f,
+                                 1098.f,
                                  color,
                                  FW1_RIGHT | FW1_NOFLUSH);
 
         m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
                                  m_isSmartSmoothingEnabled ? (m_isSmartSmoothingActive ? L"Active" : L"Standby")
                                                            : L"Off",
-                                 150,
-                                 1400,
-                                 1402,
+                                 150.f,
+                                 1400.f,
+                                 1402.f,
                                  color,
                                  FW1_RIGHT | FW1_NOFLUSH);
 
         m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
                                  fmt::format(L"{}x{}", m_proj0Extent.width, m_proj0Extent.height).c_str(),
-                                 150,
-                                 1400,
-                                 1754,
+                                 150.f,
+                                 1400.f,
+                                 1754.f,
                                  color,
                                  FW1_RIGHT | FW1_NOFLUSH);
 

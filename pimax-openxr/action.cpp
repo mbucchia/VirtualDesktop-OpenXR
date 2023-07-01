@@ -1610,6 +1610,9 @@ namespace pimax_openxr {
         wasRecenteringPressed =
             wasRecenteringPressed ||
             (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_MENU) < 0 && GetAsyncKeyState(VK_SPACE) < 0);
+#ifdef _DEBUG
+        wasSystemPressed = wasSystemPressed || (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_F11));
+#endif
         if (wasRecenteringPressed) {
             if (m_isRecenteringPressed) {
                 // Requires a 2 seconds press.
