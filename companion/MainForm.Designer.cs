@@ -513,6 +513,7 @@ namespace companion
             // enableQuadViews
             // 
             this.enableQuadViews.AutoSize = true;
+            this.enableQuadViews.Enabled = false;
             this.flowLayoutPanel4.SetFlowBreak(this.enableQuadViews, true);
             this.enableQuadViews.Location = new System.Drawing.Point(3, 413);
             this.enableQuadViews.Name = "enableQuadViews";
