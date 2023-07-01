@@ -539,6 +539,7 @@ namespace pimax_openxr {
         std::string m_applicationName;
         bool m_needWorldLockedQuadLayerQuirk{false};
         bool m_disableFramePipeliningQuirk{false};
+        bool m_completeDiscardedFramesQuirk{false};
         bool m_alwaysUseFrameIdZero{false};
         bool m_useApplicationDeviceForSubmission{true};
         EyeTracking m_eyeTrackingType{EyeTracking::None};

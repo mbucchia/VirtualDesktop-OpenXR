@@ -211,6 +211,8 @@ namespace pimax_openxr {
         // Note: this is not compatible with async_submission=1!
         m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
 
+        m_completeDiscardedFramesQuirk = getSetting("quirk_complete_discarded_frames").value_or(true);
+
         // Initialize PVR.
 
         // Detour hack: we always ensure compatibility with Windows 10 in order to make pvr_waitToBeginFrame()

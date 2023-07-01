@@ -809,7 +809,8 @@ namespace pimax_openxr {
                         layer.Header.Flags |= pvrLayerFlag_HeadLocked;
                     }
                     layer.Quad.QuadSize.x = 0.5f;
-                    layer.Quad.QuadSize.y = layer.Quad.QuadSize.x * ((float)m_overlayExtent.height / m_overlayExtent.width);
+                    layer.Quad.QuadSize.y =
+                        layer.Quad.QuadSize.x * ((float)m_overlayExtent.height / m_overlayExtent.width);
                 }
             }
 
@@ -1030,7 +1031,7 @@ namespace pimax_openxr {
                             TraceLoggingWriteStop(
                                 beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
                         }
-                        {
+                        if (m_completeDiscardedFramesQuirk) {
                             pvrLayer_Union dummyLayer{};
                             dummyLayer.Header.Type = pvrLayerType_Disabled;
                             pvrLayerHeader* layers[1] = {(pvrLayerHeader*)&dummyLayer};
