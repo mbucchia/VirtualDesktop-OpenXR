@@ -563,6 +563,8 @@ namespace pimax_openxr {
         ComPtr<ID3D11DeviceContext4> m_pvrSubmissionContext;
         ComPtr<ID3DDeviceContextState> m_pvrSubmissionContextState;
         ComPtr<ID3D11Fence> m_pvrSubmissionFence;
+        wil::unique_handle m_eventForSubmissionFence;
+        bool m_syncGpuWorkInEndFrame{false};
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};

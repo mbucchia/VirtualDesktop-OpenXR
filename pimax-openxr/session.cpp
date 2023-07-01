@@ -536,6 +536,8 @@ namespace pimax_openxr {
 
         m_useRunningStart = !getSetting("quirk_disable_running_start").value_or(false);
 
+        m_syncGpuWorkInEndFrame = getSetting("quirk_sync_gpu_work_in_end_frame").value_or(false);
+
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
@@ -552,7 +554,8 @@ namespace pimax_openxr {
             TLArg(m_postProcessFocusView, "PostProcessFocusView"),
             TLArg(m_honorPremultiplyFlagOnProj0, "HonorPremultiplyFlagOnProj0"),
             TLArg(m_swapGripAimPoses, "SwapGripAimPoses"),
-            TLArg(m_useRunningStart, "UseRunningStart"));
+            TLArg(m_useRunningStart, "UseRunningStart"),
+            TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
 
         const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
         if (debugControllerType == 1) {

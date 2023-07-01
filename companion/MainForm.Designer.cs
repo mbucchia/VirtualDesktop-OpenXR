@@ -124,7 +124,7 @@ namespace companion
             this.openLogs.Margin = new System.Windows.Forms.Padding(2);
             this.openLogs.Name = "openLogs";
             this.openLogs.Size = new System.Drawing.Size(130, 42);
-            this.openLogs.TabIndex = 7;
+            this.openLogs.TabIndex = 43;
             this.openLogs.Text = "Open logs";
             this.openLogs.UseVisualStyleBackColor = true;
             this.openLogs.Click += new System.EventHandler(this.openLogs_Click);
@@ -135,7 +135,7 @@ namespace companion
             this.startTrace.Margin = new System.Windows.Forms.Padding(2);
             this.startTrace.Name = "startTrace";
             this.startTrace.Size = new System.Drawing.Size(130, 42);
-            this.startTrace.TabIndex = 8;
+            this.startTrace.TabIndex = 44;
             this.startTrace.Text = "Capture trace";
             this.startTrace.UseVisualStyleBackColor = true;
             this.startTrace.Click += new System.EventHandler(this.startTrace_Click);
@@ -147,7 +147,7 @@ namespace companion
             this.stopTrace.Margin = new System.Windows.Forms.Padding(2);
             this.stopTrace.Name = "stopTrace";
             this.stopTrace.Size = new System.Drawing.Size(130, 42);
-            this.stopTrace.TabIndex = 9;
+            this.stopTrace.TabIndex = 45;
             this.stopTrace.Text = "Stop capture";
             this.stopTrace.UseVisualStyleBackColor = true;
             this.stopTrace.Click += new System.EventHandler(this.stopTrace_Click);
@@ -211,7 +211,7 @@ namespace companion
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 16);
-            this.flowLayoutPanel2.TabIndex = 10;
+            this.flowLayoutPanel2.TabIndex = 100;
             // 
             // gotoDownloads
             // 
@@ -220,7 +220,7 @@ namespace companion
             this.gotoDownloads.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.gotoDownloads.Name = "gotoDownloads";
             this.gotoDownloads.Size = new System.Drawing.Size(87, 13);
-            this.gotoDownloads.TabIndex = 10;
+            this.gotoDownloads.TabIndex = 100;
             this.gotoDownloads.TabStop = true;
             this.gotoDownloads.Text = "Go to downloads";
             this.gotoDownloads.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.gotoDownloads_LinkClicked);
@@ -232,7 +232,7 @@ namespace companion
             this.reportIssues.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.reportIssues.Name = "reportIssues";
             this.reportIssues.Size = new System.Drawing.Size(71, 13);
-            this.reportIssues.TabIndex = 11;
+            this.reportIssues.TabIndex = 101;
             this.reportIssues.TabStop = true;
             this.reportIssues.Text = "Report issues";
             this.reportIssues.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.reportIssues_LinkClicked);
@@ -325,7 +325,7 @@ namespace companion
             this.recenterMode.Name = "recenterMode";
             this.recenterMode.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
             this.recenterMode.Size = new System.Drawing.Size(164, 26);
-            this.recenterMode.TabIndex = 7;
+            this.recenterMode.TabIndex = 10;
             this.recenterMode.Text = "Recenter headset on startup";
             this.recenterMode.UseVisualStyleBackColor = true;
             this.recenterMode.CheckedChanged += new System.EventHandler(this.recenterMode_CheckedChanged);
@@ -338,7 +338,7 @@ namespace companion
             this.recenterLabel.Name = "recenterLabel";
             this.recenterLabel.Padding = new System.Windows.Forms.Padding(3, 0, 0, 21);
             this.recenterLabel.Size = new System.Drawing.Size(385, 47);
-            this.recenterLabel.TabIndex = 8;
+            this.recenterLabel.TabIndex = 11;
             this.recenterLabel.Text = "You may also recenter in-game by holding for 2 seconds the System button and the " +
     "Trigger on any motion controller, or Ctrl+Alt+Space on your keyboard.";
             // 
@@ -354,7 +354,7 @@ namespace companion
             this.controllerEmulation.Location = new System.Drawing.Point(3, 170);
             this.controllerEmulation.Name = "controllerEmulation";
             this.controllerEmulation.Size = new System.Drawing.Size(128, 21);
-            this.controllerEmulation.TabIndex = 9;
+            this.controllerEmulation.TabIndex = 12;
             this.controllerEmulation.SelectedIndexChanged += new System.EventHandler(this.controllerEmulation_SelectedIndexChanged);
             // 
             // controllerEmulationLabel
@@ -365,7 +365,7 @@ namespace companion
             this.controllerEmulationLabel.Name = "controllerEmulationLabel";
             this.controllerEmulationLabel.Padding = new System.Windows.Forms.Padding(0, 6, 0, 0);
             this.controllerEmulationLabel.Size = new System.Drawing.Size(226, 19);
-            this.controllerEmulationLabel.TabIndex = 10;
+            this.controllerEmulationLabel.TabIndex = 13;
             this.controllerEmulationLabel.Text = "Controller emulation (may fix incorrect bindings)";
             // 
             // joystickDeadzoneValue
@@ -375,7 +375,7 @@ namespace companion
             this.joystickDeadzoneValue.Name = "joystickDeadzoneValue";
             this.joystickDeadzoneValue.ReadOnly = true;
             this.joystickDeadzoneValue.Size = new System.Drawing.Size(26, 20);
-            this.joystickDeadzoneValue.TabIndex = 11;
+            this.joystickDeadzoneValue.TabIndex = 14;
             // 
             // joystickLabel
             // 
@@ -384,7 +384,7 @@ namespace companion
             this.joystickLabel.Name = "joystickLabel";
             this.joystickLabel.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
             this.joystickLabel.Size = new System.Drawing.Size(98, 22);
-            this.joystickLabel.TabIndex = 12;
+            this.joystickLabel.TabIndex = 15;
             this.joystickLabel.Text = "Joystick deadzone:";
             // 
             // joystickDeadzone
@@ -395,7 +395,7 @@ namespace companion
             this.joystickDeadzone.Maximum = 100;
             this.joystickDeadzone.Name = "joystickDeadzone";
             this.joystickDeadzone.Size = new System.Drawing.Size(104, 45);
-            this.joystickDeadzone.TabIndex = 13;
+            this.joystickDeadzone.TabIndex = 16;
             this.joystickDeadzone.Scroll += new System.EventHandler(this.joystickDeadzone_Scroll);
             // 
             // guardian
@@ -407,7 +407,7 @@ namespace companion
             this.guardian.Name = "guardian";
             this.guardian.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
             this.guardian.Size = new System.Drawing.Size(187, 20);
-            this.guardian.TabIndex = 14;
+            this.guardian.TabIndex = 20;
             this.guardian.Text = "Enable visual playspace guardian";
             this.guardian.UseVisualStyleBackColor = true;
             this.guardian.CheckedChanged += new System.EventHandler(this.guardian_CheckedChanged);
@@ -420,7 +420,7 @@ namespace companion
             this.guardianRadiusValue.Name = "guardianRadiusValue";
             this.guardianRadiusValue.ReadOnly = true;
             this.guardianRadiusValue.Size = new System.Drawing.Size(26, 20);
-            this.guardianRadiusValue.TabIndex = 15;
+            this.guardianRadiusValue.TabIndex = 21;
             // 
             // guardianLabel1
             // 
@@ -430,7 +430,7 @@ namespace companion
             this.guardianLabel1.Name = "guardianLabel1";
             this.guardianLabel1.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
             this.guardianLabel1.Size = new System.Drawing.Size(49, 22);
-            this.guardianLabel1.TabIndex = 16;
+            this.guardianLabel1.TabIndex = 22;
             this.guardianLabel1.Text = "m radius:";
             // 
             // guardianRadius
@@ -443,7 +443,7 @@ namespace companion
             this.guardianRadius.Minimum = 50;
             this.guardianRadius.Name = "guardianRadius";
             this.guardianRadius.Size = new System.Drawing.Size(104, 45);
-            this.guardianRadius.TabIndex = 17;
+            this.guardianRadius.TabIndex = 23;
             this.guardianRadius.TickFrequency = 10;
             this.guardianRadius.Value = 100;
             this.guardianRadius.Scroll += new System.EventHandler(this.guardianRadius_Scroll);
@@ -456,7 +456,7 @@ namespace companion
             this.guardianThresholdValue.Name = "guardianThresholdValue";
             this.guardianThresholdValue.ReadOnly = true;
             this.guardianThresholdValue.Size = new System.Drawing.Size(26, 20);
-            this.guardianThresholdValue.TabIndex = 18;
+            this.guardianThresholdValue.TabIndex = 24;
             // 
             // guardianLabel2
             // 
@@ -466,7 +466,7 @@ namespace companion
             this.guardianLabel2.Name = "guardianLabel2";
             this.guardianLabel2.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
             this.guardianLabel2.Size = new System.Drawing.Size(56, 22);
-            this.guardianLabel2.TabIndex = 19;
+            this.guardianLabel2.TabIndex = 25;
             this.guardianLabel2.Text = "m visibility:";
             // 
             // guardianThreshold
@@ -479,7 +479,7 @@ namespace companion
             this.guardianThreshold.Minimum = 50;
             this.guardianThreshold.Name = "guardianThreshold";
             this.guardianThreshold.Size = new System.Drawing.Size(104, 45);
-            this.guardianThreshold.TabIndex = 20;
+            this.guardianThreshold.TabIndex = 26;
             this.guardianThreshold.TickFrequency = 10;
             this.guardianThreshold.Value = 100;
             this.guardianThreshold.Scroll += new System.EventHandler(this.guardianThreshold_Scroll);
@@ -492,7 +492,7 @@ namespace companion
             this.preferFramerate.Name = "preferFramerate";
             this.preferFramerate.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.preferFramerate.Size = new System.Drawing.Size(338, 17);
-            this.preferFramerate.TabIndex = 21;
+            this.preferFramerate.TabIndex = 30;
             this.preferFramerate.Text = "Prefer framerate over latency (incompatible with Smart Smoothing)";
             this.preferFramerate.UseVisualStyleBackColor = true;
             this.preferFramerate.CheckedChanged += new System.EventHandler(this.preferFramerate_CheckedChanged);
@@ -505,7 +505,7 @@ namespace companion
             this.allowEyeTracking.Name = "allowEyeTracking";
             this.allowEyeTracking.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.allowEyeTracking.Size = new System.Drawing.Size(160, 17);
-            this.allowEyeTracking.TabIndex = 22;
+            this.allowEyeTracking.TabIndex = 31;
             this.allowEyeTracking.Text = "Allow use of the eye tracker";
             this.allowEyeTracking.UseVisualStyleBackColor = true;
             this.allowEyeTracking.CheckedChanged += new System.EventHandler(this.allowEyeTracking_CheckedChanged);
@@ -518,7 +518,7 @@ namespace companion
             this.enableQuadViews.Name = "enableQuadViews";
             this.enableQuadViews.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableQuadViews.Size = new System.Drawing.Size(306, 17);
-            this.enableQuadViews.TabIndex = 23;
+            this.enableQuadViews.TabIndex = 32;
             this.enableQuadViews.Text = "Enable Quad Views rendering (with supported applications)";
             this.enableQuadViews.UseVisualStyleBackColor = true;
             this.enableQuadViews.CheckedChanged += new System.EventHandler(this.enableQuadViews_CheckedChanged);
@@ -531,7 +531,7 @@ namespace companion
             this.enableUltraleap.Name = "enableUltraleap";
             this.enableUltraleap.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableUltraleap.Size = new System.Drawing.Size(310, 17);
-            this.enableUltraleap.TabIndex = 24;
+            this.enableUltraleap.TabIndex = 33;
             this.enableUltraleap.Text = "Enable Hand Tracking module (with supported applications)";
             this.enableUltraleap.UseVisualStyleBackColor = true;
             this.enableUltraleap.CheckedChanged += new System.EventHandler(this.enableUltraleap_CheckedChanged);
@@ -544,7 +544,7 @@ namespace companion
             this.downloadUltraleap.Name = "downloadUltraleap";
             this.downloadUltraleap.Padding = new System.Windows.Forms.Padding(18, 0, 0, 0);
             this.downloadUltraleap.Size = new System.Drawing.Size(283, 13);
-            this.downloadUltraleap.TabIndex = 25;
+            this.downloadUltraleap.TabIndex = 34;
             this.downloadUltraleap.TabStop = true;
             this.downloadUltraleap.Text = "Download or update Ultraleap Hand Tracking software";
             this.downloadUltraleap.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.downloadUltraleap_LinkClicked);
@@ -557,7 +557,7 @@ namespace companion
             this.mirrorMode.Name = "mirrorMode";
             this.mirrorMode.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
             this.mirrorMode.Size = new System.Drawing.Size(123, 20);
-            this.mirrorMode.TabIndex = 26;
+            this.mirrorMode.TabIndex = 35;
             this.mirrorMode.Text = "Show mirror window";
             this.mirrorMode.UseVisualStyleBackColor = true;
             this.mirrorMode.CheckedChanged += new System.EventHandler(this.mirrorMode_CheckedChanged);
@@ -570,7 +570,7 @@ namespace companion
             this.telemetryLabel.Name = "telemetryLabel";
             this.telemetryLabel.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
             this.telemetryLabel.Size = new System.Drawing.Size(395, 35);
-            this.telemetryLabel.TabIndex = 27;
+            this.telemetryLabel.TabIndex = 40;
             this.telemetryLabel.Text = "Our telemetry does not affect performance, is anonymous and helps the developer w" +
     "ith application support.";
             // 
@@ -583,7 +583,7 @@ namespace companion
             this.enableTelemetry.Name = "enableTelemetry";
             this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
             this.enableTelemetry.Size = new System.Drawing.Size(139, 23);
-            this.enableTelemetry.TabIndex = 28;
+            this.enableTelemetry.TabIndex = 41;
             this.enableTelemetry.Text = "Enable usage telemetry";
             this.enableTelemetry.UseVisualStyleBackColor = true;
             this.enableTelemetry.CheckedChanged += new System.EventHandler(this.enableTelemetry_CheckedChanged);
@@ -594,7 +594,7 @@ namespace companion
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
-            this.restoreDefaults.TabIndex = 29;
+            this.restoreDefaults.TabIndex = 42;
             this.restoreDefaults.Text = "Restore defaults";
             this.restoreDefaults.UseVisualStyleBackColor = true;
             this.restoreDefaults.Click += new System.EventHandler(this.restoreDefaults_Click);

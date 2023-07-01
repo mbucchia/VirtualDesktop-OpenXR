@@ -150,6 +150,7 @@ namespace pimax_openxr {
         CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
         CHECK_HRCMD(
             m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
+        *m_eventForSubmissionFence.put() = CreateEventEx(nullptr, L"Submission Fence", 0, EVENT_ALL_ACCESS);
 
         // Frame timers.
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
@@ -328,6 +329,7 @@ namespace pimax_openxr {
         m_pvrSubmissionContextState.Reset();
         m_pvrSubmissionContext.Reset();
         m_pvrSubmissionDevice.Reset();
+        m_eventForSubmissionFence.reset();
     }
 
     // Retrieve generic handles to the swapchain images to import into the application device.
@@ -777,7 +779,15 @@ namespace pimax_openxr {
     }
 
     void OpenXrRuntime::waitOnSubmissionDevice() {
-        CHECK_HRCMD(m_pvrSubmissionContext->Wait(m_pvrSubmissionFence.Get(), m_fenceValue));
+        if (!m_syncGpuWorkInEndFrame) {
+            CHECK_HRCMD(m_pvrSubmissionContext->Wait(m_pvrSubmissionFence.Get(), m_fenceValue));
+        } else {
+            // Workaround: PVR does not seem to reliably measure GPU frame times and therefore choses an incorrect rate
+            // for smart smoothing. By waiting on the CPU here, we force the CPU time measure the same as GPU time.
+            CHECK_HRCMD(m_pvrSubmissionFence->SetEventOnCompletion(m_fenceValue, m_eventForSubmissionFence.get()));
+            WaitForSingleObject(m_eventForSubmissionFence.get(), INFINITE);
+            ResetEvent(m_eventForSubmissionFence.get());
+        }
     }
 
 } // namespace pimax_openxr
