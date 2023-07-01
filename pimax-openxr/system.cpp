@@ -172,12 +172,12 @@ namespace pimax_openxr {
         // Compute quad views FOV.
         if (has_XR_VARJO_quad_views) {
             // Latch the configuration for quad views and foveated rendering.
-            m_focusPixelDensity = getSetting("focus_density").value_or(1000) / 1e3f;
-            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(600) / 1e3f;
+            m_focusPixelDensity = getSetting("focus_density").value_or(1100) / 1e3f;
+            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(400) / 1e3f;
             m_horizontalFovSection[0] = getSetting("focus_horizontal_section").value_or(650) / 1e3f;
             m_horizontalFovSection[1] = getSetting("focus_horizontal_section_foveated").value_or(330) / 1e3f;
             m_verticalFovSection[0] = getSetting("focus_vertical_section").value_or(700) / 1e3f;
-            m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(350) / 1e3f;
+            m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(310) / 1e3f;
 
             // The horizontal sections are relative to small FOV level, transpose them into the current FOV level.
             // Each FOV level adds 20 degree.

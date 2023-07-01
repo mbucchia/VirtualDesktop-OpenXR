@@ -94,12 +94,12 @@ namespace companion
                     verticalSection2.Enabled = verticalSection2Label.Enabled = verticalSection2Value.Enabled =
                 preferFoveated.Enabled = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
                 preferFoveated.Checked = (int)key.GetValue("prefer_foveated_rendering", 0) == 1 ? true : false;
-                focusDensity.Value = (int)key.GetValue("focus_density", 1000);
-                peripheralDensity.Value = (int)key.GetValue("peripheral_density", 600);
+                focusDensity.Value = (int)key.GetValue("focus_density", 1100);
+                peripheralDensity.Value = (int)key.GetValue("peripheral_density", 400);
                 horizontalSection1.Value = (int)key.GetValue("focus_horizontal_section", 650);
                 horizontalSection2.Value = (int)key.GetValue("focus_horizontal_section_foveated", 330);
                 verticalSection1.Value = (int)key.GetValue("focus_vertical_section", 700);
-                verticalSection2.Value = (int)key.GetValue("focus_vertical_section_foveated", 350);
+                verticalSection2.Value = (int)key.GetValue("focus_vertical_section_foveated", 310);
 
                 // DO NOT FORGET TO ADD TO restoreDefaults_Click()!
             }

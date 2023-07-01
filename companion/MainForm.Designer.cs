@@ -504,9 +504,9 @@ namespace companion
             this.allowEyeTracking.Location = new System.Drawing.Point(3, 390);
             this.allowEyeTracking.Name = "allowEyeTracking";
             this.allowEyeTracking.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.allowEyeTracking.Size = new System.Drawing.Size(160, 17);
+            this.allowEyeTracking.Size = new System.Drawing.Size(301, 17);
             this.allowEyeTracking.TabIndex = 31;
-            this.allowEyeTracking.Text = "Allow use of the eye tracker";
+            this.allowEyeTracking.Text = "Allow use of the eye tracker (Pimax Crystal or Droolon Pi1)";
             this.allowEyeTracking.UseVisualStyleBackColor = true;
             this.allowEyeTracking.CheckedChanged += new System.EventHandler(this.allowEyeTracking_CheckedChanged);
             // 
