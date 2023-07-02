@@ -26,6 +26,7 @@ Special thanks to the following individuals for their contributions:
 - Pavel Skakov
 - DJSlane
 - TommyVR
+- [Omniwhatever](https://www.youtube.com/@Omniwhatever)
 
 ## Very special thanks
 
