@@ -93,7 +93,7 @@ namespace pimax_openxr {
     void OpenXrRuntime::updateMirrorWindow(bool preferSRGB) {
         std::unique_lock lock(m_mirrorWindowMutex);
 
-        if (!m_mirrorWindowReady) {
+        if (!m_mirrorWindowReady || !IsWindowVisible(m_mirrorWindowHwnd)) {
             return;
         }
 

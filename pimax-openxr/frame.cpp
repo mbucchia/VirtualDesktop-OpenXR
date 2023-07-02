@@ -931,10 +931,15 @@ namespace pimax_openxr {
             }
 
             // Defer initialization of mirror window resources until they are first needed.
-            if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
-                createMirrorWindow();
+            try {
+                if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
+                    createMirrorWindow();
+                }
+                updateMirrorWindow(isProj0SRGB);
+            } catch (std::exception& exc) {
+                TraceLoggingWrite(g_traceProvider, "MirrorWindow", TLArg(exc.what(), "Error"));
+                ErrorLog("Failed to update the mirror window: %s\n", exc.what());
             }
-            updateMirrorWindow(isProj0SRGB);
 
             // When using RenderDoc, signal a frame through the dummy swapchain.
             if (m_dxgiSwapchain) {
