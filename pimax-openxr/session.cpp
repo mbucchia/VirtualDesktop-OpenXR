@@ -358,6 +358,9 @@ namespace pimax_openxr {
         m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
         // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
 
+        // Re-assert our compulsive smoothing setting.
+        pvr_setIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", m_lockFramerate ? 2 : 1);
+
         m_sessionBegun = true;
         updateSessionState();
 
@@ -527,6 +530,7 @@ namespace pimax_openxr {
         m_droolonProjectionDistance = getSetting("droolon_projection_distance").value_or(35) / 100.f;
 
         m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(false);
+        m_lockFramerate = getSetting("lock_framerate").value_or(false);
 
         m_postProcessFocusView = getSetting("postprocess_focus_view").value_or(true);
 
@@ -551,11 +555,16 @@ namespace pimax_openxr {
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_droolonProjectionDistance, "DroolonProjectionDistance"),
             TLArg(m_useDeferredFrameWait, "UseDeferredFrameWait"),
+            TLArg(m_lockFramerate, "LockFramerate"),
             TLArg(m_postProcessFocusView, "PostProcessFocusView"),
             TLArg(m_honorPremultiplyFlagOnProj0, "HonorPremultiplyFlagOnProj0"),
             TLArg(m_swapGripAimPoses, "SwapGripAimPoses"),
             TLArg(m_useRunningStart, "UseRunningStart"),
             TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
+
+        if (m_pvrSession) {
+            pvr_setIntConfig(m_pvrSession, "dbg_force_framerate_divide_by", m_lockFramerate ? 2 : 1);
+        }
 
         const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
         if (debugControllerType == 1) {

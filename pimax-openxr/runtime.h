@@ -615,6 +615,7 @@ namespace pimax_openxr {
         float m_joystickDeadzone{0.f};
         bool m_swapGripAimPoses{false};
         bool m_useDeferredFrameWait{true};
+        bool m_lockFramerate{false};
         bool m_useDeferredFrameWaitThisFrame{false};
         bool m_honorPremultiplyFlagOnProj0{false};
         bool m_useRunningStart{true};
