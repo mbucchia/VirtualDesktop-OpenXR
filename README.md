@@ -1,6 +1,6 @@
-# PimaxXR: an OpenXR runtime for Pimax headsets
+# PimaxXR: an implementation of the OpenXR standard for Pimax headsets
 
-This program is a Windows OpenXR runtime for Pimax headsets. It allows you to run OpenXR applications without SteamVR. It is not produced by Pimax.
+This program is an implementation of the OpenXR standard for Pimax headsets on Windows. It allows you to run OpenXR applications without SteamVR. It is not produced by Pimax.
 
 It is built on top of the official Pimax PVR native SDK and aims to provide a very fast and efficient implementation of the OpenXR standard for Pimax headsets.
 
