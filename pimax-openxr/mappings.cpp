@@ -257,7 +257,8 @@ namespace pimax_openxr {
                     endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
                     endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
                     endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
-                    endsWith(path, "/input/aim/pose") || endsWith(path, "/output/haptic")) {
+                    endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                    endsWith(path, "/input/aim") || endsWith(path, "/output/haptic")) {
                     return true;
                 }
                 return false;
@@ -268,7 +269,8 @@ namespace pimax_openxr {
                     endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
                     endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
-                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose")) {
+                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
                     return true;
                 }
                 return false;
@@ -326,7 +328,8 @@ namespace pimax_openxr {
                     endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
                     endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
-                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose")) {
+                    endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
                     return true;
                 }
                 return false;
@@ -373,7 +376,8 @@ namespace pimax_openxr {
         } else if (endsWith(path, "/input/trackpad/touch")) {
             source.buttonMap = m_cachedInputState.HandTouches;
             source.buttonType = pvrButton_TouchPad;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
@@ -456,7 +460,8 @@ namespace pimax_openxr {
         } else if (endsWith(path, "/input/trackpad/touch")) {
             source.buttonMap = m_cachedInputState.HandTouches;
             source.buttonType = pvrButton_TouchPad;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
@@ -488,7 +493,7 @@ namespace pimax_openxr {
         } else if (path == "/user/hand/left/input/y/touch") {
             source.buttonMap = m_cachedInputState.HandTouches;
             source.buttonType = pvrButton_B;
-        } else if (path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/menu/system") {
+        } else if (path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/menu") {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_ApplicationMenu;
         } else if (path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a") {
@@ -540,7 +545,8 @@ namespace pimax_openxr {
         } else if (endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest")) {
             source.buttonMap = m_cachedInputState.HandTouches;
             source.buttonType = pvrButton_TouchPad;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
@@ -566,7 +572,8 @@ namespace pimax_openxr {
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_ApplicationMenu;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
@@ -602,9 +609,9 @@ namespace pimax_openxr {
             return "Trackpad Press";
         } else if (endsWith(path, "/input/trackpad/touch")) {
             return "Trackpad Touch";
-        } else if (endsWith(path, "/input/grip/pose")) {
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip")) {
             return "Grip Pose";
-        } else if (endsWith(path, "/input/aim/pose")) {
+        } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             return "Aim Pose";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
@@ -657,9 +664,9 @@ namespace pimax_openxr {
             return "Trackpad Force";
         } else if (endsWith(path, "/input/trackpad/touch")) {
             return "Trackpad Touch";
-        } else if (endsWith(path, "/input/grip/pose")) {
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip")) {
             return "Grip Pose";
-        } else if (endsWith(path, "/input/aim/pose")) {
+        } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             return "Aim Pose";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
@@ -712,9 +719,9 @@ namespace pimax_openxr {
             return "Joystick Touch";
         } else if (endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest")) {
             return "Thumbrest Touch";
-        } else if (endsWith(path, "/input/grip/pose")) {
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip")) {
             return "Grip Pose";
-        } else if (endsWith(path, "/input/aim/pose")) {
+        } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             return "Aim Pose";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
@@ -728,9 +735,9 @@ namespace pimax_openxr {
             return "Trigger Press";
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return "Menu Button";
-        } else if (endsWith(path, "/input/grip/pose")) {
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip")) {
             return "Grip Pose";
-        } else if (endsWith(path, "/input/aim/pose")) {
+        } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             return "Aim Pose";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
@@ -744,7 +751,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/select", "/input/trigger");
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -771,7 +779,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
                    endsWith(path, "/input/trigger")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -794,7 +803,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                    endsWith(path, "/input/trackpad")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -819,7 +829,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
                    endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -833,7 +844,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/select", "/input/trigger");
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return rreplace(path, "/input/menu", "/input/a");
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -863,7 +875,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
                    endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/thumbstick")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -886,7 +899,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
                    endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/thumbstick")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -908,7 +922,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger/touch") ||
                    endsWith(path, "/input/trigger")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -924,7 +939,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/menu", "/input/a");
         } else if (path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu") {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -946,7 +962,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch") ||
                    endsWith(path, "/input/thumbstick")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -968,7 +985,8 @@ namespace pimax_openxr {
                    path == "/user/hand/left/input/menu" || endsWith(path, "/input/trigger/click") ||
                    endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -997,7 +1015,8 @@ namespace pimax_openxr {
                    endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
                    endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/thumbstick")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -1014,7 +1033,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/trigger/value", "/input/select/click");
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -1031,7 +1051,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/trigger/value", "/input/select/click");
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -1047,7 +1068,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/trigger/value", "/input/select/click");
         } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
             return path;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -1063,7 +1085,8 @@ namespace pimax_openxr {
             return rreplace(path, "/input/trigger/value", "/input/select/click");
         } else if (endsWith(path, "/input/a/click") || endsWith(path, "/input/a")) {
             return rreplace(path, "/input/a", "/input/menu");
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/aim/pose") ||
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
