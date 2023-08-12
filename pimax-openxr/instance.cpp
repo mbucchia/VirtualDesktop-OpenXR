@@ -605,7 +605,7 @@ namespace pimax_openxr {
         m_extensionsTable.push_back( // Eye tracking.
             {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
 
-        if (!getSetting("disable_quad_views").value_or(true)) {
+        if (getSetting("enable_quad_views").value_or(false)) {
             m_extensionsTable.push_back( // Quad views.
                 {XR_VARJO_QUAD_VIEWS_EXTENSION_NAME, XR_VARJO_quad_views_SPEC_VERSION});
             m_extensionsTable.push_back( // Foveated rendering with quad views.

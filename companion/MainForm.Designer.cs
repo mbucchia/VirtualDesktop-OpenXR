@@ -66,6 +66,7 @@ namespace companion
             this.enableCompulsiveSmoothing = new System.Windows.Forms.CheckBox();
             this.allowEyeTracking = new System.Windows.Forms.CheckBox();
             this.enableQuadViews = new System.Windows.Forms.CheckBox();
+            this.downloadQuadViews = new System.Windows.Forms.LinkLabel();
             this.enableUltraleap = new System.Windows.Forms.CheckBox();
             this.downloadUltraleap = new System.Windows.Forms.LinkLabel();
             this.mirrorMode = new System.Windows.Forms.CheckBox();
@@ -104,7 +105,7 @@ namespace companion
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 875);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 879);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -113,7 +114,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.startTrace);
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 801);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 805);
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
@@ -208,7 +209,7 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.gotoDownloads);
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 857);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 861);
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 16);
@@ -262,6 +263,7 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.enableCompulsiveSmoothing);
             this.flowLayoutPanel4.Controls.Add(this.allowEyeTracking);
             this.flowLayoutPanel4.Controls.Add(this.enableQuadViews);
+            this.flowLayoutPanel4.Controls.Add(this.downloadQuadViews);
             this.flowLayoutPanel4.Controls.Add(this.enableUltraleap);
             this.flowLayoutPanel4.Controls.Add(this.downloadUltraleap);
             this.flowLayoutPanel4.Controls.Add(this.mirrorMode);
@@ -272,7 +274,7 @@ namespace companion
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 149);
             this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
-            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 648);
+            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 652);
             this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
@@ -538,15 +540,28 @@ namespace companion
             this.enableQuadViews.UseVisualStyleBackColor = true;
             this.enableQuadViews.CheckedChanged += new System.EventHandler(this.enableQuadViews_CheckedChanged);
             // 
+            // downloadQuadViews
+            // 
+            this.downloadQuadViews.AutoSize = true;
+            this.flowLayoutPanel4.SetFlowBreak(this.downloadQuadViews, true);
+            this.downloadQuadViews.Location = new System.Drawing.Point(3, 456);
+            this.downloadQuadViews.Name = "downloadQuadViews";
+            this.downloadQuadViews.Padding = new System.Windows.Forms.Padding(18, 0, 0, 0);
+            this.downloadQuadViews.Size = new System.Drawing.Size(255, 13);
+            this.downloadQuadViews.TabIndex = 34;
+            this.downloadQuadViews.TabStop = true;
+            this.downloadQuadViews.Text = "Download or update Quad-Views-Foveated utility";
+            this.downloadQuadViews.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.downloadQuadViews_LinkClicked);
+            // 
             // enableUltraleap
             // 
             this.enableUltraleap.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableUltraleap, true);
-            this.enableUltraleap.Location = new System.Drawing.Point(3, 459);
+            this.enableUltraleap.Location = new System.Drawing.Point(3, 472);
             this.enableUltraleap.Name = "enableUltraleap";
             this.enableUltraleap.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableUltraleap.Size = new System.Drawing.Size(310, 17);
-            this.enableUltraleap.TabIndex = 34;
+            this.enableUltraleap.TabIndex = 35;
             this.enableUltraleap.Text = "Enable Hand Tracking module (with supported applications)";
             this.enableUltraleap.UseVisualStyleBackColor = true;
             this.enableUltraleap.CheckedChanged += new System.EventHandler(this.enableUltraleap_CheckedChanged);
@@ -555,11 +570,11 @@ namespace companion
             // 
             this.downloadUltraleap.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.downloadUltraleap, true);
-            this.downloadUltraleap.Location = new System.Drawing.Point(3, 479);
+            this.downloadUltraleap.Location = new System.Drawing.Point(3, 492);
             this.downloadUltraleap.Name = "downloadUltraleap";
             this.downloadUltraleap.Padding = new System.Windows.Forms.Padding(18, 0, 0, 0);
             this.downloadUltraleap.Size = new System.Drawing.Size(283, 13);
-            this.downloadUltraleap.TabIndex = 35;
+            this.downloadUltraleap.TabIndex = 36;
             this.downloadUltraleap.TabStop = true;
             this.downloadUltraleap.Text = "Download or update Ultraleap Hand Tracking software";
             this.downloadUltraleap.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.downloadUltraleap_LinkClicked);
@@ -568,11 +583,11 @@ namespace companion
             // 
             this.mirrorMode.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.mirrorMode, true);
-            this.mirrorMode.Location = new System.Drawing.Point(3, 495);
+            this.mirrorMode.Location = new System.Drawing.Point(3, 508);
             this.mirrorMode.Name = "mirrorMode";
             this.mirrorMode.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
             this.mirrorMode.Size = new System.Drawing.Size(123, 20);
-            this.mirrorMode.TabIndex = 36;
+            this.mirrorMode.TabIndex = 37;
             this.mirrorMode.Text = "Show mirror window";
             this.mirrorMode.UseVisualStyleBackColor = true;
             this.mirrorMode.CheckedChanged += new System.EventHandler(this.mirrorMode_CheckedChanged);
@@ -581,7 +596,7 @@ namespace companion
             // 
             this.telemetryLabel.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.telemetryLabel, true);
-            this.telemetryLabel.Location = new System.Drawing.Point(3, 518);
+            this.telemetryLabel.Location = new System.Drawing.Point(3, 531);
             this.telemetryLabel.Name = "telemetryLabel";
             this.telemetryLabel.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
             this.telemetryLabel.Size = new System.Drawing.Size(395, 35);
@@ -593,7 +608,7 @@ namespace companion
             // 
             this.enableTelemetry.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableTelemetry, true);
-            this.enableTelemetry.Location = new System.Drawing.Point(2, 555);
+            this.enableTelemetry.Location = new System.Drawing.Point(2, 568);
             this.enableTelemetry.Margin = new System.Windows.Forms.Padding(2);
             this.enableTelemetry.Name = "enableTelemetry";
             this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
@@ -605,7 +620,7 @@ namespace companion
             // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 592);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 605);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
@@ -630,7 +645,7 @@ namespace companion
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(406, 875);
+            this.ClientSize = new System.Drawing.Size(406, 879);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -694,6 +709,7 @@ namespace companion
         private System.Windows.Forms.Button restoreDefaults;
         private System.Windows.Forms.CheckBox allowEyeTracking;
         private System.Windows.Forms.CheckBox enableQuadViews;
+        private System.Windows.Forms.LinkLabel downloadQuadViews;
         private System.Windows.Forms.CheckBox enableUltraleap;
         private System.Windows.Forms.LinkLabel downloadUltraleap;
         private System.Windows.Forms.ToolTip toolTip;

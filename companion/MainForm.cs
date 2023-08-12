@@ -73,6 +73,7 @@ namespace companion
         private string pimaxRuntimePath = "";
         private string pimax32RuntimePath = "";
         private string steamRuntimePath = "";
+        private string quadViewsLayerPath = "";
         private string ultraleapLayerPath = "";
 
         public MainForm()
@@ -153,7 +154,7 @@ namespace companion
                 MessageBox.Show(this, "Unable to identify the active OpenXR runtime: " + activeRuntime, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-            // Locate the Ultraleap API layer.
+            // Locate the API layers.
             try
             {
                 key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("SOFTWARE\\Khronos\\OpenXR\\1\\ApiLayers\\Implicit");
@@ -164,7 +165,11 @@ namespace companion
                     {
                         ultraleapLayerPath = value;
                         enableUltraleap.Checked = (int)key.GetValue(value, 0) == 0 ? true : false;
-                        break;
+                    }
+                    else if (value.EndsWith("OpenXR-Quad-Views-Foveated\\openxr-api-layer.json"))
+                    {
+                        quadViewsLayerPath = value;
+                        enableQuadViews.Checked = (int)key.GetValue(value, 0) == 0 ? true : false;
                     }
                 }
             }
@@ -360,7 +365,6 @@ namespace companion
                 preferFramerate.Checked = (int)key.GetValue("defer_frame_wait", 0) == 1 ? true : false;
                 enableCompulsiveSmoothing.Checked = (int)key.GetValue("lock_framerate", 0) == 1 ? true : false;
                 allowEyeTracking.Checked = (int)key.GetValue("allow_eye_tracking", 0) == 1 ? true : false;
-                enableQuadViews.Checked = (int)key.GetValue("disable_quad_views", 1) == 0 ? true : false;
                 mirrorMode.Checked = (int)key.GetValue("mirror_window", 0) == 1 ? true : false;
                 enableTelemetry.Checked = (int)key.GetValue("enable_telemetry", 0) == 1 ? true : false;
 
@@ -391,10 +395,11 @@ namespace companion
         private void RefreshEnabledState()
         {
             runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
-                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = preferFramerate.Enabled = enableCompulsiveSmoothing.Enabled = allowEyeTracking.Enabled = /*enableQuadViews.Enabled =*/
-                downloadUltraleap.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = telemetryLabel.Enabled =
+                joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = preferFramerate.Enabled = enableCompulsiveSmoothing.Enabled = allowEyeTracking.Enabled =
+                downloadQuadViews.Enabled = downloadUltraleap.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = telemetryLabel.Enabled =
                 runtimePimax.Checked;
             guardianLabel1.Enabled = guardianLabel2.Enabled = guardianRadius.Enabled = guardianRadiusValue.Enabled = guardianThreshold.Enabled = guardianThresholdValue.Enabled = guardian.Enabled && guardian.Checked;
+            enableQuadViews.Enabled = runtimePimax.Checked && quadViewsLayerPath != "";
             enableUltraleap.Enabled = runtimePimax.Checked && ultraleapLayerPath != "";
         }
 
@@ -533,7 +538,33 @@ namespace companion
                 return;
             }
 
-            MainForm.WriteSetting("disable_quad_views", enableQuadViews.Checked ? 0 : 1);
+            Microsoft.Win32.RegistryKey key = null;
+
+            try
+            {
+                key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey("SOFTWARE\\Khronos\\OpenXR\\1\\ApiLayers\\Implicit");
+                key.SetValue(quadViewsLayerPath, enableQuadViews.Checked ? 0 : 1, Microsoft.Win32.RegistryValueKind.DWord);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (key != null)
+                {
+                    key.Close();
+                }
+            }
+        }
+
+        private void downloadQuadViews_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            string githubReleases = "https://github.com/mbucchia/Quad-Views-Foveated/wiki";
+
+            downloadQuadViews.LinkVisited = true;
+            MessageBox.Show(this, "You will now be taken to the download page for the Quad-Views-Foveated utility.\nOnce installed, please restart the PimaxXR Control Center.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            System.Diagnostics.Process.Start(githubReleases);
         }
 
         private void enableUltraleap_CheckedChanged(object sender, EventArgs e)
