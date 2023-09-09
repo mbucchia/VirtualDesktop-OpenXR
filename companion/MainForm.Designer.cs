@@ -75,7 +75,6 @@ namespace companion
             this.restoreDefaults = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.disableAnalogGrip = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel3.SuspendLayout();
@@ -106,7 +105,7 @@ namespace companion
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 56F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 906);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(406, 879);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -115,7 +114,7 @@ namespace companion
             this.flowLayoutPanel1.Controls.Add(this.startTrace);
             this.flowLayoutPanel1.Controls.Add(this.stopTrace);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 832);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 805);
             this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(402, 52);
@@ -210,7 +209,7 @@ namespace companion
             this.flowLayoutPanel2.Controls.Add(this.gotoDownloads);
             this.flowLayoutPanel2.Controls.Add(this.reportIssues);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 888);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 861);
             this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(402, 16);
@@ -250,7 +249,6 @@ namespace companion
             this.flowLayoutPanel4.Controls.Add(this.recenterLabel);
             this.flowLayoutPanel4.Controls.Add(this.controllerEmulation);
             this.flowLayoutPanel4.Controls.Add(this.controllerEmulationLabel);
-            this.flowLayoutPanel4.Controls.Add(this.disableAnalogGrip);
             this.flowLayoutPanel4.Controls.Add(this.joystickDeadzoneValue);
             this.flowLayoutPanel4.Controls.Add(this.joystickLabel);
             this.flowLayoutPanel4.Controls.Add(this.joystickDeadzone);
@@ -276,7 +274,7 @@ namespace companion
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 149);
             this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
-            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 679);
+            this.flowLayoutPanel4.Size = new System.Drawing.Size(402, 652);
             this.flowLayoutPanel4.TabIndex = 3;
             // 
             // label2
@@ -377,38 +375,38 @@ namespace companion
             // joystickDeadzoneValue
             // 
             this.joystickDeadzoneValue.AccessibleDescription = "Value for joystick deadzone";
-            this.joystickDeadzoneValue.Location = new System.Drawing.Point(3, 223);
+            this.joystickDeadzoneValue.Location = new System.Drawing.Point(3, 197);
             this.joystickDeadzoneValue.Name = "joystickDeadzoneValue";
             this.joystickDeadzoneValue.ReadOnly = true;
             this.joystickDeadzoneValue.Size = new System.Drawing.Size(26, 20);
-            this.joystickDeadzoneValue.TabIndex = 15;
+            this.joystickDeadzoneValue.TabIndex = 14;
             // 
             // joystickLabel
             // 
             this.joystickLabel.AutoSize = true;
-            this.joystickLabel.Location = new System.Drawing.Point(35, 220);
+            this.joystickLabel.Location = new System.Drawing.Point(35, 194);
             this.joystickLabel.Name = "joystickLabel";
             this.joystickLabel.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
             this.joystickLabel.Size = new System.Drawing.Size(98, 22);
-            this.joystickLabel.TabIndex = 16;
+            this.joystickLabel.TabIndex = 15;
             this.joystickLabel.Text = "Joystick deadzone:";
             // 
             // joystickDeadzone
             // 
             this.joystickDeadzone.AccessibleDescription = "Slider for joystick deadzone";
-            this.joystickDeadzone.Location = new System.Drawing.Point(139, 223);
+            this.joystickDeadzone.Location = new System.Drawing.Point(139, 197);
             this.joystickDeadzone.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.joystickDeadzone.Maximum = 100;
             this.joystickDeadzone.Name = "joystickDeadzone";
             this.joystickDeadzone.Size = new System.Drawing.Size(104, 45);
-            this.joystickDeadzone.TabIndex = 17;
+            this.joystickDeadzone.TabIndex = 16;
             this.joystickDeadzone.Scroll += new System.EventHandler(this.joystickDeadzone_Scroll);
             // 
             // guardian
             // 
             this.guardian.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.guardian, true);
-            this.guardian.Location = new System.Drawing.Point(2, 270);
+            this.guardian.Location = new System.Drawing.Point(2, 244);
             this.guardian.Margin = new System.Windows.Forms.Padding(2);
             this.guardian.Name = "guardian";
             this.guardian.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
@@ -421,7 +419,7 @@ namespace companion
             // guardianRadiusValue
             // 
             this.guardianRadiusValue.AccessibleDescription = "Value for guardian radius";
-            this.guardianRadiusValue.Location = new System.Drawing.Point(30, 297);
+            this.guardianRadiusValue.Location = new System.Drawing.Point(30, 271);
             this.guardianRadiusValue.Margin = new System.Windows.Forms.Padding(30, 3, 3, 3);
             this.guardianRadiusValue.Name = "guardianRadiusValue";
             this.guardianRadiusValue.ReadOnly = true;
@@ -431,7 +429,7 @@ namespace companion
             // guardianLabel1
             // 
             this.guardianLabel1.AutoSize = true;
-            this.guardianLabel1.Location = new System.Drawing.Point(59, 294);
+            this.guardianLabel1.Location = new System.Drawing.Point(59, 268);
             this.guardianLabel1.Margin = new System.Windows.Forms.Padding(0, 0, 3, 0);
             this.guardianLabel1.Name = "guardianLabel1";
             this.guardianLabel1.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
@@ -443,7 +441,7 @@ namespace companion
             // 
             this.guardianRadius.AccessibleDescription = "Slider for guardian radius";
             this.flowLayoutPanel4.SetFlowBreak(this.guardianRadius, true);
-            this.guardianRadius.Location = new System.Drawing.Point(114, 297);
+            this.guardianRadius.Location = new System.Drawing.Point(114, 271);
             this.guardianRadius.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.guardianRadius.Maximum = 600;
             this.guardianRadius.Minimum = 50;
@@ -457,7 +455,7 @@ namespace companion
             // guardianThresholdValue
             // 
             this.guardianThresholdValue.AccessibleDescription = "Value for guardian visibility";
-            this.guardianThresholdValue.Location = new System.Drawing.Point(30, 345);
+            this.guardianThresholdValue.Location = new System.Drawing.Point(30, 319);
             this.guardianThresholdValue.Margin = new System.Windows.Forms.Padding(30, 3, 3, 3);
             this.guardianThresholdValue.Name = "guardianThresholdValue";
             this.guardianThresholdValue.ReadOnly = true;
@@ -467,7 +465,7 @@ namespace companion
             // guardianLabel2
             // 
             this.guardianLabel2.AutoSize = true;
-            this.guardianLabel2.Location = new System.Drawing.Point(59, 342);
+            this.guardianLabel2.Location = new System.Drawing.Point(59, 316);
             this.guardianLabel2.Margin = new System.Windows.Forms.Padding(0, 0, 3, 0);
             this.guardianLabel2.Name = "guardianLabel2";
             this.guardianLabel2.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
@@ -479,7 +477,7 @@ namespace companion
             // 
             this.guardianThreshold.AccessibleDescription = "Slider for guardian visibility";
             this.flowLayoutPanel4.SetFlowBreak(this.guardianThreshold, true);
-            this.guardianThreshold.Location = new System.Drawing.Point(121, 345);
+            this.guardianThreshold.Location = new System.Drawing.Point(121, 319);
             this.guardianThreshold.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.guardianThreshold.Maximum = 600;
             this.guardianThreshold.Minimum = 50;
@@ -494,7 +492,7 @@ namespace companion
             // 
             this.preferFramerate.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.preferFramerate, true);
-            this.preferFramerate.Location = new System.Drawing.Point(3, 393);
+            this.preferFramerate.Location = new System.Drawing.Point(3, 367);
             this.preferFramerate.Name = "preferFramerate";
             this.preferFramerate.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.preferFramerate.Size = new System.Drawing.Size(338, 17);
@@ -506,7 +504,7 @@ namespace companion
             // enableCompulsiveSmoothing
             // 
             this.enableCompulsiveSmoothing.AutoSize = true;
-            this.enableCompulsiveSmoothing.Location = new System.Drawing.Point(3, 416);
+            this.enableCompulsiveSmoothing.Location = new System.Drawing.Point(3, 390);
             this.enableCompulsiveSmoothing.Name = "enableCompulsiveSmoothing";
             this.enableCompulsiveSmoothing.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableCompulsiveSmoothing.Size = new System.Drawing.Size(364, 17);
@@ -519,7 +517,7 @@ namespace companion
             // 
             this.allowEyeTracking.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.allowEyeTracking, true);
-            this.allowEyeTracking.Location = new System.Drawing.Point(3, 439);
+            this.allowEyeTracking.Location = new System.Drawing.Point(3, 413);
             this.allowEyeTracking.Name = "allowEyeTracking";
             this.allowEyeTracking.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.allowEyeTracking.Size = new System.Drawing.Size(301, 17);
@@ -533,7 +531,7 @@ namespace companion
             this.enableQuadViews.AutoSize = true;
             this.enableQuadViews.Enabled = false;
             this.flowLayoutPanel4.SetFlowBreak(this.enableQuadViews, true);
-            this.enableQuadViews.Location = new System.Drawing.Point(3, 462);
+            this.enableQuadViews.Location = new System.Drawing.Point(3, 436);
             this.enableQuadViews.Name = "enableQuadViews";
             this.enableQuadViews.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableQuadViews.Size = new System.Drawing.Size(306, 17);
@@ -546,7 +544,7 @@ namespace companion
             // 
             this.downloadQuadViews.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.downloadQuadViews, true);
-            this.downloadQuadViews.Location = new System.Drawing.Point(3, 482);
+            this.downloadQuadViews.Location = new System.Drawing.Point(3, 456);
             this.downloadQuadViews.Name = "downloadQuadViews";
             this.downloadQuadViews.Padding = new System.Windows.Forms.Padding(18, 0, 0, 0);
             this.downloadQuadViews.Size = new System.Drawing.Size(255, 13);
@@ -559,7 +557,7 @@ namespace companion
             // 
             this.enableUltraleap.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableUltraleap, true);
-            this.enableUltraleap.Location = new System.Drawing.Point(3, 498);
+            this.enableUltraleap.Location = new System.Drawing.Point(3, 472);
             this.enableUltraleap.Name = "enableUltraleap";
             this.enableUltraleap.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
             this.enableUltraleap.Size = new System.Drawing.Size(310, 17);
@@ -572,7 +570,7 @@ namespace companion
             // 
             this.downloadUltraleap.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.downloadUltraleap, true);
-            this.downloadUltraleap.Location = new System.Drawing.Point(3, 518);
+            this.downloadUltraleap.Location = new System.Drawing.Point(3, 492);
             this.downloadUltraleap.Name = "downloadUltraleap";
             this.downloadUltraleap.Padding = new System.Windows.Forms.Padding(18, 0, 0, 0);
             this.downloadUltraleap.Size = new System.Drawing.Size(283, 13);
@@ -585,7 +583,7 @@ namespace companion
             // 
             this.mirrorMode.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.mirrorMode, true);
-            this.mirrorMode.Location = new System.Drawing.Point(3, 534);
+            this.mirrorMode.Location = new System.Drawing.Point(3, 508);
             this.mirrorMode.Name = "mirrorMode";
             this.mirrorMode.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
             this.mirrorMode.Size = new System.Drawing.Size(123, 20);
@@ -598,7 +596,7 @@ namespace companion
             // 
             this.telemetryLabel.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.telemetryLabel, true);
-            this.telemetryLabel.Location = new System.Drawing.Point(3, 557);
+            this.telemetryLabel.Location = new System.Drawing.Point(3, 531);
             this.telemetryLabel.Name = "telemetryLabel";
             this.telemetryLabel.Padding = new System.Windows.Forms.Padding(3, 9, 0, 0);
             this.telemetryLabel.Size = new System.Drawing.Size(395, 35);
@@ -610,7 +608,7 @@ namespace companion
             // 
             this.enableTelemetry.AutoSize = true;
             this.flowLayoutPanel4.SetFlowBreak(this.enableTelemetry, true);
-            this.enableTelemetry.Location = new System.Drawing.Point(2, 594);
+            this.enableTelemetry.Location = new System.Drawing.Point(2, 568);
             this.enableTelemetry.Margin = new System.Windows.Forms.Padding(2);
             this.enableTelemetry.Name = "enableTelemetry";
             this.enableTelemetry.Padding = new System.Windows.Forms.Padding(3, 6, 0, 0);
@@ -622,7 +620,7 @@ namespace companion
             // 
             // restoreDefaults
             // 
-            this.restoreDefaults.Location = new System.Drawing.Point(6, 631);
+            this.restoreDefaults.Location = new System.Drawing.Point(6, 605);
             this.restoreDefaults.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
             this.restoreDefaults.Name = "restoreDefaults";
             this.restoreDefaults.Size = new System.Drawing.Size(126, 39);
@@ -643,25 +641,11 @@ namespace companion
             this.pictureBox1.TabStop = false;
             this.pictureBox1.DoubleClick += new System.EventHandler(this.pictureBox1_DoubleClick);
             // 
-            // disableAnalogGrip
-            // 
-            this.disableAnalogGrip.AutoSize = true;
-            this.flowLayoutPanel4.SetFlowBreak(this.disableAnalogGrip, true);
-            this.disableAnalogGrip.Location = new System.Drawing.Point(2, 196);
-            this.disableAnalogGrip.Margin = new System.Windows.Forms.Padding(2);
-            this.disableAnalogGrip.Name = "disableAnalogGrip";
-            this.disableAnalogGrip.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
-            this.disableAnalogGrip.Size = new System.Drawing.Size(309, 20);
-            this.disableAnalogGrip.TabIndex = 14;
-            this.disableAnalogGrip.Text = "Disable controller analog grip (Pimax Crystal controllers only)";
-            this.disableAnalogGrip.UseVisualStyleBackColor = true;
-            this.disableAnalogGrip.CheckedChanged += new System.EventHandler(this.disableAnalogGrip_CheckedChanged);
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(406, 906);
+            this.ClientSize = new System.Drawing.Size(406, 879);
             this.Controls.Add(this.tableLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -731,7 +715,6 @@ namespace companion
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.CheckBox preferFramerate;
         private System.Windows.Forms.CheckBox enableCompulsiveSmoothing;
-        private System.Windows.Forms.CheckBox disableAnalogGrip;
     }
 }
 
