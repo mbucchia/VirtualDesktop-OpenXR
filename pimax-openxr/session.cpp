@@ -164,10 +164,10 @@ namespace pimax_openxr {
         m_sessionCreated = true;
 
         // FIXME: Reset the session and frame state here.
+        m_frameWaited = m_frameBegun = m_frameCompleted = 0;
+
         m_sessionState = XR_SESSION_STATE_IDLE;
         updateSessionState(true);
-
-        m_frameWaited = m_frameBegun = m_frameCompleted = 0;
 
         m_frameTimes.clear();
 
