@@ -59,7 +59,6 @@ namespace companion
             public float floorHeight;
             public bool useParallelProjection;
             public bool useSmartSmoothing;
-            public bool useLighthouseTracking;
             public float fps;
         }
 
@@ -282,10 +281,6 @@ namespace companion
                 getRuntimeStatus(new IntPtr(&status));
                 var label = "Resolution: " + status.resolutionWidth + "x" + status.resolutionHeight + " @ " + status.refreshRate.ToString("#") + " Hz" +
                     "   Horizontal FOV: " + status.fov.ToString("#.#") + " deg (" + fov[status.fovLevel] + ")\n";
-                if (status.useLighthouseTracking)
-                {
-                    label += "Lighthouse tracking, ";
-                }
                 if (status.useParallelProjection)
                 {
                     label += "Parallel projections, ";

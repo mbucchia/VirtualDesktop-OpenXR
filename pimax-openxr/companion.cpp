@@ -39,7 +39,6 @@ struct RuntimeStatus {
     float floorHeight;
     bool useParallelProjection;
     bool useSmartSmoothing;
-    bool useLighthouseTracking;
     float fps;
 };
 
@@ -93,7 +92,6 @@ extern "C" __declspec(dllexport) void WINAPI getRuntimeStatus(RuntimeStatus* sta
     status->floorHeight = pvr_getFloatConfig(pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
     status->useParallelProjection = useParallelProjection;
     status->useSmartSmoothing = pvr_getIntConfig(pvrSession, "dbg_asw_enable", 0);
-    status->useLighthouseTracking = pvr_getIntConfig(pvrSession, "enable_lighthouse_tracking", 0);
     status->fps = pvr_getFloatConfig(pvrSession, "client_fps", 0);
 
     status->valid = true;
