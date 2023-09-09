@@ -562,7 +562,7 @@ namespace pimax_openxr {
                     if (value.buttonMap) {
                         combinedState = combinedState.value_or(false) || value.buttonMap[side] & value.buttonType;
                     } else if (value.floatValue) {
-                        combinedState = combinedState.value_or(false) || value.floatValue[side] > 0.99f;
+                        combinedState = combinedState.value_or(false) || value.floatValue[side] > 0.95f;
                     }
                 }
             }

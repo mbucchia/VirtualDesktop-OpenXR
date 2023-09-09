@@ -190,6 +190,7 @@ namespace companion
             toolTip.SetToolTip(recenterMode, "When enabled, the position of your headset will be calibrated every time an application is started");
             toolTip.SetToolTip(controllerEmulation, "Forces an application to \"see\" the specified motion controller type");
             toolTip.SetToolTip(controllerEmulationLabel, "Forces an application to \"see\" the specified motion controller type");
+            toolTip.SetToolTip(disableAnalogGrip, "When enabled, the grip button on the motion controllers only has a released and pressed states");
             toolTip.SetToolTip(joystickDeadzoneValue, "Specifies the deadzone (activation threshold) for the motion controller joysticks");
             toolTip.SetToolTip(joystickLabel, "Specifies the deadzone (activation threshold) for the motion controller joysticks");
             toolTip.SetToolTip(joystickDeadzone, "Specifies the deadzone (activation threshold) for the motion controller joysticks");
@@ -358,6 +359,7 @@ namespace companion
                 // Must match the defaults in the runtime!
                 recenterMode.Checked = (int)key.GetValue("recenter_on_startup", 1) == 1 ? true : false;
                 controllerEmulation.SelectedIndex = (int)key.GetValue("force_interaction_profile", 0);
+                disableAnalogGrip.Checked = (int)key.GetValue("analog_grip", 1) == 1 ? false : true;
                 joystickDeadzone.Value = (int)key.GetValue("joystick_deadzone", 2);
                 guardian.Checked = (int)key.GetValue("guardian", 1) == 1 ? true : false;
                 guardianRadius.Value = (int)key.GetValue("guardian_radius", 1600) / 10;
@@ -394,7 +396,7 @@ namespace companion
 
         private void RefreshEnabledState()
         {
-            runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled =
+            runtimeStatusLabel.Enabled = recenterMode.Enabled = recenterLabel.Enabled = controllerEmulation.Enabled = controllerEmulationLabel.Enabled = disableAnalogGrip.Enabled =
                 joystickDeadzone.Enabled = joystickDeadzoneValue.Enabled = joystickLabel.Enabled = guardian.Enabled = preferFramerate.Enabled = enableCompulsiveSmoothing.Enabled = allowEyeTracking.Enabled =
                 downloadQuadViews.Enabled = downloadUltraleap.Enabled = mirrorMode.Enabled = enableTelemetry.Enabled = pitoolLabel.Enabled = telemetryLabel.Enabled =
                 runtimePimax.Checked;
@@ -441,6 +443,16 @@ namespace companion
             }
 
             WriteSetting("force_interaction_profile", controllerEmulation.SelectedIndex);
+        }
+
+        private void disableAnalogGrip_CheckedChanged(object sender, EventArgs e)
+        {
+            if (loading)
+            {
+                return;
+            }
+
+            WriteSetting("analog_grip", disableAnalogGrip.Checked ? 0 : 1);
         }
 
         private void joystickDeadzone_Scroll(object sender, EventArgs e)
@@ -633,6 +645,7 @@ namespace companion
 
                 key.DeleteValue("recenter_on_startup", false);
                 key.DeleteValue("force_interaction_profile", false);
+                key.DeleteValue("analog_grip", false);
                 key.DeleteValue("joystick_deadzone", false);
                 key.DeleteValue("guardian", false);
                 key.DeleteValue("guardian_radius", false);

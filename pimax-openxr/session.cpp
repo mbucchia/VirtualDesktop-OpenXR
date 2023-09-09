@@ -483,6 +483,8 @@ namespace pimax_openxr {
             m_forcedInteractionProfile.reset();
         }
 
+        m_useAnalogGrip = getSetting("analog_grip").value_or(true);
+
         if (getSetting("guardian").value_or(true)) {
             m_guardianThreshold = getSetting("guardian_threshold").value_or(1100) / 1e3f;
             m_guardianRadius = getSetting("guardian_radius").value_or(1600) / 1e3f;

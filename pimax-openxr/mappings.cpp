@@ -511,10 +511,19 @@ namespace pimax_openxr {
         } else if (path == "/user/hand/right/input/system/click" || path == "/user/hand/right/input/system") {
             source.buttonMap = m_cachedInputState.HandButtons;
             source.buttonType = pvrButton_System;
-        } else if (endsWith(path, "/input/squeeze/value") || endsWith(path, "/input/squeeze/click") ||
-                   endsWith(path, "/input/squeeze")) {
-            // We use the floatValue for squeeze/click since the threshhold for HandButtons seems too high.
-            source.floatValue = m_cachedInputState.Grip;
+        } else if (endsWith(path, "/input/squeeze/click") ||
+                   (xrAction.type == XR_ACTION_TYPE_BOOLEAN_INPUT && endsWith(path, "/input/squeeze"))) {
+            source.buttonMap = m_cachedInputState.HandButtons;
+            source.buttonType = pvrButton_Grip;
+        } else if (endsWith(path, "/input/squeeze/value") ||
+                   (xrAction.type == XR_ACTION_TYPE_FLOAT_INPUT && endsWith(path, "/input/squeeze"))) {
+            if (m_useAnalogGrip) {
+                source.floatValue = m_cachedInputState.Grip;
+            } else {
+                // Workaround for bogus controller firmware.
+                source.buttonMap = m_cachedInputState.HandButtons;
+                source.buttonType = pvrButton_Grip;
+            }
         } else if (endsWith(path, "/input/squeeze/force")) {
             source.floatValue = m_cachedInputState.GripForce;
         } else if (endsWith(path, "/input/trigger/click") ||
