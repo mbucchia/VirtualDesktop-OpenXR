@@ -19,3 +19,6 @@
 [submodule "external/FW1FontWrapper"]
 	path = external/FW1FontWrapper
 	url = https://github.com/mbucchia/FW1FontWrapper.git
+[submodule "external/Vulkan-SDK"]
+	path = external/Vulkan-SDK
+	url = https://github.com/mbucchia/Vulkan-SDK.git
