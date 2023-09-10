@@ -75,181 +75,183 @@ namespace pimax_openxr {
                           TLArg(!!status.DisplayLost, "DisplayLost"),
                           TLArg(!!status.ShouldQuit, "ShouldQuit"));
         if (!(status.ServiceReady && status.HmdPresent)) {
+            m_cachedHmdInfo = {};
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
 
         // Query HMD properties.
-        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &m_cachedHmdInfo));
+        pvrHmdInfo hmdInfo{};
+        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &hmdInfo));
         TraceLoggingWrite(g_traceProvider,
                           "PVR_HmdInfo",
-                          TLArg(m_cachedHmdInfo.VendorId, "VendorId"),
-                          TLArg(m_cachedHmdInfo.ProductId, "ProductId"),
-                          TLArg(m_cachedHmdInfo.Manufacturer, "Manufacturer"),
-                          TLArg(m_cachedHmdInfo.ProductName, "ProductName"),
-                          TLArg(m_cachedHmdInfo.SerialNumber, "SerialNumber"),
-                          TLArg(m_cachedHmdInfo.FirmwareMinor, "FirmwareMinor"),
-                          TLArg(m_cachedHmdInfo.FirmwareMajor, "FirmwareMajor"),
-                          TLArg(m_cachedHmdInfo.Resolution.w, "ResolutionWidth"),
-                          TLArg(m_cachedHmdInfo.Resolution.h, "ResolutionHeight"));
-        if (!m_loggedProductName) {
+                          TLArg(hmdInfo.VendorId, "VendorId"),
+                          TLArg(hmdInfo.ProductId, "ProductId"),
+                          TLArg(hmdInfo.Manufacturer, "Manufacturer"),
+                          TLArg(hmdInfo.ProductName, "ProductName"),
+                          TLArg(hmdInfo.SerialNumber, "SerialNumber"),
+                          TLArg(hmdInfo.FirmwareMinor, "FirmwareMinor"),
+                          TLArg(hmdInfo.FirmwareMajor, "FirmwareMajor"),
+                          TLArg(hmdInfo.Resolution.w, "ResolutionWidth"),
+                          TLArg(hmdInfo.Resolution.h, "ResolutionHeight"));
+
+        // Detect if the device changed.
+        if (std::string_view(m_cachedHmdInfo.SerialNumber) != hmdInfo.SerialNumber) {
+            m_cachedHmdInfo = hmdInfo;
             Log("Device is: %s\n", m_cachedHmdInfo.ProductName);
             m_telemetry.logProduct(m_cachedHmdInfo.ProductName);
-            m_loggedProductName = true;
-        }
 
-        // Important: anything below that set some state into the PVR session must be duplicated to ensurePvrSession().
+            // Important: anything below that set some state into the PVR session must be duplicated to
+            // ensurePvrSession().
 
-        // Ensure there is no stale parallel projection settings.
-        CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
+            // Ensure there is no stale parallel projection settings.
+            CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 0));
 
-        // Check that we have consent to share eye gaze data with applications.
-        m_isEyeTrackingAvailable = getSetting("allow_eye_tracking").value_or(false);
+            // Check that we have consent to share eye gaze data with applications.
+            m_isEyeTrackingAvailable = getSetting("allow_eye_tracking").value_or(false);
 
-        // Detect eye tracker. This can take a while, so only do it when the app is requesting it.
-        m_preferFoveatedRendering = getSetting("prefer_foveated_rendering").value_or(false);
-        m_eyeTrackingType = EyeTracking::None;
-        if ((has_XR_VARJO_quad_views && (has_XR_VARJO_foveated_rendering || m_preferFoveatedRendering)) ||
-            has_XR_EXT_eye_gaze_interaction) {
-            if (getSetting("debug_eye_tracker").value_or(false)) {
-                m_eyeTrackingType = EyeTracking::Simulated;
-            } else if (m_cachedHmdInfo.VendorId == 0x34A4 && m_cachedHmdInfo.ProductId == 0x0012) {
-                // Pimax Crystal uses the PVR SDK.
-                m_eyeTrackingType = EyeTracking::PVR;
-            }
+            // Detect eye tracker. This can take a while, so only do it when the app is requesting it.
+            m_preferFoveatedRendering = getSetting("prefer_foveated_rendering").value_or(false);
+            m_eyeTrackingType = EyeTracking::None;
+            if ((has_XR_VARJO_quad_views && (has_XR_VARJO_foveated_rendering || m_preferFoveatedRendering)) ||
+                has_XR_EXT_eye_gaze_interaction) {
+                if (getSetting("debug_eye_tracker").value_or(false)) {
+                    m_eyeTrackingType = EyeTracking::Simulated;
+                } else if (m_cachedHmdInfo.VendorId == 0x34A4 && m_cachedHmdInfo.ProductId == 0x0012) {
+                    // Pimax Crystal uses the PVR SDK.
+                    m_eyeTrackingType = EyeTracking::PVR;
+                }
 #ifndef NOASEEVRCLIENT
-            else if (initializeDroolon()) {
-                // Other Pimax headsets use the 7invensun SDK (aSeeVR).
-                m_eyeTrackingType = EyeTracking::aSeeVR;
-            }
+                else if (initializeDroolon()) {
+                    // Other Pimax headsets use the 7invensun SDK (aSeeVR).
+                    m_eyeTrackingType = EyeTracking::aSeeVR;
+                }
 #endif
-        }
-        if (m_eyeTrackingType == EyeTracking::None) {
-            m_isEyeTrackingAvailable = m_preferFoveatedRendering = false;
-        }
-
-        // Cache common information.
-        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
-        CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
-
-        m_floorHeight = pvr_getFloatConfig(m_pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_GetConfig",
-                          TLArg(CONFIG_KEY_EYE_HEIGHT, "Config"),
-                          TLArg(m_floorHeight, "EyeHeight"));
-
-        const float cantingAngle = PVR::Quatf{m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose.Orientation}.Angle(
-                                       m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose.Orientation) /
-                                   2.f;
-        const bool wasUsingParallelProjection = m_useParallelProjection;
-        m_useParallelProjection =
-            cantingAngle > 0.0001f && getSetting("force_parallel_projection_state")
-                                          .value_or(!pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0));
-        if (m_useParallelProjection) {
-            if (!wasUsingParallelProjection) {
-                Log("Parallel projection is enabled\n");
+            }
+            if (m_eyeTrackingType == EyeTracking::None) {
+                m_isEyeTrackingAvailable = m_preferFoveatedRendering = false;
             }
 
-            // Per Pimax, we must set this value for parallel projection to work properly.
-            CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 1));
-
-            // Update cached eye info to account for parallel projection.
+            // Cache common information.
             CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
             CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
-        }
-        m_fovLevel = pvr_getIntConfig(m_pvrSession, "fov_level", 0);
 
-        for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
-            m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
-            m_cachedEyeFov[i].angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
-            m_cachedEyeFov[i].angleLeft = -atan(m_cachedEyeInfo[i].Fov.LeftTan);
-            m_cachedEyeFov[i].angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
-
+            m_floorHeight = pvr_getFloatConfig(m_pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
             TraceLoggingWrite(g_traceProvider,
-                              "PVR_EyeRenderInfo",
-                              TLArg(i == xr::StereoView::Left ? "Left" : "Right", "Eye"),
-                              TLArg(xr::ToString(m_cachedEyeInfo[i].HmdToEyePose).c_str(), "EyePose"),
-                              TLArg(xr::ToString(m_cachedEyeFov[i]).c_str(), "Fov"),
-                              TLArg(i == xr::StereoView::Left ? -cantingAngle : cantingAngle, "Canting"));
-        }
+                              "PVR_GetConfig",
+                              TLArg(CONFIG_KEY_EYE_HEIGHT, "Config"),
+                              TLArg(m_floorHeight, "EyeHeight"));
 
-        // Compute quad views FOV.
-        if (has_XR_VARJO_quad_views) {
-            // Latch the configuration for quad views and foveated rendering.
-            m_focusPixelDensity = getSetting("focus_density").value_or(1100) / 1e3f;
-            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(400) / 1e3f;
-            m_horizontalFovSection[0] = getSetting("focus_horizontal_section").value_or(650) / 1e3f;
-            m_horizontalFovSection[1] = getSetting("focus_horizontal_section_foveated").value_or(330) / 1e3f;
-            m_verticalFovSection[0] = getSetting("focus_vertical_section").value_or(700) / 1e3f;
-            m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(310) / 1e3f;
+            const float cantingAngle = PVR::Quatf{m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose.Orientation}.Angle(
+                                           m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose.Orientation) /
+                                       2.f;
+            m_useParallelProjection =
+                cantingAngle > 0.0001f && getSetting("force_parallel_projection_state")
+                                              .value_or(!pvr_getIntConfig(m_pvrSession, "steamvr_use_native_fov", 0));
+            if (m_useParallelProjection) {
+                Log("Parallel projection is enabled\n");
 
-            // The horizontal sections are relative to small FOV level, transpose them into the current FOV level.
-            // Each FOV level adds 20 degree.
-            const float horizontalScale[4] = {1.333f, 1.166f, 1.f, 0.833f};
-            m_horizontalFovSection[0] /= horizontalScale[std::clamp(m_fovLevel, 0, 4)];
-            m_horizontalFovSection[1] /= horizontalScale[std::clamp(m_fovLevel, 0, 4)];
+                // Per Pimax, we must set this value for parallel projection to work properly.
+                CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", 1));
 
-            TraceLoggingWrite(g_traceProvider,
-                              "PXR_Config",
-                              TLArg(m_focusPixelDensity, "FocusDensity"),
-                              TLArg(m_peripheralPixelDensity, "PeripheralDensity"),
-                              TLArg(m_horizontalFovSection[0], "FocusHorizontalSection"),
-                              TLArg(m_horizontalFovSection[1], "FocusHorizontalSectionFoveated"),
-                              TLArg(m_verticalFovSection[0], "FocusVerticalSection"),
-                              TLArg(m_verticalFovSection[1], "FocusVerticalSectionFoveated"),
-                              TLArg(m_preferFoveatedRendering, "PreferFoveatedRendering"));
+                // Update cached eye info to account for parallel projection.
+                CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
+                CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
+            }
+            m_fovLevel = pvr_getIntConfig(m_pvrSession, "fov_level", 0);
 
-            XrVector2f projectedGaze[xr::StereoView::Count]{{}, {}};
-            {
-                // Calculate poses for each eye.
-                pvrPosef hmdToEyePose[xr::StereoView::Count];
-                hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
-                hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
+            for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
+                m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
+                m_cachedEyeFov[i].angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
+                m_cachedEyeFov[i].angleLeft = -atan(m_cachedEyeInfo[i].Fov.LeftTan);
+                m_cachedEyeFov[i].angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
 
-                pvrPosef eyePoses[xr::StereoView::Count]{{}, {}};
-                pvr_calcEyePoses(m_pvr, PVR::Posef::Identity(), hmdToEyePose, eyePoses);
-
-                for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
-                    XrView view{};
-                    view.pose = pvrPoseToXrPose(eyePoses[eye]);
-                    view.fov = m_cachedEyeFov[eye];
-
-                    // Calculate the "resting" gaze position.
-                    ProjectPoint(view, {0.f, 0.f, -1.f}, projectedGaze[eye]);
-                    m_centerOfFov[eye].x = (projectedGaze[eye].x + 1.f) / 2.f;
-                    m_centerOfFov[eye].y = (1.f - projectedGaze[eye].y) / 2.f;
-                }
+                TraceLoggingWrite(g_traceProvider,
+                                  "PVR_EyeRenderInfo",
+                                  TLArg(i == xr::StereoView::Left ? "Left" : "Right", "Eye"),
+                                  TLArg(xr::ToString(m_cachedEyeInfo[i].HmdToEyePose).c_str(), "EyePose"),
+                                  TLArg(xr::ToString(m_cachedEyeFov[i]).c_str(), "Fov"),
+                                  TLArg(i == xr::StereoView::Left ? -cantingAngle : cantingAngle, "Canting"));
             }
 
-            for (uint32_t foveated = 0; foveated <= 1; foveated++) {
-                for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
-                    const uint32_t viewIndex = 2 + (foveated * 2) + eye;
+            // Compute quad views FOV.
+            if (has_XR_VARJO_quad_views) {
+                // Latch the configuration for quad views and foveated rendering.
+                m_focusPixelDensity = getSetting("focus_density").value_or(1100) / 1e3f;
+                m_peripheralPixelDensity = getSetting("peripheral_density").value_or(400) / 1e3f;
+                m_horizontalFovSection[0] = getSetting("focus_horizontal_section").value_or(650) / 1e3f;
+                m_horizontalFovSection[1] = getSetting("focus_horizontal_section_foveated").value_or(330) / 1e3f;
+                m_verticalFovSection[0] = getSetting("focus_vertical_section").value_or(700) / 1e3f;
+                m_verticalFovSection[1] = getSetting("focus_vertical_section_foveated").value_or(310) / 1e3f;
 
-                    // Apply the FOV multiplier.
-                    std::tie(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight) =
-                        Fov::Scale(std::make_pair(m_cachedEyeFov[eye].angleLeft, m_cachedEyeFov[eye].angleRight),
-                                   m_horizontalFovSection[foveated]);
-                    std::tie(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp) =
-                        Fov::Scale(std::make_pair(m_cachedEyeFov[eye].angleDown, m_cachedEyeFov[eye].angleUp),
-                                   m_verticalFovSection[foveated]);
+                // The horizontal sections are relative to small FOV level, transpose them into the current FOV level.
+                // Each FOV level adds 20 degree.
+                const float horizontalScale[4] = {1.333f, 1.166f, 1.f, 0.833f};
+                m_horizontalFovSection[0] /= horizontalScale[std::clamp(m_fovLevel, 0, 4)];
+                m_horizontalFovSection[1] /= horizontalScale[std::clamp(m_fovLevel, 0, 4)];
 
-                    // Adjust for (fixed) gaze.
-                    std::tie(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight) = Fov::Lerp(
-                        std::make_pair(m_cachedEyeFov[eye].angleLeft, m_cachedEyeFov[eye].angleRight),
-                        std::make_pair(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight),
-                        m_centerOfFov[eye].x);
-                    std::tie(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp) = Fov::Lerp(
-                        std::make_pair(m_cachedEyeFov[eye].angleDown, m_cachedEyeFov[eye].angleUp),
-                        std::make_pair(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp),
-                        m_centerOfFov[eye].y);
+                TraceLoggingWrite(g_traceProvider,
+                                  "PXR_Config",
+                                  TLArg(m_focusPixelDensity, "FocusDensity"),
+                                  TLArg(m_peripheralPixelDensity, "PeripheralDensity"),
+                                  TLArg(m_horizontalFovSection[0], "FocusHorizontalSection"),
+                                  TLArg(m_horizontalFovSection[1], "FocusHorizontalSectionFoveated"),
+                                  TLArg(m_verticalFovSection[0], "FocusVerticalSection"),
+                                  TLArg(m_verticalFovSection[1], "FocusVerticalSectionFoveated"),
+                                  TLArg(m_preferFoveatedRendering, "PreferFoveatedRendering"));
+
+                XrVector2f projectedGaze[xr::StereoView::Count]{{}, {}};
+                {
+                    // Calculate poses for each eye.
+                    pvrPosef hmdToEyePose[xr::StereoView::Count];
+                    hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
+                    hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
+
+                    pvrPosef eyePoses[xr::StereoView::Count]{{}, {}};
+                    pvr_calcEyePoses(m_pvr, PVR::Posef::Identity(), hmdToEyePose, eyePoses);
+
+                    for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+                        XrView view{};
+                        view.pose = pvrPoseToXrPose(eyePoses[eye]);
+                        view.fov = m_cachedEyeFov[eye];
+
+                        // Calculate the "resting" gaze position.
+                        ProjectPoint(view, {0.f, 0.f, -1.f}, projectedGaze[eye]);
+                        m_centerOfFov[eye].x = (projectedGaze[eye].x + 1.f) / 2.f;
+                        m_centerOfFov[eye].y = (1.f - projectedGaze[eye].y) / 2.f;
+                    }
                 }
-            }
-        } else {
-            m_cachedEyeFov[xr::QuadView::FocusLeft] = m_cachedEyeFov[xr::QuadView::FocusRight] = {};
-            m_peripheralPixelDensity = m_focusPixelDensity = 1.f;
-        }
 
-        // Setup common parameters.
-        CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
+                for (uint32_t foveated = 0; foveated <= 1; foveated++) {
+                    for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+                        const uint32_t viewIndex = 2 + (foveated * 2) + eye;
+
+                        // Apply the FOV multiplier.
+                        std::tie(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight) =
+                            Fov::Scale(std::make_pair(m_cachedEyeFov[eye].angleLeft, m_cachedEyeFov[eye].angleRight),
+                                       m_horizontalFovSection[foveated]);
+                        std::tie(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp) =
+                            Fov::Scale(std::make_pair(m_cachedEyeFov[eye].angleDown, m_cachedEyeFov[eye].angleUp),
+                                       m_verticalFovSection[foveated]);
+
+                        // Adjust for (fixed) gaze.
+                        std::tie(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight) = Fov::Lerp(
+                            std::make_pair(m_cachedEyeFov[eye].angleLeft, m_cachedEyeFov[eye].angleRight),
+                            std::make_pair(m_cachedEyeFov[viewIndex].angleLeft, m_cachedEyeFov[viewIndex].angleRight),
+                            m_centerOfFov[eye].x);
+                        std::tie(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp) = Fov::Lerp(
+                            std::make_pair(m_cachedEyeFov[eye].angleDown, m_cachedEyeFov[eye].angleUp),
+                            std::make_pair(m_cachedEyeFov[viewIndex].angleDown, m_cachedEyeFov[viewIndex].angleUp),
+                            m_centerOfFov[eye].y);
+                    }
+                }
+            } else {
+                m_cachedEyeFov[xr::QuadView::FocusLeft] = m_cachedEyeFov[xr::QuadView::FocusRight] = {};
+                m_peripheralPixelDensity = m_focusPixelDensity = 1.f;
+            }
+
+            // Setup common parameters.
+            CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
+        }
 
         m_systemCreated = true;
         *systemId = (XrSystemId)1;

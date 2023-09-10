@@ -534,7 +534,6 @@ namespace pimax_openxr {
         std::map<std::pair<std::string, std::string>, MappingFunction> m_controllerMappingTable;
         std::map<std::string, CheckValidPathFunction> m_controllerValidPathsTable;
         wil::unique_registry_watcher m_registryWatcher;
-        bool m_loggedProductName{false};
         bool m_loggedResolution{false};
         std::string m_applicationName;
         bool m_needWorldLockedQuadLayerQuirk{false};
