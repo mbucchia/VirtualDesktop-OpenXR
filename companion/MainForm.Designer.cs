@@ -237,6 +237,7 @@ namespace companion
             this.reportIssues.TabIndex = 101;
             this.reportIssues.TabStop = true;
             this.reportIssues.Text = "Report issues";
+            this.reportIssues.Visible = false;
             this.reportIssues.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.reportIssues_LinkClicked);
             // 
             // flowLayoutPanel4
