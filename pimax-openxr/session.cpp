@@ -59,6 +59,8 @@ namespace pimax_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
+        CHECK_MSG(ensurePvrSession(), "PVR session was lost");
+
         // Get the graphics device and initialize the necessary resources.
         bool hasGraphicsBindings = false;
         const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
@@ -296,8 +298,7 @@ namespace pimax_openxr {
         m_sessionExiting = false;
 
         // Workaround: PVR ties the last use D3D device to the PVR session, and therefore we must teardown the previous
-        // PVR session to clear that state. Because OpenComposite tends to call many API in unconventional order, we
-        // reset the session here.
+        // PVR session to clear that state.
         {
             // Workaround: the environment doesn't appear to be cleared when re-initializing PVR. Clear the one pointer
             // we care about.
@@ -305,8 +306,6 @@ namespace pimax_openxr {
 
             pvr_destroySession(m_pvrSession);
             m_pvrSession = nullptr;
-
-            ensurePvrSession();
         }
 
         return XR_SUCCESS;

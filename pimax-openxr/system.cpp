@@ -51,29 +51,49 @@ namespace pimax_openxr {
             return XR_ERROR_FORM_FACTOR_UNSUPPORTED;
         }
 
-        // Create the PVR session.
-        if (!m_pvrSession) {
-            const auto result = pvr_createSession(m_pvr, &m_pvrSession);
+        pvrHmdStatus status{};
+        bool isStatusValid = false;
 
-            // This is the error returned when pi_server is not running. We pretend the HMD is not found.
-            if (result == pvrResult::pvr_rpc_failed) {
-                return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
+        // Workaround for PVR Home race condition upon destroying a session while an app (X-Plane 12) might be polling
+        // the XrSystem.
+        if (m_pvrSession) {
+            CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_HmdStatus",
+                              TLArg(!!status.ServiceReady, "ServiceReady"),
+                              TLArg(!!status.HmdPresent, "HmdPresent"),
+                              TLArg(!!status.HmdMounted, "HmdMounted"),
+                              TLArg(!!status.IsVisible, "IsVisible"),
+                              TLArg(!!status.DisplayLost, "DisplayLost"),
+                              TLArg(!!status.ShouldQuit, "ShouldQuit"));
+
+            // If PVR Home took over the active session, then force re-creating our session in order to continue.
+            if (status.ShouldQuit) {
+                pvr_destroySession(m_pvrSession);
+                m_pvrSession = nullptr;
+            } else {
+                isStatusValid = true;
             }
+        }
 
-            CHECK_PVRCMD(result);
+        // Create the PVR session if needed.
+        if (!ensurePvrSession()) {
+            m_cachedHmdInfo = {};
+            return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
 
         // Check for HMD presence.
-        pvrHmdStatus status{};
-        CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_HmdStatus",
-                          TLArg(!!status.ServiceReady, "ServiceReady"),
-                          TLArg(!!status.HmdPresent, "HmdPresent"),
-                          TLArg(!!status.HmdMounted, "HmdMounted"),
-                          TLArg(!!status.IsVisible, "IsVisible"),
-                          TLArg(!!status.DisplayLost, "DisplayLost"),
-                          TLArg(!!status.ShouldQuit, "ShouldQuit"));
+        if (!isStatusValid) {
+            CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
+            TraceLoggingWrite(g_traceProvider,
+                              "PVR_HmdStatus",
+                              TLArg(!!status.ServiceReady, "ServiceReady"),
+                              TLArg(!!status.HmdPresent, "HmdPresent"),
+                              TLArg(!!status.HmdMounted, "HmdMounted"),
+                              TLArg(!!status.IsVisible, "IsVisible"),
+                              TLArg(!!status.DisplayLost, "DisplayLost"),
+                              TLArg(!!status.ShouldQuit, "ShouldQuit"));
+        }
         if (!(status.ServiceReady && status.HmdPresent)) {
             m_cachedHmdInfo = {};
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
@@ -416,6 +436,8 @@ namespace pimax_openxr {
 
     // Retrieve some information from PVR needed for graphic/frame management.
     void OpenXrRuntime::fillDisplayDeviceInfo() {
+        CHECK_MSG(ensurePvrSession(), "PVR session was lost");
+
         pvrDisplayInfo info{};
         CHECK_PVRCMD(pvr_getEyeDisplayInfo(m_pvrSession, pvrEye_Left, &info));
         TraceLoggingWrite(g_traceProvider,
@@ -439,12 +461,21 @@ namespace pimax_openxr {
         memcpy(&m_adapterLuid, &info.luid, sizeof(LUID));
     }
 
-    void OpenXrRuntime::ensurePvrSession() {
+    bool OpenXrRuntime::ensurePvrSession() {
         if (!m_pvrSession) {
-            CHECK_PVRCMD(pvr_createSession(m_pvr, &m_pvrSession));
+            const auto result = pvr_createSession(m_pvr, &m_pvrSession);
+
+            // This is the error returned when pi_server is not running. We pretend the HMD is not found.
+            if (result == pvrResult::pvr_rpc_failed) {
+                return false;
+            }
+
+            CHECK_PVRCMD(result);
             CHECK_PVRCMD(pvr_setIntConfig(m_pvrSession, "view_rotation_fix", m_useParallelProjection));
             CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
         }
+
+        return true;
     }
 
 } // namespace pimax_openxr
