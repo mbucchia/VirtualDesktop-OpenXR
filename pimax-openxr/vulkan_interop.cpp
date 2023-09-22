@@ -88,7 +88,7 @@ namespace pimax_openxr {
                                                            uint32_t* bufferCountOutput,
                                                            char* buffer) {
         static const std::string_view deviceExtensions =
-            "VK_KHR_dedicated_allocation VK_KHR_get_memory_requirements2 VK_KHR_bind_memory2 "
+            "VK_KHR_dedicated_allocation VK_KHR_get_memory_requirements2 "
             "VK_KHR_external_memory "
             "VK_KHR_external_memory_win32 VK_KHR_timeline_semaphore "
             "VK_KHR_external_semaphore VK_KHR_external_semaphore_win32";
@@ -555,7 +555,7 @@ namespace pimax_openxr {
         VK_GET_PTR(vkCmdWriteTimestamp);
         VK_GET_PTR(vkEndCommandBuffer);
         VK_GET_PTR(vkGetMemoryWin32HandlePropertiesKHR);
-        VK_GET_PTR(vkBindImageMemory2KHR);
+        VK_GET_PTR(vkBindImageMemory);
         VK_GET_PTR(vkCreateSemaphore);
         VK_GET_PTR(vkDestroySemaphore);
         VK_GET_PTR(vkImportSemaphoreWin32HandleKHR);
@@ -742,10 +742,7 @@ namespace pimax_openxr {
                 }
                 xrSwapchain.vkDeviceMemory.push_back(memory);
 
-                VkBindImageMemoryInfo bindImageInfo{VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO};
-                bindImageInfo.image = image;
-                bindImageInfo.memory = memory;
-                CHECK_VKCMD(m_vkDispatch.vkBindImageMemory2KHR(m_vkDevice, 1, &bindImageInfo));
+                CHECK_VKCMD(m_vkDispatch.vkBindImageMemory(m_vkDevice, image, memory, 0));
 
                 if (needTransition) {
                     VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};

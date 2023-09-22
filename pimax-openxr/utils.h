@@ -340,7 +340,7 @@ namespace pimax_openxr::utils {
         PFN_vkCmdWriteTimestamp vkCmdWriteTimestamp{nullptr};
         PFN_vkEndCommandBuffer vkEndCommandBuffer{nullptr};
         PFN_vkGetMemoryWin32HandlePropertiesKHR vkGetMemoryWin32HandlePropertiesKHR{nullptr};
-        PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR{nullptr};
+        PFN_vkBindImageMemory vkBindImageMemory{nullptr};
         PFN_vkCreateSemaphore vkCreateSemaphore{nullptr};
         PFN_vkDestroySemaphore vkDestroySemaphore{nullptr};
         PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR{nullptr};
