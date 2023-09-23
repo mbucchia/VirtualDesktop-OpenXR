@@ -697,8 +697,8 @@ namespace pimax_openxr {
         UINT64 m_fenceValue{0};
 
         // Due to Vulkan semaphore transference rules(?) it looks like we may not be able to both signal and wait on an
-        // imported semaphore. Use a separate one for host-side flushes.
-        VkSemaphore m_vkTimelineSemaphoreForFlush{VK_NULL_HANDLE};
+        // imported semaphore. Use a separate fence for host-side flushes.
+        VkFence m_vkFenceForFlush{VK_NULL_HANDLE};
 
         // Workaround: the AMD driver does not seem to like closing the handle for the shared fence when using
         // OpenGL. We keep it alive for the whole session.

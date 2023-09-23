@@ -344,7 +344,10 @@ namespace pimax_openxr::utils {
         PFN_vkCreateSemaphore vkCreateSemaphore{nullptr};
         PFN_vkDestroySemaphore vkDestroySemaphore{nullptr};
         PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR{nullptr};
-        PFN_vkWaitSemaphoresKHR vkWaitSemaphoresKHR{nullptr};
+        PFN_vkCreateFence vkCreateFence{nullptr};
+        PFN_vkDestroyFence vkDestroyFence{nullptr};
+        PFN_vkResetFences vkResetFences{nullptr};
+        PFN_vkWaitForFences vkWaitForFences{nullptr};
         PFN_vkDeviceWaitIdle vkDeviceWaitIdle{nullptr};
         PFN_vkCreateQueryPool vkCreateQueryPool{nullptr};
         PFN_vkDestroyQueryPool vkDestroyQueryPool{nullptr};

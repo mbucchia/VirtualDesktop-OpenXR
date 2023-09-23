@@ -87,11 +87,10 @@ namespace pimax_openxr {
                                                            uint32_t bufferCapacityInput,
                                                            uint32_t* bufferCountOutput,
                                                            char* buffer) {
-        static const std::string_view deviceExtensions =
-            "VK_KHR_dedicated_allocation VK_KHR_get_memory_requirements2 "
-            "VK_KHR_external_memory "
-            "VK_KHR_external_memory_win32 VK_KHR_timeline_semaphore "
-            "VK_KHR_external_semaphore VK_KHR_external_semaphore_win32";
+        static const std::string_view deviceExtensions = "VK_KHR_dedicated_allocation VK_KHR_get_memory_requirements2 "
+                                                         "VK_KHR_external_memory "
+                                                         "VK_KHR_external_memory_win32 VK_KHR_timeline_semaphore "
+                                                         "VK_KHR_external_semaphore VK_KHR_external_semaphore_win32";
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetVulkanDeviceExtensionsKHR",
@@ -484,11 +483,13 @@ namespace pimax_openxr {
         CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
 
         // On the Vulkan side, it is called a timeline semaphore.
-        VkSemaphoreTypeCreateInfo timelineCreateInfo{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
-        timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-        VkSemaphoreCreateInfo createInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo};
-        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(
-            m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkTimelineSemaphore));
+        {
+            VkSemaphoreTypeCreateInfo timelineCreateInfo{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
+            timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+            VkSemaphoreCreateInfo createInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &timelineCreateInfo};
+            CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(
+                m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkTimelineSemaphore));
+        }
         VkImportSemaphoreWin32HandleInfoKHR importInfo{VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR};
         importInfo.semaphore = m_vkTimelineSemaphore;
         importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT;
@@ -496,8 +497,11 @@ namespace pimax_openxr {
         CHECK_VKCMD(m_vkDispatch.vkImportSemaphoreWin32HandleKHR(m_vkDevice, &importInfo));
 
         // Create an additional semaphore for host-side wait.
-        CHECK_VKCMD(m_vkDispatch.vkCreateSemaphore(
-            m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkTimelineSemaphoreForFlush));
+        {
+            VkFenceCreateInfo createInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+            CHECK_VKCMD(m_vkDispatch.vkCreateFence(
+                m_vkDevice, &createInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &m_vkFenceForFlush));
+        }
 
         // We will need command buffers to perform layout transitions.
         VkCommandPoolCreateInfo poolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
@@ -559,7 +563,10 @@ namespace pimax_openxr {
         VK_GET_PTR(vkCreateSemaphore);
         VK_GET_PTR(vkDestroySemaphore);
         VK_GET_PTR(vkImportSemaphoreWin32HandleKHR);
-        VK_GET_PTR(vkWaitSemaphoresKHR);
+        VK_GET_PTR(vkCreateFence);
+        VK_GET_PTR(vkDestroyFence);
+        VK_GET_PTR(vkResetFences);
+        VK_GET_PTR(vkWaitForFences);
         VK_GET_PTR(vkDeviceWaitIdle);
         VK_GET_PTR(vkCreateQueryPool);
         VK_GET_PTR(vkDestroyQueryPool);
@@ -580,9 +587,9 @@ namespace pimax_openxr {
             m_vkDispatch.vkDestroySemaphore(
                 m_vkDevice, m_vkTimelineSemaphore, m_vkAllocator ? &m_vkAllocator.value() : nullptr);
             m_vkTimelineSemaphore = VK_NULL_HANDLE;
-            m_vkDispatch.vkDestroySemaphore(
-                m_vkDevice, m_vkTimelineSemaphoreForFlush, m_vkAllocator ? &m_vkAllocator.value() : nullptr);
-            m_vkTimelineSemaphoreForFlush = VK_NULL_HANDLE;
+            m_vkDispatch.vkDestroyFence(
+                m_vkDevice, m_vkFenceForFlush, m_vkAllocator ? &m_vkAllocator.value() : nullptr);
+            m_vkFenceForFlush = VK_NULL_HANDLE;
         }
         if (m_vkDispatch.vkResetCommandBuffer) {
             m_vkDispatch.vkResetCommandBuffer(m_vkCmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
@@ -797,22 +804,12 @@ namespace pimax_openxr {
 
     // Wait for all pending commands to finish.
     void OpenXrRuntime::flushVulkanCommandQueue() {
-        if (m_vkDispatch.vkQueueSubmit && m_vkDispatch.vkWaitSemaphoresKHR) {
-            m_fenceValue++;
-            TraceLoggingWrite(
-                g_traceProvider, "FlushContext_Wait", TLArg("Vulkan", "Api"), TLArg(m_fenceValue, "FenceValue"));
-            VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
-            timelineInfo.signalSemaphoreValueCount = 1;
-            timelineInfo.pSignalSemaphoreValues = &m_fenceValue;
-            VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO, &timelineInfo};
-            submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = &m_vkTimelineSemaphoreForFlush;
-            CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, VK_NULL_HANDLE));
-            VkSemaphoreWaitInfo waitInfo{VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO};
-            waitInfo.semaphoreCount = 1;
-            waitInfo.pSemaphores = &m_vkTimelineSemaphoreForFlush;
-            waitInfo.pValues = &m_fenceValue;
-            CHECK_VKCMD(m_vkDispatch.vkWaitSemaphoresKHR(m_vkDevice, &waitInfo, UINT64_MAX));
+        if (m_vkDispatch.vkQueueSubmit) {
+            TraceLoggingWrite(g_traceProvider, "FlushContext_Wait", TLArg("Vulkan", "Api"));
+            CHECK_VKCMD(m_vkDispatch.vkResetFences(m_vkDevice, 1, &m_vkFenceForFlush));
+            VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+            CHECK_VKCMD(m_vkDispatch.vkQueueSubmit(m_vkQueue, 1, &submitInfo, m_vkFenceForFlush));
+            CHECK_VKCMD(m_vkDispatch.vkWaitForFences(m_vkDevice, 1, &m_vkFenceForFlush, true, 1'000'000'000));
         }
     }
 
