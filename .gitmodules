@@ -7,12 +7,6 @@
 [submodule "external/OpenXR-MixedReality"]
 	path = external/OpenXR-MixedReality
 	url = https://github.com/mbucchia/OpenXR-MixedReality.git
-[submodule "external/PVR"]
-	path = external/PVR
-	url = https://github.com/mbucchia/PVR.git
-[submodule "external/curl"]
-	path = external/curl
-	url = https://github.com/curl/curl.git
 [submodule "external/OpenXR-CTS"]
 	path = external/OpenXR-CTS
 	url = https://github.com/KhronosGroup/OpenXR-CTS.git

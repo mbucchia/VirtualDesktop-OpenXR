@@ -12,12 +12,12 @@ assignees: ''
 **Describe the bug**
 
 _A clear and concise description of what the bug is._
-_Always attach (upload, do not copy/paste) the log file that can be found at `%LocalAppData%\pimax-openxr\logs` or opened from the PimaxXR Control Center app._
+_Always attach (upload, do not copy/paste) the log file that can be found at `%LocalAppData%\virtualdesktop-openxr\logs`_
 
 **Environment**
 
 - _Application/Game and version_: 
-- _Version of Pitool or Pimax client_: 
+- _Version of Virtual Desktop_: 
 
 **To Reproduce**
 

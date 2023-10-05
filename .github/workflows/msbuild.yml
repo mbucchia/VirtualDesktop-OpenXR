@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  SOLUTION_FILE_PATH: Pimax-OpenXR.sln
+  SOLUTION_FILE_PATH: VirtualDesktop-OpenXR.sln
   BUILD_CONFIGURATION: Release
 
 jobs:
@@ -65,13 +65,13 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         $pfxName = if ($env:PFX_NAME) { $env:PFX_NAME } else { "selfsigncert" };
-        installer/signtool.exe sign /d "PimaxXR" /du "https://github.com/mbucchia/Pimax-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/PimaxXR.msi
+        installer/signtool.exe sign /d "VirtualDesktop-OpenXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/VirtualDesktop-OpenXR.msi
 
     - name: Publish
       uses: actions/upload-artifact@v2
       with:
         name: Setup
         path: |
-          installer/output/PimaxXR.msi
-          bin/Win32/Release/pimax-openxr-32.pdb
-          bin/x64/Release/pimax-openxr.pdb
+          installer/output/VirtualDesktop-OpenXR.msi
+          bin/Win32/Release/virtualdesktop-openxr-32.pdb
+          bin/x64/Release/virtualdesktop-openxr.pdb

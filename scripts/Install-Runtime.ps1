@@ -1,9 +1,9 @@
-if (Test-Path "pimax-openxr.json") {
+if (Test-Path "virtualdesktop-openxr.json") {
 	$RegistryPath = "HKLM:\Software\Khronos\OpenXR\1"
-	$JsonPath = Join-Path "$PSScriptRoot" "pimax-openxr.json"
-} elseif (Test-Path "pimax-openxr-32.json") {
+	$JsonPath = Join-Path "$PSScriptRoot" "virtualdesktop-openxr.json"
+} elseif (Test-Path "virtualdesktop-openxr-32.json") {
 	$RegistryPath = "HKLM:\Software\WOW6432Node\Khronos\OpenXR\1"
-	$JsonPath = Join-Path "$PSScriptRoot" "pimax-openxr-32.json"
+	$JsonPath = Join-Path "$PSScriptRoot" "virtualdesktop-openxr-32.json"
 } else {
 	Exit
 }
