@@ -272,9 +272,8 @@ namespace virtualdesktop_openxr {
             ovrPerfStats stats{};
             if (OVR_SUCCESS(ovr_GetPerfStats(m_ovrSession, &stats))) {
                 m_isAsyncReprojectionActive = stats.FrameStatsCount > 0 && stats.FrameStats[0].AswIsActive;
-                TraceLoggingWrite(g_traceProvider,
-                                  "OVR_AswStatus",
-                                  TLArg(m_isAsyncReprojectionActive, "AsyncReprojectionActive"));
+                TraceLoggingWrite(
+                    g_traceProvider, "OVR_AswStatus", TLArg(m_isAsyncReprojectionActive, "AsyncReprojectionActive"));
             }
 
             if (m_isAsyncReprojectionActive) {
@@ -504,7 +503,9 @@ namespace virtualdesktop_openxr {
                         layer->EyeFov.SensorSampleTime = xrTimeToOvrTime(frameEndInfo->displayTime);
 
                         // Submit depth.
-                        if (has_XR_KHR_composition_layer_depth) {
+                        // TODO: For now we disable depth submission since Virtual Desktop is using it for composition
+                        // layers depth testing, which breaks quad layers.
+                        if (false && has_XR_KHR_composition_layer_depth) {
                             const XrBaseInStructure* entry =
                                 reinterpret_cast<const XrBaseInStructure*>(proj->views[viewIndex].next);
                             while (entry) {
