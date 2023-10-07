@@ -365,7 +365,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClCompile Include="framework\dispatch.cpp" />
     <ClCompile Include="framework\dispatch.gen.cpp" />
     <ClCompile Include="framework\entry.cpp" />
-    <ClCompile Include="hand_tracking.cpp" />
     <ClCompile Include="instance.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="mappings.cpp" />

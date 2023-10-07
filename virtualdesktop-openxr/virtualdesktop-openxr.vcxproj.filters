@@ -103,9 +103,6 @@
     <ClCompile Include="display_refresh_rate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hand_tracking.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mirror_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
