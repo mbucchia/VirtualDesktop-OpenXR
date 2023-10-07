@@ -51,12 +51,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FORM_FACTOR_UNSUPPORTED;
         }
 
-        const auto result = ovr_Create(&m_ovrSession, reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid));
-        if (result == ovrError_NoHmd) {
+        if (!m_ovrSession && !InitializeOVR()) {
             m_cachedHmdInfo = {};
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
-        CHECK_OVRCMD(result);
 
         // Check for HMD presence.
         ovrSessionStatus status{};

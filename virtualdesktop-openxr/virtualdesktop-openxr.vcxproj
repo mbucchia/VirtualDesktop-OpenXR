@@ -105,7 +105,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -165,7 +165,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -227,7 +227,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -291,7 +291,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\FW1FontWrapper\FW1FontWrapper\Source</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

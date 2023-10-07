@@ -27,6 +27,10 @@
 #include "utils.h"
 #include "version.h"
 
+// From our OVR_CAPIShim.c fork.
+OVR_PUBLIC_FUNCTION(ovrResult)
+ovr_InitializeWithPathOverride(const ovrInitParams* inputParams, const wchar_t* overrideLibraryPath);
+
 namespace {
 
     using namespace virtualdesktop_openxr::log;
@@ -79,6 +83,26 @@ namespace {
         }
     }
 
+    // https://stackoverflow.com/questions/865152/how-can-i-get-a-process-handle-by-its-name-in-c
+    bool IsServiceRunning(const std::wstring_view& name) {
+        PROCESSENTRY32 entry;
+        entry.dwSize = sizeof(PROCESSENTRY32);
+
+        bool found = false;
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (Process32First(snapshot, &entry) == TRUE) {
+            while (Process32Next(snapshot, &entry) == TRUE) {
+                if (std::wstring_view(entry.szExeFile) == name) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        CloseHandle(snapshot);
+
+        return found;
+    }
+
 } // namespace
 
 namespace virtualdesktop_openxr {
@@ -96,29 +120,6 @@ namespace virtualdesktop_openxr {
 
         // Note: this is not compatible with async_submission=1!
         m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
-
-        // Initialize OVR.
-        ovrInitParams initParams{};
-        initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
-        initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
-        CHECK_OVRCMD(ovr_Initialize(&initParams));
-
-        std::string_view versionString(ovr_GetVersionString());
-        Log("OVR: %s\n", versionString.data());
-        TraceLoggingWrite(g_traceProvider, "OVR_SDK", TLArg(versionString.data(), "VersionString"));
-
-        QueryPerformanceFrequency(&m_qpcFrequency);
-
-        // Calibrate the timestamp conversion.
-        m_ovrTimeFromQpcTimeOffset = INFINITY;
-        for (int i = 0; i < 100; i++) {
-            LARGE_INTEGER now;
-            QueryPerformanceCounter(&now);
-            const double qpcTime = (double)now.QuadPart / m_qpcFrequency.QuadPart;
-            m_ovrTimeFromQpcTimeOffset = std::min(m_ovrTimeFromQpcTimeOffset, ovr_GetTimeInSeconds() - qpcTime);
-        }
-        TraceLoggingWrite(
-            g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
 
         // Watch for changes in the registry.
         try {
@@ -438,6 +439,59 @@ namespace virtualdesktop_openxr {
             {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
 
         // FIXME: Add new extensions here.
+    }
+
+    bool OpenXrRuntime::InitializeOVR() {
+        std::wstring overridePath;
+        if (!getSetting("use_oculus_runtime").value_or(false)) {
+            if (!IsServiceRunning(L"VirtualDesktop.Server.exe")) {
+                return false;
+            }
+
+            // Locate Virtual Desktop's LibOVR.
+            std::filesystem::path path(
+                RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Path")
+                    .value());
+            path = path / L"VirtualDesktop.";
+
+            overridePath = path.wstring();
+        }
+
+        // Initialize OVR.
+        ovrResult result;
+        ovrInitParams initParams{};
+        initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
+        initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
+        result = ovr_InitializeWithPathOverride(&initParams, overridePath.empty() ? nullptr : overridePath.c_str());
+        if (result == ovrError_ServiceConnection) {
+            return false;
+        }
+        CHECK_OVRCMD(result);
+
+        std::string_view versionString(ovr_GetVersionString());
+        Log("OVR: %s\n", versionString.data());
+        TraceLoggingWrite(g_traceProvider, "OVR_SDK", TLArg(versionString.data(), "VersionString"));
+
+        result = ovr_Create(&m_ovrSession, reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid));
+        if (result == ovrError_NoHmd) {
+            return false;
+        }
+        CHECK_OVRCMD(result);
+
+        QueryPerformanceFrequency(&m_qpcFrequency);
+
+        // Calibrate the timestamp conversion.
+        m_ovrTimeFromQpcTimeOffset = INFINITY;
+        for (int i = 0; i < 100; i++) {
+            LARGE_INTEGER now;
+            QueryPerformanceCounter(&now);
+            const double qpcTime = (double)now.QuadPart / m_qpcFrequency.QuadPart;
+            m_ovrTimeFromQpcTimeOffset = std::min(m_ovrTimeFromQpcTimeOffset, ovr_GetTimeInSeconds() - qpcTime);
+        }
+        TraceLoggingWrite(
+            g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
+
+        return true;
     }
 
     std::optional<int> OpenXrRuntime::getSetting(const std::string& value) const {

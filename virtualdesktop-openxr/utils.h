@@ -287,7 +287,7 @@ namespace virtualdesktop_openxr::utils {
         return data;
     }
 
-    static std::optional<std::string> RegGetString(HKEY hKey, const std::string& subKey, const std::string& value) {
+    static std::optional<std::wstring> RegGetString(HKEY hKey, const std::string& subKey, const std::string& value) {
         DWORD dataSize = 0;
         LONG retCode = ::RegGetValue(hKey,
                                      xr::utf8_to_wide(subKey).c_str(),
@@ -312,7 +312,7 @@ namespace virtualdesktop_openxr::utils {
             return {};
         }
 
-        return xr::wide_to_utf8(data).substr(0, dataSize / sizeof(wchar_t) - 1);
+        return data.substr(0, dataSize / sizeof(wchar_t) - 1);
     }
 
     static std::vector<const char*> ParseExtensionString(char* names) {

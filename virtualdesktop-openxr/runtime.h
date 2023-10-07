@@ -347,6 +347,7 @@ namespace virtualdesktop_openxr {
 
         // instance.cpp
         void initializeExtensionsTable();
+        bool InitializeOVR();
         std::optional<int> getSetting(const std::string& value) const;
 
         // session.cpp
@@ -443,9 +444,7 @@ namespace virtualdesktop_openxr {
         void serializeOpenGLFrame();
 
         // visibility_mask.cpp
-        void convertSteamVRToOpenXRHiddenMesh(const ovrFovPort& fov,
-                                              XrVector2f* vertices,
-                                              uint32_t count) const;
+        void convertSteamVRToOpenXRHiddenMesh(const ovrFovPort& fov, XrVector2f* vertices, uint32_t count) const;
 
         // mirror_window.cpp
         void createMirrorWindow();

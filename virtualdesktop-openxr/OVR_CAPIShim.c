@@ -297,6 +297,7 @@ static ModuleHandleType OVR_FindLibraryPath(
     int requestedMajorVersion,
     FilePathCharType* libraryPath,
     size_t libraryPathCapacity,
+    const wchar_t* overrideLibraryPath,
     ovrResult* result) {
   ModuleHandleType moduleHandle;
   FilePathCharType developerDir[OVR_MAX_PATH] = {'\0'};
@@ -393,9 +394,12 @@ static ModuleHandleType OVR_FindLibraryPath(
 
 #if defined(_WIN32)
     // On Windows, only search the developer directory and the install path
-    const FilePathCharType* directoryArray[2];
-    directoryArray[0] = developerDir[0] != '\0' ? developerDir : NULL; // Developer directory
-    directoryArray[1] = oculusInstallDir;
+    const FilePathCharType* directoryArray[3];
+    directoryArray[0] = overrideLibraryPath;
+    if (!overrideLibraryPath) {
+        directoryArray[1] = developerDir[0] != '\0' ? developerDir : NULL; // Developer directory
+        directoryArray[2] = oculusInstallDir;
+    }
 
 #elif defined(__APPLE__)
     // https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/dyld.1.html
@@ -583,7 +587,7 @@ static ovrErrorInfo LastInitializeErrorInfo = {
     ovrError_NotInitialized,
     "ovr_Initialize never called"};
 
-static ovrResult OVR_LoadSharedLibrary(int requestedProductVersion, int requestedMajorVersion) {
+static ovrResult OVR_LoadSharedLibrary(int requestedProductVersion, int requestedMajorVersion, const wchar_t* overrideLibraryPath) {
   FilePathCharType filePath[OVR_MAX_PATH];
   const char* SymbolName = NULL;
   ovrResult result = ovrSuccess;
@@ -596,6 +600,7 @@ static ovrResult OVR_LoadSharedLibrary(int requestedProductVersion, int requeste
       requestedMajorVersion,
       filePath,
       sizeof(filePath) / sizeof(filePath[0]),
+      overrideLibraryPath,
       &result);
 
   if (!hLibOVR) {
@@ -651,7 +656,8 @@ static const ovrInitParams DefaultParams = {
     OVR_ON64("") // pad0
 };
 
-OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* inputParams) {
+OVR_PUBLIC_FUNCTION(ovrResult)
+ovr_InitializeWithPathOverride(const ovrInitParams* inputParams, const wchar_t* overrideLibraryPath) {
   ovrResult result;
   ovrInitParams params;
 
@@ -710,7 +716,7 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* inputParams) 
   }
 
   // By design we ignore the build version in the library search.
-  result = OVR_LoadSharedLibrary(OVR_PRODUCT_VERSION, OVR_MAJOR_VERSION);
+  result = OVR_LoadSharedLibrary(OVR_PRODUCT_VERSION, OVR_MAJOR_VERSION, overrideLibraryPath);
   if (result != ovrSuccess)
     return result;
 
@@ -744,6 +750,10 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* inputParams) 
   }
 
   return result;
+}
+
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* inputParams) {
+    return ovr_InitializeWithPathOverride(inputParams, NULL);
 }
 
 OVR_PUBLIC_FUNCTION(void) ovr_Shutdown() {
