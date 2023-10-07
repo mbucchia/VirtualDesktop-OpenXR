@@ -95,15 +95,9 @@ namespace virtualdesktop_openxr {
             m_cachedHmdInfo = hmdInfo;
             Log("Device is: %s\n", m_cachedHmdInfo.ProductName);
 
-            // Check that we have consent to share eye gaze data with applications.
-            m_isEyeTrackingAvailable = getSetting("allow_eye_tracking").value_or(false);
-
             m_eyeTrackingType = EyeTracking::None;
             if (has_XR_EXT_eye_gaze_interaction) {
                 m_eyeTrackingType = EyeTracking::Simulated;
-            }
-            if (m_eyeTrackingType == EyeTracking::None) {
-                m_isEyeTrackingAvailable = false;
             }
 
             // Cache common information.
@@ -194,7 +188,8 @@ namespace virtualdesktop_openxr {
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
 
         if (has_XR_EXT_eye_gaze_interaction && eyeGazeInteractionProperties) {
-            eyeGazeInteractionProperties->supportsEyeGazeInteraction = m_isEyeTrackingAvailable ? XR_TRUE : XR_FALSE;
+            eyeGazeInteractionProperties->supportsEyeGazeInteraction =
+                (m_eyeTrackingType != EyeTracking::None) ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(
                 g_traceProvider,

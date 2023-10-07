@@ -871,7 +871,7 @@ namespace virtualdesktop_openxr {
                     break;
                 }
             } else {
-                state->isActive = m_isEyeTrackingAvailable ? XR_TRUE : XR_FALSE;
+                state->isActive = (m_eyeTrackingType != EyeTracking::None) ? XR_TRUE : XR_FALSE;
 
                 // Per spec we must consistently pick one source. We pick the first one.
                 break;

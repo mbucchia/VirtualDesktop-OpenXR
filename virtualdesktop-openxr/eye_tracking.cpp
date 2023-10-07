@@ -35,10 +35,6 @@ namespace virtualdesktop_openxr {
     using namespace xr::math;
 
     bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const {
-        if (!m_isEyeTrackingAvailable) {
-            return false;
-        }
-
         if (m_eyeTrackingType == EyeTracking::Simulated) {
             XrVector2f point{0.5f, 0.5f};
 

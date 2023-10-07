@@ -336,10 +336,6 @@ namespace virtualdesktop_openxr {
             std::map<std::string, ActionSource> actionSources;
         };
 
-        struct HandTracker {
-            int side;
-        };
-
         enum class EyeTracking {
             None = 0,
             Simulated,
@@ -481,7 +477,6 @@ namespace virtualdesktop_openxr {
         std::string m_applicationName;
         bool m_useApplicationDeviceForSubmission{true};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
-        bool m_isEyeTrackingAvailable{false};
 
         // Session state.
         ComPtr<ID3D11Device5> m_ovrSubmissionDevice;
@@ -507,8 +502,6 @@ namespace virtualdesktop_openxr {
         std::set<XrActionSet> m_activeActionSets;
         std::set<XrAction> m_actions;
         std::set<XrAction> m_actionsForCleanup;
-        std::mutex m_handTrackersMutex;
-        std::set<XrHandTrackerEXT> m_handTrackers;
         std::set<XrSpace> m_spaces;
         Space* m_originSpace{nullptr};
         Space* m_viewSpace{nullptr};
@@ -524,7 +517,6 @@ namespace virtualdesktop_openxr {
         bool m_currentInteractionProfileDirty{false};
         std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
         std::optional<ForcedInteractionProfile> m_lastForcedInteractionProfile;
-        std::string m_debugControllerType;
         std::optional<double> m_isRecenteringPressed;
         bool m_useRunningStart{true};
 

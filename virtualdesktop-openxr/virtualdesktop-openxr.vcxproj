@@ -113,7 +113,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -173,7 +173,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -237,7 +237,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -301,7 +301,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;FW1FontWrapper.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\PVR\Lib;$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>

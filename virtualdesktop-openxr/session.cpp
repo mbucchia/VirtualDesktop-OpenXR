@@ -209,13 +209,6 @@ namespace virtualdesktop_openxr {
             m_mirrorWindowThread = {};
         }
 
-        // Destroy hand trackers (tied to session).
-        for (auto handTracker : m_handTrackers) {
-            HandTracker* xrHandTracker = (HandTracker*)handTracker;
-            delete xrHandTracker;
-        }
-        m_handTrackers.clear();
-
         // Destroy action spaces (tied to session).
         for (auto space : m_spaces) {
             Space* xrSpace = (Space*)space;
@@ -253,7 +246,6 @@ namespace virtualdesktop_openxr {
         cleanupD3D12();
         cleanupD3D11();
         cleanupSubmissionDevice();
-        m_handTrackers.clear();
         m_sessionState = XR_SESSION_STATE_UNKNOWN;
         m_sessionCreated = false;
         m_sessionBegun = false;
@@ -462,17 +454,6 @@ namespace virtualdesktop_openxr {
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_useRunningStart, "UseRunningStart"),
             TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
-
-        const auto debugControllerType = getSetting("debug_controller_type").value_or(0);
-        if (debugControllerType == 1) {
-            m_debugControllerType = "vive_controller";
-        } else if (debugControllerType == 2) {
-            m_debugControllerType = "knuckles";
-        } else if (debugControllerType == 3) {
-            m_debugControllerType = "pimax_crystal";
-        } else {
-            m_debugControllerType.clear();
-        }
     }
 
     // Create guardian resources.
