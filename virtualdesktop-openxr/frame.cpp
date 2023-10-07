@@ -269,14 +269,15 @@ namespace virtualdesktop_openxr {
                               TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_all();
 
+            bool isAsyncReprojectionActive = false;
             ovrPerfStats stats{};
             if (OVR_SUCCESS(ovr_GetPerfStats(m_ovrSession, &stats))) {
-                m_isAsyncReprojectionActive = stats.FrameStatsCount > 0 && stats.FrameStats[0].AswIsActive;
+                isAsyncReprojectionActive = stats.FrameStatsCount > 0 && stats.FrameStats[0].AswIsActive;
                 TraceLoggingWrite(
-                    g_traceProvider, "OVR_AswStatus", TLArg(m_isAsyncReprojectionActive, "AsyncReprojectionActive"));
+                    g_traceProvider, "OVR_AswStatus", TLArg(isAsyncReprojectionActive, "AsyncReprojectionActive"));
             }
 
-            if (m_isAsyncReprojectionActive) {
+            if (isAsyncReprojectionActive) {
                 m_predictedFrameDuration = m_idealFrameDuration * 2.f;
             } else {
                 m_predictedFrameDuration = m_idealFrameDuration;
@@ -361,12 +362,6 @@ namespace virtualdesktop_openxr {
                 }
             });
 
-            // Handle recentering via keyboard input when the app does not poll for motion controllers.
-            if (!m_actionsSyncedThisFrame) {
-                handleBuiltinActions();
-            }
-            m_actionsSyncedThisFrame = false;
-
             const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex]->query();
             if (IsTraceEnabled()) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
@@ -430,10 +425,6 @@ namespace virtualdesktop_openxr {
                     layer->Header.Type = ovrLayerType_EyeFov;
 
                     for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
-                        if (viewIndex == 0) {
-                            m_proj0Extent = proj->views[viewIndex].subImage.imageRect.extent;
-                        }
-
                         TraceLoggingWrite(
                             g_traceProvider,
                             "xrEndFrame_View",
@@ -649,65 +640,6 @@ namespace virtualdesktop_openxr {
                     layer->Quad.QuadSize.y = quad->size.height;
                 } else {
                     return XR_ERROR_LAYER_INVALID;
-                }
-            }
-
-            {
-                // Defer initialization of overlay resources until they are first needed.
-                if (!m_overlaySwapchain) {
-                    initializeOverlayResources();
-                }
-
-                if (m_isOverlayVisible) {
-                    refreshOverlay();
-
-                    // Draw the overlay on top of everything but below the guardian (see below).
-                    layersAllocator.push_back({});
-                    auto& layer = layersAllocator.back();
-                    layer.Header.Type = ovrLayerType_Quad;
-                    layer.Header.Flags = 0;
-                    layer.Quad.ColorTexture = m_overlaySwapchain;
-                    layer.Quad.Viewport.Pos.x = layer.Quad.Viewport.Pos.y = 0;
-                    layer.Quad.Viewport.Size.w = m_overlayExtent.width;
-                    layer.Quad.Viewport.Size.h = m_overlayExtent.height;
-
-                    // Place the guardian in 3D space as a 2D overlay.
-                    XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-                    layer.Quad.QuadPoseCenter = xrPoseToOvrPose(m_overlayPose);
-                    layer.Quad.QuadSize.x = 0.5f;
-                    layer.Quad.QuadSize.y =
-                        layer.Quad.QuadSize.x * ((float)m_overlayExtent.height / m_overlayExtent.width);
-                }
-            }
-
-            {
-                // Defer initialization of guardian resources until they are first needed.
-                if (!m_guardianSpace) {
-                    initializeGuardianResources();
-                }
-
-                // Measure the floor distance between the center of the guardian and the headset.
-                XrPosef viewToOrigin;
-                XrSpaceLocationFlags locationFlags =
-                    locateSpace(*m_viewSpace, *m_originSpace, frameEndInfo->displayTime, viewToOrigin);
-                XrPosef guardianToOrigin;
-                locateSpace(*m_guardianSpace, *m_originSpace, frameEndInfo->displayTime, guardianToOrigin);
-                if (Pose::IsPoseValid(locationFlags) &&
-                    Length(XrVector3f{guardianToOrigin.position.x, 0.f, guardianToOrigin.position.z} -
-                           XrVector3f{viewToOrigin.position.x, 0.f, viewToOrigin.position.z}) > m_guardianThreshold) {
-                    // Draw the guardian on top of everything.
-                    layersAllocator.push_back({});
-                    auto& layer = layersAllocator.back();
-                    layer.Header.Type = ovrLayerType_Quad;
-                    layer.Header.Flags = 0;
-                    layer.Quad.ColorTexture = m_guardianSwapchain;
-                    layer.Quad.Viewport.Pos.x = layer.Quad.Viewport.Pos.y = 0;
-                    layer.Quad.Viewport.Size.w = m_guardianExtent.width;
-                    layer.Quad.Viewport.Size.h = m_guardianExtent.height;
-
-                    // Place the guardian in 3D space as a 2D overlay.
-                    layer.Quad.QuadPoseCenter = xrPoseToOvrPose(guardianToOrigin);
-                    layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
                 }
             }
 

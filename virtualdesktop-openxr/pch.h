@@ -105,14 +105,5 @@ using Microsoft::WRL::ComPtr;
 #undef xrStringToPath
 #undef xrPathToString
 
-// Detours
-#include <detours.h>
-
 // FMT formatter.
 #include <fmt/format.h>
-
-// DirectXTex
-#include <DirectXTex.h>
-
-// Text drawing.
-#include <FW1FontWrapper.h>

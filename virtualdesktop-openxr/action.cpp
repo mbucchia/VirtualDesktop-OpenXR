@@ -974,26 +974,12 @@ namespace virtualdesktop_openxr {
         }
         m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
-        // Check for built-in actions.
-        bool wasSystemPressed = (m_cachedInputState.Buttons & ovrButton_Enter);
-        bool wasRecenteringPressed = (wasSystemPressed && m_cachedInputState.IndexTrigger[0] > 0.75f);
-
-        // When any built-in action is requested, block the unwanted input for the app.
-        if (wasRecenteringPressed || wasSystemPressed) {
-            m_cachedInputState.Buttons &= ~ovrButton_Enter;
-            m_cachedInputState.IndexTrigger[0] = 0.f;
-        }
-
         // Propagate the input state to the entire action state.
         for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
             ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
 
             xrActionSet.cachedInputState = m_cachedInputState;
         }
-
-        // Execute built-in actions.
-        handleBuiltinActions(wasRecenteringPressed, !wasRecenteringPressed && wasSystemPressed);
-        m_actionsSyncedThisFrame = true;
 
         return XR_SUCCESS;
     }
@@ -1520,69 +1506,6 @@ namespace virtualdesktop_openxr {
 
     bool OpenXrRuntime::isActionEyeTracker(const std::string& fullPath) const {
         return fullPath == "/user/eyes_ext/input/gaze_ext/pose" || fullPath == "/user/eyes_ext/input/gaze_ext";
-    }
-
-    void OpenXrRuntime::handleBuiltinActions(bool wasRecenteringPressed, bool wasSystemPressed) {
-        const auto now = ovr_GetTimeInSeconds();
-
-        wasRecenteringPressed =
-            wasRecenteringPressed ||
-            (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_MENU) < 0 && GetAsyncKeyState(VK_SPACE) < 0);
-#ifdef _DEBUG
-        wasSystemPressed = wasSystemPressed || (GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_F11));
-#endif
-        if (wasRecenteringPressed) {
-            if (m_isRecenteringPressed) {
-                // Requires a 2 seconds press.
-                if (now - m_isRecenteringPressed.value() >= 2.f) {
-                    // Recenter view.
-                    TraceLoggingWrite(g_traceProvider, "OVR_RecenterTrackingOrigin");
-                    CHECK_OVRCMD(ovr_RecenterTrackingOrigin(m_ovrSession));
-                    m_isRecenteringPressed.reset();
-                    m_isSystemPressed.reset();
-                }
-            } else {
-                m_isRecenteringPressed = now;
-            }
-        } else {
-            m_isRecenteringPressed.reset();
-
-            if (wasSystemPressed) {
-                if (m_isSystemPressed) {
-                    // Requires a 1 second press.
-                    if (now - m_isSystemPressed.value() >= 1.f) {
-                        m_isOverlayVisible = !m_isOverlayVisible;
-                        TraceLoggingWrite(
-                            g_traceProvider, "OVR_ToggleOverlay", TLArg(m_isOverlayVisible, "IsOverlayVisible"));
-
-                        if (m_isOverlayVisible) {
-                            // Spawn in front of the user.
-                            XrPosef viewToOrigin;
-                            XrSpaceLocationFlags locationFlags =
-                                locateSpace(*m_viewSpace, *m_originSpace, m_lastPredictedDisplayTime, viewToOrigin);
-                            if (Pose::IsPoseValid(locationFlags)) {
-                                m_overlayPose = Pose::Multiply(Pose::Translation({0, 0, -1.f}), viewToOrigin);
-
-                                // Gravity align (remove roll).
-                                OVR::Quatf q = OVR::Quatf(m_overlayPose.orientation.x,
-                                                          m_overlayPose.orientation.y,
-                                                          m_overlayPose.orientation.z,
-                                                          m_overlayPose.orientation.w);
-                                float yaw, pitch, roll;
-                                q.GetYawPitchRoll(&yaw, &pitch, &roll);
-                                m_overlayPose.orientation = Quaternion::RotationRollPitchYaw({pitch, yaw, 0.f});
-                            }
-                        }
-                        m_isSystemPressed.reset();
-                        m_isRecenteringPressed.reset();
-                    }
-                } else {
-                    m_isSystemPressed = now;
-                }
-            } else {
-                m_isSystemPressed.reset();
-            }
-        }
     }
 
 } // namespace virtualdesktop_openxr

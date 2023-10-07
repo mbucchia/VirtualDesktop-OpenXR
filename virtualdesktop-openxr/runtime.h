@@ -349,7 +349,6 @@ namespace virtualdesktop_openxr {
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
         void refreshSettings();
-        void initializeGuardianResources();
 
         // action.cpp
         void rebindControllerActions(int side);
@@ -357,7 +356,6 @@ namespace virtualdesktop_openxr {
         XrPath stringToPath(const std::string& path, bool validate = false);
         int getActionSide(const std::string& fullPath, bool allowExtraPaths = false) const;
         bool isActionEyeTracker(const std::string& fullPath) const;
-        void handleBuiltinActions(bool wasRecenteringPressed = false, bool wasSystemPressed = false);
 
         // mappings.cpp
         void initializeRemappingTables();
@@ -448,10 +446,6 @@ namespace virtualdesktop_openxr {
         LRESULT CALLBACK mirrorWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-        // overlay.cpp
-        void initializeOverlayResources();
-        void refreshOverlay();
-
         // Instance & OVR state.
         ovrSession m_ovrSession{nullptr};
         bool m_instanceCreated{false};
@@ -517,7 +511,6 @@ namespace virtualdesktop_openxr {
         bool m_currentInteractionProfileDirty{false};
         std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
         std::optional<ForcedInteractionProfile> m_lastForcedInteractionProfile;
-        std::optional<double> m_isRecenteringPressed;
         bool m_useRunningStart{true};
 
         // Swapchains and other graphics stuff.
@@ -543,26 +536,6 @@ namespace virtualdesktop_openxr {
         std::condition_variable m_asyncSubmissionCondVar;
         std::vector<ovrLayer_Union> m_layersForAsyncSubmission;
         std::chrono::high_resolution_clock::time_point m_lastWaitToBeginFrameTime{};
-
-        // Guardian state.
-        ovrTextureSwapChain m_guardianSwapchain{nullptr};
-        Space* m_guardianSpace{nullptr};
-        XrExtent2Di m_guardianExtent{};
-        float m_guardianThreshold{1.1f};
-        float m_guardianRadius{1.6f};
-
-        // Overlay resources.
-        ComPtr<IFW1Factory> m_fontWrapperFactory;
-        ComPtr<IFW1FontWrapper> m_fontNormal;
-        ovrTextureSwapChain m_overlaySwapchain{nullptr};
-        DXGI_FORMAT m_overlaySwapchainFormat{DXGI_FORMAT_UNKNOWN};
-        ComPtr<ID3D11Resource> m_overlayBackground;
-        XrExtent2Di m_overlayExtent{};
-        XrPosef m_overlayPose{};
-        std::optional<double> m_isSystemPressed;
-        bool m_isOverlayVisible{false};
-        XrExtent2Di m_proj0Extent{};
-        std::time_t m_lastOverlayRefresh{0};
 
         // Graphics API interop.
         ComPtr<ID3D11Device5> m_d3d11Device;
@@ -617,11 +590,8 @@ namespace virtualdesktop_openxr {
         uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         ovrInputState m_cachedInputState;
-        bool m_actionsSyncedThisFrame{false};
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
-        std::deque<uint64_t> m_frameTimeFilter;
-        bool m_isAsyncReprojectionActive{false};
 
         // Statistics.
         double m_sessionStartTime{0.0};

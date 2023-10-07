@@ -257,15 +257,6 @@ namespace virtualdesktop_openxr {
                 std::make_unique<D3D11GpuTimer>(m_ovrSubmissionDevice.Get(), m_ovrSubmissionContext.Get());
         }
 
-        // Create the resources for drawing text.
-        CHECK_HRCMD(FW1CreateFactory(FW1_VERSION, m_fontWrapperFactory.ReleaseAndGetAddressOf()));
-        if (FAILED(m_fontWrapperFactory->CreateFontWrapper(
-                m_ovrSubmissionDevice.Get(), L"Segoe UI Symbol", m_fontNormal.ReleaseAndGetAddressOf()))) {
-            // Fallback to Arial - won't have symbols but will have text.
-            CHECK_HRCMD(m_fontWrapperFactory->CreateFontWrapper(
-                m_ovrSubmissionDevice.Get(), L"Arial", m_fontNormal.ReleaseAndGetAddressOf()));
-        }
-
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
         // not see our OpenXR frames.
         HMODULE renderdocModule;

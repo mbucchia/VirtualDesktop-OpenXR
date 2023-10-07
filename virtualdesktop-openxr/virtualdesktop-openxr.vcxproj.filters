@@ -130,9 +130,6 @@
     <ClCompile Include="eye_tracking.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="overlay.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPI_Util.cpp">
       <Filter>LibOVR</Filter>
     </ClCompile>

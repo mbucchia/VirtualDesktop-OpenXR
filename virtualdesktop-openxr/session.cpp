@@ -215,12 +215,9 @@ namespace virtualdesktop_openxr {
             delete xrSpace;
         }
         m_spaces.clear();
-        if (m_guardianSpace) {
-            delete m_guardianSpace;
-        }
         delete m_originSpace;
         delete m_viewSpace;
-        m_guardianSpace = m_originSpace = m_viewSpace = nullptr;
+        m_originSpace = m_viewSpace = nullptr;
 
         // Destroy all swapchains (tied to session).
         while (m_swapchains.size()) {
@@ -228,15 +225,6 @@ namespace virtualdesktop_openxr {
             // deadlocks.
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
         }
-        if (m_guardianSwapchain) {
-            ovr_DestroyTextureSwapChain(m_ovrSession, m_guardianSwapchain);
-            m_guardianSwapchain = nullptr;
-        }
-        if (m_overlaySwapchain) {
-            ovr_DestroyTextureSwapChain(m_ovrSession, m_overlaySwapchain);
-            m_overlaySwapchain = nullptr;
-        }
-        m_overlayBackground.Reset();
 
         // We do not destroy actionsets and actions, since they are tied to the instance.
 
@@ -407,13 +395,6 @@ namespace virtualdesktop_openxr {
             m_forcedInteractionProfile.reset();
         }
 
-        if (getSetting("guardian").value_or(true)) {
-            m_guardianThreshold = getSetting("guardian_threshold").value_or(1100) / 1e3f;
-            m_guardianRadius = getSetting("guardian_radius").value_or(1600) / 1e3f;
-        } else {
-            m_guardianThreshold = INFINITY;
-        }
-
         const auto oldControllerAimOffset = m_controllerAimOffset;
         m_controllerAimOffset = Pose::MakePose(
             Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
@@ -449,69 +430,9 @@ namespace virtualdesktop_openxr {
             g_traceProvider,
             "PXR_Config",
             TLArg((int)m_forcedInteractionProfile.value_or((ForcedInteractionProfile)-1), "ForcedInteractionProfile"),
-            TLArg(m_guardianThreshold, "GuardianThreshold"),
-            TLArg(m_guardianRadius, "GuardianRadius"),
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_useRunningStart, "UseRunningStart"),
             TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
-    }
-
-    // Create guardian resources.
-    void OpenXrRuntime::initializeGuardianResources() {
-        HRESULT hr;
-
-        // Load the guardian texture.
-        auto image = std::make_unique<DirectX::ScratchImage>();
-        CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-        hr = DirectX::LoadFromWICFile((dllHome / L"guardian.png").c_str(), DirectX::WIC_FLAGS_NONE, nullptr, *image);
-
-        if (SUCCEEDED(hr)) {
-            ComPtr<ID3D11Resource> texture;
-            hr = DirectX::CreateTexture(m_ovrSubmissionDevice.Get(),
-                                        image->GetImages(),
-                                        1,
-                                        image->GetMetadata(),
-                                        texture.ReleaseAndGetAddressOf());
-
-            if (SUCCEEDED(hr)) {
-                // Create an OVR swapchain for the texture.
-                ovrTextureSwapChainDesc desc{};
-                desc.Type = ovrTexture_2D;
-                desc.StaticImage = true;
-                desc.ArraySize = 1;
-                desc.Width = m_guardianExtent.width = (int)image->GetMetadata().width;
-                desc.Height = m_guardianExtent.height = (int)image->GetMetadata().height;
-                desc.MipLevels = (int)image->GetMetadata().mipLevels;
-                desc.SampleCount = 1;
-                desc.Format = dxgiToOvrTextureFormat(image->GetMetadata().format);
-
-                CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
-                    m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_guardianSwapchain));
-
-                // Copy and commit the guardian texture to the swapchain.
-                int imageIndex = -1;
-                CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(m_ovrSession, m_guardianSwapchain, &imageIndex));
-                ComPtr<ID3D11Texture2D> swapchainTexture;
-                CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
-                                                             m_guardianSwapchain,
-                                                             imageIndex,
-                                                             IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
-
-                m_ovrSubmissionContext->CopyResource(swapchainTexture.Get(), texture.Get());
-                m_ovrSubmissionContext->Flush();
-                CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, m_guardianSwapchain));
-            } else {
-                ErrorLog("Failed to create texture from guardian.png: %X\n");
-            }
-        } else {
-            ErrorLog("Failed to load guardian.png: %X\n");
-        }
-
-        // Create the guardian reference space, 1m below eyesight, flat on the floor.
-        m_guardianSpace = new Space;
-        m_guardianSpace->referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-        m_guardianSpace->poseInSpace =
-            Pose::MakePose(Quaternion::RotationRollPitchYaw({OVR::DegreeToRad(-90.f), 0.f, 0.f}), XrVector3f{0, -1, 0});
     }
 
 } // namespace virtualdesktop_openxr

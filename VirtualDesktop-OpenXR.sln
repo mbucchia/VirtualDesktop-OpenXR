@@ -4,9 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.31911.196
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtualdesktop-openxr", "virtualdesktop-openxr\virtualdesktop-openxr.vcxproj", "{93D573D0-634F-4BA0-8FE0-FB63D7D00A05}"
-	ProjectSection(ProjectDependencies) = postProject
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353} = {9F62DB07-EA42-4388-82AB-E6FAA371F353}
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{A53ED6CB-95D3-4833-8A16-C6A588F16F6E}"
 	ProjectSection(SolutionItems) = preProject
@@ -57,10 +54,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EyeGazeInteractionWin32", "
 	ProjectSection(ProjectDependencies) = postProject
 		{93D573D0-634F-4BA0-8FE0-FB63D7D00A05} = {93D573D0-634F-4BA0-8FE0-FB63D7D00A05}
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{D5F26FBB-3CA3-40F8-859F-C599B2022DC4}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FW1FontWrapper", "external\FW1FontWrapper\FW1FontWrapper\FW1FontWrapper.vcxproj", "{9F62DB07-EA42-4388-82AB-E6FAA371F353}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -125,14 +118,6 @@ Global
 		{A4D2019B-622D-49B9-9510-16877979807A}.Debug|x64.Build.0 = Debug|x64
 		{A4D2019B-622D-49B9-9510-16877979807A}.Release|Win32.ActiveCfg = Release|Win32
 		{A4D2019B-622D-49B9-9510-16877979807A}.Release|x64.ActiveCfg = Release|x64
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Debug|Win32.ActiveCfg = Debug|Win32
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Debug|Win32.Build.0 = Debug|Win32
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Debug|x64.ActiveCfg = Debug|x64
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Debug|x64.Build.0 = Debug|x64
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Release|Win32.ActiveCfg = Release|Win32
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Release|Win32.Build.0 = Release|Win32
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Release|x64.ActiveCfg = Release|x64
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -148,7 +133,6 @@ Global
 		{2B7688F8-9AE6-4A67-809B-1BAC82094F21} = {62ABB036-B5EF-46D5-8D8B-2C4D06164B4C}
 		{269C12FA-E68D-470B-A734-4701034306BD} = {62ABB036-B5EF-46D5-8D8B-2C4D06164B4C}
 		{A4D2019B-622D-49B9-9510-16877979807A} = {18290AA7-D4EC-42C7-B417-D2CC3422A207}
-		{9F62DB07-EA42-4388-82AB-E6FAA371F353} = {D5F26FBB-3CA3-40F8-859F-C599B2022DC4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07E77829-9766-4585-AC6C-0A28BA014E77}

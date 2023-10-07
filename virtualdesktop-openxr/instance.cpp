@@ -522,9 +522,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
         TraceLoggingRegister(virtualdesktop_openxr::log::g_traceProvider);
-        DetourRestoreAfterWith();
         InitializeHighPrecisionTimer();
-        DisableThreadLibraryCalls(hModule);
         break;
 
     case DLL_PROCESS_DETACH:
