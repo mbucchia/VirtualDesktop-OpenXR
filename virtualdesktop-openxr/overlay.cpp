@@ -142,8 +142,7 @@ namespace virtualdesktop_openxr {
                                  FW1_RIGHT | FW1_NOFLUSH);
 
         m_fontNormal->DrawString(m_ovrSubmissionContext.Get(),
-                                 m_isAsyncReprojectionEnabled ? (m_isAsyncReprojectionActive ? L"Active" : L"Standby")
-                                                           : L"Off",
+                                 m_isAsyncReprojectionActive ? L"Active" : L"Inactive",
                                  150.f,
                                  1400.f,
                                  1402.f,

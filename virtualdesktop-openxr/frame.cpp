@@ -271,11 +271,9 @@ namespace virtualdesktop_openxr {
 
             ovrPerfStats stats{};
             if (OVR_SUCCESS(ovr_GetPerfStats(m_ovrSession, &stats))) {
-                m_isAsyncReprojectionEnabled = stats.AswIsAvailable;
                 m_isAsyncReprojectionActive = stats.FrameStatsCount > 0 && stats.FrameStats[0].AswIsActive;
                 TraceLoggingWrite(g_traceProvider,
-                                  "OVR_Status",
-                                  TLArg(m_isAsyncReprojectionEnabled, "AsyncReprojectionAvailable"),
+                                  "OVR_AswStatus",
                                   TLArg(m_isAsyncReprojectionActive, "AsyncReprojectionActive"));
             }
 

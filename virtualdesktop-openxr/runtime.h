@@ -621,7 +621,6 @@ namespace virtualdesktop_openxr {
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
         std::deque<uint64_t> m_frameTimeFilter;
-        bool m_isAsyncReprojectionEnabled{false};
         bool m_isAsyncReprojectionActive{false};
 
         // Statistics.
