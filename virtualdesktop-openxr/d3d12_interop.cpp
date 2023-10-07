@@ -59,9 +59,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        // Get the display device LUID.
-        fillDisplayDeviceInfo();
-
         memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
         graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_12_0;
 
@@ -113,13 +110,13 @@ namespace virtualdesktop_openxr {
         m_d3d12Device = d3dBindings.device;
         m_d3d12CommandQueue = d3dBindings.queue;
 
-        // Create the interop device and resources that PVR will be using.
+        // Create the interop device and resources that OVR will be using.
         initializeSubmissionDevice("D3D12");
 
         // We will use a shared fence to synchronize between the D3D12 queue and the D3D11
         // context.
         wil::unique_handle fenceHandle;
-        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
+        CHECK_HRCMD(m_ovrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
         CHECK_HRCMD(
             m_d3d12Device->OpenSharedHandle(fenceHandle.get(), IID_PPV_ARGS(m_d3d12Fence.ReleaseAndGetAddressOf())));
 
@@ -261,7 +258,7 @@ namespace virtualdesktop_openxr {
         }
     }
 
-    // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.
+    // Serialize commands from the D3D12 queue to the D3D11 context used by OVR.
     void OpenXrRuntime::serializeD3D12Frame() {
         m_fenceValue++;
         TraceLoggingWrite(g_traceProvider, "xrEndFrame_Sync", TLArg("D3D12", "Api"), TLArg(m_fenceValue, "FenceValue"));

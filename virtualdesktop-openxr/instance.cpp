@@ -97,26 +97,28 @@ namespace virtualdesktop_openxr {
         // Note: this is not compatible with async_submission=1!
         m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
 
-        // Initialize PVR.
+        // Initialize OVR.
+        ovrInitParams initParams{};
+        initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
+        initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
+        CHECK_OVRCMD(ovr_Initialize(&initParams));
 
-        CHECK_PVRCMD(pvr_initialise(&m_pvr));
-
-        std::string_view versionString(pvr_getVersionString(m_pvr));
-        Log("PVR: %s\n", versionString.data());
-        TraceLoggingWrite(g_traceProvider, "PVR_SDK", TLArg(versionString.data(), "VersionString"));
+        std::string_view versionString(ovr_GetVersionString());
+        Log("OVR: %s\n", versionString.data());
+        TraceLoggingWrite(g_traceProvider, "OVR_SDK", TLArg(versionString.data(), "VersionString"));
 
         QueryPerformanceFrequency(&m_qpcFrequency);
 
         // Calibrate the timestamp conversion.
-        m_pvrTimeFromQpcTimeOffset = INFINITY;
+        m_ovrTimeFromQpcTimeOffset = INFINITY;
         for (int i = 0; i < 100; i++) {
             LARGE_INTEGER now;
             QueryPerformanceCounter(&now);
             const double qpcTime = (double)now.QuadPart / m_qpcFrequency.QuadPart;
-            m_pvrTimeFromQpcTimeOffset = std::min(m_pvrTimeFromQpcTimeOffset, pvr_getTimeSeconds(m_pvr) - qpcTime);
+            m_ovrTimeFromQpcTimeOffset = std::min(m_ovrTimeFromQpcTimeOffset, ovr_GetTimeInSeconds() - qpcTime);
         }
         TraceLoggingWrite(
-            g_traceProvider, "ConvertTime", TLArg(m_pvrTimeFromQpcTimeOffset, "PvrTimeFromQpcTimeOffset"));
+            g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
 
         // Watch for changes in the registry.
         try {
@@ -154,14 +156,10 @@ namespace virtualdesktop_openxr {
             xrDestroySession((XrSession)1);
         }
 
-        if (m_pvrSession) {
-            // Workaround: the environment doesn't appear to be cleared when re-initializing PVR. Clear the one pointer
-            // we care about.
-            m_pvrSession->envh->pvr_dxgl_interface = nullptr;
-
-            pvr_destroySession(m_pvrSession);
+        if (m_ovrSession) {
+            ovr_Destroy(m_ovrSession);
         }
-        pvr_shutdown(m_pvr);
+        ovr_Shutdown();
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr
@@ -332,7 +330,7 @@ namespace virtualdesktop_openxr {
             buffer->next = nullptr;
             buffer->session = (XrSession)1;
             buffer->state = m_sessionEventQueue.front().first;
-            buffer->time = pvrTimeToXrTime(m_sessionEventQueue.front().second);
+            buffer->time = ovrTimeToXrTime(m_sessionEventQueue.front().second);
             m_sessionEventQueue.pop_front();
 
             TraceLoggingWrite(g_traceProvider,

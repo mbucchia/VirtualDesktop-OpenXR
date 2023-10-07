@@ -226,13 +226,6 @@ namespace virtualdesktop_openxr {
         XrResult xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
                                                     XrSystemId systemId,
                                                     XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) override;
-        XrResult xrCreateHandTrackerEXT(XrSession session,
-                                        const XrHandTrackerCreateInfoEXT* createInfo,
-                                        XrHandTrackerEXT* handTracker) override;
-        XrResult xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) override;
-        XrResult xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
-                                       const XrHandJointsLocateInfoEXT* locateInfo,
-                                       XrHandJointLocationsEXT* locations) override;
         XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session,
                                                   uint32_t displayRefreshRateCapacityInput,
                                                   uint32_t* displayRefreshRateCountOutput,
@@ -252,10 +245,10 @@ namespace virtualdesktop_openxr {
         };
 
         struct Swapchain {
-            // The PVR swapchain objects. For texture arrays, we must have one swapchain per slice due to PVR
+            // The OVR swapchain objects. For texture arrays, we must have one swapchain per slice due to OVR
             // limitation.
-            std::vector<pvrTextureSwapChain> pvrSwapchain;
-            int pvrSwapchainLength{0};
+            std::vector<ovrTextureSwapChain> ovrSwapchain;
+            int ovrSwapchainLength{0};
             std::vector<ComPtr<ID3D11Texture2D>> images;
 
             // The cached textures used for copy between swapchains.
@@ -290,7 +283,7 @@ namespace virtualdesktop_openxr {
             // Information recorded at creation.
             XrSwapchainCreateInfo xrDesc;
             DXGI_FORMAT dxgiFormatForSubmission{DXGI_FORMAT_UNKNOWN};
-            pvrTextureSwapChainDesc pvrDesc;
+            ovrTextureSwapChainDesc ovrDesc;
         };
 
         struct Space {
@@ -304,11 +297,11 @@ namespace virtualdesktop_openxr {
         struct ActionSource {
             const float* floatValue{nullptr};
 
-            const pvrVector2f* vector2fValue{nullptr};
+            const ovrVector2f* vector2fValue{nullptr};
             int vector2fIndex{-1};
 
             const uint32_t* buttonMap{nullptr};
-            pvrButton buttonType;
+            ovrButton buttonType;
 
             std::string realPath;
         };
@@ -320,7 +313,7 @@ namespace virtualdesktop_openxr {
             std::set<XrPath> subactionPaths;
 
             // A copy of the input state. This is to handle when xrSyncActions() does not update all actionsets at once.
-            pvrInputState cachedInputState;
+            ovrInputState cachedInputState;
         };
 
         struct Action {
@@ -356,10 +349,6 @@ namespace virtualdesktop_openxr {
         void initializeExtensionsTable();
         std::optional<int> getSetting(const std::string& value) const;
 
-        // system.cpp
-        void fillDisplayDeviceInfo();
-        bool ensurePvrSession();
-
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
         void refreshSettings();
@@ -371,46 +360,20 @@ namespace virtualdesktop_openxr {
         XrPath stringToPath(const std::string& path, bool validate = false);
         int getActionSide(const std::string& fullPath, bool allowExtraPaths = false) const;
         bool isActionEyeTracker(const std::string& fullPath) const;
-        XrVector2f handleJoystickDeadzone(pvrVector2f raw) const;
         void handleBuiltinActions(bool wasRecenteringPressed = false, bool wasSystemPressed = false);
 
         // mappings.cpp
         void initializeRemappingTables();
-        bool mapPathToViveControllerInputState(const Action& xrAction,
-                                               const std::string& path,
-                                               ActionSource& source) const;
-        bool mapPathToIndexControllerInputState(const Action& xrAction,
+        bool mapPathToTouchControllerInputState(const Action& xrAction,
                                                 const std::string& path,
                                                 ActionSource& source) const;
-        bool mapPathToCrystalControllerInputState(const Action& xrAction,
-                                                  const std::string& path,
-                                                  ActionSource& source) const;
-        bool mapPathToSimpleControllerInputState(const Action& xrAction,
-                                                 const std::string& path,
-                                                 ActionSource& source) const;
-        std::string getViveControllerLocalizedSourceName(const std::string& path) const;
-        std::string getIndexControllerLocalizedSourceName(const std::string& path) const;
-        std::string getCrystalControllerLocalizedSourceName(const std::string& path) const;
-        std::string getSimpleControllerLocalizedSourceName(const std::string& path) const;
-        std::optional<std::string> remapSimpleControllerToViveController(const std::string& path) const;
-        std::optional<std::string> remapOculusTouchControllerToViveController(const std::string& path) const;
-        std::optional<std::string> remapMicrosoftMotionControllerToViveController(const std::string& path) const;
-        std::optional<std::string> remapIndexControllerToViveController(const std::string& path) const;
-        std::optional<std::string> remapSimpleControllerToIndexController(const std::string& path) const;
-        std::optional<std::string> remapOculusTouchControllerToIndexController(const std::string& path) const;
-        std::optional<std::string> remapMicrosoftMotionControllerToIndexController(const std::string& path) const;
-        std::optional<std::string> remapViveControllerToIndexController(const std::string& path) const;
-        std::optional<std::string> remapSimpleControllerToCrystalController(const std::string& path) const;
-        std::optional<std::string> remapMicrosoftMotionControllerToCrystalController(const std::string& path) const;
-        std::optional<std::string> remapViveControllerToCrystalController(const std::string& path) const;
-        std::optional<std::string> remapIndexControllerToCrystalController(const std::string& path) const;
-        std::optional<std::string> remapOculusTouchControllerToSimpleController(const std::string& path) const;
-        std::optional<std::string> remapMicrosoftMotionControllerToSimpleController(const std::string& path) const;
-        std::optional<std::string> remapViveControllerToSimpleController(const std::string& path) const;
-        std::optional<std::string> remapIndexControllerToSimpleController(const std::string& path) const;
+        std::string getTouchControllerLocalizedSourceName(const std::string& path) const;
+        std::optional<std::string> remapSimpleControllerToTouchController(const std::string& path) const;
+        std::optional<std::string> remapMicrosoftMotionControllerToTouchController(const std::string& path) const;
+        std::optional<std::string> remapViveControllerToTouchController(const std::string& path) const;
+        std::optional<std::string> remapIndexControllerToTouchController(const std::string& path) const;
 
         // space.cpp
-
         XrSpaceLocationFlags locateSpace(const Space& xrSpace,
                                          const Space& xrBaseSpace,
                                          XrTime time,
@@ -445,7 +408,7 @@ namespace virtualdesktop_openxr {
                                             uint32_t layerIndex,
                                             uint32_t slice,
                                             XrCompositionLayerFlags compositionFlags,
-                                            std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed);
+                                            std::set<std::pair<ovrTextureSwapChain, uint32_t>>& committed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void ensureSwapchainIntermediateResources(Swapchain& xrSwapchain) const;
         void flushD3D11Context();
@@ -480,9 +443,8 @@ namespace virtualdesktop_openxr {
         void serializeOpenGLFrame();
 
         // visibility_mask.cpp
-        void convertSteamVRToOpenXRHiddenMesh(const pvrFovPort& fov,
+        void convertSteamVRToOpenXRHiddenMesh(const ovrFovPort& fov,
                                               XrVector2f* vertices,
-                                              uint32_t* indices,
                                               uint32_t count) const;
 
         // mirror_window.cpp
@@ -495,9 +457,8 @@ namespace virtualdesktop_openxr {
         void initializeOverlayResources();
         void refreshOverlay();
 
-        // Instance & PVR state.
-        pvrEnvHandle m_pvr{nullptr};
-        pvrSessionHandle m_pvrSession{nullptr};
+        // Instance & OVR state.
+        ovrSession m_ovrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
         std::vector<Extension> m_extensionsTable;
@@ -506,11 +467,11 @@ namespace virtualdesktop_openxr {
         float m_displayRefreshRate{0};
         double m_idealFrameDuration{0};
         double m_predictedFrameDuration{0};
-        pvrHmdInfo m_cachedHmdInfo{};
-        pvrEyeRenderInfo m_cachedEyeInfo[xr::StereoView::Count]{};
+        ovrHmdDesc m_cachedHmdInfo{};
+        ovrEyeRenderDesc m_cachedEyeInfo[xr::StereoView::Count]{};
         float m_floorHeight{0.f};
         LARGE_INTEGER m_qpcFrequency{};
-        double m_pvrTimeFromQpcTimeOffset{0};
+        double m_ovrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         using CheckValidPathFunction = std::function<bool(const std::string&)>;
@@ -524,10 +485,10 @@ namespace virtualdesktop_openxr {
         bool m_isEyeTrackingAvailable{false};
 
         // Session state.
-        ComPtr<ID3D11Device5> m_pvrSubmissionDevice;
-        ComPtr<ID3D11DeviceContext4> m_pvrSubmissionContext;
-        ComPtr<ID3DDeviceContextState> m_pvrSubmissionContextState;
-        ComPtr<ID3D11Fence> m_pvrSubmissionFence;
+        ComPtr<ID3D11Device5> m_ovrSubmissionDevice;
+        ComPtr<ID3D11DeviceContext4> m_ovrSubmissionContext;
+        ComPtr<ID3DDeviceContextState> m_ovrSubmissionContextState;
+        ComPtr<ID3D11Fence> m_ovrSubmissionFence;
         wil::unique_handle m_eventForSubmissionFence;
         bool m_syncGpuWorkInEndFrame{false};
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
@@ -535,7 +496,7 @@ namespace virtualdesktop_openxr {
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         std::deque<std::pair<XrSessionState, double>> m_sessionEventQueue;
-        pvrHmdStatus m_hmdStatus{};
+        ovrSessionStatus m_hmdStatus{};
         bool m_sessionBegun{false};
         bool m_sessionLossPending{false};
         bool m_sessionStopping{false};
@@ -564,10 +525,8 @@ namespace virtualdesktop_openxr {
         bool m_currentInteractionProfileDirty{false};
         std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
         std::optional<ForcedInteractionProfile> m_lastForcedInteractionProfile;
-        bool m_useAnalogGrip{true};
         std::string m_debugControllerType;
         std::optional<double> m_isRecenteringPressed;
-        float m_joystickDeadzone{0.f};
         bool m_useRunningStart{true};
 
         // Swapchains and other graphics stuff.
@@ -581,7 +540,7 @@ namespace virtualdesktop_openxr {
         bool m_mirrorWindowReady{false};
         std::thread m_mirrorWindowThread;
         ComPtr<IDXGISwapChain1> m_mirrorWindowSwapchain;
-        pvrMirrorTexture m_pvrMirrorSwapChain{nullptr};
+        ovrMirrorTexture m_ovrMirrorSwapChain{nullptr};
         ComPtr<ID3D11Texture2D> m_mirrorTexture;
 
         // Async submittion thread.
@@ -591,11 +550,11 @@ namespace virtualdesktop_openxr {
         std::thread m_asyncSubmissionThread;
         std::mutex m_asyncSubmissionMutex;
         std::condition_variable m_asyncSubmissionCondVar;
-        std::vector<pvrLayer_Union> m_layersForAsyncSubmission;
+        std::vector<ovrLayer_Union> m_layersForAsyncSubmission;
         std::chrono::high_resolution_clock::time_point m_lastWaitToBeginFrameTime{};
 
         // Guardian state.
-        pvrTextureSwapChain m_guardianSwapchain{nullptr};
+        ovrTextureSwapChain m_guardianSwapchain{nullptr};
         Space* m_guardianSpace{nullptr};
         XrExtent2Di m_guardianExtent{};
         float m_guardianThreshold{1.1f};
@@ -604,7 +563,7 @@ namespace virtualdesktop_openxr {
         // Overlay resources.
         ComPtr<IFW1Factory> m_fontWrapperFactory;
         ComPtr<IFW1FontWrapper> m_fontNormal;
-        pvrTextureSwapChain m_overlaySwapchain{nullptr};
+        ovrTextureSwapChain m_overlaySwapchain{nullptr};
         DXGI_FORMAT m_overlaySwapchainFormat{DXGI_FORMAT_UNKNOWN};
         ComPtr<ID3D11Resource> m_overlayBackground;
         XrExtent2Di m_overlayExtent{};
@@ -666,13 +625,13 @@ namespace virtualdesktop_openxr {
         uint64_t m_frameCompleted{0};
         uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
-        pvrInputState m_cachedInputState;
+        ovrInputState m_cachedInputState;
         bool m_actionsSyncedThisFrame{false};
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
         std::deque<uint64_t> m_frameTimeFilter;
-        bool m_isSmartSmoothingEnabled{false};
-        bool m_isSmartSmoothingActive{false};
+        bool m_isAsyncReprojectionEnabled{false};
+        bool m_isAsyncReprojectionActive{false};
 
         // Statistics.
         double m_sessionStartTime{0.0};

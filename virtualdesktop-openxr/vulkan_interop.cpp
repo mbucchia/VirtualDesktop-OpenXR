@@ -151,15 +151,12 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        // Get the display device LUID.
-        fillDisplayDeviceInfo();
-
         uint32_t deviceCount = 0;
         CHECK_VKCMD(vkEnumeratePhysicalDevices(vkInstance, &deviceCount, nullptr));
         std::vector<VkPhysicalDevice> devices(deviceCount);
         CHECK_VKCMD(vkEnumeratePhysicalDevices(vkInstance, &deviceCount, devices.data()));
 
-        // Match the Vulkan physical device to the adapter LUID returned by PVR.
+        // Match the Vulkan physical device to the adapter LUID returned by OVR.
         bool found = false;
         for (const VkPhysicalDevice& device : devices) {
             VkPhysicalDeviceIDProperties deviceId{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
@@ -395,9 +392,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        // Get the display device LUID.
-        fillDisplayDeviceInfo();
-
         graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(1, 1, 0);
         graphicsRequirements->maxApiVersionSupported = XR_MAKE_VERSION(2, 0, 0);
 
@@ -470,7 +464,7 @@ namespace virtualdesktop_openxr {
         m_vkDevice = vkBindings.device;
         m_vkPhysicalDevice = vkBindings.physicalDevice;
 
-        // Create the interop device and resources that PVR will be using.
+        // Create the interop device and resources that OVR will be using.
         initializeSubmissionDevice("Vulkan");
 
         // Initialize common Vulkan resources.
@@ -480,7 +474,7 @@ namespace virtualdesktop_openxr {
         // We will use a shared fence to synchronize between the Vulkan queue and the D3D11
         // context.
         wil::unique_handle fenceHandle;
-        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
+        CHECK_HRCMD(m_ovrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
 
         // On the Vulkan side, it is called a timeline semaphore.
         {
@@ -813,7 +807,7 @@ namespace virtualdesktop_openxr {
         }
     }
 
-    // Serialize commands from the Vulkan queue to the D3D11 context used by PVR.
+    // Serialize commands from the Vulkan queue to the D3D11 context used by OVR.
     void OpenXrRuntime::serializeVulkanFrame() {
         m_fenceValue++;
         TraceLoggingWrite(

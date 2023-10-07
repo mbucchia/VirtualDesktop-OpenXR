@@ -558,7 +558,7 @@ namespace virtualdesktop_openxr {
                 if (m_isControllerActive[side]) {
                     // Per spec, the combined state is the OR of all values.
                     if (value.buttonMap) {
-                        combinedState = combinedState.value_or(false) || value.buttonMap[side] & value.buttonType;
+                        combinedState = combinedState.value_or(false) || *value.buttonMap & value.buttonType;
                     } else if (value.floatValue) {
                         combinedState = combinedState.value_or(false) || value.floatValue[side] > 0.95f;
                     }
@@ -573,7 +573,7 @@ namespace virtualdesktop_openxr {
 
             const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
             state->lastChangeTime = state->changedSinceLastSync
-                                        ? pvrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
+                                        ? ovrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
                                         : xrAction.lastBoolValueChangedTime[subActionSide];
         } else {
             state->currentState = state->changedSinceLastSync = XR_FALSE;
@@ -664,12 +664,11 @@ namespace virtualdesktop_openxr {
                                                  value.floatValue[side]);
                     } else if (value.buttonMap) {
                         combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
-                                                 value.buttonMap[side] & value.buttonType ? 1.f : 0.f);
+                                                 *value.buttonMap & value.buttonType ? 1.f : 0.f);
                     } else if (value.vector2fValue) {
-                        const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
-
                         combinedState = std::max(combinedState.value_or(-std::numeric_limits<float>::infinity()),
-                                                 value.vector2fIndex == 0 ? vector2fValue.x : vector2fValue.y);
+                                                 value.vector2fIndex == 0 ? value.vector2fValue[side].x
+                                                                          : value.vector2fValue[side].y);
                     }
                 }
             }
@@ -682,7 +681,7 @@ namespace virtualdesktop_openxr {
 
             const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
             state->lastChangeTime = state->changedSinceLastSync
-                                        ? pvrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
+                                        ? ovrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
                                         : xrAction.lastFloatValueChangedTime[subActionSide];
         } else {
             state->currentState = 0.0f;
@@ -766,12 +765,11 @@ namespace virtualdesktop_openxr {
             const int side = getActionSide(fullPath);
             if (isBound && side >= 0) {
                 if (m_isControllerActive[side] && value.vector2fValue) {
-                    const XrVector2f vector2fValue = handleJoystickDeadzone(value.vector2fValue[side]);
-
                     // Per spec, the combined state if the one of the vector with the longest length.
                     const float l1 = combinedState ? sqrt(combinedState.value().x * combinedState.value().x +
                                                           combinedState.value().y * combinedState.value().y)
                                                    : 0.f;
+                    const XrVector2f vector2fValue = {value.vector2fValue[side].x, value.vector2fValue[side].y};
                     const float l2 = sqrt(vector2fValue.x * vector2fValue.x + vector2fValue.y * vector2fValue.y);
                     if (l2 >= l1) {
                         combinedState = vector2fValue;
@@ -789,7 +787,7 @@ namespace virtualdesktop_openxr {
 
             const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
             state->lastChangeTime = state->changedSinceLastSync
-                                        ? pvrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
+                                        ? ovrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
                                         : xrAction.lastVector2fValueChangedTime[subActionSide];
         } else {
             state->currentState = {0.0f, 0.0f};
@@ -933,9 +931,7 @@ namespace virtualdesktop_openxr {
         }
 
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
-        CHECK_PVRCMD(pvr_getInputState(m_pvrSession, &m_cachedInputState));
-        bool wasRecenteringPressed = false;
-        bool wasSystemPressed = false;
+        CHECK_OVRCMD(ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &m_cachedInputState));
         for (uint32_t side = 0; side < 2; side++) {
             if (!doSide[side]) {
                 continue;
@@ -943,52 +939,24 @@ namespace virtualdesktop_openxr {
 
             TraceLoggingWrite(
                 g_traceProvider,
-                "PVR_InputState",
+                "OVR_InputState",
                 TLArg(side == 0 ? "Left" : "Right", "Side"),
                 TLArg(m_cachedInputState.TimeInSeconds, "TimeInSeconds"),
-                TLArg(m_cachedInputState.HandButtons[side], "ButtonPress"),
-                TLArg(m_cachedInputState.HandTouches[side], "ButtonTouches"),
-                TLArg(m_cachedInputState.Trigger[side], "Trigger"),
-                TLArg(m_cachedInputState.Grip[side], "Grip"),
-                TLArg(m_cachedInputState.GripForce[side], "GripForce"),
-                TLArg(fmt::format("{}, {}", m_cachedInputState.JoyStick[side].x, m_cachedInputState.JoyStick[side].y)
-                          .c_str(),
-                      "Joystick"),
-                TLArg(fmt::format("{}, {}", m_cachedInputState.TouchPad[side].x, m_cachedInputState.TouchPad[side].y)
-                          .c_str(),
-                      "Touchpad"),
-                TLArg(m_cachedInputState.TouchPadForce[side], "TouchpadForce"),
-                TLArg(m_cachedInputState.fingerIndex[side], "IndexFinger"),
-                TLArg(m_cachedInputState.fingerMiddle[side], "MiddleFinger"),
-                TLArg(m_cachedInputState.fingerRing[side], "RingFinger"),
-                TLArg(m_cachedInputState.fingerPinky[side], "PinkyFinger"));
+                TLArg(m_cachedInputState.Buttons & (side == 0 ? ovrButton_LMask : ovrButton_RMask), "Buttons"),
+                TLArg(m_cachedInputState.Touches & (side == 0 ? ovrTouch_LButtonMask : ovrTouch_RButtonMask),
+                      "Touches"),
+                TLArg(m_cachedInputState.IndexTrigger[side], "IndexTrigger"),
+                TLArg(m_cachedInputState.HandTrigger[side], "HandTrigger"),
+                TLArg(
+                    fmt::format("{}, {}", m_cachedInputState.Thumbstick[side].x, m_cachedInputState.Thumbstick[side].y)
+                        .c_str(),
+                    "Joystick"));
 
             // Look for changes in controller/interaction profiles.
             const auto lastControllerType = m_cachedControllerType[side];
-            const int size = pvr_getTrackedDeviceStringProperty(m_pvrSession,
-                                                                side == 0 ? pvrTrackedDevice_LeftController
-                                                                          : pvrTrackedDevice_RightController,
-                                                                pvrTrackedDeviceProp_ControllerType_String,
-                                                                nullptr,
-                                                                0);
-            m_isControllerActive[side] = size > 0;
-            if (m_isControllerActive[side]) {
-                if (m_debugControllerType.empty()) {
-                    m_cachedControllerType[side].resize(size, 0);
-                    pvr_getTrackedDeviceStringProperty(m_pvrSession,
-                                                       side == 0 ? pvrTrackedDevice_LeftController
-                                                                 : pvrTrackedDevice_RightController,
-                                                       pvrTrackedDeviceProp_ControllerType_String,
-                                                       m_cachedControllerType[side].data(),
-                                                       (int)m_cachedControllerType[side].size() + 1);
-                    // Remove trailing 0.
-                    m_cachedControllerType[side].resize(size - 1, 0);
-                } else {
-                    m_cachedControllerType[side] = m_debugControllerType;
-                }
-            } else {
-                m_cachedControllerType[side].clear();
-            }
+            // TODO: Hard-coded for now.
+            m_cachedControllerType[side] = "touch_controller";
+            m_isControllerActive[side] = true;
 
             if (lastControllerType != m_cachedControllerType[side] ||
                 m_forcedInteractionProfile != m_lastForcedInteractionProfile) {
@@ -998,36 +966,33 @@ namespace virtualdesktop_openxr {
                         side == 0 ? "Left" : "Right");
                 }
                 TraceLoggingWrite(g_traceProvider,
-                                  "PVR_ControllerType",
+                                  "OVR_ControllerType",
                                   TLArg(side == 0 ? "Left" : "Right", "Side"),
                                   TLArg(m_cachedControllerType[side].c_str(), "Type"));
                 rebindControllerActions(side);
             }
-
-            // Check for built-in actions.
-            wasRecenteringPressed =
-                wasRecenteringPressed || (((m_cachedInputState.HandButtons[side] & pvrButton_System) ||
-                                           (m_cachedInputState.HandButtons[side] & pvrButton_ApplicationMenu)) &&
-                                          (m_cachedInputState.HandButtons[side] & pvrButton_Trigger));
-            wasSystemPressed = wasSystemPressed || (m_cachedInputState.HandButtons[side] & pvrButton_System);
-
-            // When any built-in action is requested, block the unwanted input for the app.
-            if (wasRecenteringPressed || wasSystemPressed) {
-                m_cachedInputState.HandButtons[side] &= ~(pvrButton_ApplicationMenu | pvrButton_Trigger);
-                m_cachedInputState.HandTouches[side] &= ~(pvrButton_ApplicationMenu | pvrButton_Trigger);
-            }
-
-            // Propagate the input state to the entire action state.
-            for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
-                ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
-
-                xrActionSet.cachedInputState = m_cachedInputState;
-            }
         }
         m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
+        // Check for built-in actions.
+        bool wasSystemPressed = (m_cachedInputState.Buttons & ovrButton_Enter);
+        bool wasRecenteringPressed = (wasSystemPressed && m_cachedInputState.IndexTrigger[0] > 0.75f);
+
+        // When any built-in action is requested, block the unwanted input for the app.
+        if (wasRecenteringPressed || wasSystemPressed) {
+            m_cachedInputState.Buttons &= ~ovrButton_Enter;
+            m_cachedInputState.IndexTrigger[0] = 0.f;
+        }
+
+        // Propagate the input state to the entire action state.
+        for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
+            ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
+
+            xrActionSet.cachedInputState = m_cachedInputState;
+        }
+
         // Execute built-in actions.
-        handleBuiltinActions(wasRecenteringPressed, wasSystemPressed);
+        handleBuiltinActions(wasRecenteringPressed, !wasRecenteringPressed && wasSystemPressed);
         m_actionsSyncedThisFrame = true;
 
         return XR_SUCCESS;
@@ -1150,15 +1115,7 @@ namespace virtualdesktop_openxr {
                     if (needSpace) {
                         localizedName += " ";
                     }
-                    if (m_cachedControllerType[side] == "vive_controller") {
-                        localizedName += getViveControllerLocalizedSourceName(path);
-                    } else if (m_cachedControllerType[side] == "knuckles") {
-                        localizedName += getIndexControllerLocalizedSourceName(path);
-                    } else if (m_cachedControllerType[side] == "pimax_crystal") {
-                        localizedName += getCrystalControllerLocalizedSourceName(path);
-                    } else {
-                        localizedName += getSimpleControllerLocalizedSourceName(path);
-                    }
+                    localizedName += getTouchControllerLocalizedSourceName(path);
                     needSpace = true;
                 }
             }
@@ -1266,14 +1223,14 @@ namespace virtualdesktop_openxr {
                                           TLArg(vibration->frequency, "Frequency"),
                                           TLArg(vibration->duration, "Duration"));
 
-                        // NOTE: PVR only supports pulses, so there is nothing we can do with the
-                        // frequency/duration? OpenComposite seems to pass an amplitude of 0 sometimes, which is not
+                        // OpenComposite seems to pass an amplitude of 0 sometimes, which is not
                         // supported.
                         if (vibration->amplitude > 0) {
-                            CHECK_PVRCMD(pvr_triggerHapticPulse(m_pvrSession,
-                                                                side == 0 ? pvrTrackedDevice_LeftController
-                                                                          : pvrTrackedDevice_RightController,
-                                                                vibration->amplitude));
+                            CHECK_OVRCMD(ovr_SetControllerVibration(m_ovrSession,
+                                                                    side == 0 ? ovrControllerType_LTouch
+                                                                              : ovrControllerType_RTouch,
+                                                                    vibration->frequency,
+                                                                    vibration->amplitude));
                         }
                         break;
                     }
@@ -1374,35 +1331,8 @@ namespace virtualdesktop_openxr {
 
         if (!m_cachedControllerType[side].empty()) {
             // Identify the physical controller type.
-            if (m_cachedControllerType[side] == "vive_controller") {
-                preferredInteractionProfile = "/interaction_profiles/htc/vive_controller";
-                m_localizedControllerType[side] = "Vive Controller";
-                gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(8.f), 0, 0}),
-                                          XrVector3f{0, 0, 0});
-                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(5.f), 0, 0}),
-                                         XrVector3f{0, 0, -0.05f});
-            } else if (m_cachedControllerType[side] == "knuckles") {
-                preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
-                m_localizedControllerType[side] = "Index Controller";
-                gripPose =
-                    Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(20.f), 0, PVR::DegreeToRad(2.f)}),
-                                   XrVector3f{0, 0, 0});
-                aimPose = Pose::MakePose(
-                    Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-40.f), PVR::DegreeToRad(-15.f), 0}),
-                    XrVector3f{0, 0, -0.05f});
-            } else if (m_cachedControllerType[side] == "pimax_crystal") {
-                preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
-                m_localizedControllerType[side] = "Crystal Controller";
-                gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                              {PVR::DegreeToRad(40.f), PVR::DegreeToRad(5.f), PVR::DegreeToRad(10.f)}),
-                                          XrVector3f{0, 0, 0});
-                aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-5.f), 0, 0}),
-                                         XrVector3f{0, 0.03f, -0.06f});
-            } else {
-                // Fallback to simple controller.
-                preferredInteractionProfile = "/interaction_profiles/khr/simple_controller";
-                m_localizedControllerType[side] = "Controller";
-            }
+            preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+            m_localizedControllerType[side] = "Touch Controller";
 
             // Try to map with the preferred bindings.
             auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
@@ -1462,7 +1392,7 @@ namespace virtualdesktop_openxr {
 
                     Action& xrAction = *(Action*)binding.action;
 
-                    // Map to the PVR input state.
+                    // Map to the OVR input state.
                     ActionSource newSource{};
                     if (mapping(xrAction, binding.binding, newSource)) {
                         // Avoid duplicates.
@@ -1500,7 +1430,7 @@ namespace virtualdesktop_openxr {
                             };
                             newSource.buttonMap = (uint32_t*)relocatePointer((void*)newSource.buttonMap);
                             newSource.floatValue = (float*)relocatePointer((void*)newSource.floatValue);
-                            newSource.vector2fValue = (pvrVector2f*)relocatePointer((void*)newSource.vector2fValue);
+                            newSource.vector2fValue = (ovrVector2f*)relocatePointer((void*)newSource.vector2fValue);
 
                             xrAction.actionSources.insert_or_assign(sourcePath, newSource);
                         }
@@ -1592,18 +1522,8 @@ namespace virtualdesktop_openxr {
         return fullPath == "/user/eyes_ext/input/gaze_ext/pose" || fullPath == "/user/eyes_ext/input/gaze_ext";
     }
 
-    XrVector2f OpenXrRuntime::handleJoystickDeadzone(pvrVector2f raw) const {
-        const float length = std::sqrt(raw.x * raw.x + raw.y * raw.y);
-        if (length < m_joystickDeadzone) {
-            return {0, 0};
-        }
-        XrVector2f normalizedInput{raw.x / length, raw.y / length};
-        const float scaling = (length - m_joystickDeadzone) / (1 - m_joystickDeadzone);
-        return {normalizedInput.x * scaling, normalizedInput.y * scaling};
-    }
-
     void OpenXrRuntime::handleBuiltinActions(bool wasRecenteringPressed, bool wasSystemPressed) {
-        const auto now = pvr_getTimeSeconds(m_pvr);
+        const auto now = ovr_GetTimeInSeconds();
 
         wasRecenteringPressed =
             wasRecenteringPressed ||
@@ -1616,8 +1536,8 @@ namespace virtualdesktop_openxr {
                 // Requires a 2 seconds press.
                 if (now - m_isRecenteringPressed.value() >= 2.f) {
                     // Recenter view.
-                    TraceLoggingWrite(g_traceProvider, "PVR_RecenterTrackingOrigin");
-                    CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
+                    TraceLoggingWrite(g_traceProvider, "OVR_RecenterTrackingOrigin");
+                    CHECK_OVRCMD(ovr_RecenterTrackingOrigin(m_ovrSession));
                     m_isRecenteringPressed.reset();
                     m_isSystemPressed.reset();
                 }
@@ -1633,7 +1553,7 @@ namespace virtualdesktop_openxr {
                     if (now - m_isSystemPressed.value() >= 1.f) {
                         m_isOverlayVisible = !m_isOverlayVisible;
                         TraceLoggingWrite(
-                            g_traceProvider, "PVR_ToggleOverlay", TLArg(m_isOverlayVisible, "IsOverlayVisible"));
+                            g_traceProvider, "OVR_ToggleOverlay", TLArg(m_isOverlayVisible, "IsOverlayVisible"));
 
                         if (m_isOverlayVisible) {
                             // Spawn in front of the user.
@@ -1644,7 +1564,7 @@ namespace virtualdesktop_openxr {
                                 m_overlayPose = Pose::Multiply(Pose::Translation({0, 0, -1.f}), viewToOrigin);
 
                                 // Gravity align (remove roll).
-                                PVR::Quatf q = PVR::Quatf(m_overlayPose.orientation.x,
+                                OVR::Quatf q = OVR::Quatf(m_overlayPose.orientation.x,
                                                           m_overlayPose.orientation.y,
                                                           m_overlayPose.orientation.z,
                                                           m_overlayPose.orientation.w);

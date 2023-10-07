@@ -166,15 +166,14 @@ namespace virtualdesktop_openxr {
                 views[i].recommendedSwapchainSampleCount = 1;
 
                 // Recommend the resolution with distortion accounted for.
-                pvrFovPort fov;
+                ovrFovPort fov;
                 fov.UpTan = tan(m_cachedEyeFov[i].angleUp);
                 fov.DownTan = tan(-m_cachedEyeFov[i].angleDown);
                 fov.LeftTan = tan(-m_cachedEyeFov[i].angleLeft);
                 fov.RightTan = tan(m_cachedEyeFov[i].angleRight);
 
-                pvrSizei viewportSize;
-                CHECK_PVRCMD(
-                    pvr_getFovTextureSize(m_pvrSession, i == 0 ? pvrEye_Left : pvrEye_Right, fov, 1.f, &viewportSize));
+                const ovrSizei viewportSize =
+                    ovr_GetFovTextureSize(m_ovrSession, i == 0 ? ovrEye_Left : ovrEye_Right, fov, 1.f);
                 views[i].recommendedImageRectWidth = std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth);
                 views[i].recommendedImageRectHeight = std::min((uint32_t)viewportSize.h, views[i].maxImageRectHeight);
 
@@ -205,7 +204,7 @@ namespace virtualdesktop_openxr {
                                                         uint32_t formatCapacityInput,
                                                         uint32_t* formatCountOutput,
                                                         int64_t* formats) {
-        // We match desirables formats from the pvrTextureFormat lists.
+        // We match desirables formats from the ovrTextureFormat lists.
         static const DXGI_FORMAT d3dFormats[] = {
             // clang-format off
                 DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, // Prefer SRGB formats.
@@ -317,62 +316,65 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
-        pvrTextureSwapChainDesc desc{};
+        ovrTextureSwapChainDesc desc{};
 
-        desc.Format = isVulkanSession()   ? vkToPvrTextureFormat((VkFormat)createInfo->format)
-                      : isOpenGLSession() ? glToPvrTextureFormat((GLenum)createInfo->format)
-                                          : dxgiToPvrTextureFormat((DXGI_FORMAT)createInfo->format);
-        const auto dxgiFormatForSubmission = pvrToDxgiTextureFormat(desc.Format);
-        if (desc.Format == PVR_FORMAT_UNKNOWN) {
+        desc.Format = isVulkanSession()   ? vkToOvrTextureFormat((VkFormat)createInfo->format)
+                      : isOpenGLSession() ? glToOvrTextureFormat((GLenum)createInfo->format)
+                                          : dxgiToOvrTextureFormat((DXGI_FORMAT)createInfo->format);
+        const auto dxgiFormatForSubmission = ovrToDxgiTextureFormat(desc.Format);
+        if (desc.Format == OVR_FORMAT_UNKNOWN) {
             return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
         }
-        desc.MiscFlags = pvrTextureMisc_DX_Typeless; // OpenXR requires to return typeless texures.
+        desc.MiscFlags = ovrTextureMisc_DX_Typeless; // OpenXR requires to return typeless texures.
 
-        // Request a swapchain from PVR.
-        desc.Type = pvrTexture_2D;
+        // Request a swapchain from OVR.
+        desc.Type = ovrTexture_2D;
         desc.StaticImage = !!(createInfo->createFlags & XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT);
         desc.ArraySize = createInfo->arraySize;
         desc.Width = createInfo->width;
         desc.Height = createInfo->height;
         desc.MipLevels = createInfo->mipCount;
         if (desc.MipLevels > 1) {
-            desc.MiscFlags |= pvrTextureMisc_AllowGenerateMips;
+            desc.MiscFlags |= ovrTextureMisc_AllowGenerateMips;
+        }
+        if (createInfo->createFlags & XR_SWAPCHAIN_CREATE_PROTECTED_CONTENT_BIT) {
+            desc.MiscFlags |= ovrTextureMisc_ProtectedContent;
         }
         desc.SampleCount = createInfo->sampleCount;
 
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
-            desc.BindFlags |= pvrTextureBind_DX_RenderTarget;
+            desc.BindFlags |= ovrTextureBind_DX_RenderTarget;
         }
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            desc.BindFlags |= pvrTextureBind_DX_DepthStencil;
+            desc.BindFlags |= ovrTextureBind_DX_DepthStencil;
         }
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
-            desc.BindFlags |= pvrTextureBind_DX_UnorderedAccess;
+            desc.BindFlags |= ovrTextureBind_DX_UnorderedAccess;
         }
 
-        // There are situations in PVR where we cannot use the PVR swapchain alone:
-        // - PVR does not let you submit a slice of a texture array and always reads from the first slice.
+        // There are situations in OVR where we cannot use the OVR swapchain alone:
+        // - POVR does not let you submit a slice of a texture array and always reads from the first slice.
         //   To mitigate this, we will create several swapchains with ArraySize=1 and we will make copies during
         //   xrEndFrame().
 
-        pvrTextureSwapChain pvrSwapchain{};
-        CHECK_PVRCMD(pvr_createTextureSwapChainDX(m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &pvrSwapchain));
+        ovrTextureSwapChain ovrSwapchain{};
+        CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &ovrSwapchain));
 
         // Create the internal struct.
         Swapchain& xrSwapchain = *new Swapchain;
-        xrSwapchain.pvrSwapchain.push_back(pvrSwapchain);
-        CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, pvrSwapchain, &xrSwapchain.pvrSwapchainLength));
+        xrSwapchain.ovrSwapchain.push_back(ovrSwapchain);
+        CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, ovrSwapchain, &xrSwapchain.ovrSwapchainLength));
         xrSwapchain.slices.push_back({});
         xrSwapchain.lastProcessedIndex.push_back(-1);
         xrSwapchain.imagesResourceView.push_back({});
         xrSwapchain.renderTargetView.push_back({});
-        xrSwapchain.pvrDesc = desc;
+        xrSwapchain.ovrDesc = desc;
         xrSwapchain.xrDesc = *createInfo;
         xrSwapchain.dxgiFormatForSubmission = dxgiFormatForSubmission;
 
         // Lazily-filled state.
         for (int i = 1; i < desc.ArraySize; i++) {
-            xrSwapchain.pvrSwapchain.push_back(nullptr);
+            xrSwapchain.ovrSwapchain.push_back(nullptr);
             xrSwapchain.slices.push_back({});
             xrSwapchain.lastProcessedIndex.push_back(-1);
             xrSwapchain.imagesResourceView.push_back({});
@@ -420,12 +422,12 @@ namespace virtualdesktop_openxr {
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
-        while (!xrSwapchain.pvrSwapchain.empty()) {
-            auto pvrSwapchain = xrSwapchain.pvrSwapchain.back();
-            if (pvrSwapchain) {
-                pvr_destroyTextureSwapChain(m_pvrSession, pvrSwapchain);
+        while (!xrSwapchain.ovrSwapchain.empty()) {
+            auto ovrSwapchain = xrSwapchain.ovrSwapchain.back();
+            if (ovrSwapchain) {
+                ovr_DestroyTextureSwapChain(m_ovrSession, ovrSwapchain);
             }
-            xrSwapchain.pvrSwapchain.pop_back();
+            xrSwapchain.ovrSwapchain.pop_back();
         }
 
         while (!xrSwapchain.vkImages.empty()) {
@@ -479,7 +481,7 @@ namespace virtualdesktop_openxr {
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
-        int count = !xrSwapchain.pvrDesc.StaticImage ? xrSwapchain.pvrSwapchainLength : 1;
+        int count = !xrSwapchain.ovrDesc.StaticImage ? xrSwapchain.ovrSwapchainLength : 1;
 
         if (imageCapacityInput && imageCapacityInput < (uint32_t)count) {
             return XR_ERROR_SIZE_INSUFFICIENT;
@@ -526,22 +528,22 @@ namespace virtualdesktop_openxr {
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
         // Check that we can acquire an image.
-        if (xrSwapchain.frozen || xrSwapchain.acquiredIndices.size() == xrSwapchain.pvrSwapchainLength) {
+        if (xrSwapchain.frozen || xrSwapchain.acquiredIndices.size() == xrSwapchain.ovrSwapchainLength) {
             return XR_ERROR_CALL_ORDER_INVALID;
         }
 
-        // Query the image index from PVR.
+        // Query the image index from OVR.
         int imageIndex = xrSwapchain.nextIndex;
         if (xrSwapchain.acquiredIndices.empty()) {
             // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a
             // bug.
-            CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[0], &imageIndex));
+            CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(m_ovrSession, xrSwapchain.ovrSwapchain[0], &imageIndex));
         }
 
         xrSwapchain.acquiredIndices.push_back(imageIndex);
-        xrSwapchain.frozen = xrSwapchain.pvrDesc.StaticImage;
+        xrSwapchain.frozen = xrSwapchain.ovrDesc.StaticImage;
         xrSwapchain.nextIndex = imageIndex + 1;
-        if ((int)xrSwapchain.nextIndex >= xrSwapchain.pvrSwapchainLength) {
+        if ((int)xrSwapchain.nextIndex >= xrSwapchain.ovrSwapchainLength) {
             xrSwapchain.nextIndex = 0;
         }
         *index = imageIndex;
@@ -603,7 +605,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_CALL_ORDER_INVALID;
         }
 
-        // We will commit the texture to PVR during xrEndFrame() in order to handle texture arrays properly.
+        // We will commit the texture to OVR during xrEndFrame() in order to handle texture arrays properly.
         xrSwapchain.lastReleasedIndex = xrSwapchain.lastWaitedIndex;
         xrSwapchain.lastWaitedIndex = -1;
         xrSwapchain.acquiredIndices.pop_front();

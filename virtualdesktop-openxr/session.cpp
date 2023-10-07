@@ -59,8 +59,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
-        CHECK_MSG(ensurePvrSession(), "PVR session was lost");
-
         // Get the graphics device and initialize the necessary resources.
         bool hasGraphicsBindings = false;
         const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
@@ -136,9 +134,6 @@ namespace virtualdesktop_openxr {
         }
 
         // Read configuration and set up the session accordingly.
-        if (getSetting("recenter_on_startup").value_or(true)) {
-            CHECK_PVRCMD(pvr_recenterTrackingOrigin(m_pvrSession));
-        }
         refreshSettings();
 
         m_sessionCreated = true;
@@ -158,7 +153,7 @@ namespace virtualdesktop_openxr {
         rebindControllerActions(1);
         m_activeActionSets.clear();
 
-        m_sessionStartTime = pvr_getTimeSeconds(m_pvr);
+        m_sessionStartTime = ovr_GetTimeInSeconds();
         m_sessionTotalFrameCount = 0;
 
         try {
@@ -241,11 +236,11 @@ namespace virtualdesktop_openxr {
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
         }
         if (m_guardianSwapchain) {
-            pvr_destroyTextureSwapChain(m_pvrSession, m_guardianSwapchain);
+            ovr_DestroyTextureSwapChain(m_ovrSession, m_guardianSwapchain);
             m_guardianSwapchain = nullptr;
         }
         if (m_overlaySwapchain) {
-            pvr_destroyTextureSwapChain(m_pvrSession, m_overlaySwapchain);
+            ovr_DestroyTextureSwapChain(m_ovrSession, m_overlaySwapchain);
             m_overlaySwapchain = nullptr;
         }
         m_overlayBackground.Reset();
@@ -265,17 +260,6 @@ namespace virtualdesktop_openxr {
         m_sessionLossPending = false;
         m_sessionStopping = false;
         m_sessionExiting = false;
-
-        // Workaround: PVR ties the last use D3D device to the PVR session, and therefore we must teardown the previous
-        // PVR session to clear that state.
-        {
-            // Workaround: the environment doesn't appear to be cleared when re-initializing PVR. Clear the one pointer
-            // we care about.
-            m_pvrSession->envh->pvr_dxgl_interface = nullptr;
-
-            pvr_destroySession(m_pvrSession);
-            m_pvrSession = nullptr;
-        }
 
         return XR_SUCCESS;
     }
@@ -361,7 +345,7 @@ namespace virtualdesktop_openxr {
     // Update the session state machine.
     void OpenXrRuntime::updateSessionState(bool forceSendEvent) {
         if (forceSendEvent) {
-            m_sessionEventQueue.push_back(std::make_pair(m_sessionState, pvr_getTimeSeconds(m_pvr)));
+            m_sessionEventQueue.push_back(std::make_pair(m_sessionState, ovr_GetTimeInSeconds()));
         }
 
         while (true) {
@@ -411,7 +395,7 @@ namespace virtualdesktop_openxr {
                                   TLArg(xr::ToCString(oldSessionState), "From"),
                                   TLArg(xr::ToCString(m_sessionState), "To"));
 
-                m_sessionEventQueue.push_back(std::make_pair(m_sessionState, pvr_getTimeSeconds(m_pvr)));
+                m_sessionEventQueue.push_back(std::make_pair(m_sessionState, ovr_GetTimeInSeconds()));
             } else {
                 break;
             }
@@ -422,9 +406,6 @@ namespace virtualdesktop_openxr {
 
     // Read dynamic settings from the registry.
     void OpenXrRuntime::refreshSettings() {
-        // Value is in unit of hundredth.
-        m_joystickDeadzone = getSetting("joystick_deadzone").value_or(2) / 100.f;
-
         const auto forcedInteractionProfile = getSetting("force_interaction_profile").value_or(0);
         if (forcedInteractionProfile == 1) {
             m_forcedInteractionProfile = ForcedInteractionProfile::OculusTouchController;
@@ -433,8 +414,6 @@ namespace virtualdesktop_openxr {
         } else {
             m_forcedInteractionProfile.reset();
         }
-
-        m_useAnalogGrip = getSetting("analog_grip").value_or(true);
 
         if (getSetting("guardian").value_or(true)) {
             m_guardianThreshold = getSetting("guardian_threshold").value_or(1100) / 1e3f;
@@ -445,18 +424,18 @@ namespace virtualdesktop_openxr {
 
         const auto oldControllerAimOffset = m_controllerAimOffset;
         m_controllerAimOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("aim_pose_rot_z").value_or(0.f))}),
+            Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
+                                              OVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
+                                              OVR::DegreeToRad((float)getSetting("aim_pose_rot_z").value_or(0.f))}),
             XrVector3f{getSetting("aim_pose_offset_x").value_or(0.f) / 1000.f,
                        getSetting("aim_pose_offset_y").value_or(0.f) / 1000.f,
                        getSetting("aim_pose_offset_z").value_or(0.f) / 1000.f});
 
         const auto oldControllerGripOffset = m_controllerGripOffset;
         m_controllerGripOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({PVR::DegreeToRad((float)getSetting("grip_pose_rot_x").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("grip_pose_rot_y").value_or(0.f)),
-                                              PVR::DegreeToRad((float)getSetting("grip_pose_rot_z").value_or(0.f))}),
+            Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("grip_pose_rot_x").value_or(0.f)),
+                                              OVR::DegreeToRad((float)getSetting("grip_pose_rot_y").value_or(0.f)),
+                                              OVR::DegreeToRad((float)getSetting("grip_pose_rot_z").value_or(0.f))}),
             XrVector3f{getSetting("grip_pose_offset_x").value_or(0) / 1000.f,
                        getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
                        getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
@@ -477,7 +456,6 @@ namespace virtualdesktop_openxr {
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
-            TLArg(m_joystickDeadzone, "JoystickDeadzone"),
             TLArg((int)m_forcedInteractionProfile.value_or((ForcedInteractionProfile)-1), "ForcedInteractionProfile"),
             TLArg(m_guardianThreshold, "GuardianThreshold"),
             TLArg(m_guardianRadius, "GuardianRadius"),
@@ -508,39 +486,39 @@ namespace virtualdesktop_openxr {
 
         if (SUCCEEDED(hr)) {
             ComPtr<ID3D11Resource> texture;
-            hr = DirectX::CreateTexture(m_pvrSubmissionDevice.Get(),
+            hr = DirectX::CreateTexture(m_ovrSubmissionDevice.Get(),
                                         image->GetImages(),
                                         1,
                                         image->GetMetadata(),
                                         texture.ReleaseAndGetAddressOf());
 
             if (SUCCEEDED(hr)) {
-                // Create a PVR swapchain for the texture.
-                pvrTextureSwapChainDesc desc{};
-                desc.Type = pvrTexture_2D;
+                // Create an OVR swapchain for the texture.
+                ovrTextureSwapChainDesc desc{};
+                desc.Type = ovrTexture_2D;
                 desc.StaticImage = true;
                 desc.ArraySize = 1;
                 desc.Width = m_guardianExtent.width = (int)image->GetMetadata().width;
                 desc.Height = m_guardianExtent.height = (int)image->GetMetadata().height;
                 desc.MipLevels = (int)image->GetMetadata().mipLevels;
                 desc.SampleCount = 1;
-                desc.Format = dxgiToPvrTextureFormat(image->GetMetadata().format);
+                desc.Format = dxgiToOvrTextureFormat(image->GetMetadata().format);
 
-                CHECK_PVRCMD(pvr_createTextureSwapChainDX(
-                    m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &m_guardianSwapchain));
+                CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
+                    m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_guardianSwapchain));
 
                 // Copy and commit the guardian texture to the swapchain.
                 int imageIndex = -1;
-                CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_guardianSwapchain, &imageIndex));
+                CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(m_ovrSession, m_guardianSwapchain, &imageIndex));
                 ComPtr<ID3D11Texture2D> swapchainTexture;
-                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(m_pvrSession,
+                CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
                                                              m_guardianSwapchain,
                                                              imageIndex,
                                                              IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
 
-                m_pvrSubmissionContext->CopyResource(swapchainTexture.Get(), texture.Get());
-                m_pvrSubmissionContext->Flush();
-                CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_guardianSwapchain));
+                m_ovrSubmissionContext->CopyResource(swapchainTexture.Get(), texture.Get());
+                m_ovrSubmissionContext->Flush();
+                CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, m_guardianSwapchain));
             } else {
                 ErrorLog("Failed to create texture from guardian.png: %X\n");
             }
@@ -552,7 +530,7 @@ namespace virtualdesktop_openxr {
         m_guardianSpace = new Space;
         m_guardianSpace->referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
         m_guardianSpace->poseInSpace =
-            Pose::MakePose(Quaternion::RotationRollPitchYaw({PVR::DegreeToRad(-90.f), 0.f, 0.f}), XrVector3f{0, -1, 0});
+            Pose::MakePose(Quaternion::RotationRollPitchYaw({OVR::DegreeToRad(-90.f), 0.f, 0.f}), XrVector3f{0, -1, 0});
     }
 
 } // namespace virtualdesktop_openxr

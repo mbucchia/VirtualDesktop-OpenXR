@@ -108,9 +108,6 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreateInfoKHR* createInfo, VkDevice* vulkanDevice, VkResult* vulkanResult) = 0;
 		virtual XrResult xrGetVulkanGraphicsDevice2KHR(XrInstance instance, const XrVulkanGraphicsDeviceGetInfoKHR* getInfo, VkPhysicalDevice* vulkanPhysicalDevice) = 0;
 		virtual XrResult xrGetVulkanGraphicsRequirements2KHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements) = 0;
-		virtual XrResult xrCreateHandTrackerEXT(XrSession session, const XrHandTrackerCreateInfoEXT* createInfo, XrHandTrackerEXT* handTracker) = 0;
-		virtual XrResult xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) = 0;
-		virtual XrResult xrLocateHandJointsEXT(XrHandTrackerEXT handTracker, const XrHandJointsLocateInfoEXT* locateInfo, XrHandJointLocationsEXT* locations) = 0;
 		virtual XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) = 0;
 		virtual XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) = 0;
 		virtual XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) = 0;
@@ -130,11 +127,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_KHR_visibility_mask{false};
 		bool has_XR_KHR_win32_convert_performance_counter_time{false};
 		bool has_XR_FB_display_refresh_rate{false};
-		bool has_XR_EXT_hand_tracking{false};
-		bool has_XR_EXT_hand_joints_motion_range{false};
 		bool has_XR_EXT_eye_gaze_interaction{false};
-		bool has_XR_VARJO_quad_views{false};
-		bool has_XR_VARJO_foveated_rendering{false};
 
 
 	};

@@ -24,7 +24,7 @@
 
 #include "pch.h"
 
-#define CHECK_PVRCMD(cmd) xr::detail::_CheckPVRResult(cmd, #cmd, FILE_AND_LINE)
+#define CHECK_OVRCMD(cmd) xr::detail::_CheckOVRResult(cmd, #cmd, FILE_AND_LINE)
 #define CHECK_VKCMD(cmd) xr::detail::_CheckVKResult(cmd, #cmd, FILE_AND_LINE)
 
 namespace xr {
@@ -32,7 +32,7 @@ namespace xr {
         return fmt::format("{}.{}.{}", XR_VERSION_MAJOR(version), XR_VERSION_MINOR(version), XR_VERSION_PATCH(version));
     }
 
-    static inline std::string ToString(const pvrPosef& pose) {
+    static inline std::string ToString(const ovrPosef& pose) {
         return fmt::format("p: ({:.3f}, {:.3f}, {:.3f}), o:({:.3f}, {:.3f}, {:.3f}, {:.3f})",
                            pose.Position.x,
                            pose.Position.y,
@@ -54,7 +54,7 @@ namespace xr {
                            pose.orientation.w);
     }
 
-    static inline std::string ToString(const pvrVector3f& vec) {
+    static inline std::string ToString(const ovrVector3f& vec) {
         return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
     }
 
@@ -62,7 +62,7 @@ namespace xr {
         return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
     }
 
-    static inline std::string ToString(const pvrVector2f& vec) {
+    static inline std::string ToString(const ovrVector2f& vec) {
         return fmt::format("({:.3f}, {:.3f})", vec.x, vec.y);
     }
 
@@ -77,46 +77,6 @@ namespace xr {
 
     static inline std::string ToString(const XrRect2Di& rect) {
         return fmt::format("x:{}, y:{} w:{} h:{}", rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height);
-    }
-
-    static inline std::string ToString(pvrResult result) {
-        switch (result) {
-        case pvr_success:
-            return "Success";
-        case pvr_failed:
-            return "Failed";
-        case pvr_dll_failed:
-            return "DLL Failed";
-        case pvr_dll_wrong:
-            return "DLL Wrong";
-        case pvr_interface_not_found:
-            return "Interface not found";
-        case pvr_invalid_param:
-            return "Invalid Parameter";
-        case pvr_rpc_failed:
-            return "RPC Failed";
-        case pvr_share_mem_failed:
-            return "Share Memory Failed";
-        case pvr_unsupport_render_name:
-            return "Unsupported Render Name";
-        case pvr_no_display:
-            return "No Display";
-        case pvr_no_render_device:
-            return "No Render Device";
-        case pvr_app_not_visible:
-            return "App Not Visible";
-        case pvr_srv_not_ready:
-            return "Service Not Ready";
-        case pvr_dll_srv_mismatch:
-            return "DLL Mismatch";
-        case pvr_app_adapter_mismatch:
-            return "App Adapter Mismatch";
-        case pvr_not_support:
-            return "Not Supported";
-
-        default:
-            return fmt::format("pvrResult_{}", result);
-        }
     }
 
     namespace math {
@@ -135,88 +95,24 @@ namespace xr {
 
         } // namespace Pose
 
-        namespace Fov {
-
-            static inline std::pair<float, float> Scale(std::pair<float, float> angles, float scale) {
-                assert(angles.second > angles.first);
-                const float angleCenter = (angles.first + angles.second) / 2;
-                const float angleSpread = angles.second - angles.first;
-                const float angleSpreadScaled = angleSpread * scale;
-                const float angleLowerScaled = angleCenter - (angleSpreadScaled / 2);
-                const float angleUpperScaled = angleCenter + (angleSpreadScaled / 2);
-
-                return std::make_pair(angleLowerScaled, angleUpperScaled);
-            };
-
-            static inline std::pair<float, float> Lerp(std::pair<float, float> range,
-                                                       std::pair<float, float> angles,
-                                                       float lerp) {
-                assert(angles.second > angles.first);
-                assert(range.second > range.first);
-                const float rangeSpread = range.second - range.first;
-                const float angleSpread = angles.second - angles.first;
-                const float lerpedCenter = range.first + lerp * rangeSpread;
-                float angleLower = lerpedCenter - angleSpread / 2.f;
-                float angleUpper = lerpedCenter + angleSpread / 2.f;
-
-                // Clamp to the FOV boundaries.
-                if (angleUpper > range.second) {
-                    angleUpper = range.second;
-                    angleLower = angleUpper - angleSpread;
-                } else if (angleLower < range.first) {
-                    angleLower = range.first;
-                    angleUpper = angleLower + angleSpread;
-                }
-
-                return std::make_pair(angleLower, angleUpper);
-            };
-
-        } // namespace Fov
-
-        static bool ProjectPoint(const XrView& eyeInViewSpace,
-                                 const XrVector3f& forward,
-                                 XrVector2f& projectedPosition) {
-            // 1) Compute the view space to camera transform for this eye.
-            const auto cameraProjection = xr::math::ComposeProjectionMatrix(eyeInViewSpace.fov, {0.001f, 100.f});
-            const auto cameraView = xr::math::LoadXrPose(eyeInViewSpace.pose);
-            const auto viewToCamera = DirectX::XMMatrixMultiply(cameraProjection, cameraView);
-
-            // 2) Transform the 3D point to camera space.
-            const auto projectedInCameraSpace =
-                DirectX::XMVector3Transform(DirectX::XMVectorSet(forward.x, forward.y, forward.z, 1.f), viewToCamera);
-
-            // 3) Project the 3D point in camera space to a 2D point in normalized device coordinates.
-            XrVector4f point;
-            xr::math::StoreXrVector4(&point, projectedInCameraSpace);
-            if (std::abs(point.w) < FLT_EPSILON) {
-                return false;
-            }
-
-            // 4) Output NDC (-1,+1)
-            projectedPosition.x = point.x / point.w;
-            projectedPosition.y = point.y / point.w;
-
-            return true;
-        }
-
     } // namespace math
 
     namespace detail {
 
-        [[noreturn]] static inline void _ThrowPVRResult(pvrResult pvr,
+        [[noreturn]] static inline void _ThrowOVRResult(ovrResult ovr,
                                                         const char* originator = nullptr,
                                                         const char* sourceLocation = nullptr) {
-            xr::detail::_Throw(xr::detail::_Fmt("pvrResult failure [%d]", pvr), originator, sourceLocation);
+            xr::detail::_Throw(xr::detail::_Fmt("ovrResult failure [%d]", ovr), originator, sourceLocation);
         }
 
-        static inline HRESULT _CheckPVRResult(pvrResult pvr,
+        static inline HRESULT _CheckOVRResult(ovrResult ovr,
                                               const char* originator = nullptr,
                                               const char* sourceLocation = nullptr) {
-            if (pvr != pvr_success) {
-                xr::detail::_ThrowPVRResult(pvr, originator, sourceLocation);
+            if (OVR_FAILURE(ovr)) {
+                xr::detail::_ThrowOVRResult(ovr, originator, sourceLocation);
             }
 
-            return pvr;
+            return ovr;
         }
 
         [[noreturn]] static inline void _ThrowVKResult(VkResult vks,
@@ -433,45 +329,45 @@ namespace virtualdesktop_openxr::utils {
         return list;
     }
 
-    static inline XrTime pvrTimeToXrTime(double pvrTime) {
-        return (XrTime)(pvrTime * 1e9);
+    static inline XrTime ovrTimeToXrTime(double ovrTime) {
+        return (XrTime)(ovrTime * 1e9);
     }
 
-    static inline double xrTimeToPvrTime(XrTime xrTime) {
+    static inline double xrTimeToOvrTime(XrTime xrTime) {
         return xrTime / 1e9;
     }
 
-    static inline XrPosef pvrPoseToXrPose(const pvrPosef& pvrPose) {
+    static inline XrPosef ovrPoseToXrPose(const ovrPosef& ovrPose) {
         XrPosef xrPose;
-        xrPose.position.x = pvrPose.Position.x;
-        xrPose.position.y = pvrPose.Position.y;
-        xrPose.position.z = pvrPose.Position.z;
-        xrPose.orientation.x = pvrPose.Orientation.x;
-        xrPose.orientation.y = pvrPose.Orientation.y;
-        xrPose.orientation.z = pvrPose.Orientation.z;
-        xrPose.orientation.w = pvrPose.Orientation.w;
+        xrPose.position.x = ovrPose.Position.x;
+        xrPose.position.y = ovrPose.Position.y;
+        xrPose.position.z = ovrPose.Position.z;
+        xrPose.orientation.x = ovrPose.Orientation.x;
+        xrPose.orientation.y = ovrPose.Orientation.y;
+        xrPose.orientation.z = ovrPose.Orientation.z;
+        xrPose.orientation.w = ovrPose.Orientation.w;
 
         return xrPose;
     }
 
-    static inline pvrPosef xrPoseToPvrPose(const XrPosef& xrPose) {
-        pvrPosef pvrPose;
-        pvrPose.Position.x = xrPose.position.x;
-        pvrPose.Position.y = xrPose.position.y;
-        pvrPose.Position.z = xrPose.position.z;
-        pvrPose.Orientation.x = xrPose.orientation.x;
-        pvrPose.Orientation.y = xrPose.orientation.y;
-        pvrPose.Orientation.z = xrPose.orientation.z;
-        pvrPose.Orientation.w = xrPose.orientation.w;
+    static inline ovrPosef xrPoseToOvrPose(const XrPosef& xrPose) {
+        ovrPosef ovrPose;
+        ovrPose.Position.x = xrPose.position.x;
+        ovrPose.Position.y = xrPose.position.y;
+        ovrPose.Position.z = xrPose.position.z;
+        ovrPose.Orientation.x = xrPose.orientation.x;
+        ovrPose.Orientation.y = xrPose.orientation.y;
+        ovrPose.Orientation.z = xrPose.orientation.z;
+        ovrPose.Orientation.w = xrPose.orientation.w;
 
-        return pvrPose;
+        return ovrPose;
     }
 
-    static inline XrVector3f pvrVector3dToXrVector3f(const pvrVector3f& pvrVector3f) {
+    static inline XrVector3f ovrVector3dToXrVector3f(const ovrVector3f& ovrVector3f) {
         XrVector3f xrVector3f;
-        xrVector3f.x = pvrVector3f.x;
-        xrVector3f.y = pvrVector3f.y;
-        xrVector3f.z = pvrVector3f.z;
+        xrVector3f.x = ovrVector3f.x;
+        xrVector3f.y = ovrVector3f.y;
+        xrVector3f.z = ovrVector3f.z;
 
         return xrVector3f;
     }
@@ -513,107 +409,107 @@ namespace virtualdesktop_openxr::utils {
         return false;
     }
 
-    static pvrTextureFormat dxgiToPvrTextureFormat(DXGI_FORMAT format) {
+    static ovrTextureFormat dxgiToOvrTextureFormat(DXGI_FORMAT format) {
         switch (format) {
         case DXGI_FORMAT_R8G8B8A8_UNORM:
-            return PVR_FORMAT_R8G8B8A8_UNORM;
+            return OVR_FORMAT_R8G8B8A8_UNORM;
         case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            return PVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+            return OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
         case DXGI_FORMAT_B8G8R8A8_UNORM:
-            return PVR_FORMAT_B8G8R8A8_UNORM;
+            return OVR_FORMAT_B8G8R8A8_UNORM;
         case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            return PVR_FORMAT_B8G8R8A8_UNORM_SRGB;
+            return OVR_FORMAT_B8G8R8A8_UNORM_SRGB;
         case DXGI_FORMAT_B8G8R8X8_UNORM:
-            return PVR_FORMAT_B8G8R8X8_UNORM;
+            return OVR_FORMAT_B8G8R8X8_UNORM;
         case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-            return PVR_FORMAT_B8G8R8X8_UNORM_SRGB;
+            return OVR_FORMAT_B8G8R8X8_UNORM_SRGB;
         case DXGI_FORMAT_R16G16B16A16_FLOAT:
-            return PVR_FORMAT_R16G16B16A16_FLOAT;
+            return OVR_FORMAT_R16G16B16A16_FLOAT;
         case DXGI_FORMAT_D16_UNORM:
-            return PVR_FORMAT_D16_UNORM;
+            return OVR_FORMAT_D16_UNORM;
         case DXGI_FORMAT_D24_UNORM_S8_UINT:
-            return PVR_FORMAT_D24_UNORM_S8_UINT;
+            return OVR_FORMAT_D24_UNORM_S8_UINT;
         case DXGI_FORMAT_D32_FLOAT:
-            return PVR_FORMAT_D32_FLOAT;
+            return OVR_FORMAT_D32_FLOAT;
         case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-            return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
+            return OVR_FORMAT_D32_FLOAT_S8X24_UINT;
         default:
-            return PVR_FORMAT_UNKNOWN;
+            return OVR_FORMAT_UNKNOWN;
         }
     }
 
-    static DXGI_FORMAT pvrToDxgiTextureFormat(pvrTextureFormat format) {
+    static DXGI_FORMAT ovrToDxgiTextureFormat(ovrTextureFormat format) {
         switch (format) {
-        case PVR_FORMAT_R8G8B8A8_UNORM:
+        case OVR_FORMAT_R8G8B8A8_UNORM:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case PVR_FORMAT_R8G8B8A8_UNORM_SRGB:
+        case OVR_FORMAT_R8G8B8A8_UNORM_SRGB:
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-        case PVR_FORMAT_B8G8R8A8_UNORM:
+        case OVR_FORMAT_B8G8R8A8_UNORM:
             return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case PVR_FORMAT_B8G8R8A8_UNORM_SRGB:
+        case OVR_FORMAT_B8G8R8A8_UNORM_SRGB:
             return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-        case PVR_FORMAT_B8G8R8X8_UNORM:
+        case OVR_FORMAT_B8G8R8X8_UNORM:
             return DXGI_FORMAT_B8G8R8X8_UNORM;
-        case PVR_FORMAT_B8G8R8X8_UNORM_SRGB:
+        case OVR_FORMAT_B8G8R8X8_UNORM_SRGB:
             return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-        case PVR_FORMAT_R16G16B16A16_FLOAT:
+        case OVR_FORMAT_R16G16B16A16_FLOAT:
             return DXGI_FORMAT_R16G16B16A16_FLOAT;
-        case PVR_FORMAT_D16_UNORM:
+        case OVR_FORMAT_D16_UNORM:
             return DXGI_FORMAT_D16_UNORM;
-        case PVR_FORMAT_D24_UNORM_S8_UINT:
+        case OVR_FORMAT_D24_UNORM_S8_UINT:
             return DXGI_FORMAT_D24_UNORM_S8_UINT;
-        case PVR_FORMAT_D32_FLOAT:
+        case OVR_FORMAT_D32_FLOAT:
             return DXGI_FORMAT_D32_FLOAT;
-        case PVR_FORMAT_D32_FLOAT_S8X24_UINT:
+        case OVR_FORMAT_D32_FLOAT_S8X24_UINT:
             return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
         default:
             return DXGI_FORMAT_UNKNOWN;
         }
     }
 
-    static pvrTextureFormat vkToPvrTextureFormat(VkFormat format) {
+    static ovrTextureFormat vkToOvrTextureFormat(VkFormat format) {
         switch (format) {
         case VK_FORMAT_R8G8B8A8_UNORM:
-            return PVR_FORMAT_R8G8B8A8_UNORM;
+            return OVR_FORMAT_R8G8B8A8_UNORM;
         case VK_FORMAT_R8G8B8A8_SRGB:
-            return PVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+            return OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
         case VK_FORMAT_B8G8R8A8_UNORM:
-            return PVR_FORMAT_B8G8R8A8_UNORM;
+            return OVR_FORMAT_B8G8R8A8_UNORM;
         case VK_FORMAT_B8G8R8A8_SRGB:
-            return PVR_FORMAT_B8G8R8A8_UNORM_SRGB;
+            return OVR_FORMAT_B8G8R8A8_UNORM_SRGB;
         case VK_FORMAT_R16G16B16A16_SFLOAT:
-            return PVR_FORMAT_R16G16B16A16_FLOAT;
+            return OVR_FORMAT_R16G16B16A16_FLOAT;
         case VK_FORMAT_D16_UNORM:
-            return PVR_FORMAT_D16_UNORM;
+            return OVR_FORMAT_D16_UNORM;
         case VK_FORMAT_D24_UNORM_S8_UINT:
-            return PVR_FORMAT_D24_UNORM_S8_UINT;
+            return OVR_FORMAT_D24_UNORM_S8_UINT;
         case VK_FORMAT_D32_SFLOAT:
-            return PVR_FORMAT_D32_FLOAT;
+            return OVR_FORMAT_D32_FLOAT;
         case VK_FORMAT_D32_SFLOAT_S8_UINT:
-            return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
+            return OVR_FORMAT_D32_FLOAT_S8X24_UINT;
         default:
-            return PVR_FORMAT_UNKNOWN;
+            return OVR_FORMAT_UNKNOWN;
         }
     }
 
-    static pvrTextureFormat glToPvrTextureFormat(GLenum format) {
+    static ovrTextureFormat glToOvrTextureFormat(GLenum format) {
         switch (format) {
         case GL_RGBA8:
-            return PVR_FORMAT_R8G8B8A8_UNORM;
+            return OVR_FORMAT_R8G8B8A8_UNORM;
         case GL_SRGB8_ALPHA8:
-            return PVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+            return OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
         case GL_RGBA16F:
-            return PVR_FORMAT_R16G16B16A16_FLOAT;
+            return OVR_FORMAT_R16G16B16A16_FLOAT;
         case GL_DEPTH_COMPONENT16:
-            return PVR_FORMAT_D16_UNORM;
+            return OVR_FORMAT_D16_UNORM;
         case GL_DEPTH24_STENCIL8:
-            return PVR_FORMAT_D24_UNORM_S8_UINT;
+            return OVR_FORMAT_D24_UNORM_S8_UINT;
         case GL_DEPTH_COMPONENT32F:
-            return PVR_FORMAT_D32_FLOAT;
+            return OVR_FORMAT_D32_FLOAT;
         case GL_DEPTH32F_STENCIL8:
-            return PVR_FORMAT_D32_FLOAT_S8X24_UINT;
+            return OVR_FORMAT_D32_FLOAT_S8X24_UINT;
         default:
-            return PVR_FORMAT_UNKNOWN;
+            return OVR_FORMAT_UNKNOWN;
         }
     }
 
@@ -636,7 +532,7 @@ namespace virtualdesktop_openxr::utils {
         }
     }
 
-    static inline bool isValidSwapchainRect(pvrTextureSwapChainDesc desc, XrRect2Di rect) {
+    static inline bool isValidSwapchainRect(ovrTextureSwapChainDesc desc, XrRect2Di rect) {
         if (rect.offset.x < 0 || rect.offset.y < 0 || rect.extent.width <= 0 || rect.extent.height <= 0) {
             return false;
         }

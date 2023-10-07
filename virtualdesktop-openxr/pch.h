@@ -71,11 +71,10 @@ using Microsoft::WRL::ComPtr;
 #include <GL/glext.h>
 #include <GL/wglext.h>
 
-// Pimax SDK
-#include <PVR.h>
-#include <PVR_API_D3D.h>
-#include <PVR_Math.h>
-#include <PVR_Platform.h>
+// LibOVR.
+#include <OVR_CAPI.h>
+#include <OVR_CAPI_D3D.h>
+#include <OVR_Math.h>
 
 // OpenXR + Windows-specific definitions.
 #define XR_NO_PROTOTYPES

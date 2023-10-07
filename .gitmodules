@@ -16,3 +16,6 @@
 [submodule "external/Vulkan-SDK"]
 	path = external/Vulkan-SDK
 	url = https://github.com/mbucchia/Vulkan-SDK.git
+[submodule "external/LibOVR"]
+	path = external/LibOVR
+	url = https://github.com/mbucchia/LibOVR.git

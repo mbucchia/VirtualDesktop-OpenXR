@@ -15,6 +15,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{73ee9eb9-ee06-4f4a-8e05-87a550165032}</UniqueIdentifier>
     </Filter>
+    <Filter Include="LibOVR">
+      <UniqueIdentifier>{b687f67d-45a3-42eb-8b4a-b3d206ed8c73}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -40,6 +43,24 @@
     </ClInclude>
     <ClInclude Include="gpu_timers.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_D3D.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Keys.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_ErrorCode.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h">
+      <Filter>LibOVR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +132,15 @@
     </ClCompile>
     <ClCompile Include="overlay.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPIShim.c">
+      <Filter>LibOVR</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPI_Util.cpp">
+      <Filter>LibOVR</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\LibOVR\Shim\OVR_StereoProjection.cpp">
+      <Filter>LibOVR</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

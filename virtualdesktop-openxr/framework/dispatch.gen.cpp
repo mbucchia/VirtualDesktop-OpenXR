@@ -1424,69 +1424,6 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
-	XrResult XRAPI_CALL xrCreateHandTrackerEXT(XrSession session, const XrHandTrackerCreateInfoEXT* createInfo, XrHandTrackerEXT* handTracker) {
-		TraceLocalActivity(local);
-		TraceLoggingWriteStart(local, "xrCreateHandTrackerEXT");
-
-		XrResult result;
-		try {
-			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateHandTrackerEXT(session, createInfo, handTracker);
-		} catch (std::exception& exc) {
-			TraceLoggingWriteTagged(local, "xrCreateHandTrackerEXT_Error", TLArg(exc.what(), "Error"));
-			ErrorLog("xrCreateHandTrackerEXT: %s\n", exc.what());
-			result = XR_ERROR_RUNTIME_FAILURE;
-		}
-
-		TraceLoggingWriteStop(local, "xrCreateHandTrackerEXT", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
-			ErrorLog("xrCreateHandTrackerEXT failed with %s\n", xr::ToCString(result));
-		}
-
-		return result;
-	}
-
-	XrResult XRAPI_CALL xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) {
-		TraceLocalActivity(local);
-		TraceLoggingWriteStart(local, "xrDestroyHandTrackerEXT");
-
-		XrResult result;
-		try {
-			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyHandTrackerEXT(handTracker);
-		} catch (std::exception& exc) {
-			TraceLoggingWriteTagged(local, "xrDestroyHandTrackerEXT_Error", TLArg(exc.what(), "Error"));
-			ErrorLog("xrDestroyHandTrackerEXT: %s\n", exc.what());
-			result = XR_ERROR_RUNTIME_FAILURE;
-		}
-
-		TraceLoggingWriteStop(local, "xrDestroyHandTrackerEXT", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
-			ErrorLog("xrDestroyHandTrackerEXT failed with %s\n", xr::ToCString(result));
-		}
-
-		return result;
-	}
-
-	XrResult XRAPI_CALL xrLocateHandJointsEXT(XrHandTrackerEXT handTracker, const XrHandJointsLocateInfoEXT* locateInfo, XrHandJointLocationsEXT* locations) {
-		TraceLocalActivity(local);
-		TraceLoggingWriteStart(local, "xrLocateHandJointsEXT");
-
-		XrResult result;
-		try {
-			result = RUNTIME_NAMESPACE::GetInstance()->xrLocateHandJointsEXT(handTracker, locateInfo, locations);
-		} catch (std::exception& exc) {
-			TraceLoggingWriteTagged(local, "xrLocateHandJointsEXT_Error", TLArg(exc.what(), "Error"));
-			ErrorLog("xrLocateHandJointsEXT: %s\n", exc.what());
-			result = XR_ERROR_RUNTIME_FAILURE;
-		}
-
-		TraceLoggingWriteStop(local, "xrLocateHandJointsEXT", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
-			ErrorLog("xrLocateHandJointsEXT failed with %s\n", xr::ToCString(result));
-		}
-
-		return result;
-	}
-
 	XrResult XRAPI_CALL xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrEnumerateDisplayRefreshRatesFB");
@@ -1759,15 +1696,6 @@ namespace RUNTIME_NAMESPACE {
 		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrGetVulkanGraphicsRequirements2KHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirements2KHR);
 		}
-		else if (has_XR_EXT_hand_tracking && apiName == "xrCreateHandTrackerEXT") {
-			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateHandTrackerEXT);
-		}
-		else if (has_XR_EXT_hand_tracking && apiName == "xrDestroyHandTrackerEXT") {
-			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrDestroyHandTrackerEXT);
-		}
-		else if (has_XR_EXT_hand_tracking && apiName == "xrLocateHandJointsEXT") {
-			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrLocateHandJointsEXT);
-		}
 		else if (has_XR_FB_display_refresh_rate && apiName == "xrEnumerateDisplayRefreshRatesFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrEnumerateDisplayRefreshRatesFB);
 		}
@@ -1815,20 +1743,8 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_FB_display_refresh_rate") {
 			has_XR_FB_display_refresh_rate = true;
 		}
-		else if (extensionName == "XR_EXT_hand_tracking") {
-			has_XR_EXT_hand_tracking = true;
-		}
-		else if (extensionName == "XR_EXT_hand_joints_motion_range") {
-			has_XR_EXT_hand_joints_motion_range = true;
-		}
 		else if (extensionName == "XR_EXT_eye_gaze_interaction") {
 			has_XR_EXT_eye_gaze_interaction = true;
-		}
-		else if (extensionName == "XR_VARJO_quad_views") {
-			has_XR_VARJO_quad_views = true;
-		}
-		else if (extensionName == "XR_VARJO_foveated_rendering") {
-			has_XR_VARJO_foveated_rendering = true;
 		}
 
 	}

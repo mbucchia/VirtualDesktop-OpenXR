@@ -31,7 +31,7 @@
 #include "FullScreenQuadVS.h"
 #include "PassthroughPS.h"
 
-// Implements native support to submit swapchains to PVR.
+// Implements native support to submit swapchains to OVR.
 // Implements the necessary support for the XR_KHR_D3D11_enable extension:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_D3D11_enable
 
@@ -70,9 +70,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        // Get the display device LUID.
-        fillDisplayDeviceInfo();
-
         memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
         graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
@@ -86,7 +83,7 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    // Initialize all the resources needed for D3D11 support, both on the API frontend and also the runtime/PVR backend.
+    // Initialize all the resources needed for D3D11 support, both on the API frontend and also the runtime/OVR backend.
     XrResult OpenXrRuntime::initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings) {
         if (!d3dBindings.device) {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
@@ -119,34 +116,34 @@ namespace virtualdesktop_openxr {
                 g_traceProvider, "xrCreateSession", TLArg("D3D11", "Api"), TLArg(deviceName.c_str(), "AdapterName"));
             Log("Using D3D11 on adapter: %s\n", deviceName.c_str());
 
-            m_pvrSubmissionDevice = m_d3d11Device;
-            m_pvrSubmissionContext = m_d3d11Context;
+            m_ovrSubmissionDevice = m_d3d11Device;
+            m_ovrSubmissionContext = m_d3d11Context;
 
             UINT creationFlags = 0;
-            if (m_pvrSubmissionDevice->GetCreationFlags() & D3D11_CREATE_DEVICE_SINGLETHREADED) {
+            if (m_ovrSubmissionDevice->GetCreationFlags() & D3D11_CREATE_DEVICE_SINGLETHREADED) {
                 creationFlags |= D3D11_1_CREATE_DEVICE_CONTEXT_STATE_SINGLETHREADED;
             }
-            const D3D_FEATURE_LEVEL featureLevel = m_pvrSubmissionDevice->GetFeatureLevel();
+            const D3D_FEATURE_LEVEL featureLevel = m_ovrSubmissionDevice->GetFeatureLevel();
 
             CHECK_HRCMD(
-                m_pvrSubmissionDevice->CreateDeviceContextState(creationFlags,
+                m_ovrSubmissionDevice->CreateDeviceContextState(creationFlags,
                                                                 &featureLevel,
                                                                 1,
                                                                 D3D11_SDK_VERSION,
                                                                 __uuidof(ID3D11Device),
                                                                 nullptr,
-                                                                m_pvrSubmissionContextState.ReleaseAndGetAddressOf()));
+                                                                m_ovrSubmissionContextState.ReleaseAndGetAddressOf()));
 
             initializeSubmissionResources();
         } else {
-            // Create the resources that PVR will be using.
+            // Create the resources that OVR will be using.
             initializeSubmissionDevice("D3D11");
         }
 
-        // We will use a shared fence to synchronize between the application context and the PVR (submission) context
+        // We will use a shared fence to synchronize between the application context and the OVR (submission) context
         // context.
         wil::unique_handle fenceHandle;
-        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
+        CHECK_HRCMD(m_ovrSubmissionFence->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, fenceHandle.put()));
         CHECK_HRCMD(
             m_d3d11Device->OpenSharedFence(fenceHandle.get(), IID_PPV_ARGS(m_d3d11Fence.ReleaseAndGetAddressOf())));
         *m_eventForSubmissionFence.put() = CreateEventEx(nullptr, L"Submission Fence", 0, EVENT_ALL_ACCESS);
@@ -159,7 +156,7 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    // Initialize all the resources for the PVR backend.
+    // Initialize all the resources for the OVR backend.
     void OpenXrRuntime::initializeSubmissionDevice(const std::string& appGraphicsApi) {
         ComPtr<IDXGIFactory1> dxgiFactory;
         CHECK_HRCMD(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
@@ -184,7 +181,7 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        // Create the submission device that PVR will be using.
+        // Create the submission device that OVR will be using.
         ComPtr<ID3D11Device> device;
         ComPtr<ID3D11DeviceContext> deviceContext;
         D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
@@ -204,31 +201,31 @@ namespace virtualdesktop_openxr {
                                       deviceContext.ReleaseAndGetAddressOf()));
 
         // Query the necessary flavors of device & device context, which will let use use fences.
-        CHECK_HRCMD(device->QueryInterface(m_pvrSubmissionDevice.ReleaseAndGetAddressOf()));
-        CHECK_HRCMD(deviceContext->QueryInterface(m_pvrSubmissionContext.ReleaseAndGetAddressOf()));
+        CHECK_HRCMD(device->QueryInterface(m_ovrSubmissionDevice.ReleaseAndGetAddressOf()));
+        CHECK_HRCMD(deviceContext->QueryInterface(m_ovrSubmissionContext.ReleaseAndGetAddressOf()));
 
         initializeSubmissionResources();
     }
 
     void OpenXrRuntime::initializeSubmissionResources() {
         // Create the synchronization fence to serialize work between the application device and submission device.
-        CHECK_HRCMD(m_pvrSubmissionDevice->CreateFence(
-            0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_pvrSubmissionFence.ReleaseAndGetAddressOf())));
+        CHECK_HRCMD(m_ovrSubmissionDevice->CreateFence(
+            0, D3D11_FENCE_FLAG_SHARED, IID_PPV_ARGS(m_ovrSubmissionFence.ReleaseAndGetAddressOf())));
         m_fenceValue = 0;
 
         // Create the resources for alpha correction.
-        CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(
+        CHECK_HRCMD(m_ovrSubmissionDevice->CreateComputeShader(
             g_AlphaBlendingCS, sizeof(g_AlphaBlendingCS), nullptr, m_alphaCorrectShader[0].ReleaseAndGetAddressOf()));
         setDebugName(m_alphaCorrectShader[0].Get(), "AlphaBlending CS");
-        CHECK_HRCMD(m_pvrSubmissionDevice->CreateComputeShader(g_AlphaBlendingTexArrayCS,
+        CHECK_HRCMD(m_ovrSubmissionDevice->CreateComputeShader(g_AlphaBlendingTexArrayCS,
                                                                sizeof(g_AlphaBlendingTexArrayCS),
                                                                nullptr,
                                                                m_alphaCorrectShader[1].ReleaseAndGetAddressOf()));
         setDebugName(m_alphaCorrectShader[1].Get(), "AlphaBlending CS");
-        CHECK_HRCMD(m_pvrSubmissionDevice->CreateVertexShader(
+        CHECK_HRCMD(m_ovrSubmissionDevice->CreateVertexShader(
             g_FullScreenQuadVS, sizeof(g_FullScreenQuadVS), nullptr, m_fullQuadVS.ReleaseAndGetAddressOf()));
         setDebugName(m_fullQuadVS.Get(), "FullQuad VS");
-        CHECK_HRCMD(m_pvrSubmissionDevice->CreatePixelShader(
+        CHECK_HRCMD(m_ovrSubmissionDevice->CreatePixelShader(
             g_PassthroughPS, sizeof(g_PassthroughPS), nullptr, m_colorConversionPS.ReleaseAndGetAddressOf()));
         setDebugName(m_fullQuadVS.Get(), "ColorConversion PS");
 
@@ -243,7 +240,7 @@ namespace virtualdesktop_openxr {
             desc.MinLOD = D3D11_MIP_LOD_BIAS_MIN;
             desc.MaxLOD = D3D11_MIP_LOD_BIAS_MAX;
             CHECK_HRCMD(
-                m_pvrSubmissionDevice->CreateSamplerState(&desc, m_linearClampSampler.ReleaseAndGetAddressOf()));
+                m_ovrSubmissionDevice->CreateSamplerState(&desc, m_linearClampSampler.ReleaseAndGetAddressOf()));
         }
         {
             D3D11_RASTERIZER_DESC desc;
@@ -252,21 +249,21 @@ namespace virtualdesktop_openxr {
             desc.CullMode = D3D11_CULL_NONE;
             desc.FrontCounterClockwise = TRUE;
             CHECK_HRCMD(
-                m_pvrSubmissionDevice->CreateRasterizerState(&desc, m_noDepthRasterizer.ReleaseAndGetAddressOf()));
+                m_ovrSubmissionDevice->CreateRasterizerState(&desc, m_noDepthRasterizer.ReleaseAndGetAddressOf()));
         }
 
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerPrecomposition[i] =
-                std::make_unique<D3D11GpuTimer>(m_pvrSubmissionDevice.Get(), m_pvrSubmissionContext.Get());
+                std::make_unique<D3D11GpuTimer>(m_ovrSubmissionDevice.Get(), m_ovrSubmissionContext.Get());
         }
 
         // Create the resources for drawing text.
         CHECK_HRCMD(FW1CreateFactory(FW1_VERSION, m_fontWrapperFactory.ReleaseAndGetAddressOf()));
         if (FAILED(m_fontWrapperFactory->CreateFontWrapper(
-                m_pvrSubmissionDevice.Get(), L"Segoe UI Symbol", m_fontNormal.ReleaseAndGetAddressOf()))) {
+                m_ovrSubmissionDevice.Get(), L"Segoe UI Symbol", m_fontNormal.ReleaseAndGetAddressOf()))) {
             // Fallback to Arial - won't have symbols but will have text.
             CHECK_HRCMD(m_fontWrapperFactory->CreateFontWrapper(
-                m_pvrSubmissionDevice.Get(), L"Arial", m_fontNormal.ReleaseAndGetAddressOf()));
+                m_ovrSubmissionDevice.Get(), L"Arial", m_fontNormal.ReleaseAndGetAddressOf()));
         }
 
         // If RenderDoc is loaded, then create a DXGI swapchain to signal events. Otherwise RenderDoc will
@@ -288,7 +285,7 @@ namespace virtualdesktop_openxr {
             swapchainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 
             ComPtr<IDXGIDevice> dxgiDevice;
-            CHECK_HRCMD(m_pvrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
+            CHECK_HRCMD(m_ovrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
 
             ComPtr<IDXGIAdapter> dxgiAdapter;
             CHECK_HRCMD(dxgiDevice->GetAdapter(dxgiAdapter.ReleaseAndGetAddressOf()));
@@ -324,10 +321,10 @@ namespace virtualdesktop_openxr {
             m_alphaCorrectShader[i].Reset();
         }
 
-        m_pvrSubmissionFence.Reset();
-        m_pvrSubmissionContextState.Reset();
-        m_pvrSubmissionContext.Reset();
-        m_pvrSubmissionDevice.Reset();
+        m_ovrSubmissionFence.Reset();
+        m_ovrSubmissionContextState.Reset();
+        m_ovrSubmissionContext.Reset();
+        m_ovrSubmissionDevice.Reset();
         m_eventForSubmissionFence.reset();
     }
 
@@ -338,15 +335,15 @@ namespace virtualdesktop_openxr {
 
         // Query the textures for the swapchain.
         std::vector<HANDLE> handles;
-        for (int i = 0; i < xrSwapchain.pvrSwapchainLength; i++) {
+        for (int i = 0; i < xrSwapchain.ovrSwapchainLength; i++) {
             if (!initialized) {
                 ComPtr<ID3D11Texture2D> swapchainTexture;
-                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(m_pvrSession,
-                                                             xrSwapchain.pvrSwapchain[0],
+                CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
+                                                             xrSwapchain.ovrSwapchain[0],
                                                              i,
                                                              IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
                 setDebugName(swapchainTexture.Get(),
-                             fmt::format("PVR Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
+                             fmt::format("OVR Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
                 xrSwapchain.slices[0].push_back(swapchainTexture);
                 if (i == 0) {
@@ -355,7 +352,7 @@ namespace virtualdesktop_openxr {
                     TraceLoggingWrite(g_traceProvider,
                                       "xrEnumerateSwapchainImages",
                                       TLArg("D3D11", "Api"),
-                                      TLArg("PVR", "Type"),
+                                      TLArg("OVR", "Type"),
                                       TLArg(desc.Width, "Width"),
                                       TLArg(desc.Height, "Height"),
                                       TLArg(desc.ArraySize, "ArraySize"),
@@ -396,7 +393,7 @@ namespace virtualdesktop_openxr {
                                                     uint32_t count) {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.slices[0].empty();
-        const bool skipSharing = m_pvrSubmissionDevice == m_d3d11Device;
+        const bool skipSharing = m_ovrSubmissionDevice == m_d3d11Device;
 
         std::vector<HANDLE> textureHandles;
         if (!initialized) {
@@ -417,8 +414,8 @@ namespace virtualdesktop_openxr {
                     CHECK_HRCMD(m_d3d11Device->OpenSharedResource(textureHandles[i],
                                                                   IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
                 } else {
-                    CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(m_pvrSession,
-                                                                 xrSwapchain.pvrSwapchain[0],
+                    CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
+                                                                 xrSwapchain.ovrSwapchain[0],
                                                                  i,
                                                                  IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
                 }
@@ -458,21 +455,21 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    // Prepare a PVR swapchain to be used by PVR.
+    // Prepare an OVR swapchain to be used by OVR.
     void OpenXrRuntime::prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
                                                        uint32_t layerIndex,
                                                        uint32_t slice,
                                                        XrCompositionLayerFlags compositionFlags,
-                                                       std::set<std::pair<pvrTextureSwapChain, uint32_t>>& committed) {
+                                                       std::set<std::pair<ovrTextureSwapChain, uint32_t>>& committed) {
         // If the texture was never used or already committed, do nothing.
-        if (xrSwapchain.slices[0].empty() || committed.count(std::make_pair(xrSwapchain.pvrSwapchain[0], slice))) {
+        if (xrSwapchain.slices[0].empty() || committed.count(std::make_pair(xrSwapchain.ovrSwapchain[0], slice))) {
             return;
         }
 
         ensureSwapchainSliceResources(xrSwapchain, slice);
 
-        int pvrDestIndex = -1;
-        CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &pvrDestIndex));
+        int ovrDestIndex = -1;
+        CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(m_ovrSession, xrSwapchain.ovrSwapchain[slice], &ovrDestIndex));
         const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
 
         const bool needClearAlpha =
@@ -485,13 +482,13 @@ namespace virtualdesktop_openxr {
                               (slice > 0 && !(needClearAlpha || needPremultiplyAlpha));
 
         if (needCopy) {
-            // Circumvent some of PVR's limitations:
+            // Circumvent some of OVR's limitations:
             // - For texture arrays, we must do a copy to slice 0 into another swapchain.
             // - Committing into a swapchain automatically acquires the next image. When an app renders certain
-            //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current PVR swapchain
+            //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current OVR swapchain
             //   image. All the processing needed (eg: alpha correction) was done during initial processing (the first
             //   time we saw the last released image), so no need to redo it.
-            m_pvrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][pvrDestIndex].Get(),
+            m_ovrSubmissionContext->CopySubresourceRegion(xrSwapchain.slices[slice][ovrDestIndex].Get(),
                                                           0,
                                                           0,
                                                           0,
@@ -500,7 +497,7 @@ namespace virtualdesktop_openxr {
                                                           slice,
                                                           nullptr);
         } else if (needClearAlpha || needPremultiplyAlpha) {
-            // Circumvent some of PVR's limitations:
+            // Circumvent some of OVR's limitations:
             // - For alpha-blended layers, we must pre-process the alpha channel.
             // For alpha-blended layers with texture arrays, we must also output into slice 0 of
             // another swapchain (see other branch above).
@@ -521,7 +518,7 @@ namespace virtualdesktop_openxr {
                 desc.Texture2DArray.MipLevels = xrSwapchain.xrDesc.mipCount;
                 desc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, slice, desc.Texture2DArray.MipLevels);
 
-                CHECK_HRCMD(m_pvrSubmissionDevice->CreateShaderResourceView(
+                CHECK_HRCMD(m_ovrSubmissionDevice->CreateShaderResourceView(
                     xrSwapchain.images[lastReleasedIndex].Get(),
                     &desc,
                     xrSwapchain.imagesResourceView[slice][lastReleasedIndex].ReleaseAndGetAddressOf()));
@@ -531,8 +528,8 @@ namespace virtualdesktop_openxr {
 
             // We are about to do something destructive to the application context. Save the context. It will be
             // restored at the end of xrEndFrame().
-            if (m_d3d11Device == m_pvrSubmissionDevice && !m_d3d11ContextState) {
-                m_pvrSubmissionContext->SwapDeviceContextState(m_pvrSubmissionContextState.Get(),
+            if (m_d3d11Device == m_ovrSubmissionDevice && !m_d3d11ContextState) {
+                m_ovrSubmissionContext->SwapDeviceContextState(m_ovrSubmissionContextState.Get(),
                                                                m_d3d11ContextState.ReleaseAndGetAddressOf());
             }
 
@@ -544,42 +541,42 @@ namespace virtualdesktop_openxr {
                 constants.isUnpremultipliedAlpha = needPremultiplyAlpha;
 
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
-                CHECK_HRCMD(m_pvrSubmissionContext->Map(
+                CHECK_HRCMD(m_ovrSubmissionContext->Map(
                     xrSwapchain.convertConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
                 memcpy(mappedResources.pData, &constants, sizeof(constants));
-                m_pvrSubmissionContext->Unmap(xrSwapchain.convertConstants.Get(), 0);
-                m_pvrSubmissionContext->CSSetConstantBuffers(0, 1, xrSwapchain.convertConstants.GetAddressOf());
+                m_ovrSubmissionContext->Unmap(xrSwapchain.convertConstants.Get(), 0);
+                m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, xrSwapchain.convertConstants.GetAddressOf());
 
-                m_pvrSubmissionContext->CSSetShader(m_alphaCorrectShader[shaderToUse].Get(), nullptr, 0);
+                m_ovrSubmissionContext->CSSetShader(m_alphaCorrectShader[shaderToUse].Get(), nullptr, 0);
             }
 
-            m_pvrSubmissionContext->CSSetShaderResources(
+            m_ovrSubmissionContext->CSSetShaderResources(
                 0, 1, xrSwapchain.imagesResourceView[slice][lastReleasedIndex].GetAddressOf());
-            m_pvrSubmissionContext->CSSetUnorderedAccessViews(
+            m_ovrSubmissionContext->CSSetUnorderedAccessViews(
                 0, 1, xrSwapchain.convertAccessView.GetAddressOf(), nullptr);
 
-            m_pvrSubmissionContext->Dispatch((unsigned int)std::ceil(xrSwapchain.xrDesc.width / 32),
+            m_ovrSubmissionContext->Dispatch((unsigned int)std::ceil(xrSwapchain.xrDesc.width / 32),
                                              (unsigned int)std::ceil(xrSwapchain.xrDesc.height / 32),
                                              1);
 
             // Unbind all resources to avoid D3D validation errors.
             {
-                m_pvrSubmissionContext->CSSetShader(nullptr, nullptr, 0);
+                m_ovrSubmissionContext->CSSetShader(nullptr, nullptr, 0);
                 ID3D11Buffer* nullCBV[] = {nullptr};
-                m_pvrSubmissionContext->CSSetConstantBuffers(0, 1, nullCBV);
+                m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, nullCBV);
                 ID3D11UnorderedAccessView* nullUAV[] = {nullptr};
-                m_pvrSubmissionContext->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
+                m_ovrSubmissionContext->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
                 ID3D11ShaderResourceView* nullSRV[] = {nullptr};
-                m_pvrSubmissionContext->CSSetShaderResources(0, 1, nullSRV);
+                m_ovrSubmissionContext->CSSetShaderResources(0, 1, nullSRV);
             }
 
-            // Final copy into the PVR texture.
+            // Final copy into the OVR texture.
             if (!isSRGBFormat(xrSwapchain.dxgiFormatForSubmission)) {
-                m_pvrSubmissionContext->CopySubresourceRegion(
-                    xrSwapchain.slices[slice][pvrDestIndex].Get(), 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
+                m_ovrSubmissionContext->CopySubresourceRegion(
+                    xrSwapchain.slices[slice][ovrDestIndex].Get(), 0, 0, 0, 0, xrSwapchain.resolved.Get(), 0, nullptr);
             } else {
                 // Lazily create RTV.
-                if (!xrSwapchain.renderTargetView[slice][pvrDestIndex]) {
+                if (!xrSwapchain.renderTargetView[slice][ovrDestIndex]) {
                     D3D11_RENDER_TARGET_VIEW_DESC desc{};
 
                     // When rendering to a swapchain with slice > 0, we know the swapchain is always arraySize of 1.
@@ -591,63 +588,63 @@ namespace virtualdesktop_openxr {
                     desc.Texture2DArray.MipSlice = D3D11CalcSubresource(0, 0, xrSwapchain.xrDesc.mipCount);
                     desc.Texture2DArray.FirstArraySlice = slice;
 
-                    CHECK_HRCMD(m_pvrSubmissionDevice->CreateRenderTargetView(
-                        xrSwapchain.slices[slice][pvrDestIndex].Get(),
+                    CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
+                        xrSwapchain.slices[slice][ovrDestIndex].Get(),
                         &desc,
-                        xrSwapchain.renderTargetView[slice][pvrDestIndex].ReleaseAndGetAddressOf()));
+                        xrSwapchain.renderTargetView[slice][ovrDestIndex].ReleaseAndGetAddressOf()));
                     setDebugName(xrSwapchain.renderTargetView[slice][lastReleasedIndex].Get(),
-                                 fmt::format("Convert RTV[{}, {}, {}]", slice, pvrDestIndex, (void*)&xrSwapchain));
+                                 fmt::format("Convert RTV[{}, {}, {}]", slice, ovrDestIndex, (void*)&xrSwapchain));
                 }
 
                 // Use a full quad shader for color conversion to sRGB.
-                m_pvrSubmissionContext->ClearState();
-                m_pvrSubmissionContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-                m_pvrSubmissionContext->OMSetRenderTargets(
+                m_ovrSubmissionContext->ClearState();
+                m_ovrSubmissionContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+                m_ovrSubmissionContext->OMSetRenderTargets(
                     1, xrSwapchain.renderTargetView[slice][lastReleasedIndex].GetAddressOf(), nullptr);
-                m_pvrSubmissionContext->RSSetState(m_noDepthRasterizer.Get());
+                m_ovrSubmissionContext->RSSetState(m_noDepthRasterizer.Get());
                 D3D11_VIEWPORT viewport{};
-                viewport.Width = (float)xrSwapchain.pvrDesc.Width;
-                viewport.Height = (float)xrSwapchain.pvrDesc.Height;
+                viewport.Width = (float)xrSwapchain.ovrDesc.Width;
+                viewport.Height = (float)xrSwapchain.ovrDesc.Height;
                 viewport.MaxDepth = 1.f;
-                m_pvrSubmissionContext->RSSetViewports(1, &viewport);
-                m_pvrSubmissionContext->VSSetShader(m_fullQuadVS.Get(), nullptr, 0);
-                m_pvrSubmissionContext->PSSetSamplers(0, 1, m_linearClampSampler.GetAddressOf());
-                m_pvrSubmissionContext->PSSetShaderResources(0, 1, xrSwapchain.convertResourceView.GetAddressOf());
-                m_pvrSubmissionContext->PSSetShader(m_colorConversionPS.Get(), nullptr, 0);
-                m_pvrSubmissionContext->Draw(3, 0);
+                m_ovrSubmissionContext->RSSetViewports(1, &viewport);
+                m_ovrSubmissionContext->VSSetShader(m_fullQuadVS.Get(), nullptr, 0);
+                m_ovrSubmissionContext->PSSetSamplers(0, 1, m_linearClampSampler.GetAddressOf());
+                m_ovrSubmissionContext->PSSetShaderResources(0, 1, xrSwapchain.convertResourceView.GetAddressOf());
+                m_ovrSubmissionContext->PSSetShader(m_colorConversionPS.Get(), nullptr, 0);
+                m_ovrSubmissionContext->Draw(3, 0);
 
                 // Unbind all resources to avoid D3D validation errors.
                 {
                     ID3D11RenderTargetView* nullRTV[] = {nullptr};
-                    m_pvrSubmissionContext->OMSetRenderTargets(1, nullRTV, nullptr);
+                    m_ovrSubmissionContext->OMSetRenderTargets(1, nullRTV, nullptr);
                     ID3D11ShaderResourceView* nullSRV[] = {nullptr};
-                    m_pvrSubmissionContext->PSSetShaderResources(0, 1, nullSRV);
+                    m_ovrSubmissionContext->PSSetShaderResources(0, 1, nullSRV);
                 }
             }
         }
 
         xrSwapchain.lastProcessedIndex[slice] = lastReleasedIndex;
 
-        // Commit the texture to PVR.
-        CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, xrSwapchain.pvrSwapchain[slice]));
-        committed.insert(std::make_pair(xrSwapchain.pvrSwapchain[0], slice));
+        // Commit the texture to OVR.
+        CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.ovrSwapchain[slice]));
+        committed.insert(std::make_pair(xrSwapchain.ovrSwapchain[0], slice));
     }
 
     void OpenXrRuntime::ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const {
         // Ensure necessary resources for texture arrays: lazily create a second swapchain for this slice of the array.
-        if (!xrSwapchain.pvrSwapchain[slice]) {
-            auto desc = xrSwapchain.pvrDesc;
+        if (!xrSwapchain.ovrSwapchain[slice]) {
+            auto desc = xrSwapchain.ovrDesc;
 
             // We might use a full quad shader to perform final color conversion.
             if (isSRGBFormat(xrSwapchain.dxgiFormatForSubmission)) {
-                desc.BindFlags |= pvrTextureBind_DX_RenderTarget;
+                desc.BindFlags |= ovrTextureBind_DX_RenderTarget;
             }
             desc.ArraySize = 1;
-            CHECK_PVRCMD(pvr_createTextureSwapChainDX(
-                m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &xrSwapchain.pvrSwapchain[slice]));
+            CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
+                m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &xrSwapchain.ovrSwapchain[slice]));
 
             int count = -1;
-            CHECK_PVRCMD(pvr_getTextureSwapChainLength(m_pvrSession, xrSwapchain.pvrSwapchain[slice], &count));
+            CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, xrSwapchain.ovrSwapchain[slice], &count));
             if (count != xrSwapchain.slices[0].size()) {
                 throw std::runtime_error("Swapchain image count mismatch");
             }
@@ -655,8 +652,8 @@ namespace virtualdesktop_openxr {
             // Query the textures for the swapchain.
             for (int i = 0; i < count; i++) {
                 ComPtr<ID3D11Texture2D> texture;
-                CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-                    m_pvrSession, xrSwapchain.pvrSwapchain[slice], i, IID_PPV_ARGS(texture.ReleaseAndGetAddressOf())));
+                CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(
+                    m_ovrSession, xrSwapchain.ovrSwapchain[slice], i, IID_PPV_ARGS(texture.ReleaseAndGetAddressOf())));
                 setDebugName(texture.Get(),
                              fmt::format("Runtime Slice Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
 
@@ -685,7 +682,7 @@ namespace virtualdesktop_openxr {
                 desc.SampleDesc.Count = xrSwapchain.xrDesc.sampleCount;
                 desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
-                CHECK_HRCMD(m_pvrSubmissionDevice->CreateTexture2D(
+                CHECK_HRCMD(m_ovrSubmissionDevice->CreateTexture2D(
                     &desc, nullptr, xrSwapchain.resolved.ReleaseAndGetAddressOf()));
                 setDebugName(xrSwapchain.resolved.Get(), fmt::format("Resolved Texture[{}]", (void*)&xrSwapchain));
             }
@@ -696,7 +693,7 @@ namespace virtualdesktop_openxr {
                 desc.Usage = D3D11_USAGE_DYNAMIC;
                 desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-                CHECK_HRCMD(m_pvrSubmissionDevice->CreateBuffer(
+                CHECK_HRCMD(m_ovrSubmissionDevice->CreateBuffer(
                     &desc, nullptr, xrSwapchain.convertConstants.ReleaseAndGetAddressOf()));
                 setDebugName(xrSwapchain.convertConstants.Get(),
                              fmt::format("Convert Constants[{}]", (void*)&xrSwapchain));
@@ -712,7 +709,7 @@ namespace virtualdesktop_openxr {
                 }
                 desc.Texture2D.MipSlice = 0;
 
-                CHECK_HRCMD(m_pvrSubmissionDevice->CreateUnorderedAccessView(
+                CHECK_HRCMD(m_ovrSubmissionDevice->CreateUnorderedAccessView(
                     xrSwapchain.resolved.Get(), &desc, xrSwapchain.convertAccessView.ReleaseAndGetAddressOf()));
                 setDebugName(xrSwapchain.convertAccessView.Get(), fmt::format("Convert UAV[{}]", (void*)&xrSwapchain));
             }
@@ -725,7 +722,7 @@ namespace virtualdesktop_openxr {
                 desc.Texture2D.MipLevels = xrSwapchain.xrDesc.mipCount;
                 desc.Texture2D.MostDetailedMip = D3D11CalcSubresource(0, 0, desc.Texture2DArray.MipLevels);
 
-                CHECK_HRCMD(m_pvrSubmissionDevice->CreateShaderResourceView(
+                CHECK_HRCMD(m_ovrSubmissionDevice->CreateShaderResourceView(
                     xrSwapchain.resolved.Get(), &desc, xrSwapchain.convertResourceView.ReleaseAndGetAddressOf()));
                 setDebugName(xrSwapchain.convertResourceView.Get(),
                              fmt::format("Convert SRV[{}]", (void*)&xrSwapchain));
@@ -754,16 +751,16 @@ namespace virtualdesktop_openxr {
         m_fenceValue++;
         TraceLoggingWrite(
             g_traceProvider, "FlushContext_Wait", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        CHECK_HRCMD(m_pvrSubmissionContext->Signal(m_pvrSubmissionFence.Get(), m_fenceValue));
+        CHECK_HRCMD(m_ovrSubmissionContext->Signal(m_ovrSubmissionFence.Get(), m_fenceValue));
         *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
-        CHECK_HRCMD(m_pvrSubmissionFence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
+        CHECK_HRCMD(m_ovrSubmissionFence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
         WaitForSingleObject(eventHandle.get(), INFINITE);
         ResetEvent(eventHandle.get());
     }
 
-    // Serialize commands from the D3D12 queue to the D3D11 context used by PVR.
+    // Serialize commands from the D3D12 queue to the D3D11 context used by OVR.
     void OpenXrRuntime::serializeD3D11Frame() {
-        if (m_pvrSubmissionDevice != m_d3d11Device) {
+        if (m_ovrSubmissionDevice != m_d3d11Device) {
             m_fenceValue++;
             TraceLoggingWrite(
                 g_traceProvider, "xrEndFrame_Sync", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
@@ -775,11 +772,9 @@ namespace virtualdesktop_openxr {
 
     void OpenXrRuntime::waitOnSubmissionDevice() {
         if (!m_syncGpuWorkInEndFrame) {
-            CHECK_HRCMD(m_pvrSubmissionContext->Wait(m_pvrSubmissionFence.Get(), m_fenceValue));
+            CHECK_HRCMD(m_ovrSubmissionContext->Wait(m_ovrSubmissionFence.Get(), m_fenceValue));
         } else {
-            // Workaround: PVR does not seem to reliably measure GPU frame times and therefore choses an incorrect rate
-            // for smart smoothing. By waiting on the CPU here, we force the CPU time measure the same as GPU time.
-            CHECK_HRCMD(m_pvrSubmissionFence->SetEventOnCompletion(m_fenceValue, m_eventForSubmissionFence.get()));
+            CHECK_HRCMD(m_ovrSubmissionFence->SetEventOnCompletion(m_fenceValue, m_eventForSubmissionFence.get()));
             WaitForSingleObject(m_eventForSubmissionFence.get(), INFINITE);
             ResetEvent(m_eventForSubmissionFence.get());
         }

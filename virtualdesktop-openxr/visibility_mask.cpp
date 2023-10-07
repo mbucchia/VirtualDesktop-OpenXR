@@ -70,49 +70,60 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        // We only support the hidden area mesh.
-        if (visibilityMaskType != XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR) {
-            visibilityMask->vertexCountOutput = 0;
-            visibilityMask->indexCountOutput = 0;
-            return XR_SUCCESS;
+        ovrFovStencilDesc stencilDesc{};
+        switch (visibilityMaskType) {
+        case XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR:
+            stencilDesc.StencilType = ovrFovStencil_HiddenArea;
+            break;
+        case XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR:
+            stencilDesc.StencilType = ovrFovStencil_VisibleArea;
+            break;
+        case XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR:
+            stencilDesc.StencilType = ovrFovStencil_BorderLine;
+            break;
+        default:
+            return XR_ERROR_VALIDATION_FAILURE;
         }
+        stencilDesc.Eye = !viewIndex ? ovrEye_Left : ovrEye_Right;
+        stencilDesc.FovPort = m_cachedEyeInfo[viewIndex].Fov;
+        stencilDesc.HmdToEyeRotation = m_cachedEyeInfo[viewIndex].HmdToEyePose.Orientation;
+        ovrFovStencilMeshBuffer buffer{};
+        CHECK_OVRCMD(ovr_GetFovStencil(m_ovrSession, &stencilDesc, &buffer));
 
-        const auto verticesCount =
-            pvr_getEyeHiddenAreaMesh(m_pvrSession, !viewIndex ? pvrEye_Left : pvrEye_Right, nullptr, 0);
-        TraceLoggingWrite(g_traceProvider, "PVR_EyeHiddenAreaMesh", TLArg(verticesCount, "VerticesCount"));
-
-        // The hidden area mesh is disabled by the platform.
-        if (!verticesCount) {
-            visibilityMask->vertexCountOutput = 0;
-            visibilityMask->indexCountOutput = 0;
-            return XR_SUCCESS;
-        }
+        TraceLoggingWrite(g_traceProvider,
+                          "OVR_FovStencil",
+                          TLArg(buffer.UsedVertexCount, "VerticesCount"),
+                          TLArg(buffer.UsedIndexCount, "IndicesCount"));
 
         if (visibilityMask->vertexCapacityInput == 0) {
-            visibilityMask->vertexCountOutput = verticesCount;
-            visibilityMask->indexCountOutput = verticesCount;
+            visibilityMask->vertexCountOutput = buffer.UsedVertexCount;
+            visibilityMask->indexCountOutput = buffer.UsedIndexCount;
         } else if (visibilityMask->vertices && visibilityMask->indices) {
-            if (visibilityMask->vertexCapacityInput < verticesCount ||
-                visibilityMask->indexCapacityInput < verticesCount) {
+            if ((int)visibilityMask->vertexCapacityInput < buffer.UsedVertexCount ||
+                (int)visibilityMask->indexCapacityInput < buffer.UsedIndexCount) {
                 return XR_ERROR_SIZE_INSUFFICIENT;
             }
 
-            static_assert(sizeof(XrVector2f) == sizeof(pvrVector2f));
-            pvr_getEyeHiddenAreaMesh(m_pvrSession,
-                                     !viewIndex ? pvrEye_Left : pvrEye_Right,
-                                     (pvrVector2f*)visibilityMask->vertices,
-                                     verticesCount);
+            static_assert(sizeof(XrVector2f) == sizeof(ovrVector2f));
+            buffer.AllocVertexCount = visibilityMask->vertexCapacityInput;
+            buffer.VertexBuffer = reinterpret_cast<ovrVector2f*>(visibilityMask->vertices);
+            buffer.AllocIndexCount = visibilityMask->indexCapacityInput;
+            std::vector<uint16_t> indices(buffer.UsedIndexCount);
+            buffer.IndexBuffer = indices.data();
+            CHECK_OVRCMD(ovr_GetFovStencil(m_ovrSession, &stencilDesc, &buffer));
 
             convertSteamVRToOpenXRHiddenMesh(
-                m_cachedEyeInfo[viewIndex].Fov, visibilityMask->vertices, visibilityMask->indices, verticesCount);
+                m_cachedEyeInfo[viewIndex].Fov, visibilityMask->vertices, buffer.UsedVertexCount);
+            for (int i = 0; i < buffer.UsedIndexCount; i++) {
+                visibilityMask->indices[i] = buffer.IndexBuffer[i];
+            }
         }
 
         return XR_SUCCESS;
     }
 
-    void OpenXrRuntime::convertSteamVRToOpenXRHiddenMesh(const pvrFovPort& fov,
+    void OpenXrRuntime::convertSteamVRToOpenXRHiddenMesh(const ovrFovPort& fov,
                                                          XrVector2f* vertices,
-                                                         uint32_t* indices,
                                                          uint32_t count) const {
         const float b = -fov.DownTan;
         const float t = fov.UpTan;
@@ -145,9 +156,6 @@ namespace virtualdesktop_openxr {
                           XMVectorMultiplyAdd(XMVECTORF32{{{ndc.x, ndc.y, 0.f, 0.f}}},
                                               XMVECTORF32{{{halfHSpan, halfVSpan, 0.f, 0.f}}},
                                               XMVECTORF32{{{hConstTerm, vConstTerm, 0.f, 0.f}}}));
-
-            // Record the indices.
-            indices[i] = i;
         }
     }
 

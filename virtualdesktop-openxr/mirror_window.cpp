@@ -83,8 +83,8 @@ namespace virtualdesktop_openxr {
                 std::unique_lock lock(m_mirrorWindowMutex);
                 m_mirrorWindowSwapchain.Reset();
                 m_mirrorTexture.Reset();
-                pvr_destroyMirrorTexture(m_pvrSession, m_pvrMirrorSwapChain);
-                m_pvrMirrorSwapChain = nullptr;
+                ovr_DestroyMirrorTexture(m_ovrSession, m_ovrMirrorSwapChain);
+                m_ovrMirrorSwapChain = nullptr;
                 m_mirrorWindowHwnd = nullptr;
             }
         });
@@ -108,9 +108,6 @@ namespace virtualdesktop_openxr {
             return;
         }
 
-        // Workaround: PVR does not seem to correctly write to non-SRGB, so for now we always prefer non-SRGB.
-        preferSRGB = false;
-
         bool isSRGB = preferSRGB;
         D3D11_TEXTURE2D_DESC mirrorDesc;
         if (m_mirrorTexture) {
@@ -122,7 +119,7 @@ namespace virtualdesktop_openxr {
         if (!m_mirrorWindowSwapchain || preferSRGB != isSRGB) {
             ComPtr<IDXGIFactory2> dxgiFactory;
             ComPtr<IDXGIDevice1> dxgiDevice;
-            CHECK_HRCMD(m_pvrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
+            CHECK_HRCMD(m_ovrSubmissionDevice->QueryInterface(IID_PPV_ARGS(dxgiDevice.ReleaseAndGetAddressOf())));
 
             ComPtr<IDXGIAdapter> dxgiAdapter;
             CHECK_HRCMD(dxgiDevice->GetAdapter(&dxgiAdapter));
@@ -136,7 +133,7 @@ namespace virtualdesktop_openxr {
             swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
             swapchainDesc.BufferCount = 2;
             swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-            CHECK_HRCMD(dxgiFactory->CreateSwapChainForHwnd(m_pvrSubmissionDevice.Get(),
+            CHECK_HRCMD(dxgiFactory->CreateSwapChainForHwnd(m_ovrSubmissionDevice.Get(),
                                                             m_mirrorWindowHwnd,
                                                             &swapchainDesc,
                                                             nullptr,
@@ -150,22 +147,20 @@ namespace virtualdesktop_openxr {
 
             CHECK_HRCMD(m_mirrorWindowSwapchain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
 
-            // Recreate a new PVR swapchain with the correct size.
-            if (m_pvrMirrorSwapChain) {
+            // Recreate a new OVR swapchain with the correct size.
+            if (m_ovrMirrorSwapChain) {
                 m_mirrorTexture.Reset();
-                pvr_destroyMirrorTexture(m_pvrSession, m_pvrMirrorSwapChain);
+                ovr_DestroyMirrorTexture(m_ovrSession, m_ovrMirrorSwapChain);
             }
 
-            pvrMirrorTextureDesc mirrorDesc;
-            mirrorDesc.Format = preferSRGB ? pvrTextureFormat::PVR_FORMAT_R8G8B8A8_UNORM_SRGB
-                                           : pvrTextureFormat::PVR_FORMAT_R8G8B8A8_UNORM;
+            ovrMirrorTextureDesc mirrorDesc;
+            mirrorDesc.Format = preferSRGB ? OVR_FORMAT_R8G8B8A8_UNORM_SRGB : OVR_FORMAT_R8G8B8A8_UNORM;
             mirrorDesc.Width = width;
             mirrorDesc.Height = height;
-            mirrorDesc.SampleCount = 1;
-            CHECK_PVRCMD(pvr_createMirrorTextureDX(
-                m_pvrSession, m_pvrSubmissionDevice.Get(), &mirrorDesc, &m_pvrMirrorSwapChain));
-            CHECK_PVRCMD(pvr_getMirrorTextureBufferDX(
-                m_pvrSession, m_pvrMirrorSwapChain, IID_PPV_ARGS(m_mirrorTexture.ReleaseAndGetAddressOf())));
+            CHECK_OVRCMD(ovr_CreateMirrorTextureDX(
+                m_ovrSession, m_ovrSubmissionDevice.Get(), &mirrorDesc, &m_ovrMirrorSwapChain));
+            CHECK_OVRCMD(ovr_GetMirrorTextureBufferDX(
+                m_ovrSession, m_ovrMirrorSwapChain, IID_PPV_ARGS(m_mirrorTexture.ReleaseAndGetAddressOf())));
         }
 
         TraceLocalActivity(presentMirrorWindow);
@@ -174,7 +169,7 @@ namespace virtualdesktop_openxr {
         // Let those fail silently below so we do not crash the application.
         ComPtr<ID3D11Texture2D> frameBuffer;
         m_mirrorWindowSwapchain->GetBuffer(0, IID_PPV_ARGS(frameBuffer.ReleaseAndGetAddressOf()));
-        m_pvrSubmissionContext->CopyResource(frameBuffer.Get(), m_mirrorTexture.Get());
+        m_ovrSubmissionContext->CopyResource(frameBuffer.Get(), m_mirrorTexture.Get());
         m_mirrorWindowSwapchain->Present(0, 0);
         TraceLoggingWriteStop(presentMirrorWindow, "PresentMirrorWindow");
     }

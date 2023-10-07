@@ -55,10 +55,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_TIME_INVALID;
         }
 
-        double pvrTime = (double)performanceCounter->QuadPart / m_qpcFrequency.QuadPart;
-        pvrTime += m_pvrTimeFromQpcTimeOffset;
+        double ovrTime = (double)performanceCounter->QuadPart / m_qpcFrequency.QuadPart;
+        ovrTime += m_ovrTimeFromQpcTimeOffset;
 
-        *time = pvrTimeToXrTime(pvrTime);
+        *time = ovrTimeToXrTime(ovrTime);
 
         TraceLoggingWrite(g_traceProvider, "xrConvertWin32PerformanceCounterToTimeKHR", TLArg(*time, "Time"));
 
@@ -86,10 +86,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_TIME_INVALID;
         }
 
-        double pvrTime = xrTimeToPvrTime(time);
-        pvrTime -= m_pvrTimeFromQpcTimeOffset;
+        double ovrTime = xrTimeToOvrTime(time);
+        ovrTime -= m_ovrTimeFromQpcTimeOffset;
 
-        performanceCounter->QuadPart = (LONGLONG)(pvrTime * m_qpcFrequency.QuadPart);
+        performanceCounter->QuadPart = (LONGLONG)(ovrTime * m_qpcFrequency.QuadPart);
 
         TraceLoggingWrite(g_traceProvider,
                           "xrConvertTimeToWin32PerformanceCounterKHR",

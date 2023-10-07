@@ -26,9 +26,7 @@
 #include "runtime.h"
 #include "utils.h"
 
-// Implements the necessary support for the XR_KHR_openhl_enable extension:
-// NOTE: PVR has native support for OpenGL, however it is buggy, therefore we implement support as interoperability to
-//       D3D11 (like we do for Vulkan).
+// Implements the necessary support for the XR_KHR_opengl_enable extension:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_KHR_opengl_enable
 
 namespace virtualdesktop_openxr {
@@ -59,9 +57,6 @@ namespace virtualdesktop_openxr {
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
         }
-
-        // Get the display device LUID.
-        fillDisplayDeviceInfo();
 
         // External objects require OpenGL 4.5.
         graphicsRequirements->minApiVersionSupported = XR_MAKE_VERSION(4, 0, 0);
@@ -100,12 +95,12 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
         }
 
-        // Create the interop device and resources that PVR will be using.
+        // Create the interop device and resources that OVR will be using.
         initializeSubmissionDevice("OpenGL");
 
         // We will use a shared fence to synchronize between the OpenGL context and the D3D11
         // context.
-        CHECK_HRCMD(m_pvrSubmissionFence->CreateSharedHandle(
+        CHECK_HRCMD(m_ovrSubmissionFence->CreateSharedHandle(
             nullptr, GENERIC_ALL, nullptr, m_fenceHandleForAMDWorkaround.put()));
 
         // On the OpenGL side, it is called a semaphore.
@@ -275,7 +270,7 @@ namespace virtualdesktop_openxr {
         glFinish();
     }
 
-    // Serialize commands from the OpenGL context to the D3D11 context used by PVR.
+    // Serialize commands from the OpenGL context to the D3D11 context used by OVR.
     void OpenXrRuntime::serializeOpenGLFrame() {
         GlContextSwitch context(m_glContext);
 

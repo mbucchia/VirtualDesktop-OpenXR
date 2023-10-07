@@ -302,12 +302,12 @@ namespace virtualdesktop_openxr {
 
             if (viewState->viewStateFlags & (XR_VIEW_STATE_POSITION_VALID_BIT | XR_VIEW_STATE_ORIENTATION_VALID_BIT)) {
                 // Calculate poses for each eye.
-                pvrPosef hmdToEyePose[xr::StereoView::Count];
+                ovrPosef hmdToEyePose[xr::StereoView::Count];
                 hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
                 hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
 
-                pvrPosef eyePoses[xr::StereoView::Count]{{}, {}};
-                pvr_calcEyePoses(m_pvr, xrPoseToPvrPose(headPose), hmdToEyePose, eyePoses);
+                ovrPosef eyePoses[xr::StereoView::Count]{{}, {}};
+                ovr_CalcEyePoses(xrPoseToOvrPose(headPose), hmdToEyePose, eyePoses);
 
                 TraceLoggingWrite(g_traceProvider, "xrLocateViews", TLArg(viewState->viewStateFlags, "ViewStateFlags"));
 
@@ -316,7 +316,7 @@ namespace virtualdesktop_openxr {
                         return XR_ERROR_VALIDATION_FAILURE;
                     }
 
-                    views[i].pose = pvrPoseToXrPose(eyePoses[i]);
+                    views[i].pose = ovrPoseToXrPose(eyePoses[i]);
                     views[i].fov = m_cachedEyeFov[i];
 
                     TraceLoggingWrite(g_traceProvider,
@@ -497,35 +497,31 @@ namespace virtualdesktop_openxr {
 
     XrSpaceLocationFlags OpenXrRuntime::getHmdPose(XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const {
         XrSpaceLocationFlags locationFlags = 0;
-        pvrPoseStatef state{};
-        CHECK_PVRCMD(pvr_getTrackedDevicePoseState(m_pvrSession, pvrTrackedDevice_HMD, xrTimeToPvrTime(time), &state));
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_HmdPoseState",
-                          TLArg(state.StatusFlags, "StatusFlags"),
-                          TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
-                          TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),
-                          TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
-
-        pose = pvrPoseToXrPose(state.ThePose);
-        if (state.StatusFlags & pvrStatus_OrientationTracked) {
-            locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT);
+        ovrPoseStatef state{};
+        ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
+        const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, xrTimeToOvrTime(time), &state);
+        if (result == ovrError_LostTracking) {
+            TraceLoggingWrite(g_traceProvider, "OVR_HmdPoseNotTracking");
         } else {
-            if (m_lastValidHmdPose) {
-                locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
-                pose.orientation = m_lastValidHmdPose.value().orientation;
-            } else {
-                pose.orientation = Quaternion::Identity();
-            }
+            CHECK_OVRCMD(result);
+            TraceLoggingWrite(g_traceProvider,
+                              "OVR_HmdPoseState",
+                              TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
+                              TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),
+                              TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
         }
-        // For 9-axis setups, we propagate the Orientation bit to Position.
-        if (state.StatusFlags & pvrStatus_PositionTracked || state.StatusFlags & pvrStatus_OrientationTracked) {
-            locationFlags |= (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+
+        const bool isTracked = OVR_SUCCESS(result);
+        if (isTracked) {
+            locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
+                              XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+            pose = ovrPoseToXrPose(state.ThePose);
         } else {
             if (m_lastValidHmdPose) {
-                locationFlags |= XR_SPACE_LOCATION_POSITION_VALID_BIT;
-                pose.position = m_lastValidHmdPose.value().position;
+                locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+                pose = m_lastValidHmdPose.value();
             } else {
-                pose.position = {};
+                pose = Pose::Identity();
             }
         }
         m_lastValidHmdPose = pose;
@@ -533,13 +529,10 @@ namespace virtualdesktop_openxr {
         if (velocity) {
             velocity->velocityFlags = 0;
 
-            if (state.StatusFlags & pvrStatus_OrientationTracked) {
-                velocity->angularVelocity = pvrVector3dToXrVector3f(state.AngularVelocity);
-                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
-            }
-            if (state.StatusFlags & pvrStatus_PositionTracked) {
-                velocity->linearVelocity = pvrVector3dToXrVector3f(state.LinearVelocity);
-                velocity->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            if (isTracked) {
+                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+                velocity->angularVelocity = ovrVector3dToXrVector3f(state.AngularVelocity);
+                velocity->linearVelocity = ovrVector3dToXrVector3f(state.LinearVelocity);
             }
         }
 
@@ -549,42 +542,37 @@ namespace virtualdesktop_openxr {
     XrSpaceLocationFlags
     OpenXrRuntime::getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const {
         XrSpaceLocationFlags locationFlags = 0;
-        pvrPoseStatef state{};
-        CHECK_PVRCMD(pvr_getTrackedDevicePoseState(m_pvrSession,
-                                                   side == 0 ? pvrTrackedDevice_LeftController
-                                                             : pvrTrackedDevice_RightController,
-                                                   xrTimeToPvrTime(time),
-                                                   &state));
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_ControllerPoseState",
-                          TLArg(side == 0 ? "Left" : "Right", "Side"),
-                          TLArg(state.StatusFlags, "StatusFlags"),
-                          TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
-                          TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),
-                          TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
-
-        pose = pvrPoseToXrPose(state.ThePose);
-        if (state.StatusFlags & pvrStatus_OrientationTracked) {
-            locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+        ovrPoseStatef state{};
+        ovrTrackedDeviceType controller = side == 0 ? ovrTrackedDevice_LTouch : ovrTrackedDevice_RTouch;
+        const auto result = ovr_GetDevicePoses(m_ovrSession, &controller, 1, xrTimeToOvrTime(time), &state);
+        if (result == ovrError_LostTracking) {
+            TraceLoggingWrite(g_traceProvider, "OVR_HmdPoseNotTracking", TLArg(side == 0 ? "Left" : "Right", "Side"));
         } else {
-            pose.orientation = Quaternion::Identity();
+            CHECK_OVRCMD(result);
+            TraceLoggingWrite(g_traceProvider,
+                              "OVR_HmdPoseState",
+                              TLArg(side == 0 ? "Left" : "Right", "Side"),
+                              TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
+                              TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),
+                              TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
         }
-        if (state.StatusFlags & pvrStatus_PositionTracked) {
-            locationFlags |= XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+
+        const bool isTracked = OVR_SUCCESS(result);
+        if (isTracked) {
+            locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
+                              XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
+            pose = ovrPoseToXrPose(state.ThePose);
         } else {
-            pose.position = {};
+            pose = Pose::Identity();
         }
 
         if (velocity) {
             velocity->velocityFlags = 0;
 
-            if (state.StatusFlags & pvrStatus_OrientationTracked) {
-                velocity->angularVelocity = pvrVector3dToXrVector3f(state.AngularVelocity);
-                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
-            }
-            if (state.StatusFlags & pvrStatus_PositionTracked) {
-                velocity->linearVelocity = pvrVector3dToXrVector3f(state.LinearVelocity);
-                velocity->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            if (isTracked) {
+                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+                velocity->angularVelocity = ovrVector3dToXrVector3f(state.AngularVelocity);
+                velocity->linearVelocity = ovrVector3dToXrVector3f(state.LinearVelocity);
             }
         }
 
@@ -595,8 +583,8 @@ namespace virtualdesktop_openxr {
                                                           XrPosef& pose,
                                                           XrEyeGazeSampleTimeEXT* sampleTime) const {
         XrVector3f eyeGazeVector{0, 0, -1};
-        double pvrSampleTime;
-        if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, pvrSampleTime)) {
+        double ovrSampleTime;
+        if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, ovrSampleTime)) {
             return 0;
         }
 
@@ -615,7 +603,7 @@ namespace virtualdesktop_openxr {
         pose = Pose::Multiply(eyeGaze, headPose);
 
         if (sampleTime) {
-            sampleTime->time = pvrTimeToXrTime(pvrSampleTime);
+            sampleTime->time = ovrTimeToXrTime(ovrSampleTime);
         }
 
         return XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |

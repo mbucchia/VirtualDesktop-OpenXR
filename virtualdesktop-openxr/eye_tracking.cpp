@@ -54,7 +54,7 @@ namespace virtualdesktop_openxr {
             GetCursorPos(&pt);
 
             point = {(float)pt.x / 1000.f, (1000.f - pt.y) / 1000.f};
-            sampleTime = pvr_getTimeSeconds(m_pvr);
+            sampleTime = ovr_GetTimeInSeconds();
 
             unitVector = Normalize({point.x - 0.5f, 0.5f - point.y, -0.35f});
 

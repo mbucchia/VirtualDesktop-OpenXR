@@ -51,59 +51,33 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FORM_FACTOR_UNSUPPORTED;
         }
 
-        pvrHmdStatus status{};
-        bool isStatusValid = false;
-
-        // Workaround for PVR Home race condition upon destroying a session while an app (X-Plane 12) might be polling
-        // the XrSystem.
-        if (m_pvrSession) {
-            CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
-            TraceLoggingWrite(g_traceProvider,
-                              "PVR_HmdStatus",
-                              TLArg(!!status.ServiceReady, "ServiceReady"),
-                              TLArg(!!status.HmdPresent, "HmdPresent"),
-                              TLArg(!!status.HmdMounted, "HmdMounted"),
-                              TLArg(!!status.IsVisible, "IsVisible"),
-                              TLArg(!!status.DisplayLost, "DisplayLost"),
-                              TLArg(!!status.ShouldQuit, "ShouldQuit"));
-
-            // If PVR Home took over the active session, then force re-creating our session in order to continue.
-            if (status.ShouldQuit) {
-                pvr_destroySession(m_pvrSession);
-                m_pvrSession = nullptr;
-            } else {
-                isStatusValid = true;
-            }
-        }
-
-        // Create the PVR session if needed.
-        if (!ensurePvrSession()) {
+        const auto result = ovr_Create(&m_ovrSession, reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid));
+        if (result == ovrError_NoHmd) {
             m_cachedHmdInfo = {};
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
+        CHECK_OVRCMD(result);
 
         // Check for HMD presence.
-        if (!isStatusValid) {
-            CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &status));
-            TraceLoggingWrite(g_traceProvider,
-                              "PVR_HmdStatus",
-                              TLArg(!!status.ServiceReady, "ServiceReady"),
-                              TLArg(!!status.HmdPresent, "HmdPresent"),
-                              TLArg(!!status.HmdMounted, "HmdMounted"),
-                              TLArg(!!status.IsVisible, "IsVisible"),
-                              TLArg(!!status.DisplayLost, "DisplayLost"),
-                              TLArg(!!status.ShouldQuit, "ShouldQuit"));
-        }
-        if (!(status.ServiceReady && status.HmdPresent)) {
+        ovrSessionStatus status{};
+        CHECK_OVRCMD(ovr_GetSessionStatus(m_ovrSession, &status));
+        TraceLoggingWrite(g_traceProvider,
+                          "OVR_SessionStatus",
+                          TLArg(!!status.HmdPresent, "HmdPresent"),
+                          TLArg(!!status.HmdMounted, "HmdMounted"),
+                          TLArg(!!status.IsVisible, "IsVisible"),
+                          TLArg(!!status.DisplayLost, "DisplayLost"),
+                          TLArg(!!status.ShouldQuit, "ShouldQuit"));
+        if (!status.HmdPresent) {
             m_cachedHmdInfo = {};
             return XR_ERROR_FORM_FACTOR_UNAVAILABLE;
         }
 
         // Query HMD properties.
-        pvrHmdInfo hmdInfo{};
-        CHECK_PVRCMD(pvr_getHmdInfo(m_pvrSession, &hmdInfo));
+        const ovrHmdDesc hmdInfo = ovr_GetHmdDesc(m_ovrSession);
         TraceLoggingWrite(g_traceProvider,
-                          "PVR_HmdInfo",
+                          "OVR_HmdDesc",
+                          TLArg((int)hmdInfo.Type, "Type"),
                           TLArg(hmdInfo.VendorId, "VendorId"),
                           TLArg(hmdInfo.ProductId, "ProductId"),
                           TLArg(hmdInfo.Manufacturer, "Manufacturer"),
@@ -112,7 +86,11 @@ namespace virtualdesktop_openxr {
                           TLArg(hmdInfo.FirmwareMinor, "FirmwareMinor"),
                           TLArg(hmdInfo.FirmwareMajor, "FirmwareMajor"),
                           TLArg(hmdInfo.Resolution.w, "ResolutionWidth"),
-                          TLArg(hmdInfo.Resolution.h, "ResolutionHeight"));
+                          TLArg(hmdInfo.Resolution.h, "ResolutionHeight"),
+                          TLArg(hmdInfo.DisplayRefreshRate, "DisplayRefreshRate"));
+
+        m_displayRefreshRate = hmdInfo.DisplayRefreshRate;
+        m_idealFrameDuration = m_predictedFrameDuration = 1.0 / hmdInfo.DisplayRefreshRate;
 
         // Detect if the device changed.
         if (std::string_view(m_cachedHmdInfo.SerialNumber) != hmdInfo.SerialNumber) {
@@ -131,14 +109,13 @@ namespace virtualdesktop_openxr {
             }
 
             // Cache common information.
-            CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Left, &m_cachedEyeInfo[xr::StereoView::Left]));
-            CHECK_PVRCMD(pvr_getEyeRenderInfo(m_pvrSession, pvrEye_Right, &m_cachedEyeInfo[xr::StereoView::Right]));
+            m_cachedEyeInfo[xr::StereoView::Left] =
+                ovr_GetRenderDesc(m_ovrSession, ovrEye_Left, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Left]);
+            m_cachedEyeInfo[xr::StereoView::Right] =
+                ovr_GetRenderDesc(m_ovrSession, ovrEye_Right, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Right]);
 
-            m_floorHeight = pvr_getFloatConfig(m_pvrSession, CONFIG_KEY_EYE_HEIGHT, 0.f);
-            TraceLoggingWrite(g_traceProvider,
-                              "PVR_GetConfig",
-                              TLArg(CONFIG_KEY_EYE_HEIGHT, "Config"),
-                              TLArg(m_floorHeight, "EyeHeight"));
+            m_floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(m_floorHeight, "EyeHeight"));
 
             for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
                 m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
@@ -147,14 +124,14 @@ namespace virtualdesktop_openxr {
                 m_cachedEyeFov[i].angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
 
                 TraceLoggingWrite(g_traceProvider,
-                                  "PVR_EyeRenderInfo",
+                                  "OVR_EyeRenderInfo",
                                   TLArg(i == xr::StereoView::Left ? "Left" : "Right", "Eye"),
                                   TLArg(xr::ToString(m_cachedEyeInfo[i].HmdToEyePose).c_str(), "EyePose"),
                                   TLArg(xr::ToString(m_cachedEyeFov[i]).c_str(), "Fov"));
             }
 
             // Setup common parameters.
-            CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
+            CHECK_OVRCMD(ovr_SetTrackingOriginType(m_ovrSession, ovrTrackingOrigin_EyeLevel));
         }
 
         m_systemCreated = true;
@@ -202,8 +179,8 @@ namespace virtualdesktop_openxr {
         properties->trackingProperties.positionTracking = XR_TRUE;
         properties->trackingProperties.orientationTracking = XR_TRUE;
 
-        static_assert(pvrMaxLayerCount >= XR_MIN_COMPOSITION_LAYERS_SUPPORTED);
-        properties->graphicsProperties.maxLayerCount = pvrMaxLayerCount;
+        static_assert(ovrMaxLayerCount >= XR_MIN_COMPOSITION_LAYERS_SUPPORTED);
+        properties->graphicsProperties.maxLayerCount = ovrMaxLayerCount;
         properties->graphicsProperties.maxSwapchainImageWidth = 16384;
         properties->graphicsProperties.maxSwapchainImageHeight = 16384;
 
@@ -279,49 +256,6 @@ namespace virtualdesktop_openxr {
         }
 
         return XR_SUCCESS;
-    }
-
-    // Retrieve some information from PVR needed for graphic/frame management.
-    void OpenXrRuntime::fillDisplayDeviceInfo() {
-        CHECK_MSG(ensurePvrSession(), "PVR session was lost");
-
-        pvrDisplayInfo info{};
-        CHECK_PVRCMD(pvr_getEyeDisplayInfo(m_pvrSession, pvrEye_Left, &info));
-        TraceLoggingWrite(g_traceProvider,
-                          "PVR_EyeDisplayInfo",
-                          TraceLoggingCharArray((char*)&info.luid, sizeof(LUID), "Luid"),
-                          TLArg(info.edid_vid, "EdidVid"),
-                          TLArg(info.edid_pid, "EdidPid"),
-                          TLArg(info.pos_x, "PosX"),
-                          TLArg(info.pos_y, "PosY"),
-                          TLArg(info.width, "Width"),
-                          TLArg(info.height, "Height"),
-                          TLArg(info.refresh_rate, "RefreshRate"),
-                          TLArg((int)info.disp_state, "DispState"),
-                          TLArg((int)info.eye_display, "EyeDisplay"),
-                          TLArg((int)info.eye_rotate, "EyeRotate"));
-
-        // We also store the expected frame duration.
-        m_displayRefreshRate = info.refresh_rate;
-        m_idealFrameDuration = m_predictedFrameDuration = 1.0 / info.refresh_rate;
-
-        memcpy(&m_adapterLuid, &info.luid, sizeof(LUID));
-    }
-
-    bool OpenXrRuntime::ensurePvrSession() {
-        if (!m_pvrSession) {
-            const auto result = pvr_createSession(m_pvr, &m_pvrSession);
-
-            // This is the error returned when pi_server is not running. We pretend the HMD is not found.
-            if (result == pvrResult::pvr_rpc_failed) {
-                return false;
-            }
-
-            CHECK_PVRCMD(result);
-            CHECK_PVRCMD(pvr_setTrackingOriginType(m_pvrSession, pvrTrackingOrigin_EyeLevel));
-        }
-
-        return true;
     }
 
 } // namespace virtualdesktop_openxr

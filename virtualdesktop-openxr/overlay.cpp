@@ -43,27 +43,27 @@ namespace virtualdesktop_openxr {
         hr = DirectX::LoadFromWICFile((dllHome / L"overlay.png").c_str(), DirectX::WIC_FLAGS_NONE, nullptr, *image);
 
         if (SUCCEEDED(hr)) {
-            hr = DirectX::CreateTexture(m_pvrSubmissionDevice.Get(),
+            hr = DirectX::CreateTexture(m_ovrSubmissionDevice.Get(),
                                         image->GetImages(),
                                         1,
                                         image->GetMetadata(),
                                         m_overlayBackground.ReleaseAndGetAddressOf());
 
             if (SUCCEEDED(hr)) {
-                // Create a PVR swapchain for the overlay.
-                pvrTextureSwapChainDesc desc{};
-                desc.Type = pvrTexture_2D;
+                // Create an OVR swapchain for the overlay.
+                ovrTextureSwapChainDesc desc{};
+                desc.Type = ovrTexture_2D;
                 desc.ArraySize = 1;
                 desc.Width = m_overlayExtent.width = (int)image->GetMetadata().width;
                 desc.Height = m_overlayExtent.height = (int)image->GetMetadata().height;
                 desc.MipLevels = 1;
                 desc.SampleCount = 1;
                 m_overlaySwapchainFormat = image->GetMetadata().format;
-                desc.Format = dxgiToPvrTextureFormat(m_overlaySwapchainFormat);
-                desc.BindFlags = pvrTextureBind_DX_RenderTarget;
+                desc.Format = dxgiToOvrTextureFormat(m_overlaySwapchainFormat);
+                desc.BindFlags = ovrTextureBind_DX_RenderTarget;
 
-                CHECK_PVRCMD(pvr_createTextureSwapChainDX(
-                    m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &m_overlaySwapchain));
+                CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
+                    m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_overlaySwapchain));
             } else {
                 ErrorLog("Failed to create texture from overlay.png: %X\n");
             }
@@ -81,66 +81,40 @@ namespace virtualdesktop_openxr {
 
         // Acquire the next image.
         int imageIndex = -1;
-        CHECK_PVRCMD(pvr_getTextureSwapChainCurrentIndex(m_pvrSession, m_overlaySwapchain, &imageIndex));
+        CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(m_ovrSession, m_overlaySwapchain, &imageIndex));
         ComPtr<ID3D11Texture2D> swapchainTexture;
-        CHECK_PVRCMD(pvr_getTextureSwapChainBufferDX(
-            m_pvrSession, m_overlaySwapchain, imageIndex, IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
+        CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(
+            m_ovrSession, m_overlaySwapchain, imageIndex, IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
 
         // We are about to do something destructive to the application context. Save the context. It will be
         // restored at the end of xrEndFrame().
-        if (m_d3d11Device == m_pvrSubmissionDevice && !m_d3d11ContextState) {
-            m_pvrSubmissionContext->SwapDeviceContextState(m_pvrSubmissionContextState.Get(),
+        if (m_d3d11Device == m_ovrSubmissionDevice && !m_d3d11ContextState) {
+            m_ovrSubmissionContext->SwapDeviceContextState(m_ovrSubmissionContextState.Get(),
                                                            m_d3d11ContextState.ReleaseAndGetAddressOf());
         }
 
         // Copy the background.
-        m_pvrSubmissionContext->CopyResource(swapchainTexture.Get(), m_overlayBackground.Get());
-        m_pvrSubmissionContext->Flush();
+        m_ovrSubmissionContext->CopyResource(swapchainTexture.Get(), m_overlayBackground.Get());
+        m_ovrSubmissionContext->Flush();
 
         // Draw the text.
-        const auto getBatteryLevel = [&](pvrTrackedDeviceType device) -> std::wstring {
-            const int batteryPercent =
-                pvr_getTrackedDeviceIntProperty(m_pvrSession, device, pvrTrackedDeviceProp_BatteryPercent_int, -1);
-            if (batteryPercent >= 0) {
-                if (batteryPercent > 20) {
-                    return fmt::format(L"{}%", batteryPercent);
-                } else {
-                    return fmt::format(L"{}%  \x26A0", batteryPercent);
-                }
-            } else {
-                const int batteryLevel =
-                    pvr_getTrackedDeviceIntProperty(m_pvrSession, device, pvrTrackedDeviceProp_BatteryLevel_int, -1);
-                if (batteryLevel != pvrTrackedDeviceBateryLevel_NotSupport) {
-                    switch (batteryLevel) {
-                    case pvrTrackedDeviceBateryLevel_Low:
-                        return L"Low \x26A0";
-                    case pvrTrackedDeviceBateryLevel_Middle:
-                        return L"Medium";
-                    case pvrTrackedDeviceBateryLevel_High:
-                        return L"High";
-                    }
-                }
-            }
-            return L"???";
-        };
-
-        m_pvrSubmissionContext->ClearState();
+        m_ovrSubmissionContext->ClearState();
 
         ComPtr<ID3D11RenderTargetView> rtv;
         {
             D3D11_RENDER_TARGET_VIEW_DESC desc{};
             desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
             desc.Format = m_overlaySwapchainFormat;
-            CHECK_HRCMD(m_pvrSubmissionDevice->CreateRenderTargetView(
+            CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
                 swapchainTexture.Get(), &desc, rtv.ReleaseAndGetAddressOf()));
         }
-        m_pvrSubmissionContext->OMSetRenderTargets(1, rtv.GetAddressOf(), nullptr);
+        m_ovrSubmissionContext->OMSetRenderTargets(1, rtv.GetAddressOf(), nullptr);
         {
             D3D11_VIEWPORT viewport{};
             viewport.Width = (float)m_overlayExtent.width;
             viewport.Height = (float)m_overlayExtent.height;
             viewport.MaxDepth = 1;
-            m_pvrSubmissionContext->RSSetViewports(1, &viewport);
+            m_ovrSubmissionContext->RSSetViewports(1, &viewport);
         }
 
         const uint32_t color = 0xffffffff;
@@ -149,7 +123,7 @@ namespace virtualdesktop_openxr {
             char buf[8]{};
             std::strftime(buf, sizeof(buf), "%H:%M", std::localtime(&now));
 
-            m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
+            m_fontNormal->DrawString(m_ovrSubmissionContext.Get(),
                                      std::wstring(buf, buf + strlen(buf)).c_str(),
                                      200.f,
                                      600.f,
@@ -158,30 +132,8 @@ namespace virtualdesktop_openxr {
                                      FW1_LEFT | FW1_NOFLUSH);
         }
 
-        m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
-                                 getBatteryLevel(pvrTrackedDevice_HMD).c_str(),
-                                 150.f,
-                                 726.f,
-                                 744.f,
-                                 color,
-                                 FW1_CENTER | FW1_NOFLUSH);
-
-        for (uint32_t side = 0; side < 2; side++) {
-            m_fontNormal->DrawString(
-                m_pvrSubmissionContext.Get(),
-                m_isControllerActive[side]
-                    ? getBatteryLevel(side == 0 ? pvrTrackedDevice_LeftController : pvrTrackedDevice_RightController)
-                          .c_str()
-                    : L"-",
-                150.f,
-                side == 0 ? 204.f : 1278.f,
-                744.f,
-                color,
-                FW1_CENTER | FW1_NOFLUSH);
-        }
-
         const auto fps = m_frameTimes.size();
-        m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
+        m_fontNormal->DrawString(m_ovrSubmissionContext.Get(),
                                  fmt::format(L"{}", fps).c_str(),
                                  150.f,
                                  1400.f,
@@ -189,8 +141,8 @@ namespace virtualdesktop_openxr {
                                  color,
                                  FW1_RIGHT | FW1_NOFLUSH);
 
-        m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
-                                 m_isSmartSmoothingEnabled ? (m_isSmartSmoothingActive ? L"Active" : L"Standby")
+        m_fontNormal->DrawString(m_ovrSubmissionContext.Get(),
+                                 m_isAsyncReprojectionEnabled ? (m_isAsyncReprojectionActive ? L"Active" : L"Standby")
                                                            : L"Off",
                                  150.f,
                                  1400.f,
@@ -198,7 +150,7 @@ namespace virtualdesktop_openxr {
                                  color,
                                  FW1_RIGHT | FW1_NOFLUSH);
 
-        m_fontNormal->DrawString(m_pvrSubmissionContext.Get(),
+        m_fontNormal->DrawString(m_ovrSubmissionContext.Get(),
                                  fmt::format(L"{}x{}", m_proj0Extent.width, m_proj0Extent.height).c_str(),
                                  150.f,
                                  1400.f,
@@ -206,9 +158,9 @@ namespace virtualdesktop_openxr {
                                  color,
                                  FW1_RIGHT | FW1_NOFLUSH);
 
-        m_fontNormal->Flush(m_pvrSubmissionContext.Get());
+        m_fontNormal->Flush(m_ovrSubmissionContext.Get());
 
-        CHECK_PVRCMD(pvr_commitTextureSwapChain(m_pvrSession, m_overlaySwapchain));
+        CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, m_overlaySwapchain));
     }
 
 } // namespace virtualdesktop_openxr

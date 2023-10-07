@@ -53,18 +53,16 @@ namespace virtualdesktop_openxr {
         }
 
         // Check for user presence and exit conditions.
-        CHECK_PVRCMD(pvr_getHmdStatus(m_pvrSession, &m_hmdStatus));
+        CHECK_OVRCMD(ovr_GetSessionStatus(m_ovrSession, &m_hmdStatus));
         TraceLoggingWrite(g_traceProvider,
-                          "PVR_HmdStatus",
-                          TLArg(!!m_hmdStatus.ServiceReady, "ServiceReady"),
+                          "OVR_SessionStatus",
                           TLArg(!!m_hmdStatus.HmdPresent, "HmdPresent"),
                           TLArg(!!m_hmdStatus.HmdMounted, "HmdMounted"),
                           TLArg(!!m_hmdStatus.IsVisible, "IsVisible"),
                           TLArg(!!m_hmdStatus.DisplayLost, "DisplayLost"),
                           TLArg(!!m_hmdStatus.ShouldQuit, "ShouldQuit"));
         if (!m_sessionLossPending) {
-            m_sessionLossPending = !(m_hmdStatus.ServiceReady && m_hmdStatus.HmdPresent) || m_hmdStatus.DisplayLost ||
-                                   m_hmdStatus.ShouldQuit;
+            m_sessionLossPending = !m_hmdStatus.HmdPresent || m_hmdStatus.DisplayLost || m_hmdStatus.ShouldQuit;
         }
         updateSessionState();
 
@@ -101,61 +99,32 @@ namespace virtualdesktop_openxr {
                 TraceLoggingWriteStop(waitBeginFrame, "WaitBeginFrame");
             }
 
-            // Workaround: PVR cannot wait for a frame without having a device. If no swapchain was created up to this
-            // point, we must create one to initialize PVR.
-            if (!m_pvrSession->envh->pvr_dxgl_interface) {
-                // Make as small as possible of a memory footprint...
-                pvrTextureSwapChainDesc desc{};
-                desc.Type = pvrTexture_2D;
-                desc.StaticImage = true;
-                desc.ArraySize = 1;
-                desc.Width = desc.Height = 128;
-                desc.MipLevels = 1;
-                desc.SampleCount = 1;
-                desc.Format = PVR_FORMAT_B8G8R8A8_UNORM;
-
-                pvrTextureSwapChain tempSwapchain;
-                CHECK_PVRCMD(
-                    pvr_createTextureSwapChainDX(m_pvrSession, m_pvrSubmissionDevice.Get(), &desc, &tempSwapchain));
-
-                // ...and free the memory right away.
-                pvr_destroyTextureSwapChain(m_pvrSession, tempSwapchain);
-            }
-
             if (m_needStartAsyncSubmissionThread) {
                 m_terminateAsyncThread = false;
                 m_asyncSubmissionThread = std::thread([&]() { asyncSubmissionThread(); });
                 m_needStartAsyncSubmissionThread = false;
             }
 
-            // Wait for PVR to be ready for the next frame.
-            const long long pvrFrameId = m_frameWaited;
+            // Wait for OVR to be ready for the next frame.
+            const long long ovrFrameId = m_frameWaited;
             if (!m_useAsyncSubmission) {
                 TraceLocalActivity(waitToBeginFrame);
-                TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(pvrFrameId, "FrameId"));
-                // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
-                // message:
-                //   [PVR] wait rendering complete event failed:258
-                // Let's ignore this for now and hope for the best.
+                TraceLoggingWriteStart(waitToBeginFrame, "OVR_WaitToBeginFrame", TLArg(ovrFrameId, "FrameId"));
                 lock.unlock();
-                const auto result = pvr_waitToBeginFrame(m_pvrSession, pvrFrameId);
+                CHECK_OVRCMD(ovr_WaitToBeginFrame(m_ovrSession, ovrFrameId));
                 lock.lock();
-                if (result != pvr_success) {
-                    ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
-                }
-                TraceLoggingWriteStop(
-                    waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                TraceLoggingWriteStop(waitToBeginFrame, "OVR_WaitToBeginFrame");
             } else {
                 waitForAsyncSubmissionIdle(m_useRunningStart);
-                TraceLoggingWrite(g_traceProvider, "AcquiredFrame", TLArg(pvrFrameId, "FrameId"));
+                TraceLoggingWrite(g_traceProvider, "AcquiredFrame", TLArg(ovrFrameId, "FrameId"));
             }
 
             if (IsTraceEnabled()) {
                 waitTimer.stop();
             }
 
-            const double now = pvr_getTimeSeconds(m_pvr);
-            double predictedDisplayTime = pvr_getPredictedDisplayTime(m_pvrSession, pvrFrameId);
+            const double now = ovr_GetTimeInSeconds();
+            double predictedDisplayTime = ovr_GetPredictedDisplayTime(m_ovrSession, ovrFrameId);
             TraceLoggingWrite(g_traceProvider,
                               "WaitFrame",
                               TLArg(now, "Now"),
@@ -164,16 +133,16 @@ namespace virtualdesktop_openxr {
                               TLArg(waitTimer.query(), "WaitDurationUs"));
 
             // Setup the app frame for use and the next frame for this call.
-            frameState->predictedDisplayTime = pvrTimeToXrTime(predictedDisplayTime);
+            frameState->predictedDisplayTime = ovrTimeToXrTime(predictedDisplayTime);
 
-            // Workaround: during early calls, PVR times might violate OpenXR rules.
+            // Workaround: during early calls, OVR times might violate OpenXR rules.
             if (frameState->predictedDisplayTime <= m_lastPredictedDisplayTime) {
                 frameState->predictedDisplayTime = m_lastPredictedDisplayTime + 1;
             }
             m_lastPredictedDisplayTime = frameState->predictedDisplayTime;
 
             // We always use the native frame duration, regardless of Smart Smoothing.
-            frameState->predictedDisplayPeriod = pvrTimeToXrTime(m_predictedFrameDuration);
+            frameState->predictedDisplayPeriod = ovrTimeToXrTime(m_predictedFrameDuration);
 
             m_frameTimerApp.start();
 
@@ -242,20 +211,13 @@ namespace virtualdesktop_openxr {
                 frameDiscarded = true;
             }
 
-            // Tell PVR we are about to begin the frame.
-            const long long pvrFrameId = m_frameWaited - 1;
+            // Tell OVR we are about to begin the frame.
+            const long long ovrFrameId = m_frameWaited - 1;
             if (!m_useAsyncSubmission) {
                 TraceLocalActivity(beginFrame);
-                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
-                // Workaround: PVR will occasionally fail with result code -1 (undocumented) and the following log
-                // message:
-                //   [PVR] wait rendering complete event failed:258
-                // Let's ignore this for now and hope for the best.
-                const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
-                if (result != pvr_success) {
-                    ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
-                }
-                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                TraceLoggingWriteStart(beginFrame, "OVR_BeginFrame", TLArg(ovrFrameId, "FrameId"));
+                CHECK_OVRCMD(ovr_BeginFrame(m_ovrSession, ovrFrameId));
+                TraceLoggingWriteStop(beginFrame, "OVR_BeginFrame");
             }
 
             // Per spec: "A successful call to xrBeginFrame again with no intervening xrEndFrame call must result in the
@@ -307,16 +269,17 @@ namespace virtualdesktop_openxr {
                               TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_all();
 
-            m_isSmartSmoothingEnabled = pvr_getIntConfig(m_pvrSession, "dbg_asw_enable", 0);
-            m_isSmartSmoothingActive = pvr_getIntConfig(m_pvrSession, "asw_active", 0);
-            TraceLoggingWrite(
-                g_traceProvider,
-                "PVR_Status",
-                TLArg(m_isSmartSmoothingEnabled, "EnableSmartSmoothing"),
-                TLArg(!!pvr_getIntConfig(m_pvrSession, "asw_available", 0), "SmartSmoothingAvailable"),
-                TLArg(m_isSmartSmoothingActive, "SmartSmoothingActive"));
+            ovrPerfStats stats{};
+            if (OVR_SUCCESS(ovr_GetPerfStats(m_ovrSession, &stats))) {
+                m_isAsyncReprojectionEnabled = stats.AswIsAvailable;
+                m_isAsyncReprojectionActive = stats.FrameStatsCount > 0 && stats.FrameStats[0].AswIsActive;
+                TraceLoggingWrite(g_traceProvider,
+                                  "OVR_Status",
+                                  TLArg(m_isAsyncReprojectionEnabled, "AsyncReprojectionAvailable"),
+                                  TLArg(m_isAsyncReprojectionActive, "AsyncReprojectionActive"));
+            }
 
-            if (m_isSmartSmoothingActive) {
+            if (m_isAsyncReprojectionActive) {
                 m_predictedFrameDuration = m_idealFrameDuration * 2.f;
             } else {
                 m_predictedFrameDuration = m_idealFrameDuration;
@@ -354,7 +317,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_TIME_INVALID;
         }
 
-        if (frameEndInfo->layerCount > pvrMaxLayerCount) {
+        if (frameEndInfo->layerCount > ovrMaxLayerCount) {
             return XR_ERROR_LAYER_LIMIT_EXCEEDED;
         }
 
@@ -412,13 +375,13 @@ namespace virtualdesktop_openxr {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
-            std::set<std::pair<pvrTextureSwapChain, uint32_t>> committedSwapchainImages;
+            std::set<std::pair<ovrTextureSwapChain, uint32_t>> committedSwapchainImages;
 
             bool isProj0SRGB = false;
             bool isFirstProjectionLayer = true;
 
             // Construct the list of layers.
-            std::vector<pvrLayer_Union> layersAllocator;
+            std::vector<ovrLayer_Union> layersAllocator;
             layersAllocator.reserve(frameEndInfo->layerCount + 1);
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 if (!frameEndInfo->layers[i]) {
@@ -435,9 +398,9 @@ namespace virtualdesktop_openxr {
                 auto* layer = &layersAllocator.back();
                 layer->Header.Flags = 0;
 
-                // OpenGL needs to flip the texture vertically, which PVR can conveniently do for us.
+                // OpenGL needs to flip the texture vertically, which OVR can conveniently do for us.
                 if (isOpenGLSession()) {
-                    layer->Header.Flags = pvrLayerFlag_TextureOriginAtBottomLeft;
+                    layer->Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
                 }
 
                 if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
@@ -466,8 +429,8 @@ namespace virtualdesktop_openxr {
                     static_assert(offsetof(decltype(layer->EyeFov), SensorSampleTime) ==
                                   offsetof(decltype(layer->EyeFovDepth), SensorSampleTime));
 
-                    // Start without depth. We might change the type to pvrLayerType_EyeFovDepth further below.
-                    layer->Header.Type = pvrLayerType_EyeFov;
+                    // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
+                    layer->Header.Type = ovrLayerType_EyeFov;
 
                     for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
                         if (viewIndex == 0) {
@@ -514,23 +477,23 @@ namespace virtualdesktop_openxr {
                                                        frameEndInfo->layers[i]->layerFlags,
                                                        committedSwapchainImages);
                         layer->EyeFov.ColorTexture[viewIndex] =
-                            xrSwapchain.pvrSwapchain[proj->views[viewIndex].subImage.imageArrayIndex];
+                            xrSwapchain.ovrSwapchain[proj->views[viewIndex].subImage.imageArrayIndex];
 
-                        if (!isValidSwapchainRect(xrSwapchain.pvrDesc, proj->views[viewIndex].subImage.imageRect)) {
+                        if (!isValidSwapchainRect(xrSwapchain.ovrDesc, proj->views[viewIndex].subImage.imageRect)) {
                             return XR_ERROR_SWAPCHAIN_RECT_INVALID;
                         }
-                        layer->EyeFov.Viewport[viewIndex].x = proj->views[viewIndex].subImage.imageRect.offset.x;
-                        layer->EyeFov.Viewport[viewIndex].y = proj->views[viewIndex].subImage.imageRect.offset.y;
-                        layer->EyeFov.Viewport[viewIndex].width =
+                        layer->EyeFov.Viewport[viewIndex].Pos.x = proj->views[viewIndex].subImage.imageRect.offset.x;
+                        layer->EyeFov.Viewport[viewIndex].Pos.y = proj->views[viewIndex].subImage.imageRect.offset.y;
+                        layer->EyeFov.Viewport[viewIndex].Size.w =
                             proj->views[viewIndex].subImage.imageRect.extent.width;
-                        layer->EyeFov.Viewport[viewIndex].height =
+                        layer->EyeFov.Viewport[viewIndex].Size.h =
                             proj->views[viewIndex].subImage.imageRect.extent.height;
 
                         // Fill out pose and FOV information.
                         XrPosef layerPose;
                         locateSpace(*(Space*)proj->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
                         layer->EyeFov.RenderPose[viewIndex] =
-                            xrPoseToPvrPose(Pose::Multiply(proj->views[viewIndex].pose, layerPose));
+                            xrPoseToOvrPose(Pose::Multiply(proj->views[viewIndex].pose, layerPose));
 
                         XrFovf fov = proj->views[viewIndex].fov;
                         layer->EyeFov.Fov[viewIndex].DownTan = -tan(fov.angleDown);
@@ -540,7 +503,7 @@ namespace virtualdesktop_openxr {
 
                         // In the case of OpenXR, we expect the app to use the predictedDisplayTime to query the
                         // head pose, and pass that same time as displayTime.
-                        layer->EyeFov.SensorSampleTime = xrTimeToPvrTime(frameEndInfo->displayTime);
+                        layer->EyeFov.SensorSampleTime = xrTimeToOvrTime(frameEndInfo->displayTime);
 
                         // Submit depth.
                         if (has_XR_KHR_composition_layer_depth) {
@@ -551,7 +514,7 @@ namespace virtualdesktop_openxr {
                                     const XrCompositionLayerDepthInfoKHR* depth =
                                         reinterpret_cast<const XrCompositionLayerDepthInfoKHR*>(entry);
 
-                                    layer->Header.Type = pvrLayerType_EyeFovDepth;
+                                    layer->Header.Type = ovrLayerType_EyeFovDepth;
 
                                     TraceLoggingWrite(
                                         g_traceProvider,
@@ -587,18 +550,18 @@ namespace virtualdesktop_openxr {
                                                                    0,
                                                                    committedSwapchainImages);
                                     layer->EyeFovDepth.DepthTexture[viewIndex] =
-                                        xrDepthSwapchain.pvrSwapchain[depth->subImage.imageArrayIndex];
+                                        xrDepthSwapchain.ovrSwapchain[depth->subImage.imageArrayIndex];
 
-                                    if (!isValidSwapchainRect(xrDepthSwapchain.pvrDesc, depth->subImage.imageRect)) {
+                                    if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
                                         return XR_ERROR_SWAPCHAIN_RECT_INVALID;
                                     }
 
                                     // Fill out projection information.
-                                    layer->EyeFovDepth.DepthProjectionDesc.Projection22 =
+                                    layer->EyeFovDepth.ProjectionDesc.Projection22 =
                                         depth->farZ / (depth->nearZ - depth->farZ);
-                                    layer->EyeFovDepth.DepthProjectionDesc.Projection23 =
+                                    layer->EyeFovDepth.ProjectionDesc.Projection23 =
                                         (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
-                                    layer->EyeFovDepth.DepthProjectionDesc.Projection32 = -1.f;
+                                    layer->EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
 
                                     break;
                                 }
@@ -629,7 +592,7 @@ namespace virtualdesktop_openxr {
                                       TLArg(quad->size.height, "Height"),
                                       TLArg(xr::ToCString(quad->eyeVisibility), "EyeVisibility"));
 
-                    layer->Header.Type = pvrLayerType_Quad;
+                    layer->Header.Type = ovrLayerType_Quad;
 
                     if (!Quaternion::IsNormalized(quad->pose.orientation)) {
                         return XR_ERROR_POSE_INVALID;
@@ -645,7 +608,7 @@ namespace virtualdesktop_openxr {
                         return XR_ERROR_LAYER_INVALID;
                     }
 
-                    // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the PVR compositor.
+                    // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
                     // We cannot achieve conformance for this particular (but uncommon) API usage.
 
                     if (quad->subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize) {
@@ -658,15 +621,15 @@ namespace virtualdesktop_openxr {
                                                    quad->subImage.imageArrayIndex,
                                                    frameEndInfo->layers[i]->layerFlags,
                                                    committedSwapchainImages);
-                    layer->Quad.ColorTexture = xrSwapchain.pvrSwapchain[quad->subImage.imageArrayIndex];
+                    layer->Quad.ColorTexture = xrSwapchain.ovrSwapchain[quad->subImage.imageArrayIndex];
 
-                    if (!isValidSwapchainRect(xrSwapchain.pvrDesc, quad->subImage.imageRect)) {
+                    if (!isValidSwapchainRect(xrSwapchain.ovrDesc, quad->subImage.imageRect)) {
                         return XR_ERROR_SWAPCHAIN_RECT_INVALID;
                     }
-                    layer->Quad.Viewport.x = quad->subImage.imageRect.offset.x;
-                    layer->Quad.Viewport.y = quad->subImage.imageRect.offset.y;
-                    layer->Quad.Viewport.width = quad->subImage.imageRect.extent.width;
-                    layer->Quad.Viewport.height = quad->subImage.imageRect.extent.height;
+                    layer->Quad.Viewport.Pos.x = quad->subImage.imageRect.offset.x;
+                    layer->Quad.Viewport.Pos.y = quad->subImage.imageRect.offset.y;
+                    layer->Quad.Viewport.Size.w = quad->subImage.imageRect.extent.width;
+                    layer->Quad.Viewport.Size.h = quad->subImage.imageRect.extent.height;
 
                     if (!m_spaces.count(quad->space)) {
                         return XR_ERROR_HANDLE_INVALID;
@@ -677,10 +640,10 @@ namespace virtualdesktop_openxr {
                     if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
                         XrPosef layerPose;
                         locateSpace(*(Space*)quad->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
-                        layer->Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, layerPose));
+                        layer->Quad.QuadPoseCenter = xrPoseToOvrPose(Pose::Multiply(quad->pose, layerPose));
                     } else {
-                        layer->Quad.QuadPoseCenter = xrPoseToPvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
-                        layer->Header.Flags |= pvrLayerFlag_HeadLocked;
+                        layer->Quad.QuadPoseCenter = xrPoseToOvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
+                        layer->Header.Flags |= ovrLayerFlag_HeadLocked;
                     }
 
                     layer->Quad.QuadSize.x = quad->size.width;
@@ -702,16 +665,16 @@ namespace virtualdesktop_openxr {
                     // Draw the overlay on top of everything but below the guardian (see below).
                     layersAllocator.push_back({});
                     auto& layer = layersAllocator.back();
-                    layer.Header.Type = pvrLayerType_Quad;
+                    layer.Header.Type = ovrLayerType_Quad;
                     layer.Header.Flags = 0;
                     layer.Quad.ColorTexture = m_overlaySwapchain;
-                    layer.Quad.Viewport.x = layer.Quad.Viewport.y = 0;
-                    layer.Quad.Viewport.width = m_overlayExtent.width;
-                    layer.Quad.Viewport.height = m_overlayExtent.height;
+                    layer.Quad.Viewport.Pos.x = layer.Quad.Viewport.Pos.y = 0;
+                    layer.Quad.Viewport.Size.w = m_overlayExtent.width;
+                    layer.Quad.Viewport.Size.h = m_overlayExtent.height;
 
                     // Place the guardian in 3D space as a 2D overlay.
                     XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-                    layer.Quad.QuadPoseCenter = xrPoseToPvrPose(m_overlayPose);
+                    layer.Quad.QuadPoseCenter = xrPoseToOvrPose(m_overlayPose);
                     layer.Quad.QuadSize.x = 0.5f;
                     layer.Quad.QuadSize.y =
                         layer.Quad.QuadSize.x * ((float)m_overlayExtent.height / m_overlayExtent.width);
@@ -736,23 +699,23 @@ namespace virtualdesktop_openxr {
                     // Draw the guardian on top of everything.
                     layersAllocator.push_back({});
                     auto& layer = layersAllocator.back();
-                    layer.Header.Type = pvrLayerType_Quad;
+                    layer.Header.Type = ovrLayerType_Quad;
                     layer.Header.Flags = 0;
                     layer.Quad.ColorTexture = m_guardianSwapchain;
-                    layer.Quad.Viewport.x = layer.Quad.Viewport.y = 0;
-                    layer.Quad.Viewport.width = m_guardianExtent.width;
-                    layer.Quad.Viewport.height = m_guardianExtent.height;
+                    layer.Quad.Viewport.Pos.x = layer.Quad.Viewport.Pos.y = 0;
+                    layer.Quad.Viewport.Size.w = m_guardianExtent.width;
+                    layer.Quad.Viewport.Size.h = m_guardianExtent.height;
 
                     // Place the guardian in 3D space as a 2D overlay.
-                    layer.Quad.QuadPoseCenter = xrPoseToPvrPose(guardianToOrigin);
+                    layer.Quad.QuadPoseCenter = xrPoseToOvrPose(guardianToOrigin);
                     layer.Quad.QuadSize.x = layer.Quad.QuadSize.y = m_guardianRadius * 2;
                 }
             }
 
-            // Add a dummy layer so we can still call pvr_endFrame() for timing purposes.
+            // Add a dummy layer so we can still call ovr_endFrame() for timing purposes.
             if (layersAllocator.empty()) {
                 layersAllocator.push_back({});
-                layersAllocator.back().Header.Type = pvrLayerType_Disabled;
+                layersAllocator.back().Header.Type = ovrLayerType_Disabled;
             }
 
             if (IsTraceEnabled()) {
@@ -760,20 +723,20 @@ namespace virtualdesktop_openxr {
             }
 
             // Update the FPS counter.
-            const auto now = pvr_getTimeSeconds(m_pvr);
+            const auto now = ovr_GetTimeInSeconds();
             m_frameTimes.push_back(now);
             while (now - m_frameTimes.front() >= 1.0) {
                 m_frameTimes.pop_front();
             }
 
-            // Submit the layers to PVR.
-            const long long pvrFrameId = m_frameBegun - 1;
+            // Submit the layers to OVR.
+            const long long ovrFrameId = m_frameBegun - 1;
             if (!m_useAsyncSubmission) {
-                std::vector<pvrLayerHeader*> layers;
+                std::vector<ovrLayerHeader*> layers;
                 for (auto& layer : layersAllocator) {
                     layers.push_back(&layer.Header);
 
-                    if (layers.size() == pvrMaxLayerCount) {
+                    if (layers.size() == ovrMaxLayerCount) {
                         ErrorLog("Too many layers in this frame (%u)\n", layersAllocator.size());
                         break;
                     }
@@ -781,14 +744,18 @@ namespace virtualdesktop_openxr {
 
                 TraceLocalActivity(endFrame);
                 TraceLoggingWriteStart(endFrame,
-                                       "PVR_EndFrame",
-                                       TLArg(pvrFrameId, "FrameId"),
+                                       "OVR_EndFrame",
+                                       TLArg(ovrFrameId, "FrameId"),
                                        TLArg(layers.size(), "NumLayers"),
-                                       TLArg(m_frameTimes.size(), "MeasuredFps"),
-                                       TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                       TLArg(m_frameTimes.size(), "Fps"),
                                        TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
-                CHECK_PVRCMD(pvr_endFrame(m_pvrSession, pvrFrameId, layers.data(), (unsigned int)layers.size()));
-                TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+                ovrViewScaleDesc scaleDesc{};
+                scaleDesc.HmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
+                scaleDesc.HmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
+                scaleDesc.HmdSpaceToWorldScaleInMeters = 1.f;
+                CHECK_OVRCMD(
+                    ovr_EndFrame(m_ovrSession, ovrFrameId, &scaleDesc, layers.data(), (unsigned int)layers.size()));
+                TraceLoggingWriteStop(endFrame, "OVR_EndFrame");
             }
 
             // Defer initialization of mirror window resources until they are first needed.
@@ -805,15 +772,14 @@ namespace virtualdesktop_openxr {
             // When using RenderDoc, signal a frame through the dummy swapchain.
             if (m_dxgiSwapchain) {
                 m_dxgiSwapchain->Present(0, 0);
-                m_pvrSubmissionContext->Flush();
+                m_ovrSubmissionContext->Flush();
             }
 
             if (m_useAsyncSubmission) {
                 TraceLoggingWrite(g_traceProvider,
                                   "SubmitLayers",
-                                  TLArg(pvrFrameId, "FrameId"),
-                                  TLArg(m_frameTimes.size(), "MeasuredFps"),
-                                  TLArg(pvr_getFloatConfig(m_pvrSession, "client_fps", 0), "ClientFps"),
+                                  TLArg(ovrFrameId, "FrameId"),
+                                  TLArg(m_frameTimes.size(), "Fps"),
                                   TLArg(lastPrecompositionTime, "LastPrecompositionTimeUs"));
 
                 std::unique_lock lock(m_asyncSubmissionMutex);
@@ -852,52 +818,20 @@ namespace virtualdesktop_openxr {
 
         std::optional<long long> lastWaitedFrameId;
         while (true) {
-            const long long pvrFrameId = m_frameCompleted;
+            const long long ovrFrameId = m_frameCompleted;
             {
-                // PVR doesn't like gaps in frame ID, but these can happen when an app intentionally discard a frame. So
-                // we make sure we never skip a frame ID.
-                for (long long frameId = lastWaitedFrameId.value_or(pvrFrameId - 1) + 1; frameId <= pvrFrameId;
-                     frameId++) {
-                    TraceLocalActivity(waitToBeginFrame);
-                    TraceLoggingWriteStart(waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(frameId, "FrameId"));
-                    // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xrWaitFrame().
-                    const auto result = pvr_waitToBeginFrame(m_pvrSession, frameId);
-                    if (result != pvr_success) {
-                        ErrorLog("pvr_waitToBeginFrame() failed with code: %s\n", xr::ToString(result).c_str());
-                    }
-                    TraceLoggingWriteStop(
-                        waitToBeginFrame, "PVR_WaitToBeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
-
-                    // PVR requires us to complete each frame...
-                    if (frameId != pvrFrameId) {
-                        {
-                            TraceLocalActivity(beginFrame);
-                            TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(frameId, "FrameId"));
-                            // Workaround: PVR will occasionally fail with result code -1 (undocumented). See
-                            // xBeginFrame().
-                            const auto result = pvr_beginFrame(m_pvrSession, frameId);
-                            if (result != pvr_success) {
-                                ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
-                            }
-                            TraceLoggingWriteStop(
-                                beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
-                        }
-                    }
-                }
-                lastWaitedFrameId = pvrFrameId;
+                TraceLocalActivity(waitToBeginFrame);
+                TraceLoggingWriteStart(waitToBeginFrame, "OVR_WaitToBeginFrame", TLArg(ovrFrameId, "FrameId"));
+                CHECK_OVRCMD(ovr_WaitToBeginFrame(m_ovrSession, ovrFrameId));
+                TraceLoggingWriteStop(waitToBeginFrame, "OVR_WaitToBeginFrame");
             }
             m_lastWaitToBeginFrameTime = std::chrono::high_resolution_clock::now();
 
-            // We either begin the frame immediately, or do it just-in-time before pvr_endFrame().
             {
                 TraceLocalActivity(beginFrame);
-                TraceLoggingWriteStart(beginFrame, "PVR_BeginFrame", TLArg(pvrFrameId, "FrameId"));
-                // Workaround: PVR will occasionally fail with result code -1 (undocumented). See xBeginFrame().
-                const auto result = pvr_beginFrame(m_pvrSession, pvrFrameId);
-                if (result != pvr_success) {
-                    ErrorLog("pvr_beginFrame() failed with code: %s\n", xr::ToString(result).c_str());
-                }
-                TraceLoggingWriteStop(beginFrame, "PVR_BeginFrame", TLArg(xr::ToString(result).c_str(), "Result"));
+                TraceLoggingWriteStart(beginFrame, "OVR_BeginFrame", TLArg(ovrFrameId, "FrameId"));
+                CHECK_OVRCMD(ovr_BeginFrame(m_ovrSession, ovrFrameId));
+                TraceLoggingWriteStop(beginFrame, "OVR_BeginFrame");
             }
 
             {
@@ -915,14 +849,12 @@ namespace virtualdesktop_openxr {
                 break;
             }
 
-            // Deferring the call to pvr_beginFrame() prevents PVR from measuring the frame and lets us override it via
-            // openvr_render_ms.
             {
-                std::vector<pvrLayerHeader*> layers;
+                std::vector<ovrLayerHeader*> layers;
                 for (auto& layer : m_layersForAsyncSubmission) {
                     layers.push_back(&layer.Header);
 
-                    if (layers.size() == pvrMaxLayerCount) {
+                    if (layers.size() == ovrMaxLayerCount) {
                         ErrorLog("Too many layers in this frame (%u)\n", m_layersForAsyncSubmission.size());
                         break;
                     }
@@ -930,9 +862,14 @@ namespace virtualdesktop_openxr {
 
                 TraceLocalActivity(endFrame);
                 TraceLoggingWriteStart(
-                    endFrame, "PVR_EndFrame", TLArg(pvrFrameId, "FrameId"), TLArg(layers.size(), "NumLayers"));
-                CHECK_PVRCMD(pvr_endFrame(m_pvrSession, pvrFrameId, layers.data(), (unsigned int)layers.size()));
-                TraceLoggingWriteStop(endFrame, "PVR_EndFrame");
+                    endFrame, "OVR_EndFrame", TLArg(ovrFrameId, "FrameId"), TLArg(layers.size(), "NumLayers"));
+                ovrViewScaleDesc scaleDesc{};
+                scaleDesc.HmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
+                scaleDesc.HmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
+                scaleDesc.HmdSpaceToWorldScaleInMeters = 1.f;
+                CHECK_OVRCMD(
+                    ovr_EndFrame(m_ovrSession, ovrFrameId, &scaleDesc, layers.data(), (unsigned int)layers.size()));
+                TraceLoggingWriteStop(endFrame, "OVR_EndFrame");
             }
         }
 
