@@ -133,13 +133,13 @@
     <ClCompile Include="overlay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPIShim.c">
-      <Filter>LibOVR</Filter>
-    </ClCompile>
     <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPI_Util.cpp">
       <Filter>LibOVR</Filter>
     </ClCompile>
     <ClCompile Include="..\external\LibOVR\Shim\OVR_StereoProjection.cpp">
+      <Filter>LibOVR</Filter>
+    </ClCompile>
+    <ClCompile Include="OVR_CAPIShim.c">
       <Filter>LibOVR</Filter>
     </ClCompile>
   </ItemGroup>
