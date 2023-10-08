@@ -87,20 +87,24 @@ namespace virtualdesktop_openxr {
                           TLArg(hmdInfo.Resolution.h, "ResolutionHeight"),
                           TLArg(hmdInfo.DisplayRefreshRate, "DisplayRefreshRate"));
 
-        m_displayRefreshRate = hmdInfo.DisplayRefreshRate;
-        m_idealFrameDuration = m_predictedFrameDuration = 1.0 / hmdInfo.DisplayRefreshRate;
-
         // Detect if the device changed.
         if (std::string_view(m_cachedHmdInfo.SerialNumber) != hmdInfo.SerialNumber) {
             m_cachedHmdInfo = hmdInfo;
             Log("Device is: %s\n", m_cachedHmdInfo.ProductName);
 
             m_eyeTrackingType = EyeTracking::None;
-            if (has_XR_EXT_eye_gaze_interaction) {
+            if (!getSetting("simulate_eye_tracking").value_or(false)) {
+                // Try initializing the eye tracking data through Virtual Desktop.`
+                if (initializeEyeTrackingMmf()) {
+                    m_eyeTrackingType = EyeTracking::Mmf;
+                }
+            } else {
                 m_eyeTrackingType = EyeTracking::Simulated;
             }
 
             // Cache common information.
+            m_displayRefreshRate = hmdInfo.DisplayRefreshRate;
+            m_idealFrameDuration = m_predictedFrameDuration = 1.0 / hmdInfo.DisplayRefreshRate;
             m_cachedEyeInfo[xr::StereoView::Left] =
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Left, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Left]);
             m_cachedEyeInfo[xr::StereoView::Right] =
@@ -127,6 +131,7 @@ namespace virtualdesktop_openxr {
         }
 
         m_systemCreated = true;
+
         *systemId = (XrSystemId)1;
 
         TraceLoggingWrite(g_traceProvider, "xrGetSystem", TLArg((int)*systemId, "SystemId"));

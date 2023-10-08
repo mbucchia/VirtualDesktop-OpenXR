@@ -34,6 +34,45 @@ namespace virtualdesktop_openxr {
     extern const std::string RuntimePrettyName;
     const std::string RegPrefix = "SOFTWARE\\VirtualDesktop-OpenXR";
 
+    namespace FaceTracking {
+
+        // See type definitions from Virtual Desktop.
+        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/FaceState.cs
+        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/Pose.cs
+        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/Quaternion.cs
+        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/Vector3.cs
+
+        struct Vector3 {
+            float x, y, z;
+        };
+
+        struct Quaternion {
+            float x, y, z, w;
+        };
+
+        struct Pose {
+            Quaternion orientation;
+            Vector3 position;
+        };
+
+        static constexpr int ExpressionCount = 63;
+        static constexpr int ConfidenceCount = 2;
+
+        struct FaceState {
+            uint8_t FaceIsValid;
+            uint8_t IsEyeFollowingBlendshapesValid;
+            float ExpressionWeights[ExpressionCount];
+            float ExpressionConfidences[ConfidenceCount];
+            uint8_t LeftEyeIsValid;
+            uint8_t RightEyeIsValid;
+            Pose LeftEyePose;
+            Pose RightEyePose;
+            float LeftEyeConfidence;
+            float RightEyeConfidence;
+        };
+
+    } // namespace FaceTracking
+
     // This class implements all APIs that the runtime supports.
     class OpenXrRuntime : public OpenXrApi {
       public:
@@ -338,6 +377,7 @@ namespace virtualdesktop_openxr {
 
         enum class EyeTracking {
             None = 0,
+            Mmf,
             Simulated,
         };
 
@@ -386,6 +426,7 @@ namespace virtualdesktop_openxr {
 
         // eye_tracking.cpp
         bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const;
+        bool initializeEyeTrackingMmf();
 
         // frame.cpp
         void asyncSubmissionThread();
@@ -471,6 +512,8 @@ namespace virtualdesktop_openxr {
         std::string m_applicationName;
         bool m_useApplicationDeviceForSubmission{true};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
+        wil::unique_handle m_faceStateFile;
+        FaceTracking::FaceState* m_faceState{nullptr};
 
         // Session state.
         ComPtr<ID3D11Device5> m_ovrSubmissionDevice;

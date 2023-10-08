@@ -157,6 +157,10 @@ namespace virtualdesktop_openxr {
             xrDestroySession((XrSession)1);
         }
 
+        if (m_faceState) {
+            UnmapViewOfFile(m_faceState);
+        }
+
         if (m_ovrSession) {
             ovr_Destroy(m_ovrSession);
         }
