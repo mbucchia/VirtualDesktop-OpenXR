@@ -99,6 +99,27 @@ namespace virtualdesktop_openxr {
                 TraceLoggingWriteStop(waitBeginFrame, "WaitBeginFrame");
             }
 
+            // Workaround: OVR cannot wait for a frame without having a device. If no swapchain was created up to this
+            // point, we must create one to initialize OVR.
+            if (m_frameWaited == 0) {
+                // Make as small as possible of a memory footprint...
+                ovrTextureSwapChainDesc desc{};
+                desc.Type = ovrTexture_2D;
+                desc.StaticImage = true;
+                desc.ArraySize = 1;
+                desc.Width = desc.Height = 128;
+                desc.MipLevels = 1;
+                desc.SampleCount = 1;
+                desc.Format = OVR_FORMAT_B8G8R8A8_UNORM;
+
+                ovrTextureSwapChain tempSwapchain;
+                CHECK_OVRCMD(
+                    ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &tempSwapchain));
+
+                // ...and free the memory right away.
+                ovr_DestroyTextureSwapChain(m_ovrSession, tempSwapchain);
+            }
+
             if (m_needStartAsyncSubmissionThread) {
                 m_terminateAsyncThread = false;
                 m_asyncSubmissionThread = std::thread([&]() { asyncSubmissionThread(); });
