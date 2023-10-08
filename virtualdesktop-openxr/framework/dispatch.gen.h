@@ -128,6 +128,8 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_KHR_win32_convert_performance_counter_time{false};
 		bool has_XR_FB_display_refresh_rate{false};
 		bool has_XR_EXT_eye_gaze_interaction{false};
+		bool has_XR_EXT_uuid{false};
+		bool has_XR_META_headset_id{false};
 
 
 	};

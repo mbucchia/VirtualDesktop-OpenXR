@@ -1746,6 +1746,12 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_EXT_eye_gaze_interaction") {
 			has_XR_EXT_eye_gaze_interaction = true;
 		}
+		else if (extensionName == "XR_EXT_uuid") {
+			has_XR_EXT_uuid = true;
+		}
+		else if (extensionName == "XR_META_headset_id") {
+			has_XR_META_headset_id = true;
+		}
 
 	}
 

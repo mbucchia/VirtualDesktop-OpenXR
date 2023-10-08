@@ -168,6 +168,15 @@ namespace virtualdesktop_openxr {
                 reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(eyeGazeInteractionProperties->next);
         }
 
+        XrSystemHeadsetIdPropertiesMETA* headsetIdProperties =
+            reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(properties->next);
+        while (headsetIdProperties) {
+            if (headsetIdProperties->type == XR_TYPE_SYSTEM_HEADSET_ID_PROPERTIES_META) {
+                break;
+            }
+            headsetIdProperties = reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(headsetIdProperties->next);
+        }
+
         properties->vendorId = m_cachedHmdInfo.VendorId;
 
         sprintf_s(properties->systemName, sizeof(properties->systemName), "%s", m_cachedHmdInfo.ProductName);
@@ -199,8 +208,12 @@ namespace virtualdesktop_openxr {
             TraceLoggingWrite(
                 g_traceProvider,
                 "xrGetSystemProperties",
-                TLArg((int)properties->systemId, "SystemId"),
                 TLArg(!!eyeGazeInteractionProperties->supportsEyeGazeInteraction, "SupportsEyeGazeInteraction"));
+        }
+
+        if (has_XR_META_headset_id && headsetIdProperties) {
+            uint8_t uuid[] = {82, 80, 120, 165, 90, 171, 77, 201, 184, 2, 30, 189, 108, 124, 255, 244};
+            memcpy(&headsetIdProperties->id, uuid, sizeof(uuid));
         }
 
         return XR_SUCCESS;
