@@ -515,9 +515,9 @@ namespace virtualdesktop_openxr {
                         layer->EyeFov.SensorSampleTime = xrTimeToOvrTime(frameEndInfo->displayTime);
 
                         // Submit depth.
-                        // TODO: For now we disable depth submission since Virtual Desktop is using it for composition
+                        // We disable depth submission since Virtual Desktop is using it for composition
                         // layers depth testing, which breaks quad layers.
-                        if (false && has_XR_KHR_composition_layer_depth) {
+                        if (m_useOculusRuntime && has_XR_KHR_composition_layer_depth) {
                             const XrBaseInStructure* entry =
                                 reinterpret_cast<const XrBaseInStructure*>(proj->views[viewIndex].next);
                             while (entry) {

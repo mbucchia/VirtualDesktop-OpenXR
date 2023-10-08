@@ -488,6 +488,7 @@ namespace virtualdesktop_openxr {
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
         // Instance & OVR state.
+        bool m_useOculusRuntime{false};
         ovrSession m_ovrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};

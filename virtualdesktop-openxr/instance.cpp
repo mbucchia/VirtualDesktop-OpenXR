@@ -463,6 +463,9 @@ namespace virtualdesktop_openxr {
             path = path / L"VirtualDesktop.";
 
             overridePath = path.wstring();
+            m_useOculusRuntime = true;
+        } else {
+            m_useOculusRuntime = false;
         }
 
         // Initialize OVR.
