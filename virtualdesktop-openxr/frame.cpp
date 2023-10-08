@@ -775,13 +775,16 @@ namespace virtualdesktop_openxr {
                 TraceLocalActivity(waitToBeginFrame);
                 TraceLoggingWriteStart(waitToBeginFrame, "OVR_WaitToBeginFrame", TLArg(ovrFrameId, "FrameId"));
                 const auto result = ovr_WaitToBeginFrame(m_ovrSession, ovrFrameId);
+                TraceLoggingWriteStop(waitToBeginFrame, "OVR_WaitToBeginFrame", TLArg((int)result, "Result"));
                 if (result == ovrError_Timeout) {
                     ErrorLog("Timeout in async submission thread! This is normal if you have a debugger attached.\n");
+                } else if (result == ovrError_NotInitialized) {
+                    ErrorLog("Not initialized in async sybmission thread! Retrying...\n");
+                    std::this_thread::sleep_for(1ms);
+                    continue;
                 } else {
                     CHECK_OVRCMD(result);
                 }
-
-                TraceLoggingWriteStop(waitToBeginFrame, "OVR_WaitToBeginFrame", TLArg((int)result, "Result"));
             }
             m_lastWaitToBeginFrameTime = std::chrono::high_resolution_clock::now();
 
