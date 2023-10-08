@@ -38,13 +38,13 @@ namespace RUNTIME_NAMESPACE {
 
 		// Specially-handled by the auto-generated code.
 		virtual XrResult xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function);
+		virtual XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties, void *returnAddress) = 0;
 
 
 		// Auto-generated entries for the requested APIs.
 		virtual XrResult xrEnumerateInstanceExtensionProperties(const char* layerName, uint32_t propertyCapacityInput, uint32_t* propertyCountOutput, XrExtensionProperties* properties) = 0;
 		virtual XrResult xrCreateInstance(const XrInstanceCreateInfo* createInfo, XrInstance* instance) = 0;
 		virtual XrResult xrDestroyInstance(XrInstance instance) = 0;
-		virtual XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties) = 0;
 		virtual XrResult xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData) = 0;
 		virtual XrResult xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE]) = 0;
 		virtual XrResult xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE]) = 0;

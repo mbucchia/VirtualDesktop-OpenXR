@@ -38,6 +38,10 @@ from xrconventions import OpenXRConventions
 
 # Things we can configure.
 EXCLUDED_API = ['xrGetInstanceProcAddr', 'xrEnumerateApiLayerProperties']
+# We rewrite the trampoline for these
+SPECIAL_API = ['xrDestroyInstance']
+# We rewrite the trampoline and prototype for these
+VERY_SPECIAL_API = ['xrGetInstanceProperties']
 EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enable', 'XR_KHR_vulkan_enable2', 'XR_KHR_opengl_enable',
               'XR_KHR_composition_layer_depth', 'XR_KHR_visibility_mask', 'XR_KHR_win32_convert_performance_counter_time', 'XR_FB_display_refresh_rate',
               'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id']
@@ -141,7 +145,7 @@ namespace RUNTIME_NAMESPACE {
         generated = ''
 
         for cur_cmd in self.core_commands + self.ext_commands:
-            if cur_cmd.name not in EXCLUDED_API + ['xrDestroyInstance']:
+            if cur_cmd.name not in EXCLUDED_API + SPECIAL_API + VERY_SPECIAL_API:
                 parameters_list = self.makeParametersList(cur_cmd)
                 arguments_list = self.makeArgumentsList(cur_cmd)
 
@@ -258,6 +262,7 @@ namespace RUNTIME_NAMESPACE {
 
 		// Specially-handled by the auto-generated code.
 		virtual XrResult xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function);
+		virtual XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties, void *returnAddress) = 0;
 '''
         write(preamble, file=self.outFile)
 
@@ -293,7 +298,7 @@ namespace RUNTIME_NAMESPACE {
         generated = ''
 
         for cur_cmd in self.core_commands + self.ext_commands:
-            if cur_cmd.name not in EXCLUDED_API:
+            if cur_cmd.name not in EXCLUDED_API + VERY_SPECIAL_API:
                 parameters_list = self.makeParametersList(cur_cmd)
                 arguments_list = self.makeArgumentsList(cur_cmd)
 

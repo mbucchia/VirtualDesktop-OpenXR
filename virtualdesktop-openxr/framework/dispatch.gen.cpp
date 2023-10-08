@@ -80,27 +80,6 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
-	XrResult XRAPI_CALL xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties) {
-		TraceLocalActivity(local);
-		TraceLoggingWriteStart(local, "xrGetInstanceProperties");
-
-		XrResult result;
-		try {
-			result = RUNTIME_NAMESPACE::GetInstance()->xrGetInstanceProperties(instance, instanceProperties);
-		} catch (std::exception& exc) {
-			TraceLoggingWriteTagged(local, "xrGetInstanceProperties_Error", TLArg(exc.what(), "Error"));
-			ErrorLog("xrGetInstanceProperties: %s\n", exc.what());
-			result = XR_ERROR_RUNTIME_FAILURE;
-		}
-
-		TraceLoggingWriteStop(local, "xrGetInstanceProperties", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
-			ErrorLog("xrGetInstanceProperties failed with %s\n", xr::ToCString(result));
-		}
-
-		return result;
-	}
-
 	XrResult XRAPI_CALL xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrPollEvent");

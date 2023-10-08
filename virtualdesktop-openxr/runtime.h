@@ -87,7 +87,7 @@ namespace virtualdesktop_openxr {
                                                         XrExtensionProperties* properties) override;
         XrResult xrCreateInstance(const XrInstanceCreateInfo* createInfo, XrInstance* instance) override;
         XrResult xrDestroyInstance(XrInstance instance) override;
-        XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties) override;
+        XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties, void* returnAddress) override;
         XrResult xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData) override;
         XrResult xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE]) override;
         XrResult xrStructureTypeToString(XrInstance instance,

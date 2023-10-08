@@ -29,8 +29,7 @@
 namespace RUNTIME_NAMESPACE {
 
     XrResult XRAPI_CALL xrDestroyInstance(XrInstance instance);
-    XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance instance,
-                                   const char* name,
-                                   PFN_xrVoidFunction* function);
+    XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function);
+    XrResult XRAPI_CALL xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties);
 
 } // namespace RUNTIME_NAMESPACE

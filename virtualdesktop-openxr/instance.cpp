@@ -292,7 +292,9 @@ namespace virtualdesktop_openxr {
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProperties
-    XrResult OpenXrRuntime::xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties) {
+    XrResult OpenXrRuntime::xrGetInstanceProperties(XrInstance instance,
+                                                    XrInstanceProperties* instanceProperties,
+                                                    void* returnAddress) {
         if (instanceProperties->type != XR_TYPE_INSTANCE_PROPERTIES) {
             return XR_ERROR_VALIDATION_FAILURE;
         }
@@ -303,7 +305,18 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
+        HMODULE oculusXrPlugin, ovrPlugin, callerModule;
+        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OculusXRPlugin.dll", &oculusXrPlugin) &&
+            GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin) &&
+            GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                               (LPCSTR)returnAddress,
+                               &callerModule) &&
+            (callerModule == oculusXrPlugin || callerModule == ovrPlugin)) {
+            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
+        } else {
+            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
+        }
+
         // This cannot be all 0.
         instanceProperties->runtimeVersion = XR_MAKE_VERSION(
             RuntimeVersionMajor,
