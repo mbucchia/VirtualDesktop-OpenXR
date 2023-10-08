@@ -45,6 +45,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_A92ECD4D43D34873920964CE79E16558"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_F20EF70F848747D697B484F7ACB6078E"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -218,6 +224,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A92ECD4D43D34873920964CE79E16558"
+            {
+            "SourcePath" = "8:..\\scripts\\Capture-ETL.bat"
+            "TargetName" = "8:Capture-ETL.bat"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_F20EF70F848747D697B484F7ACB6078E"
             {
             "SourcePath" = "8:README.rtf"
@@ -315,7 +341,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Virtual Desktop OpenXR"
         "ProductCode" = "8:{AAA56212-CF53-48A5-B9D4-C2AD946DA1B9}"
-        "PackageCode" = "8:{A8B1EE81-AC1E-425B-9F3F-9E2B5D6AFA11}"
+        "PackageCode" = "8:{9A74594B-7553-4D7B-ACE9-F64C720AD541}"
         "UpgradeCode" = "8:{6F81532C-FD71-48C6-AD6F-196F36F81D16}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
