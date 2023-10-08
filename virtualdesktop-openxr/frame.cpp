@@ -257,29 +257,26 @@ namespace virtualdesktop_openxr {
                               TLArg(waitTimer.query(), "WaitDurationUs"));
 
             // Statistics for the previous frame.
-            if (IsTraceEnabled()) {
-                // Our principle is to always query() a timer before we start() it. This means that we get measurements
-                // with k_numGpuTimers frames latency.
-                m_lastGpuFrameTimeUs =
-                    m_gpuTimerApp[m_currentTimerIndex] ? m_gpuTimerApp[m_currentTimerIndex]->query() : 0;
+            // Our principle is to always query() a timer before we start() it. This means that we get measurements
+            // with k_numGpuTimers frames latency.
+            m_lastGpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex] ? m_gpuTimerApp[m_currentTimerIndex]->query() : 0;
 
+            TraceLoggingWrite(g_traceProvider,
+                              "App_Statistics",
+                              TLArg(m_frameCompleted - 1, "FrameId"),
+                              TLArg(m_renderTimerApp.query(), "AppRenderCpuTime"));
+
+            if (m_frameCompleted >= k_numGpuTimers) {
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
-                                  TLArg(m_frameCompleted - 1, "FrameId"),
-                                  TLArg(m_renderTimerApp.query(), "AppRenderCpuTime"));
+                                  TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
+                                  TLArg(m_lastGpuFrameTimeUs, "AppRenderGpuTime"));
+            }
 
-                if (m_frameCompleted >= k_numGpuTimers) {
-                    TraceLoggingWrite(g_traceProvider,
-                                      "App_Statistics",
-                                      TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
-                                      TLArg(m_lastGpuFrameTimeUs, "AppRenderGpuTime"));
-                }
-
-                // Start app timers.
-                m_renderTimerApp.start();
-                if (m_gpuTimerApp[m_currentTimerIndex]) {
-                    m_gpuTimerApp[m_currentTimerIndex]->start();
-                }
+            // Start app timers.
+            m_renderTimerApp.start();
+            if (m_gpuTimerApp[m_currentTimerIndex]) {
+                m_gpuTimerApp[m_currentTimerIndex]->start();
             }
 
             // Signal xrWaitFrame().
@@ -349,11 +346,9 @@ namespace virtualdesktop_openxr {
                 return XR_ERROR_CALL_ORDER_INVALID;
             }
 
-            if (IsTraceEnabled()) {
-                m_renderTimerApp.stop();
-                if (m_gpuTimerApp[m_currentTimerIndex]) {
-                    m_gpuTimerApp[m_currentTimerIndex]->stop();
-                }
+            m_renderTimerApp.stop();
+            if (m_gpuTimerApp[m_currentTimerIndex]) {
+                m_gpuTimerApp[m_currentTimerIndex]->stop();
             }
 
             // Make sure the previous frame finished submission.
@@ -680,6 +675,10 @@ namespace virtualdesktop_openxr {
             while (now - m_frameTimes.front() >= 1.0) {
                 m_frameTimes.pop_front();
             }
+
+            // Inform Virtual Desktop of the measure application GPU work duration.
+            // Ignore return code since this is a non-standard option.
+            ovr_SetFloat(m_ovrSession, "AppGpuTime", m_lastGpuFrameTimeUs / 1e6f);
 
             // Submit the layers to OVR.
             const long long ovrFrameId = m_frameBegun - 1;
