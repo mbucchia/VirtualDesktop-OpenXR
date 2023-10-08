@@ -1319,6 +1319,11 @@ namespace virtualdesktop_openxr {
             // Identify the physical controller type.
             preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
             m_localizedControllerType[side] = "Touch Controller";
+            gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                          {OVR::DegreeToRad(40.f), OVR::DegreeToRad(5.f), OVR::DegreeToRad(10.f)}),
+                                      XrVector3f{0, 0, 0});
+            aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({OVR::DegreeToRad(-5.f), 0, 0}),
+                                     XrVector3f{0, 0.03f, -0.06f});
 
             // Try to map with the preferred bindings.
             auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
