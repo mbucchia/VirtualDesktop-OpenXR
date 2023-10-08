@@ -589,7 +589,7 @@ namespace virtualdesktop_openxr {
         }
 
         const XrPosef eyeGaze = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({-tan(eyeGazeVector.y), -tan(eyeGazeVector.x), 0.f}), XrVector3f{0, 0, 0});
+            Quaternion::RotationRollPitchYaw({tan(eyeGazeVector.y), -tan(eyeGazeVector.x), 0.f}), XrVector3f{0, 0, 0});
 
         // TODO: Need optimization here, in all likelyhood, the caller is looking for eye gaze relative to VIEW
         // space,
