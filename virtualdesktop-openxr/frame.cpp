@@ -576,27 +576,67 @@ namespace virtualdesktop_openxr {
 
                     isFirstProjectionLayer = false;
 
-                } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD) {
+                } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD ||
+                           (has_XR_KHR_composition_layer_cylinder &&
+                            frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR)) {
                     const XrCompositionLayerQuad* quad =
                         reinterpret_cast<const XrCompositionLayerQuad*>(frameEndInfo->layers[i]);
+                    const XrCompositionLayerCylinderKHR* cylinder =
+                        reinterpret_cast<const XrCompositionLayerCylinderKHR*>(frameEndInfo->layers[i]);
+                    const bool isCylinder = frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR;
+
+                    // Make sure that we can use the XrCompositionLayerQuad part of XrCompositionLayerCylinderKHR
+                    // equivalently.
+                    static_assert(offsetof(XrCompositionLayerQuad, layerFlags) ==
+                                  offsetof(XrCompositionLayerCylinderKHR, layerFlags));
+                    static_assert(offsetof(XrCompositionLayerQuad, space) ==
+                                  offsetof(XrCompositionLayerCylinderKHR, space));
+                    static_assert(offsetof(XrCompositionLayerQuad, eyeVisibility) ==
+                                  offsetof(XrCompositionLayerCylinderKHR, eyeVisibility));
+                    static_assert(offsetof(XrCompositionLayerQuad, subImage) ==
+                                  offsetof(XrCompositionLayerCylinderKHR, subImage));
+                    static_assert(offsetof(XrCompositionLayerQuad, pose) ==
+                                  offsetof(XrCompositionLayerCylinderKHR, pose));
 
                     TraceLoggingWrite(g_traceProvider,
                                       "xrEndFrame_Layer",
                                       TLArg("Quad", "Type"),
                                       TLArg(quad->layerFlags, "Flags"),
                                       TLXArg(quad->space, "Space"));
-                    TraceLoggingWrite(g_traceProvider,
-                                      "xrEndFrame_View",
-                                      TLArg("Quad", "Type"),
-                                      TLXArg(quad->subImage.swapchain, "Swapchain"),
-                                      TLArg(quad->subImage.imageArrayIndex, "ImageArrayIndex"),
-                                      TLArg(xr::ToString(quad->subImage.imageRect).c_str(), "ImageRect"),
-                                      TLArg(xr::ToString(quad->pose).c_str(), "Pose"),
-                                      TLArg(quad->size.width, "Width"),
-                                      TLArg(quad->size.height, "Height"),
-                                      TLArg(xr::ToCString(quad->eyeVisibility), "EyeVisibility"));
+                    if (!isCylinder) {
+                        TraceLoggingWrite(g_traceProvider,
+                                          "xrEndFrame_View",
+                                          TLArg("Quad", "Type"),
+                                          TLXArg(quad->subImage.swapchain, "Swapchain"),
+                                          TLArg(quad->subImage.imageArrayIndex, "ImageArrayIndex"),
+                                          TLArg(xr::ToString(quad->subImage.imageRect).c_str(), "ImageRect"),
+                                          TLArg(xr::ToString(quad->pose).c_str(), "Pose"),
+                                          TLArg(quad->size.width, "Width"),
+                                          TLArg(quad->size.height, "Height"),
+                                          TLArg(xr::ToCString(quad->eyeVisibility), "EyeVisibility"));
+                    } else {
+                        TraceLoggingWrite(g_traceProvider,
+                                          "xrEndFrame_View",
+                                          TLArg("Cylinder", "Type"),
+                                          TLXArg(cylinder->subImage.swapchain, "Swapchain"),
+                                          TLArg(cylinder->subImage.imageArrayIndex, "ImageArrayIndex"),
+                                          TLArg(xr::ToString(cylinder->subImage.imageRect).c_str(), "ImageRect"),
+                                          TLArg(xr::ToString(cylinder->pose).c_str(), "Pose"),
+                                          TLArg(cylinder->radius, "Radius"),
+                                          TLArg(cylinder->centralAngle, "CentralAngle"),
+                                          TLArg(cylinder->aspectRatio, "AspectRatio"),
+                                          TLArg(xr::ToCString(cylinder->eyeVisibility), "EyeVisibility"));
+                    }
 
-                    layer->Header.Type = ovrLayerType_Quad;
+                    // Make sure that we can use the Quad part of Cylinder equivalently.
+                    static_assert(offsetof(decltype(layer->Quad), ColorTexture) ==
+                                  offsetof(decltype(layer->Cylinder), ColorTexture));
+                    static_assert(offsetof(decltype(layer->Quad), Viewport) ==
+                                  offsetof(decltype(layer->Cylinder), Viewport));
+                    static_assert(offsetof(decltype(layer->Quad), QuadPoseCenter) ==
+                                  offsetof(decltype(layer->Cylinder), CylinderPoseCenter));
+
+                    layer->Header.Type = isCylinder ? ovrLayerType_Cylinder : ovrLayerType_Quad;
 
                     if (!Quaternion::IsNormalized(quad->pose.orientation)) {
                         return XR_ERROR_POSE_INVALID;
@@ -650,8 +690,14 @@ namespace virtualdesktop_openxr {
                         layer->Header.Flags |= ovrLayerFlag_HeadLocked;
                     }
 
-                    layer->Quad.QuadSize.x = quad->size.width;
-                    layer->Quad.QuadSize.y = quad->size.height;
+                    if (!isCylinder) {
+                        layer->Quad.QuadSize.x = quad->size.width;
+                        layer->Quad.QuadSize.y = quad->size.height;
+                    } else {
+                        layer->Cylinder.CylinderRadius = cylinder->radius;
+                        layer->Cylinder.CylinderAngle = cylinder->centralAngle;
+                        layer->Cylinder.CylinderAspectRatio = cylinder->aspectRatio;
+                    }
                 } else {
                     return XR_ERROR_LAYER_INVALID;
                 }

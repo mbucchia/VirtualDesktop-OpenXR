@@ -442,6 +442,9 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Depth buffer submission.
             {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
 
+        m_extensionsTable.push_back( // Cylinder layers.
+            {XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME, XR_KHR_composition_layer_cube_SPEC_VERSION});
+
         m_extensionsTable.push_back( // Qpc timestamp conversion.
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});

@@ -1761,6 +1761,9 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_KHR_composition_layer_depth") {
 			has_XR_KHR_composition_layer_depth = true;
 		}
+		else if (extensionName == "XR_KHR_composition_layer_cylinder") {
+			has_XR_KHR_composition_layer_cylinder = true;
+		}
 		else if (extensionName == "XR_KHR_visibility_mask") {
 			has_XR_KHR_visibility_mask = true;
 		}

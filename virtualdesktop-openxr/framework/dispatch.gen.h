@@ -126,6 +126,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_KHR_vulkan_enable2{false};
 		bool has_XR_KHR_opengl_enable{false};
 		bool has_XR_KHR_composition_layer_depth{false};
+		bool has_XR_KHR_composition_layer_cylinder{false};
 		bool has_XR_KHR_visibility_mask{false};
 		bool has_XR_KHR_win32_convert_performance_counter_time{false};
 		bool has_XR_FB_display_refresh_rate{false};

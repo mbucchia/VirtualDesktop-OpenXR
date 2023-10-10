@@ -43,8 +43,8 @@ SPECIAL_API = ['xrDestroyInstance']
 # We rewrite the trampoline and prototype for these
 VERY_SPECIAL_API = ['xrGetInstanceProperties']
 EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enable', 'XR_KHR_vulkan_enable2', 'XR_KHR_opengl_enable',
-              'XR_KHR_composition_layer_depth', 'XR_KHR_visibility_mask', 'XR_KHR_win32_convert_performance_counter_time', 'XR_FB_display_refresh_rate',
-              'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id', 'XR_OCULUS_audio_device_guid']
+              'XR_KHR_composition_layer_depth', 'XR_KHR_composition_layer_cylinder', 'XR_KHR_visibility_mask', 'XR_KHR_win32_convert_performance_counter_time',
+              'XR_FB_display_refresh_rate', 'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id', 'XR_OCULUS_audio_device_guid']
 
 class DispatchGenOutputGenerator(AutomaticSourceOutputGenerator):
     '''Common generator utilities and formatting.'''
