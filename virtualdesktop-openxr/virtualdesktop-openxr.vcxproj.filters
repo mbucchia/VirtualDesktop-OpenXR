@@ -65,6 +65,9 @@
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Audio.h">
       <Filter>LibOVR</Filter>
     </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\Extras\OVR_Math.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

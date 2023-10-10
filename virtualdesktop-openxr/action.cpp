@@ -280,6 +280,7 @@ namespace virtualdesktop_openxr {
         for (uint32_t i = 0; i < createInfo->countSubactionPaths; i++) {
             const std::string& subactionPath = getXrPath(createInfo->subactionPaths[i]);
             if (subactionPath != "/user/hand/left" && subactionPath != "/user/hand/right" &&
+                subactionPath != "/user/gamepad" && subactionPath != "/user/head" &&
                 (!has_XR_EXT_eye_gaze_interaction || subactionPath != "/user/eyes_ext")) {
                 return XR_ERROR_PATH_UNSUPPORTED;
             }
@@ -1319,11 +1320,26 @@ namespace virtualdesktop_openxr {
             // Identify the physical controller type.
             preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
             m_localizedControllerType[side] = "Touch Controller";
-            gripPose = Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                          {OVR::DegreeToRad(40.f), OVR::DegreeToRad(5.f), OVR::DegreeToRad(10.f)}),
-                                      XrVector3f{0, 0, 0});
-            aimPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({OVR::DegreeToRad(-5.f), 0, 0}),
-                                     XrVector3f{0, 0.03f, -0.06f});
+
+            {
+                // From calibration procedure
+                OVR::Posef ovrPose{{-0.8788462f, 0.2092207f, 0.2563873f, 0.3436883f},
+                                   {-0.2653514f, 0.003213146f, 0.09378216f}};
+                OVR::Posef oculusAimPose{{-0.8805875f, 0.2026294f, 0.2359737f, 0.3575239f},
+                                         {-0.2526062f, -0.048062f, 0.1314391f}};
+                OVR::Posef oculusGripPose{{-0.5838492f, 0.293469f, 0.1030445f, 0.7499186f},
+                                          {-0.2625549f, 0.04070788f, 0.0873264f}};
+
+                OVR::Posef ovrAimPose;
+                ovrAimPose.Translation = ovrPose.Translation - oculusAimPose.Translation;
+                ovrAimPose.Rotation = ovrPose.Rotation.Conj() * oculusAimPose.Rotation;
+                aimPose = ovrPoseToXrPose(ovrAimPose);
+
+                OVR::Posef ovrGripPose;
+                ovrGripPose.Translation = ovrPose.Translation - oculusGripPose.Translation;
+                ovrGripPose.Rotation = ovrPose.Rotation.Conj() * oculusGripPose.Rotation;
+                gripPose = ovrPoseToXrPose(ovrGripPose);
+            }
 
             // Try to map with the preferred bindings.
             auto bindings = m_suggestedBindings.find(preferredInteractionProfile);

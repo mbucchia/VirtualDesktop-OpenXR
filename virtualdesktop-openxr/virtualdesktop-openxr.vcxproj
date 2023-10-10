@@ -346,6 +346,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\external\LibOVR\Include\Extras\OVR_Math.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Audio.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_D3D.h" />
