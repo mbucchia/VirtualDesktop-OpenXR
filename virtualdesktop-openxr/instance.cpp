@@ -511,6 +511,10 @@ namespace virtualdesktop_openxr {
         // Tell Virtual Desktop that this is a VirtualDesktopXR session.
         ovr_SetBool(m_ovrSession, "IsVDXR", true);
 
+        // Bogus apps may use single-precision floating point values to represent time. We will offset all values to
+        // keep them low.
+        m_ovrTimeReference = ovr_GetTimeInSeconds();
+
         QueryPerformanceFrequency(&m_qpcFrequency);
 
         // Calibrate the timestamp conversion.
@@ -525,6 +529,14 @@ namespace virtualdesktop_openxr {
             g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
 
         return true;
+    }
+
+    XrTime OpenXrRuntime::ovrTimeToXrTime(double ovrTime) const {
+        return (XrTime)((ovrTime - m_ovrTimeReference) * 1e9);
+    }
+
+    double OpenXrRuntime::xrTimeToOvrTime(XrTime xrTime) const {
+        return m_ovrTimeReference + xrTime / 1e9;
     }
 
     std::optional<int> OpenXrRuntime::getSetting(const std::string& value) const {

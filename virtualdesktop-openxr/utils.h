@@ -329,14 +329,6 @@ namespace virtualdesktop_openxr::utils {
         return list;
     }
 
-    static inline XrTime ovrTimeToXrTime(double ovrTime) {
-        return (XrTime)(ovrTime * 1e9);
-    }
-
-    static inline double xrTimeToOvrTime(XrTime xrTime) {
-        return xrTime / 1e9;
-    }
-
     static inline XrPosef ovrPoseToXrPose(const ovrPosef& ovrPose) {
         XrPosef xrPose;
         xrPose.position.x = ovrPose.Position.x;

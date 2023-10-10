@@ -390,6 +390,8 @@ namespace virtualdesktop_openxr {
         // instance.cpp
         void initializeExtensionsTable();
         bool InitializeOVR();
+        XrTime ovrTimeToXrTime(double ovrTime) const;
+        double xrTimeToOvrTime(XrTime xrTime) const;
         std::optional<int> getSetting(const std::string& value) const;
 
         // session.cpp
@@ -508,6 +510,7 @@ namespace virtualdesktop_openxr {
         ovrEyeRenderDesc m_cachedEyeInfo[xr::StereoView::Count]{};
         float m_floorHeight{0.f};
         LARGE_INTEGER m_qpcFrequency{};
+        double m_ovrTimeReference{0};
         double m_ovrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;

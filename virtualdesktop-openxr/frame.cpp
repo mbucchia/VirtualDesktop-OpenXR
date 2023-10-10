@@ -163,7 +163,7 @@ namespace virtualdesktop_openxr {
             m_lastPredictedDisplayTime = frameState->predictedDisplayTime;
 
             // We always use the native frame duration, regardless of Smart Smoothing.
-            frameState->predictedDisplayPeriod = ovrTimeToXrTime(m_predictedFrameDuration);
+            frameState->predictedDisplayPeriod = (XrDuration)(m_predictedFrameDuration * 1e9);
 
             m_frameTimerApp.start();
 
