@@ -46,6 +46,12 @@ EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enabl
               'XR_KHR_composition_layer_depth', 'XR_KHR_composition_layer_cylinder', 'XR_KHR_visibility_mask', 'XR_KHR_win32_convert_performance_counter_time',
               'XR_FB_display_refresh_rate', 'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id', 'XR_OCULUS_audio_device_guid']
 
+SILENT_ERRORS = {
+    'xrSuggestInteractionProfileBindings': ['XR_ERROR_PATH_UNSUPPORTED'],
+    'xrGetAudioInputDeviceGuidOculus': ['XR_ERROR_FEATURE_UNSUPPORTED'],
+    'xrGetAudioOutputDeviceGuidOculus': ['XR_ERROR_FEATURE_UNSUPPORTED'],
+}
+
 class DispatchGenOutputGenerator(AutomaticSourceOutputGenerator):
     '''Common generator utilities and formatting.'''
     def outputGeneratedHeaderWarning(self):
@@ -150,6 +156,8 @@ namespace RUNTIME_NAMESPACE {
                 arguments_list = self.makeArgumentsList(cur_cmd)
 
                 if cur_cmd.return_type is not None:
+                    silentErrors = ' && '.join([''] + [f'result != {err}' for err in SILENT_ERRORS[cur_cmd.name]]) if cur_cmd.name in SILENT_ERRORS else ''
+
                     generated += f'''
 	XrResult XRAPI_CALL {cur_cmd.name}({parameters_list}) {{
 		TraceLocalActivity(local);
@@ -165,7 +173,7 @@ namespace RUNTIME_NAMESPACE {
 		}}
 
 		TraceLoggingWriteStop(local, "{cur_cmd.name}", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {{
+		if (XR_FAILED(result){silentErrors}) {{
 			ErrorLog("{cur_cmd.name} failed with %s\\n", xr::ToCString(result));
 		}}
 

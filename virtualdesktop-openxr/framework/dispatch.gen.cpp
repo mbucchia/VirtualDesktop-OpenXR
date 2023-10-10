@@ -871,7 +871,7 @@ namespace RUNTIME_NAMESPACE {
 		}
 
 		TraceLoggingWriteStop(local, "xrSuggestInteractionProfileBindings", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
+		if (XR_FAILED(result) && result != XR_ERROR_PATH_UNSUPPORTED) {
 			ErrorLog("xrSuggestInteractionProfileBindings failed with %s\n", xr::ToCString(result));
 		}
 
@@ -1480,7 +1480,7 @@ namespace RUNTIME_NAMESPACE {
 		}
 
 		TraceLoggingWriteStop(local, "xrGetAudioOutputDeviceGuidOculus", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
+		if (XR_FAILED(result) && result != XR_ERROR_FEATURE_UNSUPPORTED) {
 			ErrorLog("xrGetAudioOutputDeviceGuidOculus failed with %s\n", xr::ToCString(result));
 		}
 
@@ -1501,7 +1501,7 @@ namespace RUNTIME_NAMESPACE {
 		}
 
 		TraceLoggingWriteStop(local, "xrGetAudioInputDeviceGuidOculus", TLArg(xr::ToCString(result), "Result"));
-		if (XR_FAILED(result)) {
+		if (XR_FAILED(result) && result != XR_ERROR_FEATURE_UNSUPPORTED) {
 			ErrorLog("xrGetAudioInputDeviceGuidOculus failed with %s\n", xr::ToCString(result));
 		}
 
