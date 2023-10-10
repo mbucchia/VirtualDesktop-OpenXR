@@ -1466,6 +1466,48 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrGetAudioOutputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetAudioOutputDeviceGuidOculus");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetAudioOutputDeviceGuidOculus(instance, buffer);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetAudioOutputDeviceGuidOculus_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetAudioOutputDeviceGuidOculus: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetAudioOutputDeviceGuidOculus", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetAudioOutputDeviceGuidOculus failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrGetAudioInputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetAudioInputDeviceGuidOculus");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetAudioInputDeviceGuidOculus(instance, buffer);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetAudioInputDeviceGuidOculus_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetAudioInputDeviceGuidOculus: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetAudioInputDeviceGuidOculus", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetAudioInputDeviceGuidOculus failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 
 	// Auto-generated dispatcher handler.
 	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
@@ -1684,6 +1726,12 @@ namespace RUNTIME_NAMESPACE {
 		else if (has_XR_FB_display_refresh_rate && apiName == "xrRequestDisplayRefreshRateFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrRequestDisplayRefreshRateFB);
 		}
+		else if (has_XR_OCULUS_audio_device_guid && apiName == "xrGetAudioOutputDeviceGuidOculus") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetAudioOutputDeviceGuidOculus);
+		}
+		else if (has_XR_OCULUS_audio_device_guid && apiName == "xrGetAudioInputDeviceGuidOculus") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetAudioInputDeviceGuidOculus);
+		}
 		else {
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
 		}
@@ -1730,6 +1778,9 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (extensionName == "XR_META_headset_id") {
 			has_XR_META_headset_id = true;
+		}
+		else if (extensionName == "XR_OCULUS_audio_device_guid") {
+			has_XR_OCULUS_audio_device_guid = true;
 		}
 
 	}

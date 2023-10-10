@@ -87,7 +87,9 @@ namespace virtualdesktop_openxr {
                                                         XrExtensionProperties* properties) override;
         XrResult xrCreateInstance(const XrInstanceCreateInfo* createInfo, XrInstance* instance) override;
         XrResult xrDestroyInstance(XrInstance instance) override;
-        XrResult xrGetInstanceProperties(XrInstance instance, XrInstanceProperties* instanceProperties, void* returnAddress) override;
+        XrResult xrGetInstanceProperties(XrInstance instance,
+                                         XrInstanceProperties* instanceProperties,
+                                         void* returnAddress) override;
         XrResult xrPollEvent(XrInstance instance, XrEventDataBuffer* eventData) override;
         XrResult xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE]) override;
         XrResult xrStructureTypeToString(XrInstance instance,
@@ -271,6 +273,10 @@ namespace virtualdesktop_openxr {
                                                   float* displayRefreshRates) override;
         XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) override;
         XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) override;
+        XrResult xrGetAudioOutputDeviceGuidOculus(XrInstance instance,
+                                                  wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) override;
+        XrResult xrGetAudioInputDeviceGuidOculus(XrInstance instance,
+                                                 wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) override;
 
       private:
         enum class ForcedInteractionProfile {

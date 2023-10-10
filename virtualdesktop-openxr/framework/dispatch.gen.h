@@ -111,6 +111,8 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) = 0;
 		virtual XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) = 0;
 		virtual XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) = 0;
+		virtual XrResult xrGetAudioOutputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) = 0;
+		virtual XrResult xrGetAudioInputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) = 0;
 
 
 	protected:
@@ -130,6 +132,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_EXT_eye_gaze_interaction{false};
 		bool has_XR_EXT_uuid{false};
 		bool has_XR_META_headset_id{false};
+		bool has_XR_OCULUS_audio_device_guid{false};
 
 
 	};

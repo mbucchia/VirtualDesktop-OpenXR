@@ -455,6 +455,9 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Eye tracking.
             {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
 
+        m_extensionsTable.push_back( // Audio GUID.
+            {XR_OCULUS_AUDIO_DEVICE_GUID_EXTENSION_NAME, XR_OCULUS_audio_device_guid_SPEC_VERSION});
+
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});
         m_extensionsTable.push_back({XR_META_HEADSET_ID_EXTENSION_NAME, XR_META_headset_id_SPEC_VERSION});

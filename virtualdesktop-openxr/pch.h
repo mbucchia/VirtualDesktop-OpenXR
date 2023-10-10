@@ -74,6 +74,7 @@ using Microsoft::WRL::ComPtr;
 
 // LibOVR.
 #include <OVR_CAPI.h>
+#include <OVR_CAPI_Audio.h>
 #include <OVR_CAPI_D3D.h>
 #include <OVR_Math.h>
 

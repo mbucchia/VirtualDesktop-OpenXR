@@ -347,6 +347,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI.h" />
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Audio.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_D3D.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Keys.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_ErrorCode.h" />
@@ -375,6 +376,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="action.cpp" />
+    <ClCompile Include="audio.cpp" />
     <ClCompile Include="d3d11_native.cpp" />
     <ClCompile Include="d3d12_interop.cpp" />
     <ClCompile Include="display_refresh_rate.cpp" />

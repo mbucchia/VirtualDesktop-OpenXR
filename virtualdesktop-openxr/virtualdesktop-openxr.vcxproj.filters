@@ -62,6 +62,9 @@
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h">
       <Filter>LibOVR</Filter>
     </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Audio.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -138,6 +141,9 @@
     </ClCompile>
     <ClCompile Include="OVR_CAPIShim.c">
       <Filter>LibOVR</Filter>
+    </ClCompile>
+    <ClCompile Include="audio.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
