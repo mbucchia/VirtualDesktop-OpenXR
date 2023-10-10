@@ -47,7 +47,11 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        CHECK_OVRCMD(ovr_GetAudioDeviceOutGuidStr(buffer));
+        const ovrResult result = ovr_GetAudioDeviceOutGuidStr(buffer);
+        if (OVR_FAILURE(result)) {
+            TraceLoggingWrite(g_traceProvider, "xrGetAudioOutputDeviceGuidOculus", TLArg((int)result, "Error"));
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
 
         TraceLoggingWrite(g_traceProvider, "xrGetAudioOutputDeviceGuidOculus", TLArg(buffer, "Buffer"));
 
@@ -66,7 +70,11 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        CHECK_OVRCMD(ovr_GetAudioDeviceInGuidStr(buffer));
+        const ovrResult result = ovr_GetAudioDeviceInGuidStr(buffer);
+        if (OVR_FAILURE(result)) {
+            TraceLoggingWrite(g_traceProvider, "xrGetAudioInputDeviceGuidOculus", TLArg((int)result, "Error"));
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
 
         TraceLoggingWrite(g_traceProvider, "xrGetAudioInputDeviceGuidOculus", TLArg(buffer, "Buffer"));
 
