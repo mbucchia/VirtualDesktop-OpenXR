@@ -508,6 +508,9 @@ namespace virtualdesktop_openxr {
         }
         CHECK_OVRCMD(result);
 
+        // Tell Virtual Desktop that this is a VirtualDesktopXR session.
+        ovr_SetBool(m_ovrSession, "IsVDXR", true);
+
         QueryPerformanceFrequency(&m_qpcFrequency);
 
         // Calibrate the timestamp conversion.
