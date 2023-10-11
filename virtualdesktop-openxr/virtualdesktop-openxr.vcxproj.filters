@@ -18,6 +18,9 @@
     <Filter Include="LibOVR">
       <UniqueIdentifier>{b687f67d-45a3-42eb-8b4a-b3d206ed8c73}</UniqueIdentifier>
     </Filter>
+    <Filter Include="fmt">
+      <UniqueIdentifier>{4f677d0f-1125-4e05-a4bf-b2a6d52a9d47}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -147,6 +150,9 @@
     </ClCompile>
     <ClCompile Include="audio.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\fmt\src\format.cc">
+      <Filter>fmt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

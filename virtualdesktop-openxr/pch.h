@@ -35,6 +35,7 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>

@@ -16,3 +16,6 @@
 [submodule "external/LibOVR"]
 	path = external/LibOVR
 	url = https://github.com/mbucchia/LibOVR.git
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git
