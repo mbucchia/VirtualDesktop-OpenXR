@@ -469,12 +469,15 @@ namespace virtualdesktop_openxr {
     }
 
     bool OpenXrRuntime::InitializeOVR() {
-        std::wstring overridePath;
-        if (!getSetting("use_oculus_runtime").value_or(false)) {
-            if (!IsServiceRunning(L"VirtualDesktop.Server.exe")) {
-                return false;
-            }
+        m_useOculusRuntime = !IsServiceRunning(L"VirtualDesktop.Server.exe");
+        if (m_useOculusRuntime && !getSetting("allow_oculus_runtime").value_or(true)) {
+            // Indicate that Virtual Desktop is required by the current configuration.
+            OnceLog("Virtual Desktop Server is not running\n");
+            return false;
+        }
 
+        std::wstring overridePath;
+        if (!m_useOculusRuntime) {
             // Locate Virtual Desktop's LibOVR.
             std::filesystem::path path(
                 RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Path")
@@ -482,9 +485,6 @@ namespace virtualdesktop_openxr {
             path = path / L"VirtualDesktop.";
 
             overridePath = path.wstring();
-            m_useOculusRuntime = false;
-        } else {
-            m_useOculusRuntime = true;
         }
 
         // Initialize OVR.
@@ -493,7 +493,11 @@ namespace virtualdesktop_openxr {
         initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
         initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
         result = ovr_InitializeWithPathOverride(&initParams, overridePath.empty() ? nullptr : overridePath.c_str());
-        if (result == ovrError_ServiceConnection) {
+        if (result == ovrError_LibLoad) {
+            // This would happen on Pico. Indicate that Virtual Desktop is required.
+            OnceLog("Virtual Desktop Server is not running\n");
+            return false;
+        } else if (result == ovrError_ServiceConnection || result == ovrError_RemoteSession) {
             return false;
         }
         CHECK_OVRCMD(result);
@@ -507,6 +511,8 @@ namespace virtualdesktop_openxr {
             return false;
         }
         CHECK_OVRCMD(result);
+
+        Log("Using %s runtime\n", !m_useOculusRuntime ? "Virtual Desktop" : "Oculus");
 
         // Tell Virtual Desktop that this is a VirtualDesktopXR session.
         ovr_SetBool(m_ovrSession, "IsVDXR", true);

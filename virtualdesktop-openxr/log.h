@@ -52,4 +52,13 @@ namespace virtualdesktop_openxr::log {
     // Error logging function. Goes silent after too many errors.
     void ErrorLog(const char* fmt, ...);
 
+#define OnceLog(...)                                                                                                   \
+    {                                                                                                                  \
+        static bool logged = false;                                                                                    \
+        if (!logged) {                                                                                                 \
+            Log(__VA_ARGS__);                                                                                          \
+            logged = true;                                                                                             \
+        }                                                                                                              \
+    }
+
 } // namespace virtualdesktop_openxr::log
