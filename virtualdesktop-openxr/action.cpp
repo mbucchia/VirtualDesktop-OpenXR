@@ -959,8 +959,7 @@ namespace virtualdesktop_openxr {
             m_cachedControllerType[side] = "touch_controller";
             m_isControllerActive[side] = true;
 
-            if (lastControllerType != m_cachedControllerType[side] ||
-                m_forcedInteractionProfile != m_lastForcedInteractionProfile) {
+            if (lastControllerType != m_cachedControllerType[side]) {
                 if (!m_cachedControllerType[side].empty()) {
                     Log("Detected controller: %s (%s)\n",
                         m_cachedControllerType[side].c_str(),
@@ -973,7 +972,6 @@ namespace virtualdesktop_openxr {
                 rebindControllerActions(side);
             }
         }
-        m_lastForcedInteractionProfile = m_forcedInteractionProfile;
 
         // Propagate the input state to the entire action state.
         for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
@@ -1346,26 +1344,13 @@ namespace virtualdesktop_openxr {
             if (bindings != m_suggestedBindings.cend()) {
                 actualInteractionProfile = preferredInteractionProfile;
             }
-            if (bindings == m_suggestedBindings.cend() || m_forcedInteractionProfile) {
-                const bool hasOculusTouchControllerProfile =
-                    m_suggestedBindings.find("/interaction_profiles/oculus/touch_controller") !=
-                    m_suggestedBindings.cend();
-                const bool hasMicrosoftMotionControllerProfile =
-                    m_suggestedBindings.find("/interaction_profiles/microsoft/motion_controller") !=
-                    m_suggestedBindings.cend();
-
+            if (bindings == m_suggestedBindings.cend()) {
                 // In order of preference.
-                if (m_forcedInteractionProfile &&
-                    m_forcedInteractionProfile.value() == ForcedInteractionProfile::OculusTouchController &&
-                    hasOculusTouchControllerProfile) {
+                if (m_suggestedBindings.find("/interaction_profiles/oculus/touch_controller") !=
+                    m_suggestedBindings.cend()) {
                     actualInteractionProfile = "/interaction_profiles/oculus/touch_controller";
-                } else if (m_forcedInteractionProfile &&
-                           m_forcedInteractionProfile.value() == ForcedInteractionProfile::MicrosoftMotionController &&
-                           hasMicrosoftMotionControllerProfile) {
-                    actualInteractionProfile = "/interaction_profiles/microsoft/motion_controller";
-                } else if (hasOculusTouchControllerProfile) {
-                    actualInteractionProfile = "/interaction_profiles/oculus/touch_controller";
-                } else if (hasMicrosoftMotionControllerProfile) {
+                } else if (m_suggestedBindings.find("/interaction_profiles/microsoft/motion_controller") !=
+                           m_suggestedBindings.cend()) {
                     actualInteractionProfile = "/interaction_profiles/microsoft/motion_controller";
                 } else if (m_suggestedBindings.find("/interaction_profiles/valve/index_controller") !=
                            m_suggestedBindings.cend()) {

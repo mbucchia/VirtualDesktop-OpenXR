@@ -279,11 +279,6 @@ namespace virtualdesktop_openxr {
                                                  wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) override;
 
       private:
-        enum class ForcedInteractionProfile {
-            OculusTouchController,
-            MicrosoftMotionController,
-        };
-
         struct Extension {
             const char* extensionName;
             uint32_t extensionVersion;
@@ -562,8 +557,6 @@ namespace virtualdesktop_openxr {
         std::string m_localizedControllerType[2];
         XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
-        std::optional<ForcedInteractionProfile> m_forcedInteractionProfile;
-        std::optional<ForcedInteractionProfile> m_lastForcedInteractionProfile;
         bool m_useRunningStart{true};
 
         // Swapchains and other graphics stuff.

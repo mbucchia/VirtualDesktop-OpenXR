@@ -386,15 +386,6 @@ namespace virtualdesktop_openxr {
 
     // Read dynamic settings from the registry.
     void OpenXrRuntime::refreshSettings() {
-        const auto forcedInteractionProfile = getSetting("force_interaction_profile").value_or(0);
-        if (forcedInteractionProfile == 1) {
-            m_forcedInteractionProfile = ForcedInteractionProfile::OculusTouchController;
-        } else if (forcedInteractionProfile == 2) {
-            m_forcedInteractionProfile = ForcedInteractionProfile::MicrosoftMotionController;
-        } else {
-            m_forcedInteractionProfile.reset();
-        }
-
         const auto oldControllerAimOffset = m_controllerAimOffset;
         m_controllerAimOffset = Pose::MakePose(
             Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
@@ -429,7 +420,6 @@ namespace virtualdesktop_openxr {
         TraceLoggingWrite(
             g_traceProvider,
             "PXR_Config",
-            TLArg((int)m_forcedInteractionProfile.value_or((ForcedInteractionProfile)-1), "ForcedInteractionProfile"),
             TLArg(m_useMirrorWindow, "MirrorWindow"),
             TLArg(m_useRunningStart, "UseRunningStart"),
             TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
