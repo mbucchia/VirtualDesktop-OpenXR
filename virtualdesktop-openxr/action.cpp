@@ -938,27 +938,39 @@ namespace virtualdesktop_openxr {
                 continue;
             }
 
-            TraceLoggingWrite(
-                g_traceProvider,
-                "OVR_InputState",
-                TLArg(side == 0 ? "Left" : "Right", "Side"),
-                TLArg(m_cachedInputState.TimeInSeconds, "TimeInSeconds"),
-                TLArg(m_cachedInputState.Buttons & (side == 0 ? ovrButton_LMask : ovrButton_RMask), "Buttons"),
-                TLArg(m_cachedInputState.Touches & (side == 0 ? ovrTouch_LButtonMask : ovrTouch_RButtonMask),
-                      "Touches"),
-                TLArg(m_cachedInputState.IndexTrigger[side], "IndexTrigger"),
-                TLArg(m_cachedInputState.HandTrigger[side], "HandTrigger"),
-                TLArg(
-                    fmt::format("{}, {}", m_cachedInputState.Thumbstick[side].x, m_cachedInputState.Thumbstick[side].y)
-                        .c_str(),
-                    "Joystick"));
+            const auto lastControllerType = m_cachedControllerType[side];
+            const bool isControllerConnected = ovr_GetConnectedControllerTypes(m_ovrSession) &
+                                               (side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch);
+            if (isControllerConnected) {
+                m_cachedControllerType[side] = "touch_controller";
+                m_isControllerActive[side] = true;
+
+                TraceLoggingWrite(
+                    g_traceProvider,
+                    "OVR_InputState",
+                    TLArg(side == 0 ? "Left" : "Right", "Side"),
+                    TLArg(true, "Connected"),
+                    TLArg(m_cachedInputState.TimeInSeconds, "TimeInSeconds"),
+                    TLArg(m_cachedInputState.Buttons & (side == 0 ? ovrButton_LMask : ovrButton_RMask), "Buttons"),
+                    TLArg(m_cachedInputState.Touches & (side == 0 ? ovrTouch_LButtonMask : ovrTouch_RButtonMask),
+                          "Touches"),
+                    TLArg(m_cachedInputState.IndexTrigger[side], "IndexTrigger"),
+                    TLArg(m_cachedInputState.HandTrigger[side], "HandTrigger"),
+                    TLArg(fmt::format(
+                              "{}, {}", m_cachedInputState.Thumbstick[side].x, m_cachedInputState.Thumbstick[side].y)
+                              .c_str(),
+                          "Joystick"));
+            } else {
+                m_cachedControllerType[side].clear();
+                m_isControllerActive[side] = false;
+
+                TraceLoggingWrite(g_traceProvider,
+                                  "OVR_InputState",
+                                  TLArg(side == 0 ? "Left" : "Right", "Side"),
+                                  TLArg(false, "Connected"));
+            }
 
             // Look for changes in controller/interaction profiles.
-            const auto lastControllerType = m_cachedControllerType[side];
-            // TODO: Hard-coded for now.
-            m_cachedControllerType[side] = "touch_controller";
-            m_isControllerActive[side] = true;
-
             if (lastControllerType != m_cachedControllerType[side]) {
                 if (!m_cachedControllerType[side].empty()) {
                     Log("Detected controller: %s (%s)\n",
