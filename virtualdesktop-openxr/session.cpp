@@ -382,7 +382,7 @@ namespace virtualdesktop_openxr {
 
             if (m_sessionState != oldSessionState) {
                 TraceLoggingWrite(g_traceProvider,
-                                  "PXR_State",
+                                  "VDXR_State",
                                   TLArg(xr::ToCString(oldSessionState), "From"),
                                   TLArg(xr::ToCString(m_sessionState), "To"));
 
@@ -392,7 +392,7 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        TraceLoggingWrite(g_traceProvider, "PXR_State", TLArg(xr::ToCString(m_sessionState), "Current"));
+        TraceLoggingWrite(g_traceProvider, "VDXR_State", TLArg(xr::ToCString(m_sessionState), "Current"));
     }
 
     // Read dynamic settings from the registry.
@@ -429,7 +429,7 @@ namespace virtualdesktop_openxr {
         m_syncGpuWorkInEndFrame = getSetting("quirk_sync_gpu_work_in_end_frame").value_or(false);
 
         TraceLoggingWrite(g_traceProvider,
-                          "PXR_Config",
+                          "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
                           TLArg(m_useRunningStart, "UseRunningStart"),
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
