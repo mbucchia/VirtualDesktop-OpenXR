@@ -59,6 +59,12 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
+        // This should never happen if the app is properly polling xrGetSystem(). But there is still a tiny race
+        // condition window even if it does.
+        if (!ensureOVRSession()) {
+            return XR_ERROR_INITIALIZATION_FAILED;
+        }
+
         // Get the graphics device and initialize the necessary resources.
         bool hasGraphicsBindings = false;
         const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
@@ -241,6 +247,11 @@ namespace virtualdesktop_openxr {
         m_sessionStopping = false;
         m_sessionExiting = false;
 
+        // Workaround: OVR ties the last use D3D device to the OVR session, and therefore we must teardown the previous
+        // OVR session to clear that state.
+        ovr_Destroy(m_ovrSession);
+        m_ovrSession = nullptr;
+
         return XR_SUCCESS;
     }
 
@@ -417,12 +428,11 @@ namespace virtualdesktop_openxr {
 
         m_syncGpuWorkInEndFrame = getSetting("quirk_sync_gpu_work_in_end_frame").value_or(false);
 
-        TraceLoggingWrite(
-            g_traceProvider,
-            "PXR_Config",
-            TLArg(m_useMirrorWindow, "MirrorWindow"),
-            TLArg(m_useRunningStart, "UseRunningStart"),
-            TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
+        TraceLoggingWrite(g_traceProvider,
+                          "PXR_Config",
+                          TLArg(m_useMirrorWindow, "MirrorWindow"),
+                          TLArg(m_useRunningStart, "UseRunningStart"),
+                          TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
     }
 
 } // namespace virtualdesktop_openxr

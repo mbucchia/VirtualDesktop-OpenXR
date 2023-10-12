@@ -722,7 +722,9 @@ namespace virtualdesktop_openxr {
 
             // Inform Virtual Desktop of the measure application GPU work duration.
             // Ignore return code since this is a non-standard option.
-            ovr_SetFloat(m_ovrSession, "AppGpuTime", m_lastGpuFrameTimeUs / 1e6f);
+            if (!m_useOculusRuntime) {
+                ovr_SetFloat(m_ovrSession, "AppGpuTime", m_lastGpuFrameTimeUs / 1e6f);
+            }
 
             // Submit the layers to OVR.
             const long long ovrFrameId = m_frameBegun - 1;

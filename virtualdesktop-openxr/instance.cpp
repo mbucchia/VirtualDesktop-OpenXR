@@ -27,84 +27,6 @@
 #include "utils.h"
 #include "version.h"
 
-// From our OVR_CAPIShim.c fork.
-OVR_PUBLIC_FUNCTION(ovrResult)
-ovr_InitializeWithPathOverride(const ovrInitParams* inputParams, const wchar_t* overrideLibraryPath);
-
-namespace {
-
-    using namespace virtualdesktop_openxr::log;
-
-    extern "C" NTSYSAPI NTSTATUS NTAPI NtSetTimerResolution(ULONG DesiredResolution,
-                                                            BOOLEAN SetResolution,
-                                                            PULONG CurrentResolution);
-    extern "C" NTSYSAPI NTSTATUS NTAPI NtQueryTimerResolution(PULONG MinimumResolution,
-                                                              PULONG MaximumResolution,
-                                                              PULONG CurrentResolution);
-
-    void InitializeHighPrecisionTimer() {
-        // https://stackoverflow.com/questions/3141556/how-to-setup-timer-resolution-to-0-5-ms
-        ULONG min, max, current;
-        NtQueryTimerResolution(&min, &max, &current);
-        TraceLoggingWrite(
-            g_traceProvider, "NtQueryTimerResolution", TLArg(min, "Min"), TLArg(max, "Max"), TLArg(current, "Current"));
-
-        ULONG currentRes;
-        NtSetTimerResolution(max, TRUE, &currentRes);
-
-        // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setprocessinformation
-        // Enable HighQoS to achieve maximum performance, and turn off power saving.
-        {
-            PROCESS_POWER_THROTTLING_STATE PowerThrottling{};
-            PowerThrottling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
-            PowerThrottling.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
-            PowerThrottling.StateMask = 0;
-
-            SetProcessInformation(
-                GetCurrentProcess(), ProcessPowerThrottling, &PowerThrottling, sizeof(PowerThrottling));
-        }
-
-        // https://forums.oculusvr.com/t5/General/SteamVR-has-fixed-the-problems-with-Windows-11/td-p/956413
-        // Always honor Timer Resolution Requests. This is to ensure that the timer resolution set-up above sticks
-        // through transitions of the main window (eg: minimization).
-        {
-            // This setting was introduced in Windows 11 and the definition is not available in older headers.
-#ifndef PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION
-            const auto PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION = 0x4U;
-#endif
-
-            PROCESS_POWER_THROTTLING_STATE PowerThrottling{};
-            PowerThrottling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
-            PowerThrottling.ControlMask = PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
-            PowerThrottling.StateMask = 0;
-
-            SetProcessInformation(
-                GetCurrentProcess(), ProcessPowerThrottling, &PowerThrottling, sizeof(PowerThrottling));
-        }
-    }
-
-    // https://stackoverflow.com/questions/865152/how-can-i-get-a-process-handle-by-its-name-in-c
-    bool IsServiceRunning(const std::wstring_view& name) {
-        PROCESSENTRY32 entry;
-        entry.dwSize = sizeof(PROCESSENTRY32);
-
-        bool found = false;
-        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-        if (Process32First(snapshot, &entry) == TRUE) {
-            while (Process32Next(snapshot, &entry) == TRUE) {
-                if (std::wstring_view(entry.szExeFile) == name) {
-                    found = true;
-                    break;
-                }
-            }
-        }
-        CloseHandle(snapshot);
-
-        return found;
-    }
-
-} // namespace
-
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::utils;
@@ -468,75 +390,6 @@ namespace virtualdesktop_openxr {
         // FIXME: Add new extensions here.
     }
 
-    bool OpenXrRuntime::InitializeOVR() {
-        m_useOculusRuntime = !IsServiceRunning(L"VirtualDesktop.Server.exe");
-        if (m_useOculusRuntime && !getSetting("allow_oculus_runtime").value_or(true)) {
-            // Indicate that Virtual Desktop is required by the current configuration.
-            OnceLog("Virtual Desktop Server is not running\n");
-            return false;
-        }
-
-        std::wstring overridePath;
-        if (!m_useOculusRuntime) {
-            // Locate Virtual Desktop's LibOVR.
-            std::filesystem::path path(
-                RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Path")
-                    .value());
-            path = path / L"VirtualDesktop.";
-
-            overridePath = path.wstring();
-        }
-
-        // Initialize OVR.
-        ovrResult result;
-        ovrInitParams initParams{};
-        initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
-        initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
-        result = ovr_InitializeWithPathOverride(&initParams, overridePath.empty() ? nullptr : overridePath.c_str());
-        if (result == ovrError_LibLoad) {
-            // This would happen on Pico. Indicate that Virtual Desktop is required.
-            OnceLog("Virtual Desktop Server is not running\n");
-            return false;
-        } else if (result == ovrError_ServiceConnection || result == ovrError_RemoteSession) {
-            return false;
-        }
-        CHECK_OVRCMD(result);
-
-        std::string_view versionString(ovr_GetVersionString());
-        Log("OVR: %s\n", versionString.data());
-        TraceLoggingWrite(g_traceProvider, "OVR_SDK", TLArg(versionString.data(), "VersionString"));
-
-        result = ovr_Create(&m_ovrSession, reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid));
-        if (result == ovrError_NoHmd) {
-            return false;
-        }
-        CHECK_OVRCMD(result);
-
-        Log("Using %s runtime\n", !m_useOculusRuntime ? "Virtual Desktop" : "Oculus");
-
-        // Tell Virtual Desktop that this is a VirtualDesktopXR session.
-        ovr_SetBool(m_ovrSession, "IsVDXR", true);
-
-        // Bogus apps may use single-precision floating point values to represent time. We will offset all values to
-        // keep them low.
-        m_ovrTimeReference = ovr_GetTimeInSeconds();
-
-        QueryPerformanceFrequency(&m_qpcFrequency);
-
-        // Calibrate the timestamp conversion.
-        m_ovrTimeFromQpcTimeOffset = INFINITY;
-        for (int i = 0; i < 100; i++) {
-            LARGE_INTEGER now;
-            QueryPerformanceCounter(&now);
-            const double qpcTime = (double)now.QuadPart / m_qpcFrequency.QuadPart;
-            m_ovrTimeFromQpcTimeOffset = std::min(m_ovrTimeFromQpcTimeOffset, ovr_GetTimeInSeconds() - qpcTime);
-        }
-        TraceLoggingWrite(
-            g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
-
-        return true;
-    }
-
     XrTime OpenXrRuntime::ovrTimeToXrTime(double ovrTime) const {
         return (XrTime)((ovrTime - m_ovrTimeReference) * 1e9);
     }
@@ -573,7 +426,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
         TraceLoggingRegister(virtualdesktop_openxr::log::g_traceProvider);
-        InitializeHighPrecisionTimer();
+        virtualdesktop_openxr::utils::InitializeHighPrecisionTimer();
         break;
 
     case DLL_PROCESS_DETACH:

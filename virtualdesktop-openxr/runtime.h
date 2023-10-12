@@ -384,10 +384,14 @@ namespace virtualdesktop_openxr {
 
         // instance.cpp
         void initializeExtensionsTable();
-        bool InitializeOVR();
         XrTime ovrTimeToXrTime(double ovrTime) const;
         double xrTimeToOvrTime(XrTime xrTime) const;
         std::optional<int> getSetting(const std::string& value) const;
+
+        // system.cpp
+        bool initializeOVR();
+        bool ensureOVRSession();
+        void initializeSystem();
 
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
@@ -491,6 +495,7 @@ namespace virtualdesktop_openxr {
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
         // Instance & OVR state.
+        bool m_isOVRLoaded{false};
         bool m_useOculusRuntime{false};
         ovrSession m_ovrSession{nullptr};
         bool m_instanceCreated{false};
