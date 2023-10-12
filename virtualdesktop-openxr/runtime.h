@@ -363,17 +363,24 @@ namespace virtualdesktop_openxr {
 
             XrActionSet actionSet{XR_NULL_HANDLE};
 
-            float lastFloatValue[2]{0.f, 0.f};
-            XrTime lastFloatValueChangedTime[2]{0, 0};
+            float lastFloatValue[xr::Side::Count]{0.f, 0.f};
+            XrTime lastFloatValueChangedTime[xr::Side::Count]{0, 0};
 
-            XrVector2f lastVector2fValue[2]{{0.f, 0.f}, {0.f, 0.f}};
-            XrTime lastVector2fValueChangedTime[2]{0, 0};
+            XrVector2f lastVector2fValue[xr::Side::Count]{{0.f, 0.f}, {0.f, 0.f}};
+            XrTime lastVector2fValueChangedTime[xr::Side::Count]{0, 0};
 
-            bool lastBoolValue[2]{false, false};
-            XrTime lastBoolValueChangedTime[2]{0, 0};
+            bool lastBoolValue[xr::Side::Count]{false, false};
+            XrTime lastBoolValueChangedTime[xr::Side::Count]{0, 0};
 
             std::set<XrPath> subactionPaths;
             std::map<std::string, ActionSource> actionSources;
+        };
+
+        struct Haptic {
+            std::chrono::high_resolution_clock::time_point startTime{};
+            float frequency{0.f};
+            float amplitude{0.f};
+            int64_t duration{0};
         };
 
         enum class EyeTracking {
@@ -553,15 +560,16 @@ namespace virtualdesktop_openxr {
         Space* m_originSpace{nullptr};
         Space* m_viewSpace{nullptr};
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
-        bool m_isControllerActive[2]{false, false};
-        std::string m_cachedControllerType[2];
+        bool m_isControllerActive[xr::Side::Count]{false, false};
+        std::string m_cachedControllerType[xr::Side::Count];
         XrPosef m_controllerAimOffset;
         XrPosef m_controllerGripOffset;
-        XrPosef m_controllerAimPose[2];
-        XrPosef m_controllerGripPose[2];
-        std::string m_localizedControllerType[2];
-        XrPath m_currentInteractionProfile[2]{XR_NULL_PATH, XR_NULL_PATH};
+        XrPosef m_controllerAimPose[xr::Side::Count];
+        XrPosef m_controllerGripPose[xr::Side::Count];
+        std::string m_localizedControllerType[xr::Side::Count];
+        XrPath m_currentInteractionProfile[xr::Side::Count]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
+        Haptic m_currentVibration[xr::Side::Count];
         bool m_useRunningStart{true};
 
         // Swapchains and other graphics stuff.

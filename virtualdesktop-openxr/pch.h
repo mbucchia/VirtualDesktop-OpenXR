@@ -96,6 +96,7 @@ using Microsoft::WRL::ComPtr;
 // OpenXR utilities.
 #include <XrError.h>
 #include <XrMath.h>
+#include <XrSide.h>
 #include <XrStereoView.h>
 #include <XrToString.h>
 #include <ScopeGuard.h>

@@ -905,7 +905,7 @@ namespace virtualdesktop_openxr {
         // TODO: Try to reduce contention here.
         std::unique_lock lock(m_actionsAndSpacesMutex);
 
-        bool doSide[2] = {false, false};
+        bool doSide[xr::Side::Count] = {false, false};
         for (uint32_t i = 0; i < syncInfo->countActiveActionSets; i++) {
             if (!m_activeActionSets.count(syncInfo->activeActionSets[i].actionSet)) {
                 return XR_ERROR_ACTIONSET_NOT_ATTACHED;
@@ -933,7 +933,7 @@ namespace virtualdesktop_openxr {
 
         // Latch the state of all inputs, and we will let the further calls to xrGetActionState*() do the triage.
         CHECK_OVRCMD(ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &m_cachedInputState));
-        for (uint32_t side = 0; side < 2; side++) {
+        for (uint32_t side = 0; side < xr::Side::Count; side++) {
             if (!doSide[side]) {
                 continue;
             }
@@ -990,6 +990,24 @@ namespace virtualdesktop_openxr {
             ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
 
             xrActionSet.cachedInputState = m_cachedInputState;
+        }
+
+        // Re-assert haptics to OVR. We do this regardless of actionsets being synced.
+        const auto now = std::chrono::high_resolution_clock::now();
+        for (uint32_t side = 0; side < xr::Side::Count; side++) {
+            if (m_currentVibration[side].duration > 0) {
+                const bool isExpired =
+                    (now - m_currentVibration[side].startTime).count() >= m_currentVibration[side].duration;
+                if (isExpired) {
+                    m_currentVibration[side].amplitude = m_currentVibration[side].frequency = 0.f;
+                    m_currentVibration[side].duration = 0;
+                }
+
+                CHECK_OVRCMD(ovr_SetControllerVibration(m_ovrSession,
+                                                        side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch,
+                                                        m_currentVibration[side].frequency,
+                                                        m_currentVibration[side].amplitude));
+            }
         }
 
         return XR_SUCCESS;
@@ -1220,15 +1238,26 @@ namespace virtualdesktop_openxr {
                                           TLArg(vibration->frequency, "Frequency"),
                                           TLArg(vibration->duration, "Duration"));
 
-                        // OpenComposite seems to pass an amplitude of 0 sometimes, which is not
-                        // supported.
+                        m_currentVibration[side].startTime = std::chrono::high_resolution_clock::now();
+                        m_currentVibration[side].amplitude = vibration->amplitude;
                         if (vibration->amplitude > 0) {
-                            CHECK_OVRCMD(ovr_SetControllerVibration(m_ovrSession,
-                                                                    side == 0 ? ovrControllerType_LTouch
-                                                                              : ovrControllerType_RTouch,
-                                                                    vibration->frequency,
-                                                                    vibration->amplitude));
+                            // Haptic Reactor's ideal resonance is at 160 Hz for low frequency.
+                            m_currentVibration[side].frequency =
+                                vibration->frequency == XR_FREQUENCY_UNSPECIFIED ? 160 : vibration->frequency;
+                            // General recommendation is 20ms for short pulses.
+                            m_currentVibration[side].duration =
+                                vibration->duration == XR_MIN_HAPTIC_DURATION ? 20'000'000 : vibration->duration;
+                        } else {
+                            // OpenComposite seems to pass an amplitude of 0 sometimes. Assume this means stopping.
+                            m_currentVibration[side].frequency = 0.f;
+                            m_currentVibration[side].duration = 0;
                         }
+
+                        CHECK_OVRCMD(
+                            ovr_SetControllerVibration(m_ovrSession,
+                                                       side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch,
+                                                       m_currentVibration[side].frequency,
+                                                       vibration->amplitude));
                         break;
                     }
 
@@ -1294,7 +1323,11 @@ namespace virtualdesktop_openxr {
             // We only support hands paths, not gamepad etc.
             const int side = getActionSide(fullPath);
             if (isOutput && side >= 0) {
-                // Nothing to do here.
+                m_currentVibration[side].amplitude = m_currentVibration[side].frequency = 0.f;
+                m_currentVibration[side].duration = 0;
+
+                CHECK_OVRCMD(ovr_SetControllerVibration(
+                    m_ovrSession, side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch, 0.f, 0.f));
             }
         }
 
@@ -1511,12 +1544,12 @@ namespace virtualdesktop_openxr {
 
     int OpenXrRuntime::getActionSide(const std::string& fullPath, bool allowExtraPaths) const {
         if (startsWith(fullPath, "/user/hand/left")) {
-            return 0;
+            return xr::Side::Left;
         } else if (startsWith(fullPath, "/user/hand/right")) {
-            return 1;
+            return xr::Side::Right;
         } else if (allowExtraPaths && (startsWith(fullPath, "/user/head") || startsWith(fullPath, "/user/gamepad") ||
                                        startsWith(fullPath, "/user/eyes_ext"))) {
-            return 2;
+            return xr::Side::Count;
         }
 
         return -1;
