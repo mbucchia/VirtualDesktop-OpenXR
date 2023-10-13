@@ -12,7 +12,7 @@ assignees: ''
 **Describe the bug**
 
 _A clear and concise description of what the bug is._
-_Always attach (upload, do not copy/paste) the log file that can be found at `%LocalAppData%\virtualdesktop-openxr\logs`_
+_Always attach (upload, do not copy/paste) the log file that can be found at `%LocalAppData%\virtualdesktop-openxr`_
 
 **Environment**
 
