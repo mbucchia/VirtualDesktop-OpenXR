@@ -424,7 +424,7 @@ namespace virtualdesktop_openxr::utils {
         return ovrPose;
     }
 
-    static inline XrVector3f ovrVector3dToXrVector3f(const ovrVector3f& ovrVector3f) {
+    static inline XrVector3f ovrVector3fToXrVector3f(const ovrVector3f& ovrVector3f) {
         XrVector3f xrVector3f;
         xrVector3f.x = ovrVector3f.x;
         xrVector3f.y = ovrVector3f.y;

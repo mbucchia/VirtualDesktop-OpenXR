@@ -464,17 +464,21 @@ namespace virtualdesktop_openxr {
                 TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(fullPath.c_str(), "ActionSourcePath"));
 
                 if (!isActionEyeTracker(fullPath)) {
-                    const bool isGripPose = endsWith(fullPath, "/input/grip/pose");
-                    const bool isAimPose = endsWith(fullPath, "/input/aim/pose");
+                    const bool isGripPose = endsWith(fullPath, "/input/grip/pose") || endsWith(fullPath, "/input/grip");
+                    const bool isAimPose = endsWith(fullPath, "/input/aim/pose") || endsWith(fullPath, "/input/aim");
+                    const bool isPalmPose =
+                        endsWith(fullPath, "/input/palm_ext/pose") || endsWith(fullPath, "/input/palm_ext");
                     const int side = getActionSide(fullPath);
-                    if ((isGripPose || isAimPose) && side >= 0) {
+                    if ((isGripPose || isAimPose || isPalmPose) && side >= 0) {
                         result = getControllerPose(side, time, pose, velocity);
 
                         // Apply the pose offsets.
                         if (isAimPose) {
                             pose = Pose::Multiply(m_controllerAimPose[side], pose);
-                        } else {
+                        } else if (isGripPose) {
                             pose = Pose::Multiply(m_controllerGripPose[side], pose);
+                        } else {
+                            pose = Pose::Multiply(m_controllerPalmPose[side], pose);
                         }
 
                         // Per spec we must consistently pick one source. We pick the first one.
@@ -531,8 +535,8 @@ namespace virtualdesktop_openxr {
 
             if (isTracked) {
                 velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-                velocity->angularVelocity = ovrVector3dToXrVector3f(state.AngularVelocity);
-                velocity->linearVelocity = ovrVector3dToXrVector3f(state.LinearVelocity);
+                velocity->angularVelocity = ovrVector3fToXrVector3f(state.AngularVelocity);
+                velocity->linearVelocity = ovrVector3fToXrVector3f(state.LinearVelocity);
             }
         }
 
@@ -571,8 +575,8 @@ namespace virtualdesktop_openxr {
 
             if (isTracked) {
                 velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-                velocity->angularVelocity = ovrVector3dToXrVector3f(state.AngularVelocity);
-                velocity->linearVelocity = ovrVector3dToXrVector3f(state.LinearVelocity);
+                velocity->angularVelocity = ovrVector3fToXrVector3f(state.AngularVelocity);
+                velocity->linearVelocity = ovrVector3fToXrVector3f(state.LinearVelocity);
             }
         }
 

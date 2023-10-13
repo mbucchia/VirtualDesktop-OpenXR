@@ -564,8 +564,10 @@ namespace virtualdesktop_openxr {
         std::string m_cachedControllerType[xr::Side::Count];
         XrPosef m_controllerAimOffset;
         XrPosef m_controllerGripOffset;
+        XrPosef m_controllerPalmOffset;
         XrPosef m_controllerAimPose[xr::Side::Count];
         XrPosef m_controllerGripPose[xr::Side::Count];
+        XrPosef m_controllerPalmPose[xr::Side::Count];
         std::string m_localizedControllerType[xr::Side::Count];
         XrPath m_currentInteractionProfile[xr::Side::Count]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};

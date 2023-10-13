@@ -102,6 +102,7 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                     endsWith(path, "/output/haptic")) {
                     return true;
                 }
@@ -119,7 +120,8 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad") ||
                     endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
                     endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
-                    endsWith(path, "/input/aim") || endsWith(path, "/output/haptic")) {
+                    endsWith(path, "/input/aim") || endsWith(path, "/input/palm_ext/pose") ||
+                    endsWith(path, "/input/palm_ext") || endsWith(path, "/output/haptic")) {
                     return true;
                 }
                 return false;
@@ -142,6 +144,7 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                     endsWith(path, "/output/haptic")) {
                     return true;
                 }
@@ -161,6 +164,7 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
                     endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
                     endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                     endsWith(path, "/input/aim") || endsWith(path, "/output/haptic")) {
                     return true;
                 }
@@ -173,7 +177,8 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
-                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
+                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
                     return true;
                 }
                 return false;
@@ -232,7 +237,8 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
-                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
+                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
                     return true;
                 }
                 return false;
@@ -321,6 +327,7 @@ namespace virtualdesktop_openxr {
             source.buttonType = (ovrButton)ovrTouch_RThumbRest;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                   endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                    endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
@@ -381,6 +388,8 @@ namespace virtualdesktop_openxr {
             return "Grip Pose";
         } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             return "Aim Pose";
+        } else if (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
+            return "Palm Pose";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
         }
@@ -397,6 +406,7 @@ namespace virtualdesktop_openxr {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                   endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -420,6 +430,7 @@ namespace virtualdesktop_openxr {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                   endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -443,6 +454,7 @@ namespace virtualdesktop_openxr {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                   endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -473,6 +485,7 @@ namespace virtualdesktop_openxr {
             return path;
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                   endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }

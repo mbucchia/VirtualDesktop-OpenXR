@@ -1345,6 +1345,7 @@ namespace virtualdesktop_openxr {
         std::string actualInteractionProfile;
         XrPosef gripPose = Pose::Identity();
         XrPosef aimPose = Pose::Identity();
+        XrPosef palmPose = Pose::Identity();
 
         // Remove all old bindings for this controller.
         for (const auto& action : m_actions) {
@@ -1366,22 +1367,23 @@ namespace virtualdesktop_openxr {
 
             {
                 // From calibration procedure
-                OVR::Posef ovrPose{{-0.8788462f, 0.2092207f, 0.2563873f, 0.3436883f},
-                                   {-0.2653514f, 0.003213146f, 0.09378216f}};
-                OVR::Posef oculusAimPose{{-0.8805875f, 0.2026294f, 0.2359737f, 0.3575239f},
-                                         {-0.2526062f, -0.048062f, 0.1314391f}};
-                OVR::Posef oculusGripPose{{-0.5838492f, 0.293469f, 0.1030445f, 0.7499186f},
-                                          {-0.2625549f, 0.04070788f, 0.0873264f}};
+                const OVR::Posef ovrPose{{-0.7192316f, -0.15637077f, -0.5820495f, 0.34564787f},
+                                         {0.48454887f, -0.37446237f, 0.013122156f}};
+                const OVR::Posef oculusGripPose{{-0.45004797f, -0.42644554f, -0.42588502f, 0.65895593f},
+                                                {0.49489617f, -0.32592848f, 0.019237727f}};
+                const OVR::Posef oculusPalmPose{{-0.74661934f, -0.105046116f, -0.5934637f, 0.28164816f},
+                                                {0.50309825f, -0.31396562f, 0.00853183f}};
 
-                OVR::Posef ovrAimPose;
-                ovrAimPose.Translation = ovrPose.Translation - oculusAimPose.Translation;
-                ovrAimPose.Rotation = ovrPose.Rotation.Conj() * oculusAimPose.Rotation;
-                aimPose = ovrPoseToXrPose(ovrAimPose);
+                const auto calibratePose = [&ovrPose](const OVR::Posef& oculusPose) {
+                    OVR::Posef pose;
+                    pose.Translation = ovrPose.Translation - oculusPose.Translation;
+                    pose.Rotation = ovrPose.Rotation.Conj() * oculusPose.Rotation;
+                    return ovrPoseToXrPose(pose);
+                };
 
-                OVR::Posef ovrGripPose;
-                ovrGripPose.Translation = ovrPose.Translation - oculusGripPose.Translation;
-                ovrGripPose.Rotation = ovrPose.Rotation.Conj() * oculusGripPose.Rotation;
-                gripPose = ovrPoseToXrPose(ovrGripPose);
+                gripPose = calibratePose(oculusGripPose);
+                palmPose = calibratePose(oculusPalmPose);
+                aimPose = Pose::MakePose(Quaternion::Identity(), XrVector3f{gripPose.position.x, 0.004f, -0.05f});
             }
 
             // Try to map with the preferred bindings.
@@ -1489,8 +1491,9 @@ namespace virtualdesktop_openxr {
 
             auto adjustedGripPose = Pose::Multiply(m_controllerGripOffset, gripPose);
             auto adjustedAimPose = Pose::Multiply(m_controllerAimOffset, aimPose);
+            auto adjustedPalmPose = Pose::Multiply(m_controllerPalmOffset, palmPose);
             if (side == 1) {
-                const auto flipHandedness = [&](XrPosef& pose) {
+                const auto flipHandedness = [](XrPosef& pose) {
                     // Mirror pose along the X axis.
                     // https://stackoverflow.com/a/33999726/15056285
                     pose.position.x = -pose.position.x;
@@ -1499,13 +1502,15 @@ namespace virtualdesktop_openxr {
                 };
                 flipHandedness(adjustedGripPose);
                 flipHandedness(adjustedAimPose);
+                flipHandedness(adjustedPalmPose);
             }
 
             m_controllerGripPose[side] = adjustedGripPose;
             m_controllerAimPose[side] = adjustedAimPose;
+            m_controllerPalmPose[side] = adjustedPalmPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
-            m_controllerGripPose[side] = m_controllerAimPose[side] = Pose::Identity();
+            m_controllerGripPose[side] = m_controllerAimPose[side] = m_controllerPalmPose[side] = Pose::Identity();
         }
 
         m_currentInteractionProfileDirty =
