@@ -263,6 +263,10 @@ namespace virtualdesktop_openxr {
         }
         CHECK_OVRCMD(result);
 
+        // Force Virtual Desktop to enter visible mode. This will make sure we transition our state machine later.
+        ovrSessionStatus status{};
+        CHECK_OVRCMD(ovr_GetSessionStatus(m_ovrSession, &status));
+
         // Tell Virtual Desktop that this is a VirtualDesktopXR session.
         if (!m_useOculusRuntime) {
             ovr_SetBool(m_ovrSession, "IsVDXR", true);
