@@ -243,7 +243,7 @@ namespace virtualdesktop_openxr {
         m_isOVRLoaded = true;
         m_ovrSession = nullptr;
 
-        return ensureOVRSession();
+        return true;
     }
 
     bool OpenXrRuntime::ensureOVRSession() {
