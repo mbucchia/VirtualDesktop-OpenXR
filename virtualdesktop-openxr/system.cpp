@@ -319,7 +319,7 @@ namespace virtualdesktop_openxr {
             m_eyeTrackingType = EyeTracking::None;
             if (!getSetting("simulate_eye_tracking").value_or(false)) {
                 // Try initializing the eye tracking data through Virtual Desktop.`
-                if (initializeEyeTrackingMmf()) {
+                if (!m_useOculusRuntime && initializeEyeTrackingMmf()) {
                     m_eyeTrackingType = EyeTracking::Mmf;
                 }
             } else {
