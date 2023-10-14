@@ -466,7 +466,8 @@ namespace virtualdesktop_openxr {
                             return XR_ERROR_LAYER_INVALID;
                         }
 
-                        if (proj->views[viewIndex].subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize) {
+                        if (proj->views[viewIndex].subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize ||
+                            xrSwapchain.xrDesc.faceCount != 1) {
                             return XR_ERROR_VALIDATION_FAILURE;
                         }
 
@@ -543,7 +544,8 @@ namespace virtualdesktop_openxr {
                                         return XR_ERROR_LAYER_INVALID;
                                     }
 
-                                    if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize) {
+                                    if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
+                                        xrSwapchain.xrDesc.faceCount != 1) {
                                         return XR_ERROR_VALIDATION_FAILURE;
                                     }
 
@@ -600,7 +602,7 @@ namespace virtualdesktop_openxr {
 
                     TraceLoggingWrite(g_traceProvider,
                                       "xrEndFrame_Layer",
-                                      TLArg("Quad", "Type"),
+                                      TLArg(!isCylinder ? "Quad" : "Cylinder", "Type"),
                                       TLArg(quad->layerFlags, "Flags"),
                                       TLXArg(quad->space, "Space"));
                     if (!isCylinder) {
@@ -655,7 +657,8 @@ namespace virtualdesktop_openxr {
                     // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
                     // We cannot achieve conformance for this particular (but uncommon) API usage.
 
-                    if (quad->subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize) {
+                    if (quad->subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize ||
+                        xrSwapchain.xrDesc.faceCount != 1) {
                         return XR_ERROR_VALIDATION_FAILURE;
                     }
 
@@ -697,6 +700,71 @@ namespace virtualdesktop_openxr {
                         layer->Cylinder.CylinderRadius = cylinder->radius;
                         layer->Cylinder.CylinderAngle = cylinder->centralAngle;
                         layer->Cylinder.CylinderAspectRatio = cylinder->aspectRatio;
+                    }
+                } else if (has_XR_KHR_composition_layer_cube &&
+                           frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_CUBE_KHR) {
+                    const XrCompositionLayerCubeKHR* cube =
+                        reinterpret_cast<const XrCompositionLayerCubeKHR*>(frameEndInfo->layers[i]);
+
+                    TraceLoggingWrite(g_traceProvider,
+                                      "xrEndFrame_Layer",
+                                      TLArg("Cube", "Type"),
+                                      TLArg(cube->layerFlags, "Flags"),
+                                      TLXArg(cube->space, "Space"));
+                    TraceLoggingWrite(g_traceProvider,
+                                      "xrEndFrame_View",
+                                      TLArg("Cube", "Type"),
+                                      TLXArg(cube->swapchain, "Swapchain"),
+                                      TLArg(cube->imageArrayIndex, "ImageArrayIndex"),
+                                      TLArg(xr::ToString(cube->orientation).c_str(), "Pose"),
+                                      TLArg(xr::ToCString(cube->eyeVisibility), "EyeVisibility"));
+                    layer->Header.Type = ovrLayerType_Cube;
+
+                    if (!Quaternion::IsNormalized(cube->orientation)) {
+                        return XR_ERROR_POSE_INVALID;
+                    }
+
+                    if (!m_swapchains.count(cube->swapchain)) {
+                        return XR_ERROR_HANDLE_INVALID;
+                    }
+
+                    Swapchain& xrSwapchain = *(Swapchain*)cube->swapchain;
+
+                    if (xrSwapchain.lastReleasedIndex == -1) {
+                        return XR_ERROR_LAYER_INVALID;
+                    }
+
+                    // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
+                    // We cannot achieve conformance for this particular (but uncommon) API usage.
+
+                    if (cube->imageArrayIndex != 0 || xrSwapchain.xrDesc.faceCount != 6) {
+                        return XR_ERROR_VALIDATION_FAILURE;
+                    }
+
+                    // Fill out color buffer information.
+                    prepareAndCommitSwapchainImage(
+                        xrSwapchain, i, 0, frameEndInfo->layers[i]->layerFlags, committedSwapchainImages);
+                    layer->Cube.CubeMapTexture = xrSwapchain.ovrSwapchain[0];
+
+                    if (!m_spaces.count(cube->space)) {
+                        return XR_ERROR_HANDLE_INVALID;
+                    }
+                    Space& xrSpace = *(Space*)cube->space;
+
+                    // Fill out the rotation.
+                    if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
+                        XrPosef layerPose;
+                        locateSpace(*(Space*)cube->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
+                        layer->Cube.Orientation =
+                            xrPoseToOvrPose(
+                                Pose::Multiply(Pose::MakePose(cube->orientation, XrVector3f{0, 0, 0}), layerPose))
+                                .Orientation;
+                    } else {
+                        layer->Cube.Orientation =
+                            xrPoseToOvrPose(Pose::Multiply(Pose::MakePose(cube->orientation, XrVector3f{0, 0, 0}),
+                                                           xrSpace.poseInSpace))
+                                .Orientation;
+                        layer->Header.Flags |= ovrLayerFlag_HeadLocked;
                     }
                 } else {
                     return XR_ERROR_LAYER_INVALID;

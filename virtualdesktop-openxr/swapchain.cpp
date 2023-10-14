@@ -307,8 +307,11 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        // We don't support cubemaps.
-        if (createInfo->faceCount != 1) {
+        if (createInfo->faceCount != 1 && createInfo->faceCount != 6) {
+            return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+        }
+
+        if (createInfo->faceCount == 6 && (createInfo->arraySize != 1 || createInfo->width != createInfo->height)) {
             return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
         }
 
@@ -328,9 +331,9 @@ namespace virtualdesktop_openxr {
         desc.MiscFlags = ovrTextureMisc_DX_Typeless; // OpenXR requires to return typeless texures.
 
         // Request a swapchain from OVR.
-        desc.Type = ovrTexture_2D;
+        desc.Type = createInfo->faceCount != 6 ? ovrTexture_2D : ovrTexture_Cube;
         desc.StaticImage = !!(createInfo->createFlags & XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT);
-        desc.ArraySize = createInfo->arraySize;
+        desc.ArraySize = createInfo->faceCount == 1 ? createInfo->arraySize : createInfo->faceCount;
         desc.Width = createInfo->width;
         desc.Height = createInfo->height;
         desc.MipLevels = createInfo->mipCount;

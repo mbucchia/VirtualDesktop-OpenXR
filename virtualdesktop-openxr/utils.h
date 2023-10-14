@@ -54,6 +54,10 @@ namespace xr {
                            pose.orientation.w);
     }
 
+    static inline std::string ToString(const XrQuaternionf& quaternion) {
+        return fmt::format("({:.3f}, {:.3f}, {:.3f}, {:.3f})", quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+    }
+
     static inline std::string ToString(const ovrVector3f& vec) {
         return fmt::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
     }
