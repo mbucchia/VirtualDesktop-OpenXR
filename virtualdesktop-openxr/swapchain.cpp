@@ -315,10 +315,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
         }
 
-        if (createInfo->createFlags & XR_SWAPCHAIN_CREATE_PROTECTED_CONTENT_BIT) {
-            return XR_ERROR_FEATURE_UNSUPPORTED;
-        }
-
         ovrTextureSwapChainDesc desc{};
 
         desc.Format = isVulkanSession()   ? vkToOvrTextureFormat((VkFormat)createInfo->format)
