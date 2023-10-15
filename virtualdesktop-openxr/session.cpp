@@ -59,12 +59,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
-        // This should never happen if the app is properly polling xrGetSystem(). But there is still a tiny race
-        // condition window even if it does.
-        if (!ensureOVRSession()) {
-            return XR_ERROR_INITIALIZATION_FAILED;
-        }
-
         // Get the graphics device and initialize the necessary resources.
         bool hasGraphicsBindings = false;
         const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
@@ -135,8 +129,20 @@ namespace virtualdesktop_openxr {
             entry = entry->next;
         }
 
-        if (!hasGraphicsBindings) {
+        m_isHeadless = !hasGraphicsBindings;
+        if (m_isHeadless && !has_XR_MND_headless) {
             return XR_ERROR_GRAPHICS_DEVICE_INVALID;
+        }
+
+        if (!m_isHeadless) {
+            // This should never happen if the app is properly polling xrGetSystem(). But there is still a tiny race
+            // condition window even if it does.
+            if (!ensureOVRSession()) {
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
+        } else {
+            // Re-initialize OVR for invisible session.
+            enterInvisibleMode();
         }
 
         // Read configuration and set up the session accordingly.
@@ -271,7 +277,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (!m_isHeadless && beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
@@ -283,7 +289,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SESSION_NOT_READY;
         }
 
-        m_useAsyncSubmission = getSetting("async_submission").value_or(true);
+        m_useAsyncSubmission = !m_isHeadless && getSetting("async_submission").value_or(true);
         m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
         // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
 
@@ -350,21 +356,21 @@ namespace virtualdesktop_openxr {
                 }
                 break;
             case XR_SESSION_STATE_READY:
-                if (m_frameCompleted > 0) {
+                if ((m_isHeadless && m_sessionBegun) || m_frameCompleted > 0) {
                     m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
                 }
                 break;
             case XR_SESSION_STATE_SYNCHRONIZED:
                 if (m_sessionStopping) {
                     m_sessionState = XR_SESSION_STATE_STOPPING;
-                } else if (m_hmdStatus.IsVisible) {
+                } else if (m_isHeadless || m_hmdStatus.IsVisible) {
                     m_sessionState = XR_SESSION_STATE_VISIBLE;
                 }
                 break;
             case XR_SESSION_STATE_VISIBLE:
                 if (m_sessionStopping) {
                     m_sessionState = XR_SESSION_STATE_SYNCHRONIZED;
-                } else if (m_hmdStatus.HmdMounted) {
+                } else if (m_isHeadless || m_hmdStatus.HmdMounted) {
                     m_sessionState = XR_SESSION_STATE_FOCUSED;
                 }
                 break;

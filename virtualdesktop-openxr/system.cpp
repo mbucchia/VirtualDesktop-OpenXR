@@ -29,6 +29,7 @@
 // From our OVR_CAPIShim.c fork.
 OVR_PUBLIC_FUNCTION(ovrResult)
 ovr_InitializeWithPathOverride(const ovrInitParams* inputParams, const wchar_t* overrideLibraryPath);
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_ReInitialize(const ovrInitParams* inputParams);
 
 namespace virtualdesktop_openxr {
 
@@ -244,6 +245,19 @@ namespace virtualdesktop_openxr {
         m_ovrSession = nullptr;
 
         return true;
+    }
+
+    void OpenXrRuntime::enterInvisibleMode() {
+        // Initialize OVR.
+        ovrInitParams initParams{};
+        initParams.Flags = ovrInit_RequestVersion | ovrInit_Invisible;
+        initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
+        CHECK_OVRCMD(ovr_ReInitialize(&initParams));
+
+        ovr_Destroy(m_ovrSession);
+        m_ovrSession = nullptr;
+
+        CHECK_MSG(ensureOVRSession(), "Failed to enter invisible mode\n");
     }
 
     bool OpenXrRuntime::ensureOVRSession() {

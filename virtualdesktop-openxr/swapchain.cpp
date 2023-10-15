@@ -254,7 +254,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        const uint32_t count = isVulkanSession()   ? ARRAYSIZE(vkFormats)
+        const uint32_t count = m_isHeadless        ? 0
+                               : isVulkanSession() ? ARRAYSIZE(vkFormats)
                                : isOpenGLSession() ? ARRAYSIZE(glFormats)
                                                    : ARRAYSIZE(d3dFormats);
 
@@ -305,6 +306,10 @@ namespace virtualdesktop_openxr {
 
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (m_isHeadless) {
+            return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
         if (createInfo->faceCount != 1 && createInfo->faceCount != 6) {

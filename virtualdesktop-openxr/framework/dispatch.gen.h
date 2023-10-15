@@ -135,6 +135,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_EXT_uuid{false};
 		bool has_XR_META_headset_id{false};
 		bool has_XR_OCULUS_audio_device_guid{false};
+		bool has_XR_MND_headless{false};
 
 
 	};

@@ -738,15 +738,17 @@ namespace virtualdesktop_openxr {
 
     // Flush any pending work in the submission context.
     void OpenXrRuntime::flushSubmissionContext() {
-        wil::unique_handle eventHandle;
-        m_fenceValue++;
-        TraceLoggingWrite(
-            g_traceProvider, "FlushContext_Wait", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
-        CHECK_HRCMD(m_ovrSubmissionContext->Signal(m_ovrSubmissionFence.Get(), m_fenceValue));
-        *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
-        CHECK_HRCMD(m_ovrSubmissionFence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
-        WaitForSingleObject(eventHandle.get(), INFINITE);
-        ResetEvent(eventHandle.get());
+        if (m_ovrSubmissionContext && m_ovrSubmissionFence) {
+            wil::unique_handle eventHandle;
+            m_fenceValue++;
+            TraceLoggingWrite(
+                g_traceProvider, "FlushContext_Wait", TLArg("D3D11", "Api"), TLArg(m_fenceValue, "FenceValue"));
+            CHECK_HRCMD(m_ovrSubmissionContext->Signal(m_ovrSubmissionFence.Get(), m_fenceValue));
+            *eventHandle.put() = CreateEventEx(nullptr, L"Flush Fence", 0, EVENT_ALL_ACCESS);
+            CHECK_HRCMD(m_ovrSubmissionFence->SetEventOnCompletion(m_fenceValue, eventHandle.get()));
+            WaitForSingleObject(eventHandle.get(), INFINITE);
+            ResetEvent(eventHandle.get());
+        }
     }
 
     // Serialize commands from the D3D12 queue to the D3D11 context used by OVR.

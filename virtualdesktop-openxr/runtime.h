@@ -397,6 +397,7 @@ namespace virtualdesktop_openxr {
 
         // system.cpp
         bool initializeOVR();
+        void enterInvisibleMode();
         bool ensureOVRSession();
         void initializeSystem();
 
@@ -533,6 +534,7 @@ namespace virtualdesktop_openxr {
         FaceTracking::FaceState* m_faceState{nullptr};
 
         // Session state.
+        bool m_isHeadless{false};
         ComPtr<ID3D11Device5> m_ovrSubmissionDevice;
         ComPtr<ID3D11DeviceContext4> m_ovrSubmissionContext;
         ComPtr<ID3DDeviceContextState> m_ovrSubmissionContextState;

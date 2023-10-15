@@ -67,8 +67,9 @@ namespace virtualdesktop_openxr {
         updateSessionState();
 
         frameState->shouldRender =
-            (!m_sessionStopping && !m_sessionExiting && !m_sessionLossPending && m_hmdStatus.IsVisible) ? XR_TRUE
-                                                                                                        : XR_FALSE;
+            (!m_isHeadless && !m_sessionStopping && !m_sessionExiting && !m_sessionLossPending && m_hmdStatus.IsVisible)
+                ? XR_TRUE
+                : XR_FALSE;
 
         // Critical section.
         {
@@ -325,6 +326,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SESSION_NOT_RUNNING;
         }
 
+        if (m_isHeadless && frameEndInfo->layerCount) {
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
+
         if (frameEndInfo->environmentBlendMode != XR_ENVIRONMENT_BLEND_MODE_OPAQUE) {
             return XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED;
         }
@@ -366,7 +371,7 @@ namespace virtualdesktop_openxr {
                 serializeVulkanFrame();
             } else if (isOpenGLSession()) {
                 serializeOpenGLFrame();
-            } else {
+            } else if (!m_isHeadless) {
                 serializeD3D11Frame();
             }
 
@@ -378,8 +383,10 @@ namespace virtualdesktop_openxr {
                 }
             });
 
-            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex]->query();
-            if (IsTraceEnabled()) {
+            const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex]
+                                                    ? m_gpuTimerPrecomposition[m_currentTimerIndex]->query()
+                                                    : 0;
+            if (IsTraceEnabled() && m_gpuTimerPrecomposition) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
@@ -777,7 +784,7 @@ namespace virtualdesktop_openxr {
                 layersAllocator.back().Header.Type = ovrLayerType_Disabled;
             }
 
-            if (IsTraceEnabled()) {
+            if (IsTraceEnabled() && m_gpuTimerPrecomposition) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->stop();
             }
 
@@ -790,7 +797,7 @@ namespace virtualdesktop_openxr {
 
             // Inform Virtual Desktop of the measure application GPU work duration.
             // Ignore return code since this is a non-standard option.
-            if (!m_useOculusRuntime) {
+            if (!m_isHeadless && !m_useOculusRuntime) {
                 ovr_SetFloat(m_ovrSession, "AppGpuTime", m_lastGpuFrameTimeUs / 1e6f);
             }
 
@@ -825,7 +832,7 @@ namespace virtualdesktop_openxr {
 
             // Defer initialization of mirror window resources until they are first needed.
             try {
-                if (m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
+                if (!m_isHeadless && m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
                     createMirrorWindow();
                 }
                 updateMirrorWindow(isProj0SRGB);

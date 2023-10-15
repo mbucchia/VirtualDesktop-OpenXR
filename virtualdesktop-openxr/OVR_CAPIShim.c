@@ -781,6 +781,14 @@ OVR_PUBLIC_FUNCTION(const char*) ovr_GetVersionString() {
   return dllVersionStringLocal;
 }
 
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_ReInitialize(const ovrInitParams* inputParams) {
+    if (!API.ovr_Initialize.Ptr) {
+        return ovrError_NotInitialized;
+    }
+
+    return API.ovr_Initialize.Ptr(inputParams);
+}
+
 OVR_PUBLIC_FUNCTION(void) ovr_GetLastErrorInfo(ovrErrorInfo* errorInfo) {
   if (!API.ovr_GetLastErrorInfo.Ptr) {
     *errorInfo = LastInitializeErrorInfo;

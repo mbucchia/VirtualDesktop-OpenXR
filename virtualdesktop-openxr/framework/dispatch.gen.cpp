@@ -1788,6 +1788,9 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_OCULUS_audio_device_guid") {
 			has_XR_OCULUS_audio_device_guid = true;
 		}
+		else if (extensionName == "XR_MND_headless") {
+			has_XR_MND_headless = true;
+		}
 
 	}
 
