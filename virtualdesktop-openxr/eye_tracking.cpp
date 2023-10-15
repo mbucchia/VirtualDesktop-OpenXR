@@ -78,20 +78,20 @@ namespace virtualdesktop_openxr {
                                   leftEyePose.orientation.w},
                     XrVector3f{leftEyePose.position.x, leftEyePose.position.y, leftEyePose.position.z}),
                 xr::math::Pose::MakePose(
-                    XrQuaternionf{leftEyePose.orientation.x,
-                                  leftEyePose.orientation.y,
-                                  leftEyePose.orientation.z,
-                                  leftEyePose.orientation.w},
-                    XrVector3f{leftEyePose.position.x, leftEyePose.position.y, leftEyePose.position.z})};
+                    XrQuaternionf{rightEyePose.orientation.x,
+                                  rightEyePose.orientation.y,
+                                  rightEyePose.orientation.z,
+                                  rightEyePose.orientation.w},
+                    XrVector3f{rightEyePose.position.x, rightEyePose.position.y, rightEyePose.position.z})};
 
             TraceLoggingWrite(g_traceProvider,
                               "VirtualDesktopEyeTracker",
-                              TLArg(xr::ToString(eyeGaze[xr::StereoView::Left]).c_str(), "LeftGazePose"),
-                              TLArg(xr::ToString(eyeGaze[xr::StereoView::Right]).c_str(), "RightGazePose"));
+                              TLArg(xr::ToString(eyeGaze[xr::Side::Left]).c_str(), "LeftGazePose"),
+                              TLArg(xr::ToString(eyeGaze[xr::Side::Right]).c_str(), "RightGazePose"));
 
             // Average the poses from both eyes.
-            const auto gaze = xr::math::LoadXrPose(
-                xr::math::Pose::Slerp(eyeGaze[xr::StereoView::Left], eyeGaze[xr::StereoView::Right], 0.5f));
+            const auto gaze =
+                xr::math::LoadXrPose(xr::math::Pose::Slerp(eyeGaze[xr::Side::Left], eyeGaze[xr::Side::Right], 0.5f));
             const auto gazeProjectedPoint =
                 DirectX::XMVector3Transform(DirectX::XMVectorSet(0.f, 0.f, -1.f, 1.f), gaze);
 
