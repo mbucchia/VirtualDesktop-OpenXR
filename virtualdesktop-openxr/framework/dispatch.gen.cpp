@@ -1508,6 +1508,132 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrCreateFaceTrackerFB(XrSession session, const XrFaceTrackerCreateInfoFB* createInfo, XrFaceTrackerFB* faceTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrCreateFaceTrackerFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateFaceTrackerFB(session, createInfo, faceTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrCreateFaceTrackerFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrCreateFaceTrackerFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrCreateFaceTrackerFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrCreateFaceTrackerFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrDestroyFaceTrackerFB(XrFaceTrackerFB faceTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrDestroyFaceTrackerFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyFaceTrackerFB(faceTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrDestroyFaceTrackerFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrDestroyFaceTrackerFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrDestroyFaceTrackerFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrDestroyFaceTrackerFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrGetFaceExpressionWeightsFB(XrFaceTrackerFB faceTracker, const XrFaceExpressionInfoFB* expressionInfo, XrFaceExpressionWeightsFB* expressionWeights) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetFaceExpressionWeightsFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetFaceExpressionWeightsFB(faceTracker, expressionInfo, expressionWeights);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetFaceExpressionWeightsFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetFaceExpressionWeightsFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetFaceExpressionWeightsFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetFaceExpressionWeightsFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrCreateEyeTrackerFB(XrSession session, const XrEyeTrackerCreateInfoFB* createInfo, XrEyeTrackerFB* eyeTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrCreateEyeTrackerFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateEyeTrackerFB(session, createInfo, eyeTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrCreateEyeTrackerFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrCreateEyeTrackerFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrCreateEyeTrackerFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrCreateEyeTrackerFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrDestroyEyeTrackerFB(XrEyeTrackerFB eyeTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrDestroyEyeTrackerFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyEyeTrackerFB(eyeTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrDestroyEyeTrackerFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrDestroyEyeTrackerFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrDestroyEyeTrackerFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrDestroyEyeTrackerFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrGetEyeGazesFB(XrEyeTrackerFB eyeTracker, const XrEyeGazesInfoFB* gazeInfo, XrEyeGazesFB* eyeGazes) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetEyeGazesFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetEyeGazesFB(eyeTracker, gazeInfo, eyeGazes);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetEyeGazesFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetEyeGazesFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetEyeGazesFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetEyeGazesFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 
 	// Auto-generated dispatcher handler.
 	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
@@ -1732,6 +1858,24 @@ namespace RUNTIME_NAMESPACE {
 		else if (has_XR_OCULUS_audio_device_guid && apiName == "xrGetAudioInputDeviceGuidOculus") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetAudioInputDeviceGuidOculus);
 		}
+		else if (has_XR_FB_face_tracking && apiName == "xrCreateFaceTrackerFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateFaceTrackerFB);
+		}
+		else if (has_XR_FB_face_tracking && apiName == "xrDestroyFaceTrackerFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrDestroyFaceTrackerFB);
+		}
+		else if (has_XR_FB_face_tracking && apiName == "xrGetFaceExpressionWeightsFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetFaceExpressionWeightsFB);
+		}
+		else if (has_XR_FB_eye_tracking_social && apiName == "xrCreateEyeTrackerFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateEyeTrackerFB);
+		}
+		else if (has_XR_FB_eye_tracking_social && apiName == "xrDestroyEyeTrackerFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrDestroyEyeTrackerFB);
+		}
+		else if (has_XR_FB_eye_tracking_social && apiName == "xrGetEyeGazesFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetEyeGazesFB);
+		}
 		else {
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
 		}
@@ -1790,6 +1934,12 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (extensionName == "XR_MND_headless") {
 			has_XR_MND_headless = true;
+		}
+		else if (extensionName == "XR_FB_eye_tracking_social") {
+			has_XR_FB_eye_tracking_social = true;
+		}
+		else if (extensionName == "XR_FB_face_tracking") {
+			has_XR_FB_face_tracking = true;
 		}
 
 	}

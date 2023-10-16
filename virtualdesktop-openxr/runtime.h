@@ -56,7 +56,9 @@ namespace virtualdesktop_openxr {
         };
 
         static constexpr int ExpressionCount = 63;
+        static_assert(ExpressionCount == XR_FACE_EXPRESSION_COUNT_FB);
         static constexpr int ConfidenceCount = 2;
+        static_assert(ConfidenceCount == XR_FACE_CONFIDENCE_COUNT_FB);
 
         struct FaceState {
             uint8_t FaceIsValid;
@@ -277,6 +279,20 @@ namespace virtualdesktop_openxr {
                                                   wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) override;
         XrResult xrGetAudioInputDeviceGuidOculus(XrInstance instance,
                                                  wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) override;
+        XrResult xrCreateEyeTrackerFB(XrSession session,
+                                      const XrEyeTrackerCreateInfoFB* createInfo,
+                                      XrEyeTrackerFB* eyeTracker) override;
+        XrResult xrDestroyEyeTrackerFB(XrEyeTrackerFB eyeTracker) override;
+        XrResult xrGetEyeGazesFB(XrEyeTrackerFB eyeTracker,
+                                 const XrEyeGazesInfoFB* gazeInfo,
+                                 XrEyeGazesFB* eyeGazes) override;
+        XrResult xrCreateFaceTrackerFB(XrSession session,
+                                       const XrFaceTrackerCreateInfoFB* createInfo,
+                                       XrFaceTrackerFB* faceTracker) override;
+        XrResult xrDestroyFaceTrackerFB(XrFaceTrackerFB faceTracker) override;
+        XrResult xrGetFaceExpressionWeightsFB(XrFaceTrackerFB faceTracker,
+                                              const XrFaceExpressionInfoFB* expressionInfo,
+                                              XrFaceExpressionWeightsFB* expressionWeights) override;
 
       private:
         struct Extension {
@@ -382,6 +398,10 @@ namespace virtualdesktop_openxr {
             float amplitude{0.f};
             int64_t duration{0};
         };
+
+        struct EyeTracker {};
+
+        struct FaceTracker {};
 
         enum class EyeTracking {
             None = 0,
@@ -559,6 +579,9 @@ namespace virtualdesktop_openxr {
         std::set<XrAction> m_actions;
         std::set<XrAction> m_actionsForCleanup;
         std::set<XrSpace> m_spaces;
+        std::mutex m_faceAndEyeTrackersMutex;
+        std::set<XrEyeTrackerFB> m_eyeTrackers;
+        std::set<XrFaceTrackerFB> m_faceTrackers;
         Space* m_originSpace{nullptr};
         Space* m_viewSpace{nullptr};
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;

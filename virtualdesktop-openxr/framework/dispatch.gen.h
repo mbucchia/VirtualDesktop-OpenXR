@@ -113,6 +113,12 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) = 0;
 		virtual XrResult xrGetAudioOutputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) = 0;
 		virtual XrResult xrGetAudioInputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) = 0;
+		virtual XrResult xrCreateFaceTrackerFB(XrSession session, const XrFaceTrackerCreateInfoFB* createInfo, XrFaceTrackerFB* faceTracker) = 0;
+		virtual XrResult xrDestroyFaceTrackerFB(XrFaceTrackerFB faceTracker) = 0;
+		virtual XrResult xrGetFaceExpressionWeightsFB(XrFaceTrackerFB faceTracker, const XrFaceExpressionInfoFB* expressionInfo, XrFaceExpressionWeightsFB* expressionWeights) = 0;
+		virtual XrResult xrCreateEyeTrackerFB(XrSession session, const XrEyeTrackerCreateInfoFB* createInfo, XrEyeTrackerFB* eyeTracker) = 0;
+		virtual XrResult xrDestroyEyeTrackerFB(XrEyeTrackerFB eyeTracker) = 0;
+		virtual XrResult xrGetEyeGazesFB(XrEyeTrackerFB eyeTracker, const XrEyeGazesInfoFB* gazeInfo, XrEyeGazesFB* eyeGazes) = 0;
 
 
 	protected:
@@ -136,6 +142,8 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_META_headset_id{false};
 		bool has_XR_OCULUS_audio_device_guid{false};
 		bool has_XR_MND_headless{false};
+		bool has_XR_FB_eye_tracking_social{false};
+		bool has_XR_FB_face_tracking{false};
 
 
 	};

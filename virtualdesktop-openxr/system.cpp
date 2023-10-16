@@ -100,6 +100,24 @@ namespace virtualdesktop_openxr {
                 reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(eyeGazeInteractionProperties->next);
         }
 
+        XrSystemEyeTrackingPropertiesFB* eyeTrackingProperties =
+            reinterpret_cast<XrSystemEyeTrackingPropertiesFB*>(properties->next);
+        while (eyeTrackingProperties) {
+            if (eyeTrackingProperties->type == XR_TYPE_SYSTEM_EYE_TRACKING_PROPERTIES_FB) {
+                break;
+            }
+            eyeTrackingProperties = reinterpret_cast<XrSystemEyeTrackingPropertiesFB*>(eyeTrackingProperties->next);
+        }
+
+        XrSystemFaceTrackingPropertiesFB* faceTrackingProperties =
+            reinterpret_cast<XrSystemFaceTrackingPropertiesFB*>(properties->next);
+        while (faceTrackingProperties) {
+            if (faceTrackingProperties->type == XR_TYPE_SYSTEM_FACE_TRACKING_PROPERTIES_FB) {
+                break;
+            }
+            faceTrackingProperties = reinterpret_cast<XrSystemFaceTrackingPropertiesFB*>(faceTrackingProperties->next);
+        }
+
         XrSystemHeadsetIdPropertiesMETA* headsetIdProperties =
             reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(properties->next);
         while (headsetIdProperties) {
@@ -141,6 +159,22 @@ namespace virtualdesktop_openxr {
                 g_traceProvider,
                 "xrGetSystemProperties",
                 TLArg(!!eyeGazeInteractionProperties->supportsEyeGazeInteraction, "SupportsEyeGazeInteraction"));
+        }
+
+        if (has_XR_FB_eye_tracking_social && eyeTrackingProperties) {
+            eyeTrackingProperties->supportsEyeTracking = m_faceState ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetSystemProperties",
+                              TLArg(!!eyeTrackingProperties->supportsEyeTracking, "SupportsEyeTracking"));
+        }
+
+        if (has_XR_FB_face_tracking && faceTrackingProperties) {
+            faceTrackingProperties->supportsFaceTracking = m_faceState ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetSystemProperties",
+                              TLArg(!!faceTrackingProperties->supportsFaceTracking, "SupportsFaceTracking"));
         }
 
         if (has_XR_META_headset_id && headsetIdProperties) {
@@ -330,10 +364,16 @@ namespace virtualdesktop_openxr {
             m_cachedHmdInfo = hmdInfo;
             Log("Device is: %s\n", m_cachedHmdInfo.ProductName);
 
+            // Try initializing the face and eye tracking data through Virtual Desktop.
+            // Note: we default the property to True because older versions of Virtual Desktop did not support that
+            // property.
+            if (!m_useOculusRuntime && ovr_GetBool(m_ovrSession, "HasFaceTracking", true)) {
+                initializeEyeTrackingMmf();
+            }
+
             m_eyeTrackingType = EyeTracking::None;
             if (!getSetting("simulate_eye_tracking").value_or(false)) {
-                // Try initializing the eye tracking data through Virtual Desktop.`
-                if (!m_useOculusRuntime && initializeEyeTrackingMmf()) {
+                if (m_faceState) {
                     m_eyeTrackingType = EyeTracking::Mmf;
                 }
             } else {

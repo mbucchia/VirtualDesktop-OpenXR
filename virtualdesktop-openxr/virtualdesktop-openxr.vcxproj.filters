@@ -154,6 +154,9 @@
     <ClCompile Include="..\external\fmt\src\format.cc">
       <Filter>fmt</Filter>
     </ClCompile>
+    <ClCompile Include="face_tracking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="virtualdesktop-openxr.json" />

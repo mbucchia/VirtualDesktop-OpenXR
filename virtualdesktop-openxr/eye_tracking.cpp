@@ -26,13 +26,160 @@
 #include "runtime.h"
 #include "utils.h"
 
-// Implements the foundations of eye tracking needed for various extensions.
+// Implements the foundations of eye tracking needed for various extensions:
+// https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_EXT_eye_gaze_interaction
+// https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_FB_eye_tracking_social
 
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::log;
     using namespace virtualdesktop_openxr::utils;
     using namespace xr::math;
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrCreateEyeTrackerFB
+    XrResult OpenXrRuntime::xrCreateEyeTrackerFB(XrSession session,
+                                                 const XrEyeTrackerCreateInfoFB* createInfo,
+                                                 XrEyeTrackerFB* eyeTracker) {
+        if (createInfo->type != XR_TYPE_EYE_TRACKER_CREATE_INFO_FB) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        TraceLoggingWrite(g_traceProvider, "xrCreateEyeTrackerFB", TLXArg(session, "Session"));
+
+        if (!has_XR_FB_eye_tracking_social) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        if (!m_sessionCreated || session != (XrSession)1) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+
+        EyeTracker& xrEyeTracker = *new EyeTracker;
+
+        *eyeTracker = (XrEyeTrackerFB)&xrEyeTracker;
+
+        // Maintain a list of known trackers for validation.
+        m_eyeTrackers.insert(*eyeTracker);
+
+        TraceLoggingWrite(g_traceProvider, "xrCreateEyeTrackerFB", TLXArg(*eyeTracker, "EyeTracker"));
+
+        return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroyEyeTrackerFB
+    XrResult OpenXrRuntime::xrDestroyEyeTrackerFB(XrEyeTrackerFB eyeTracker) {
+        TraceLoggingWrite(g_traceProvider, "xrDestroyEyeTrackerFB", TLXArg(eyeTracker, "EyeTracker"));
+
+        if (!has_XR_FB_eye_tracking_social) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+
+        if (!m_eyeTrackers.count(eyeTracker)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        EyeTracker* xrEyeTracker = (EyeTracker*)eyeTracker;
+
+        delete xrEyeTracker;
+        m_eyeTrackers.erase(eyeTracker);
+
+        return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetEyeGazesFB
+    XrResult OpenXrRuntime::xrGetEyeGazesFB(XrEyeTrackerFB eyeTracker,
+                                            const XrEyeGazesInfoFB* gazeInfo,
+                                            XrEyeGazesFB* eyeGazes) {
+        if (gazeInfo->type != XR_TYPE_EYE_GAZES_INFO_FB || eyeGazes->type != XR_TYPE_EYE_GAZES_FB) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        TraceLoggingWrite(g_traceProvider,
+                          "xrGetEyeGazesFB",
+                          TLXArg(eyeTracker, "EyeTracker"),
+                          TLArg(gazeInfo->time),
+                          TLXArg(gazeInfo->baseSpace));
+
+        if (!has_XR_FB_eye_tracking_social) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+
+        if (!m_eyeTrackers.count(eyeTracker) || !m_spaces.count(gazeInfo->baseSpace)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        // Forward the state from the memory mapped file.
+        if (m_faceState) {
+            eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_faceState->LeftEyeConfidence;
+            eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_faceState->RightEyeConfidence;
+
+            FaceTracking::Pose leftEyePose = m_faceState->LeftEyePose;
+            FaceTracking::Pose rightEyePose = m_faceState->RightEyePose;
+            XrPosef eyeGaze[] = {
+                xr::math::Pose::MakePose(
+                    XrQuaternionf{leftEyePose.orientation.x,
+                                  leftEyePose.orientation.y,
+                                  leftEyePose.orientation.z,
+                                  leftEyePose.orientation.w},
+                    XrVector3f{leftEyePose.position.x, leftEyePose.position.y, leftEyePose.position.z}),
+                xr::math::Pose::MakePose(
+                    XrQuaternionf{rightEyePose.orientation.x,
+                                  rightEyePose.orientation.y,
+                                  rightEyePose.orientation.z,
+                                  rightEyePose.orientation.w},
+                    XrVector3f{rightEyePose.position.x, rightEyePose.position.y, rightEyePose.position.z})};
+
+            eyeGazes->gaze[xr::Side::Left].isValid = XR_FALSE;
+            eyeGazes->gaze[xr::Side::Right].isValid = XR_FALSE;
+            if (m_faceState->LeftEyeIsValid || m_faceState->RightEyeIsValid) {
+                // TODO: Need optimization here, in all likelyhood, the caller is looking for eye gaze relative to VIEW
+                // space, in which case we are doing 2 back-to-back getHmdPose() that are cancelling each other.
+                Space& xrBaseSpace = *(Space*)gazeInfo->baseSpace;
+                XrPosef headPose = Pose::Identity();
+                XrPosef baseSpaceToVirtual = Pose::Identity();
+                if (Pose::IsPoseValid(getHmdPose(gazeInfo->time, headPose, nullptr)) &&
+                    Pose::IsPoseValid(
+                        locateSpaceToOrigin(xrBaseSpace, gazeInfo->time, baseSpaceToVirtual, nullptr, nullptr))) {
+                    // Combine the poses.
+                    if (m_faceState->LeftEyeIsValid) {
+                        eyeGazes->gaze[xr::Side::Left].gazePose = Pose::Multiply(
+                            Pose::Multiply(eyeGaze[xr::Side::Left], headPose), Pose::Invert(baseSpaceToVirtual));
+                        eyeGazes->gaze[xr::Side::Left].isValid = XR_TRUE;
+                    }
+                    if (m_faceState->RightEyeIsValid) {
+                        eyeGazes->gaze[xr::Side::Right].gazePose = Pose::Multiply(
+                            Pose::Multiply(eyeGaze[xr::Side::Right], headPose), Pose::Invert(baseSpaceToVirtual));
+                        eyeGazes->gaze[xr::Side::Right].isValid = XR_TRUE;
+                    }
+                }
+            }
+        } else {
+            eyeGazes->gaze[xr::Side::Left].isValid = eyeGazes->gaze[xr::Side::Right].isValid = XR_FALSE;
+            eyeGazes->gaze[xr::Side::Left].gazeConfidence = eyeGazes->gaze[xr::Side::Right].gazeConfidence = 0.f;
+            eyeGazes->gaze[xr::Side::Left].gazePose = eyeGazes->gaze[xr::Side::Right].gazePose = Pose::Identity();
+        }
+
+        // We do not do any extrapolation.
+        eyeGazes->time = gazeInfo->time;
+
+        TraceLoggingWrite(g_traceProvider,
+                          "xrGetEyeGazesFB",
+                          TLArg(!!eyeGazes->gaze[xr::Side::Left].isValid, "LeftValid"),
+                          TLArg(eyeGazes->gaze[xr::Side::Left].gazeConfidence, "LeftConfidence"),
+                          TLArg(xr::ToString(eyeGazes->gaze[xr::Side::Left].gazePose).c_str(), "LeftGazePose"),
+                          TLArg(!!eyeGazes->gaze[xr::Side::Right].isValid, "RightValid"),
+                          TLArg(eyeGazes->gaze[xr::Side::Right].gazeConfidence, "RightConfidence"),
+                          TLArg(xr::ToString(eyeGazes->gaze[xr::Side::Right].gazePose).c_str(), "RightGazePose"),
+                          TLArg(eyeGazes->time, "Time"));
+
+        return XR_SUCCESS;
+    }
 
     bool OpenXrRuntime::initializeEyeTrackingMmf() {
         *m_faceStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
@@ -67,7 +214,6 @@ namespace virtualdesktop_openxr {
                 return false;
             }
 
-            // TODO: Any file locking scheme?
             FaceTracking::Pose leftEyePose = m_faceState->LeftEyePose;
             FaceTracking::Pose rightEyePose = m_faceState->RightEyePose;
             XrPosef eyeGaze[] = {

@@ -392,6 +392,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClCompile Include="d3d12_interop.cpp" />
     <ClCompile Include="display_refresh_rate.cpp" />
     <ClCompile Include="eye_tracking.cpp" />
+    <ClCompile Include="face_tracking.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="framework\dispatch.cpp" />
     <ClCompile Include="framework\dispatch.gen.cpp" />
