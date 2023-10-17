@@ -227,6 +227,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        // The OculusXR Plugin only loads successfully when the returned OpenXR runtime name is "Oculus". We fake that
+        // if the caller is the OculusXR Plugin, but we return the real runtime name otherwise.
         HMODULE oculusXrPlugin, ovrPlugin, callerModule;
         if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OculusXRPlugin.dll", &oculusXrPlugin) &&
             GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin) &&
