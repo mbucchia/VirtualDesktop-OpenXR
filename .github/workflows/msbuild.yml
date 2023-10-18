@@ -15,7 +15,6 @@ on:
 
 env:
   SOLUTION_FILE_PATH: VirtualDesktop-OpenXR.sln
-  BUILD_CONFIGURATION: Release
 
 jobs:
   build:
@@ -54,9 +53,19 @@ jobs:
         & $DisableOutOfProcBuild
         Pop-Location
         
-        # Finally, we may build the project.
-        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "${{env.BUILD_CONFIGURATION}}|Win32"
-        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "${{env.BUILD_CONFIGURATION}}|x64"
+        # Standalone version (with installer).
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "Release|Win32"
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "Release|x64"
+
+        # Virtual Desktop bundle.
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "ReleaseBundle|Win32"
+        devenv.com ${{env.SOLUTION_FILE_PATH}} /Build "ReleaseBundle|x64"
+        copy bin/Win32/ReleaseBundle/virtualdesktop-openxr-32.dll bin/x64/ReleaseBundle/
+        copy bin/Win32/ReleaseBundle/virtualdesktop-openxr-32.json bin/x64/ReleaseBundle/
+        copy scripts/VirtualDesktopOpenXR.wprp bin/x64/ReleaseBundle/
+        copy scripts/Capture-ETL.bat bin/x64/ReleaseBundle/
+        copy LICENSE bin/x64/ReleaseBundle/
+        copy THIRD_PARTY bin/x64/ReleaseBundle/
 
     - name: Signing
       env:
@@ -73,5 +82,25 @@ jobs:
         name: Setup
         path: |
           installer/output/VirtualDesktop-OpenXR.msi
+
+    - name: Publish
+      uses: actions/upload-artifact@v2
+      with:
+        name: Bundle
+        path: |
+          bin/x64/ReleaseBundle/virtualdesktop-openxr.dll
+          bin/x64/ReleaseBundle/virtualdesktop-openxr.json
+          bin/x64/ReleaseBundle/virtualdesktop-openxr-32.dll
+          bin/x64/ReleaseBundle/virtualdesktop-openxr-32.json
+          bin/x64/ReleaseBundle/VirtualDesktopOpenXR.wprp
+          bin/x64/ReleaseBundle/Capture-ETL.bat
+          bin/x64/ReleaseBundle/LICENSE
+          bin/x64/ReleaseBundle/THIRD_PARTY
+
+    - name: Publish Symbols
+      uses: actions/upload-artifact@v2
+      with:
+        name: Symbols
+        path: |
           bin/Win32/Release/virtualdesktop-openxr-32.pdb
           bin/x64/Release/virtualdesktop-openxr.pdb

@@ -30,9 +30,13 @@ namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::utils;
 
-    const std::string RuntimeName = "virtualdesktop-openxr";
     extern const std::string RuntimePrettyName;
+#ifndef STANDALONE_RUNTIME
+    // This shares the parent key with other Virtual Desktop values.
+    const std::string RegPrefix = "SOFTWARE\\Virtual Desktop, Inc.\\OpenXR";
+#else
     const std::string RegPrefix = "SOFTWARE\\VirtualDesktop-OpenXR";
+#endif
 
     namespace FaceTracking {
 
@@ -698,6 +702,6 @@ namespace virtualdesktop_openxr {
     void ResetInstance();
 
     extern std::filesystem::path dllHome;
-    extern std::filesystem::path localAppData;
+    extern std::filesystem::path programData;
 
 } // namespace virtualdesktop_openxr

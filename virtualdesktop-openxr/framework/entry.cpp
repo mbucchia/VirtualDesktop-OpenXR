@@ -35,7 +35,7 @@ namespace RUNTIME_NAMESPACE {
     std::filesystem::path dllHome;
 
     // The path to store logs & others.
-    std::filesystem::path localAppData;
+    std::filesystem::path programData;
 
     namespace log {
         // The file logger.
@@ -66,16 +66,21 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
         }
     }
 
-    localAppData = std::filesystem::path(getenv("LOCALAPPDATA")) / RuntimeName;
-    CreateDirectoryA(localAppData.string().c_str(), nullptr);
+#ifndef STANDALONE_RUNTIME
+    // This is the location for other Virtual Desktop logs.
+    programData = std::filesystem::path(getenv("PROGRAMDATA")) / L"Virtual Desktop";
+#else
+    programData = std::filesystem::path(getenv("LOCALAPPDATA")) / L"VirtualDesktop-OpenXR";
+#endif
+    CreateDirectoryW(programData.wstring().c_str(), nullptr);
 
     // Start logging to file.
     if (!logStream.is_open()) {
-        std::string logFile = (localAppData / (RuntimeName + ".log")).string();
+        std::wstring logFile = (programData / ("OpenXR.log")).wstring();
         logStream.open(logFile, std::ios_base::ate);
     }
 
-    Log("%s\n", RuntimePrettyName.c_str());
+    Log("%s (%ls)\n", RuntimePrettyName.c_str(), dllHome.wstring().c_str());
 
     if (!loaderInfo || !runtimeRequest || loaderInfo->structType != XR_LOADER_INTERFACE_STRUCT_LOADER_INFO ||
         loaderInfo->structVersion != XR_LOADER_INFO_STRUCT_VERSION ||
@@ -98,5 +103,4 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
 
     return XR_SUCCESS;
 }
-
 }

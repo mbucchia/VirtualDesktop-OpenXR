@@ -236,7 +236,12 @@ namespace virtualdesktop_openxr {
     }
 
     bool OpenXrRuntime::initializeOVR() {
+#ifndef STANDALONE_RUNTIME
+        // The bundled runtime is meant to only work with Virtual Desktop.
+        m_useOculusRuntime = false;
+#else
         m_useOculusRuntime = !IsServiceRunning(L"VirtualDesktop.Server.exe");
+#endif
         if (m_useOculusRuntime && !getSetting("allow_oculus_runtime").value_or(true)) {
             // Indicate that Virtual Desktop is required by the current configuration.
             OnceLog("Virtual Desktop Server is not running\n");
@@ -270,6 +275,13 @@ namespace virtualdesktop_openxr {
         CHECK_OVRCMD(result);
 
         Log("Using %s runtime\n", !m_useOculusRuntime ? "Virtual Desktop" : "Oculus");
+
+        if (!m_useOculusRuntime) {
+            std::wstring version(
+                RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Version")
+                    .value_or(L"Unknown"));
+            Log("Streamer: %ls\n", version.c_str());
+        }
 
         std::string_view versionString(ovr_GetVersionString());
         Log("OVR: %s\n", versionString.data());
@@ -362,7 +374,7 @@ namespace virtualdesktop_openxr {
         // Detect if the device changed.
         if (std::string_view(m_cachedHmdInfo.SerialNumber) != hmdInfo.SerialNumber) {
             m_cachedHmdInfo = hmdInfo;
-            Log("Device is: %s\n", m_cachedHmdInfo.ProductName);
+            Log("Device is: %s ()\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.ProductId);
 
             // Try initializing the face and eye tracking data through Virtual Desktop.
             // Note: we default the property to True because older versions of Virtual Desktop did not support that
