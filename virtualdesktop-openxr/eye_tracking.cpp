@@ -181,7 +181,7 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const {
+    bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const {
         if (m_eyeTrackingType == EyeTracking::Mmf) {
             TraceLoggingWrite(g_traceProvider,
                               "VirtualDesktopEyeTracker",
@@ -227,6 +227,8 @@ namespace virtualdesktop_openxr {
             unitVector = xr::math::Normalize(
                 {gazeProjectedPoint.m128_f32[0], gazeProjectedPoint.m128_f32[1], gazeProjectedPoint.m128_f32[2]});
 
+            sampleTime = time;
+
         } else if (m_eyeTrackingType == EyeTracking::Simulated) {
             XrVector2f point{0.5f, 0.5f};
 
@@ -242,7 +244,7 @@ namespace virtualdesktop_openxr {
             GetCursorPos(&pt);
 
             point = {(float)pt.x / 1000.f, (float)pt.y / 1000.f};
-            sampleTime = ovr_GetTimeInSeconds();
+            sampleTime = ovrTimeToXrTime(ovr_GetTimeInSeconds());
 
             unitVector = Normalize({point.x - 0.5f, 0.5f - point.y, -0.35f});
 

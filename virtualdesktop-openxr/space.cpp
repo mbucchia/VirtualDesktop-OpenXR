@@ -587,8 +587,8 @@ namespace virtualdesktop_openxr {
                                                           XrPosef& pose,
                                                           XrEyeGazeSampleTimeEXT* sampleTime) const {
         XrVector3f eyeGazeVector{0, 0, -1};
-        double ovrSampleTime;
-        if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, ovrSampleTime)) {
+        XrTime timeOfSample;
+        if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, timeOfSample)) {
             return 0;
         }
 
@@ -607,7 +607,7 @@ namespace virtualdesktop_openxr {
         pose = Pose::Multiply(eyeGaze, headPose);
 
         if (sampleTime) {
-            sampleTime->time = ovrTimeToXrTime(ovrSampleTime);
+            sampleTime->time = timeOfSample;
         }
 
         return XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |

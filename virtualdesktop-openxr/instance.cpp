@@ -58,6 +58,8 @@ namespace virtualdesktop_openxr {
             // Ignore errors that can happen with UWP applications not able to write to the registry.
         }
 
+        QueryPerformanceFrequency(&m_qpcFrequency);
+
         initializeExtensionsTable();
         initializeRemappingTables();
     }

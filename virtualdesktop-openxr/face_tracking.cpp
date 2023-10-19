@@ -148,7 +148,7 @@ namespace virtualdesktop_openxr {
 
         TraceLoggingWrite(
             g_traceProvider,
-            "xrGetEyeGazesFB",
+            "xrGetFaceExpressionWeightsFB",
             TLArg(!!expressionWeights->status.isValid, "Valid"),
             TLArg(expressionWeights->weights[XR_FACE_EXPRESSION_EYES_CLOSED_L_FB], "LeftEyeClosed"),
             TLArg(expressionWeights->weights[XR_FACE_EXPRESSION_EYES_CLOSED_R_FB], "RightEyeClosed"),

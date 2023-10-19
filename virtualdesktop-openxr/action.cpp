@@ -277,6 +277,7 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        std::set<XrPath> subactionPaths;
         for (uint32_t i = 0; i < createInfo->countSubactionPaths; i++) {
             const std::string& subactionPath = getXrPath(createInfo->subactionPaths[i]);
             if (subactionPath != "/user/hand/left" && subactionPath != "/user/hand/right" &&
@@ -284,6 +285,12 @@ namespace virtualdesktop_openxr {
                 (!has_XR_EXT_eye_gaze_interaction || subactionPath != "/user/eyes_ext")) {
                 return XR_ERROR_PATH_UNSUPPORTED;
             }
+
+            if (subactionPaths.count(createInfo->subactionPaths[i])) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+
+            subactionPaths.insert(createInfo->subactionPaths[i]);
         }
 
         // Create the internal struct.
@@ -1136,6 +1143,11 @@ namespace virtualdesktop_openxr {
             }
         } else {
             bool needSpace = false;
+
+            if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT)) {
+                localizedName += "Eye";
+                needSpace = true;
+            }
 
             if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_INTERACTION_PROFILE_BIT)) {
                 localizedName += "Eye Gaze Interaction";

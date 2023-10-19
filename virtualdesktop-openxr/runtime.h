@@ -466,7 +466,7 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags getEyeTrackerPose(XrTime time, XrPosef& pose, XrEyeGazeSampleTimeEXT* sampleTime) const;
 
         // eye_tracking.cpp
-        bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const;
+        bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const;
 
         // frame.cpp
         void asyncSubmissionThread();
