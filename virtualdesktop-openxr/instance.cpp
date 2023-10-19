@@ -370,8 +370,11 @@ namespace virtualdesktop_openxr {
 
         m_extensionsTable.push_back( // Cylinder layers.
             {XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME, XR_KHR_composition_layer_cylinder_SPEC_VERSION});
+
+#if 0   // Disabled until ready.
         m_extensionsTable.push_back( // Cube layers.
             {XR_KHR_COMPOSITION_LAYER_CUBE_EXTENSION_NAME, XR_KHR_composition_layer_cube_SPEC_VERSION});
+#endif
 
         m_extensionsTable.push_back( // Qpc timestamp conversion.
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
