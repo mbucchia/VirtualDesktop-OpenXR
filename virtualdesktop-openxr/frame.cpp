@@ -795,7 +795,7 @@ namespace virtualdesktop_openxr {
                 m_frameTimes.pop_front();
             }
 
-            // Inform Virtual Desktop of the measure application GPU work duration.
+            // Inform Virtual Desktop of the measured application GPU work duration.
             // Ignore return code since this is a non-standard option.
             if (!m_isHeadless && !m_useOculusRuntime) {
                 ovr_SetFloat(m_ovrSession, "AppGpuTime", m_lastGpuFrameTimeUs / 1e6f);

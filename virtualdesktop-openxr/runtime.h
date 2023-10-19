@@ -424,6 +424,7 @@ namespace virtualdesktop_openxr {
         void enterInvisibleMode();
         bool ensureOVRSession();
         void initializeSystem();
+        bool initializeFaceTrackingMmf();
 
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
@@ -465,7 +466,6 @@ namespace virtualdesktop_openxr {
 
         // eye_tracking.cpp
         bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const;
-        bool initializeEyeTrackingMmf();
 
         // frame.cpp
         void asyncSubmissionThread();

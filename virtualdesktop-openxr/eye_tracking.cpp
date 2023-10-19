@@ -181,23 +181,6 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    bool OpenXrRuntime::initializeEyeTrackingMmf() {
-        *m_faceStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
-        if (!m_faceStateFile) {
-            TraceLoggingWrite(g_traceProvider, "VirtualDesktopEyeTracker_NotAvailable");
-            return false;
-        }
-
-        m_faceState = reinterpret_cast<FaceTracking::FaceState*>(
-            MapViewOfFile(m_faceStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(FaceTracking::FaceState)));
-        if (!m_faceState) {
-            TraceLoggingWrite(g_traceProvider, "VirtualDesktopEyeTracker_MappingError");
-            return false;
-        }
-
-        return true;
-    }
-
     bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, double& sampleTime) const {
         if (m_eyeTrackingType == EyeTracking::Mmf) {
             TraceLoggingWrite(g_traceProvider,

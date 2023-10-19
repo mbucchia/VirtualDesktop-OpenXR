@@ -374,13 +374,11 @@ namespace virtualdesktop_openxr {
         // Detect if the device changed.
         if (std::string_view(m_cachedHmdInfo.SerialNumber) != hmdInfo.SerialNumber) {
             m_cachedHmdInfo = hmdInfo;
-            Log("Device is: %s ()\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.ProductId);
+            Log("Device is: %s (%d)\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.Type);
 
-            // Try initializing the face and eye tracking data through Virtual Desktop.
-            // Note: we default the property to True because older versions of Virtual Desktop did not support that
-            // property.
-            if (!m_useOculusRuntime && ovr_GetBool(m_ovrSession, "HasFaceTracking", true)) {
-                initializeEyeTrackingMmf();
+            // Try initializing the face and eye tracking data through Virtual Desktop, for supported devices only.
+            if (!m_useOculusRuntime && m_cachedHmdInfo.Type == ovrHmd_QuestPro) {
+                initializeFaceTrackingMmf();
             }
 
             m_eyeTrackingType = EyeTracking::None;
@@ -419,6 +417,23 @@ namespace virtualdesktop_openxr {
 
         // Setup common parameters.
         CHECK_OVRCMD(ovr_SetTrackingOriginType(m_ovrSession, ovrTrackingOrigin_EyeLevel));
+    }
+
+    bool OpenXrRuntime::initializeFaceTrackingMmf() {
+        *m_faceStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
+        if (!m_faceStateFile) {
+            TraceLoggingWrite(g_traceProvider, "VirtualDesktopFaceTracker_NotAvailable");
+            return false;
+        }
+
+        m_faceState = reinterpret_cast<FaceTracking::FaceState*>(
+            MapViewOfFile(m_faceStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(FaceTracking::FaceState)));
+        if (!m_faceState) {
+            TraceLoggingWrite(g_traceProvider, "VirtualDesktopFaceTracker_MappingError");
+            return false;
+        }
+
+        return true;
     }
 
 } // namespace virtualdesktop_openxr
