@@ -421,6 +421,7 @@ namespace virtualdesktop_openxr {
 
         // system.cpp
         bool initializeOVR();
+        void identifyVirtualDesktop();
         void enterInvisibleMode();
         bool ensureOVRSession();
         void initializeSystem();
@@ -553,6 +554,7 @@ namespace virtualdesktop_openxr {
         bool m_loggedResolution{false};
         std::string m_applicationName;
         bool m_useApplicationDeviceForSubmission{true};
+        bool m_alwaysAdvertiseEyeTracking{false};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_faceStateFile;
         FaceTracking::FaceState* m_faceState{nullptr};

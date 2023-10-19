@@ -265,6 +265,10 @@ namespace virtualdesktop_openxr {
         initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
         const ovrResult result =
             ovr_InitializeWithPathOverride(&initParams, overridePath.empty() ? nullptr : overridePath.c_str());
+        TraceLoggingWrite(g_traceProvider,
+                          "OVR_Initialize",
+                          TLArg(overridePath.c_str(), "OverridePath"),
+                          TLArg((int)result, "Result"));
         if (result == ovrError_LibLoad) {
             // This would happen on Pico. Indicate that Virtual Desktop is required.
             OnceLog("Virtual Desktop Server is not running\n");
@@ -277,10 +281,7 @@ namespace virtualdesktop_openxr {
         Log("Using %s runtime\n", !m_useOculusRuntime ? "Virtual Desktop" : "Oculus");
 
         if (!m_useOculusRuntime) {
-            std::wstring version(
-                RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Version")
-                    .value_or(L"Unknown"));
-            Log("Streamer: %ls\n", version.c_str());
+            identifyVirtualDesktop();
         }
 
         std::string_view versionString(ovr_GetVersionString());
@@ -291,6 +292,30 @@ namespace virtualdesktop_openxr {
         m_ovrSession = nullptr;
 
         return true;
+    }
+
+    void OpenXrRuntime::identifyVirtualDesktop() {
+        std::wstring version(
+            RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Version")
+                .value_or(L"Unknown"));
+        Log("Streamer: %ls\n", version.c_str());
+        TraceLoggingWrite(g_traceProvider, "VirtualDesktopVersion", TLArg(version.data(), "Version"));
+
+        try {
+            std::stringstream ss(xr::wide_to_utf8(version));
+            std::string component;
+            std::getline(ss, component, '.');
+            const int major = std::stoi(component);
+            std::getline(ss, component, '.');
+            const int minor = std::stoi(component);
+            std::getline(ss, component, '.');
+            const int release = std::stoi(component);
+
+            // FIXME: Identify version-specific quirks.
+            m_alwaysAdvertiseEyeTracking = major == 1 && (minor < 29 || (minor == 29 && release < 2));
+
+        } catch (std::exception&) {
+        }
     }
 
     void OpenXrRuntime::enterInvisibleMode() {
@@ -318,6 +343,7 @@ namespace virtualdesktop_openxr {
         }
 
         const ovrResult result = ovr_Create(&m_ovrSession, reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid));
+        TraceLoggingWrite(g_traceProvider, "OVR_Create", TLArg((int)result, "Result"));
         if (result == ovrError_NoHmd) {
             return false;
         }
@@ -377,7 +403,7 @@ namespace virtualdesktop_openxr {
             Log("Device is: %s (%d)\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.Type);
 
             // Try initializing the face and eye tracking data through Virtual Desktop, for supported devices only.
-            if (!m_useOculusRuntime && m_cachedHmdInfo.Type == ovrHmd_QuestPro) {
+            if (!m_useOculusRuntime && (m_cachedHmdInfo.Type == ovrHmd_QuestPro || m_alwaysAdvertiseEyeTracking)) {
                 initializeFaceTrackingMmf();
             }
 
