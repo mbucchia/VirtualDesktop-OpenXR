@@ -1,6 +1,7 @@
 {
   "file_format_version": "1.0.0",
   "runtime": {
-    "library_path": ".\\virtualdesktop-openxr-32.dll"
+    "library_path": ".\\virtualdesktop-openxr-32.dll",
+    "name": "VirtualDesktop-OpenXR"
   }
 }

@@ -21,6 +21,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_1BF40807021348428E5FB515DD80360C"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_214A55253A374C48864776CF889691C9"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -70,6 +76,12 @@
         "Entry"
         {
         "MsmKey" = "8:_D82E8DFC46E447E28ABA883E90AF5397"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_DCB5D763768148408BD8C3CF9A89303A"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -152,6 +164,26 @@
             {
             "SourcePath" = "8:..\\bin\\Win32\\Release\\virtualdesktop-openxr-32.dll"
             "TargetName" = "8:virtualdesktop-openxr-32.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1BF40807021348428E5FB515DD80360C"
+            {
+            "SourcePath" = "8:..\\bin\\Win32\\Release\\virtualdesktop-openxr-32.json"
+            "TargetName" = "8:virtualdesktop-openxr-32.json"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
             "Condition" = "8:"
@@ -332,6 +364,26 @@
             {
             "SourcePath" = "8:..\\scripts\\Enable-OculusRuntime.reg"
             "TargetName" = "8:Enable-OculusRuntime.reg"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DCB5D763768148408BD8C3CF9A89303A"
+            {
+            "SourcePath" = "8:..\\bin\\x64\\Release\\virtualdesktop-openxr.json"
+            "TargetName" = "8:virtualdesktop-openxr.json"
             "Tag" = "8:"
             "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
             "Condition" = "8:"
@@ -1225,34 +1277,6 @@
         }
         "ProjectOutput"
         {
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_4459C866A3B04E0492F698D2279C8827"
-            {
-            "SourcePath" = "8:"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            "ProjectOutputGroupRegister" = "3:1"
-            "OutputConfiguration" = "8:"
-            "OutputGroupCanonicalName" = "8:ContentFiles"
-            "OutputProjectGuid" = "8:{93D573D0-634F-4BA0-8FE0-FB63D7D00A05}"
-            "ShowKeyOutput" = "11:TRUE"
-                "ExcludeFilters"
-                {
-                }
-            }
         }
     }
 }

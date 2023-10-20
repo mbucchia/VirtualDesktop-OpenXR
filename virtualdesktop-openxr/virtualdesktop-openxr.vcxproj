@@ -158,7 +158,7 @@
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\$(ProjectName).json $(OutDir)
+      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktop-OpenXR/VirtualDesktop-OpenXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
 copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
@@ -219,7 +219,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
+      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktop-OpenXR/VirtualDesktop-OpenXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
 copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
@@ -284,7 +284,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\$(ProjectName).json $(OutDir)
+      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktop-OpenXR/VirtualDesktop-OpenXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
 copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
@@ -349,7 +349,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\$(ProjectName).json $(OutDir)
+      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktop-OpenXR/VirtualDesktop-OpenXR (Bundled)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
 copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
@@ -414,7 +414,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
+      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktop-OpenXR/VirtualDesktop-OpenXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
 copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
@@ -479,7 +479,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\$(ProjectName)-32.json $(OutDir)
+      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktop-OpenXR/VirtualDesktop-OpenXR (Bundled)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
 copy $(ProjectDir)\guardian.png $(OutDir)
 copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
@@ -606,22 +606,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <None Include="AlphaBlending.hlsli" />
     <None Include="framework\dispatch_generator.py" />
     <None Include="packages.config" />
-    <None Include="virtualdesktop-openxr-32.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">true</DeploymentContent>
-    </None>
-    <None Include="virtualdesktop-openxr.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">true</DeploymentContent>
-    </None>
+    <None Include="virtualdesktop-openxr-32.json" />
+    <None Include="virtualdesktop-openxr.json" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
