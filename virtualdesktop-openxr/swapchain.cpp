@@ -153,8 +153,8 @@ namespace virtualdesktop_openxr {
                     return XR_ERROR_VALIDATION_FAILURE;
                 }
 
-                views[i].maxImageRectWidth = 16384;
-                views[i].maxImageRectHeight = 16384;
+                // Lower the maximum on a low memory system.
+                views[i].maxImageRectWidth = views[i].maxImageRectHeight = !m_isLowVideoMemorySystem ? 16384 : 8192;
 
                 // Per Direct3D 11 standard, "devices are required to support 4x MSAA for all render target formats, and
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".

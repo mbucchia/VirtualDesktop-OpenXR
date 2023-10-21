@@ -373,6 +373,34 @@ namespace virtualdesktop_openxr {
         TraceLoggingWrite(
             g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
 
+        m_isLowVideoMemorySystem = false;
+        {
+            // Detect low memory systems.
+            ComPtr<IDXGIFactory1> dxgiFactory;
+            CHECK_HRCMD(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
+
+            ComPtr<IDXGIAdapter1> dxgiAdapter;
+            for (UINT adapterIndex = 0;; adapterIndex++) {
+                // EnumAdapters1 will fail with DXGI_ERROR_NOT_FOUND when there are no more adapters to
+                // enumerate.
+                CHECK_HRCMD(dxgiFactory->EnumAdapters1(adapterIndex, dxgiAdapter.ReleaseAndGetAddressOf()));
+
+                DXGI_ADAPTER_DESC1 desc;
+                CHECK_HRCMD(dxgiAdapter->GetDesc1(&desc));
+                if (!memcmp(&desc.AdapterLuid, &m_adapterLuid, sizeof(LUID))) {
+                    ComPtr<IDXGIAdapter3> dxgiAdapter3;
+                    if (SUCCEEDED(dxgiAdapter->QueryInterface(dxgiAdapter3.ReleaseAndGetAddressOf()))) {
+                        DXGI_QUERY_VIDEO_MEMORY_INFO queryVideoMemory;
+                        if (SUCCEEDED(dxgiAdapter3->QueryVideoMemoryInfo(
+                                0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &queryVideoMemory))) {
+                            m_isLowVideoMemorySystem = queryVideoMemory.Budget < 3'758'096'384;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         initializeSystem();
 
         return true;

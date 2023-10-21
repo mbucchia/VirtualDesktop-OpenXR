@@ -559,6 +559,7 @@ namespace virtualdesktop_openxr {
         wil::unique_handle m_faceStateFile;
         FaceTracking::FaceState* m_faceState{nullptr};
         bool m_isConformanceTest{false};
+        bool m_isLowVideoMemorySystem{false};
 
         // Session state.
         bool m_isHeadless{false};
