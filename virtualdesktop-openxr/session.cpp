@@ -231,6 +231,18 @@ namespace virtualdesktop_openxr {
         delete m_viewSpace;
         m_originSpace = m_viewSpace = nullptr;
 
+        // Destroy face/eye trackers (tied to session).
+        for (auto eyeTracker : m_eyeTrackers) {
+            EyeTracker* xrEyeTracker = (EyeTracker*)eyeTracker;
+            delete xrEyeTracker;
+        }
+        m_eyeTrackers.clear();
+        for (auto faceTracker : m_faceTrackers) {
+            FaceTracker* xrFaceTracker = (FaceTracker*)faceTracker;
+            delete xrFaceTracker;
+        }
+        m_faceTrackers.clear();
+
         // Destroy all swapchains (tied to session).
         while (m_swapchains.size()) {
             // TODO: Ideally we do not invoke OpenXR public APIs to avoid confusing event tracing and possible
