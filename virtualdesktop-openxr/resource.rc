@@ -71,7 +71,7 @@ BEGIN
             VALUE "InternalName", "virtualdesktop-openxr.dll"
             VALUE "LegalCopyright", "Copyright (c) 2023 Matthieu Bucchianeri"
             VALUE "OriginalFilename", "virtualdesktop-openxr.dll"
-            VALUE "ProductName", "VirtualDesktop-OpenXR"
+            VALUE "ProductName", "VirtualDesktopXR"
             VALUE "ProductVersion", "0.8.0.0"
         END
     END
