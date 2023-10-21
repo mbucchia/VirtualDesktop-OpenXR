@@ -221,6 +221,13 @@ namespace virtualdesktop_openxr {
             m_mirrorWindowThread = {};
         }
 
+        // Destroy hand trackers (tied to session).
+        for (auto handTracker : m_handTrackers) {
+            HandTracker* xrHandTracker = (HandTracker*)handTracker;
+            delete xrHandTracker;
+        }
+        m_handTrackers.clear();
+
         // Destroy action spaces (tied to session).
         for (auto space : m_spaces) {
             Space* xrSpace = (Space*)space;

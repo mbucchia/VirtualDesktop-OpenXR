@@ -279,6 +279,13 @@ namespace virtualdesktop_openxr {
                                                   float* displayRefreshRates) override;
         XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) override;
         XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) override;
+        XrResult xrCreateHandTrackerEXT(XrSession session,
+                                        const XrHandTrackerCreateInfoEXT* createInfo,
+                                        XrHandTrackerEXT* handTracker) override;
+        XrResult xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) override;
+        XrResult xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
+                                       const XrHandJointsLocateInfoEXT* locateInfo,
+                                       XrHandJointLocationsEXT* locations) override;
         XrResult xrGetAudioOutputDeviceGuidOculus(XrInstance instance,
                                                   wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) override;
         XrResult xrGetAudioInputDeviceGuidOculus(XrInstance instance,
@@ -401,6 +408,10 @@ namespace virtualdesktop_openxr {
             float frequency{0.f};
             float amplitude{0.f};
             int64_t duration{0};
+        };
+
+        struct HandTracker {
+            int side;
         };
 
         struct EyeTracker {};
@@ -586,6 +597,8 @@ namespace virtualdesktop_openxr {
         std::set<XrActionSet> m_activeActionSets;
         std::set<XrAction> m_actions;
         std::set<XrAction> m_actionsForCleanup;
+        std::mutex m_handTrackersMutex;
+        std::set<XrHandTrackerEXT> m_handTrackers;
         std::set<XrSpace> m_spaces;
         std::mutex m_faceAndEyeTrackersMutex;
         std::set<XrEyeTrackerFB> m_eyeTrackers;
