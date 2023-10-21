@@ -558,6 +558,7 @@ namespace virtualdesktop_openxr {
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_faceStateFile;
         FaceTracking::FaceState* m_faceState{nullptr};
+        bool m_isConformanceTest{false};
 
         // Session state.
         bool m_isHeadless{false};

@@ -194,6 +194,10 @@ namespace virtualdesktop_openxr {
             registerInstanceExtension(std::string(extensionName));
         }
 
+        // FIXME: Put application quirks below.
+
+        m_isConformanceTest = m_applicationName == "conformance test";
+
         m_instanceCreated = true;
         *instance = (XrInstance)1;
 
@@ -371,7 +375,7 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Cylinder layers.
             {XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME, XR_KHR_composition_layer_cylinder_SPEC_VERSION});
 
-#if 0   // Disabled until ready.
+#if 0 // Disabled until ready.
         m_extensionsTable.push_back( // Cube layers.
             {XR_KHR_COMPOSITION_LAYER_CUBE_EXTENSION_NAME, XR_KHR_composition_layer_cube_SPEC_VERSION});
 #endif
