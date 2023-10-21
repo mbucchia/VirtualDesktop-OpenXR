@@ -54,6 +54,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (!m_faceState) {
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
+
         std::unique_lock lock(m_faceAndEyeTrackersMutex);
 
         EyeTracker& xrEyeTracker = *new EyeTracker;

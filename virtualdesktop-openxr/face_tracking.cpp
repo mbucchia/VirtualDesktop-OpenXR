@@ -53,6 +53,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (!m_faceState) {
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
+
         if (createInfo->faceExpressionSet != XR_FACE_EXPRESSION_SET_DEFAULT_FB) {
             return XR_ERROR_VALIDATION_FAILURE;
         }

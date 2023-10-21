@@ -53,6 +53,11 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
+        // TODO: Implement hand tracking.
+        if (true) {
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
+
         if (!m_sessionCreated || session != (XrSession)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
