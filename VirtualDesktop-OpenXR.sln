@@ -63,6 +63,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EyeGazeInteractionWin32", "
 		{93D573D0-634F-4BA0-8FE0-FB63D7D00A05} = {93D573D0-634F-4BA0-8FE0-FB63D7D00A05}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomSetup", "CustomSetup\CustomSetup.csproj", "{B6C07936-A1D2-4A80-B559-B55E3F15CC97}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -148,6 +150,13 @@ Global
 		{A4D2019B-622D-49B9-9510-16877979807A}.Release|x64.ActiveCfg = Release|x64
 		{A4D2019B-622D-49B9-9510-16877979807A}.ReleaseBundle|Win32.ActiveCfg = Release|Win32
 		{A4D2019B-622D-49B9-9510-16877979807A}.ReleaseBundle|x64.ActiveCfg = Release|x64
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.Release|Win32.ActiveCfg = Release|Any CPU
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.Release|x64.ActiveCfg = Release|Any CPU
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.Release|x64.Build.0 = Release|Any CPU
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.ReleaseBundle|Win32.ActiveCfg = Release|Any CPU
+		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.ReleaseBundle|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

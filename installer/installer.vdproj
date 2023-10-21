@@ -63,6 +63,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_92C992A2E5CE4F0D9497E766301ABF06"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_9E559E37DD824F8B83E0B00EE783C166"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -71,6 +77,12 @@
         {
         "MsmKey" = "8:_A92ECD4D43D34873920964CE79E16558"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_CFD2063A9588D4E85037FA0DACAF5F69"
+        "OwnerKey" = "8:_92C992A2E5CE4F0D9497E766301ABF06"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -97,6 +109,18 @@
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_92C992A2E5CE4F0D9497E766301ABF06"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_CFD2063A9588D4E85037FA0DACAF5F69"
+        "MsmSig" = "8:_UNDEFINED"
+        }
     }
     "Configurations"
     {
@@ -105,7 +129,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Output\\VirtualDesktop-OpenXR.msi"
+        "OutputFilename" = "8:Output\\VirtualDesktopXR.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -117,7 +141,7 @@
         "InstallerBootstrapper" = "3:2"
             "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
             {
-            "Enabled" = "11:TRUE"
+            "Enabled" = "11:FALSE"
             "PromptEnabled" = "11:TRUE"
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
@@ -137,6 +161,21 @@
     {
         "CustomAction"
         {
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_EB0F4FD3049246DE86A47002E901DB30"
+            {
+            "Name" = "8:Primary output from CustomSetup (Active)"
+            "Condition" = "8:"
+            "Object" = "8:_92C992A2E5CE4F0D9497E766301ABF06"
+            "FileType" = "3:1"
+            "InstallAction" = "3:1"
+            "Arguments" = "8:"
+            "EntryPoint" = "8:"
+            "Sequence" = "3:1"
+            "Identifier" = "8:_979E3F8D_015B_480A_AC93_D17AE731362C"
+            "InstallerClass" = "11:TRUE"
+            "CustomActionData" = "8:"
+            "Run64Bit" = "11:TRUE"
+            }
         }
         "DefaultFeature"
         {
@@ -360,6 +399,37 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_CFD2063A9588D4E85037FA0DACAF5F69"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+                "ScatterAssemblies"
+                {
+                    "_CFD2063A9588D4E85037FA0DACAF5F69"
+                    {
+                    "Name" = "8:System.Net.Http.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:System.Net.Http.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D82E8DFC46E447E28ABA883E90AF5397"
             {
             "SourcePath" = "8:..\\scripts\\Enable-OculusRuntime.reg"
@@ -470,7 +540,7 @@
             }
             "{3C67513D-01DD-4637-8A68-80971EB9504F}:_FAFEF1A1283E4B448EB32163831E71D2"
             {
-            "DefaultLocation" = "8:[ProgramFiles64Folder]\\[ProductName]"
+            "DefaultLocation" = "8:[ProgramFiles64Folder]\\VirtualDesktopXR"
             "Name" = "8:#1925"
             "AlwaysCreate" = "11:TRUE"
             "Condition" = "8:"
@@ -495,9 +565,9 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:Virtual Desktop OpenXR"
+        "ProductName" = "8:VirtualDesktopXR (Standalone)"
         "ProductCode" = "8:{044BAF6E-8718-492B-A362-C5B99C53A91B}"
-        "PackageCode" = "8:{CF55430E-4DE2-4FD3-A5EB-2E9260201D54}"
+        "PackageCode" = "8:{E0BA55C8-1AFB-4323-9525-3A2C3783D674}"
         "UpgradeCode" = "8:{6F81532C-FD71-48C6-AD6F-196F36F81D16}"
         "AspNetVersion" = "8:"
         "RestartWWWService" = "11:FALSE"
@@ -1277,6 +1347,34 @@
         }
         "ProjectOutput"
         {
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_92C992A2E5CE4F0D9497E766301ABF06"
+            {
+            "SourcePath" = "8:..\\CustomSetup\\obj\\Release\\CustomSetup.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{B6C07936-A1D2-4A80-B559-B55E3F15CC97}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
         }
     }
 }
