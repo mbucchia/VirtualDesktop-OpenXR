@@ -70,6 +70,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        uint32_t indicesStride = 1;
         ovrFovStencilDesc stencilDesc{};
         switch (visibilityMaskType) {
         case XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR:
@@ -80,6 +81,7 @@ namespace virtualdesktop_openxr {
             break;
         case XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR:
             stencilDesc.StencilType = ovrFovStencil_BorderLine;
+            indicesStride = 2;
             break;
         default:
             return XR_ERROR_VALIDATION_FAILURE;
@@ -97,10 +99,10 @@ namespace virtualdesktop_openxr {
 
         if (visibilityMask->vertexCapacityInput == 0) {
             visibilityMask->vertexCountOutput = buffer.UsedVertexCount;
-            visibilityMask->indexCountOutput = buffer.UsedIndexCount;
+            visibilityMask->indexCountOutput = buffer.UsedIndexCount / indicesStride;
         } else if (visibilityMask->vertices && visibilityMask->indices) {
             if ((int)visibilityMask->vertexCapacityInput < buffer.UsedVertexCount ||
-                (int)visibilityMask->indexCapacityInput < buffer.UsedIndexCount) {
+                (int)visibilityMask->indexCapacityInput < buffer.UsedIndexCount / indicesStride) {
                 return XR_ERROR_SIZE_INSUFFICIENT;
             }
 
@@ -114,9 +116,13 @@ namespace virtualdesktop_openxr {
 
             convertSteamVRToOpenXRHiddenMesh(
                 m_cachedEyeInfo[viewIndex].Fov, visibilityMask->vertices, buffer.UsedVertexCount);
-            for (int i = 0; i < buffer.UsedIndexCount; i++) {
-                visibilityMask->indices[i] = buffer.IndexBuffer[i];
+
+            for (int i = 0; i < buffer.UsedIndexCount / indicesStride; i++) {
+                visibilityMask->indices[i] = buffer.IndexBuffer[i * indicesStride];
             }
+
+            visibilityMask->vertexCountOutput = buffer.UsedVertexCount;
+            visibilityMask->indexCountOutput = buffer.UsedIndexCount / indicesStride;
         }
 
         return XR_SUCCESS;
