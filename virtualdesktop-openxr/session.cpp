@@ -143,6 +143,10 @@ namespace virtualdesktop_openxr {
         } else {
             // Re-initialize OVR for invisible session.
             enterInvisibleMode();
+
+            // We initialize a submission device since OVR needs one to create a swapchain before being able to wait
+            // frames.
+            initializeSubmissionDevice("Headless");
         }
 
         // Read configuration and set up the session accordingly.
@@ -394,7 +398,7 @@ namespace virtualdesktop_openxr {
                 }
                 break;
             case XR_SESSION_STATE_FOCUSED:
-                if (m_sessionStopping || !m_hmdStatus.HmdMounted) {
+                if (m_sessionStopping || (!m_isHeadless && !m_hmdStatus.HmdMounted)) {
                     m_sessionState = XR_SESSION_STATE_VISIBLE;
                 }
                 break;
