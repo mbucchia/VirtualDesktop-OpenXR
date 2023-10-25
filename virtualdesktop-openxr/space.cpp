@@ -554,7 +554,7 @@ namespace virtualdesktop_openxr {
         } else {
             CHECK_OVRCMD(result);
             TraceLoggingWrite(g_traceProvider,
-                              "OVR_HmdPoseState",
+                              "OVR_ControllerPoseState",
                               TLArg(side == 0 ? "Left" : "Right", "Side"),
                               TLArg(xr::ToString(state.ThePose).c_str(), "Pose"),
                               TLArg(xr::ToString(state.AngularVelocity).c_str(), "AngularVelocity"),

@@ -171,6 +171,27 @@ namespace virtualdesktop_openxr {
                 return false;
             });
         m_controllerValidPathsTable.insert_or_assign(
+            "/interaction_profiles/hp/mixed_reality_controller", [&](const std::string& path) {
+                if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x" ||
+                    path == "/user/hand/left/input/y/click" || path == "/user/hand/left/input/y" ||
+                    path == "/user/hand/right/input/a/click" || path == "/user/hand/left/right/a" ||
+                    path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                    endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                    endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                    endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                    endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                    endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                    endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                    endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/grip/pose") ||
+                    endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
+                    endsWith(path, "/input/aim") || endsWith(path, "/output/haptic")) {
+                    return true;
+                }
+                return false;
+            });
+        m_controllerValidPathsTable.insert_or_assign(
             "/interaction_profiles/google/daydream_controller", [](const std::string& path) {
                 if (endsWith(path, "/input/select/click") || endsWith(path, "/input/select") ||
                     endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
