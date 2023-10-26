@@ -564,6 +564,7 @@ namespace virtualdesktop_openxr {
         wil::unique_registry_watcher m_registryWatcher;
         bool m_loggedResolution{false};
         std::string m_applicationName;
+        std::string m_exeName;
         bool m_useApplicationDeviceForSubmission{true};
         bool m_alwaysAdvertiseEyeTracking{false};
         EyeTracking m_eyeTrackingType{EyeTracking::None};

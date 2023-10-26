@@ -170,6 +170,12 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_API_VERSION_UNSUPPORTED;
         }
 
+        {
+            char path[_MAX_PATH];
+            GetModuleFileNameA(nullptr, path, sizeof(path));
+            std::filesystem::path fullPath(path);
+            m_exeName = fullPath.filename().string();
+        }
         m_applicationName = createInfo->applicationInfo.applicationName;
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
@@ -235,16 +241,13 @@ namespace virtualdesktop_openxr {
 
         // The OculusXR Plugin only loads successfully when the returned OpenXR runtime name is "Oculus". We fake that
         // if the caller is the OculusXR Plugin, but we return the real runtime name otherwise.
-        HMODULE oculusXrPlugin, ovrPlugin, callerModule;
-        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OculusXRPlugin.dll", &oculusXrPlugin) &&
-            GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin) &&
-            GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                               (LPCSTR)returnAddress,
-                               &callerModule) &&
-            (callerModule == oculusXrPlugin || callerModule == ovrPlugin)) {
-            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
-        } else {
+        // Some games (like 7th Guest VR) do not play well when forcing the runtime name, so we exclude them.
+        const bool needOculusXrPluginWorkaround =
+            m_applicationName.find("Oculus VR Plugin") == 0 && m_exeName != "The7thGuestVR-Win64-Shipping.exe";
+        if (!needOculusXrPluginWorkaround) {
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
+        } else {
+            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
         }
 
         // This cannot be all 0.
