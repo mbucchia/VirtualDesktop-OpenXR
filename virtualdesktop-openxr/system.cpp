@@ -469,9 +469,6 @@ namespace virtualdesktop_openxr {
             m_cachedEyeInfo[xr::StereoView::Right] =
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Right, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Right]);
 
-            m_floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
-            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(m_floorHeight, "EyeHeight"));
-
             for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
                 m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
                 m_cachedEyeFov[i].angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
@@ -487,7 +484,7 @@ namespace virtualdesktop_openxr {
         }
 
         // Setup common parameters.
-        CHECK_OVRCMD(ovr_SetTrackingOriginType(m_ovrSession, ovrTrackingOrigin_EyeLevel));
+        CHECK_OVRCMD(ovr_SetTrackingOriginType(m_ovrSession, ovrTrackingOrigin_FloorLevel));
     }
 
     bool OpenXrRuntime::initializeFaceTrackingMmf() {

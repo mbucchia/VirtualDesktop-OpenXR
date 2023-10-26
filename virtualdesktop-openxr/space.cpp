@@ -435,16 +435,32 @@ namespace virtualdesktop_openxr {
             // VIEW space if the headset pose.
             result = getHmdPose(time, pose, velocity);
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-            // LOCAL space is the origin reference.
-            pose = Pose::Identity();
+            // LOCAL space is the origin at eye level.
+            const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+            if (std::abs(floorHeight) < FLT_EPSILON) {
+                // Virtual Desktop Stage Tracking mode.
+                if (!m_lastKnownFloorHeight) {
+                    XrPosef referencePose{};
+                    if ((getHmdPose(time, referencePose, nullptr) & XR_SPACE_LOCATION_POSITION_VALID_BIT) &&
+                        std::abs(referencePose.position.y) > FLT_EPSILON) {
+                        Log("Inferred eye height: %.3f\n", referencePose.position.y);
+                        m_lastKnownFloorHeight = referencePose.position.y;
+                    }
+                }
+                pose = Pose::Translation({0, m_lastKnownFloorHeight.value_or(0), 0});
+            } else {
+                pose = Pose::Translation({0, floorHeight, 0});
+                m_lastKnownFloorHeight = floorHeight;
+            }
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
             if (velocity) {
                 velocity->velocityFlags = XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
             }
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
-            // STAGE space is the origin reference at eye level.
-            pose = Pose::Translation({0, -m_floorHeight, 0});
+            // STAGE space is the origin at floor level.
+            pose = Pose::Identity();
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
             if (velocity) {
