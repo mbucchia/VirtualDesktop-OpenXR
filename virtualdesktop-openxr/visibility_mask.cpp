@@ -117,7 +117,7 @@ namespace virtualdesktop_openxr {
             convertSteamVRToOpenXRHiddenMesh(
                 m_cachedEyeInfo[viewIndex].Fov, visibilityMask->vertices, buffer.UsedVertexCount);
 
-            for (int i = 0; i < buffer.UsedIndexCount / indicesStride; i++) {
+            for (uint32_t i = 0; i < buffer.UsedIndexCount / indicesStride; i++) {
                 visibilityMask->indices[i] = buffer.IndexBuffer[i * indicesStride];
             }
 
