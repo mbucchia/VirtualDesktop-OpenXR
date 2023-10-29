@@ -113,12 +113,8 @@ namespace virtualdesktop_openxr {
                 desc.SampleCount = 1;
                 desc.Format = OVR_FORMAT_B8G8R8A8_UNORM;
 
-                ovrTextureSwapChain tempSwapchain;
-                CHECK_OVRCMD(
-                    ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &tempSwapchain));
-
-                // ...and free the memory right away.
-                ovr_DestroyTextureSwapChain(m_ovrSession, tempSwapchain);
+                CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
+                    m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_headlessSwapchain));
             }
 
             if (m_needStartAsyncSubmissionThread) {

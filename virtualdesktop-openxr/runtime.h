@@ -433,7 +433,7 @@ namespace virtualdesktop_openxr {
         // system.cpp
         bool initializeOVR();
         void identifyVirtualDesktop();
-        void enterInvisibleMode();
+        void enterVisibleMode();
         bool ensureOVRSession();
         void initializeSystem();
         bool initializeFaceTrackingMmf();
@@ -572,6 +572,7 @@ namespace virtualdesktop_openxr {
         FaceTracking::FaceState* m_faceState{nullptr};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};
+        ovrTextureSwapChain m_headlessSwapchain{nullptr};
 
         // Session state.
         bool m_isHeadless{false};

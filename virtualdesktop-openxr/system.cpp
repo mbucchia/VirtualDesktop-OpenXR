@@ -280,7 +280,7 @@ namespace virtualdesktop_openxr {
 
         // Initialize OVR.
         ovrInitParams initParams{};
-        initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
+        initParams.Flags = ovrInit_RequestVersion | (has_XR_MND_headless ? ovrInit_Invisible : ovrInit_FocusAware);
         initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
         const ovrResult result =
             ovr_InitializeWithPathOverride(&initParams, overridePath.empty() ? nullptr : overridePath.c_str());
@@ -337,12 +337,12 @@ namespace virtualdesktop_openxr {
         }
     }
 
-    void OpenXrRuntime::enterInvisibleMode() {
-        // Initialize OVR.
+    void OpenXrRuntime::enterVisibleMode() {
         ovrInitParams initParams{};
-        initParams.Flags = ovrInit_RequestVersion | ovrInit_Invisible;
+        initParams.Flags = ovrInit_RequestVersion | ovrInit_FocusAware;
         initParams.RequestedMinorVersion = OVR_MINOR_VERSION;
         CHECK_OVRCMD(ovr_ReInitialize(&initParams));
+        TraceLoggingWrite(g_traceProvider, "OVR_ReInitialize");
 
         ovr_Destroy(m_ovrSession);
         m_ovrSession = nullptr;

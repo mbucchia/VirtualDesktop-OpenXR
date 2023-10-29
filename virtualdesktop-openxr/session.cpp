@@ -140,10 +140,12 @@ namespace virtualdesktop_openxr {
             if (!ensureOVRSession()) {
                 return XR_ERROR_INITIALIZATION_FAILED;
             }
-        } else {
-            // Re-initialize OVR for invisible session.
-            enterInvisibleMode();
 
+            if (has_XR_MND_headless) {
+                // If we pre-emptively enabled invisible mode, re-initialize OVR for visible session.
+                enterVisibleMode();
+            }
+        } else {
             // We initialize a submission device since OVR needs one to create a swapchain before being able to wait
             // frames.
             initializeSubmissionDevice("Headless");
@@ -259,6 +261,9 @@ namespace virtualdesktop_openxr {
             // TODO: Ideally we do not invoke OpenXR public APIs to avoid confusing event tracing and possible
             // deadlocks.
             CHECK_XRCMD(xrDestroySwapchain(*m_swapchains.begin()));
+        }
+        if (m_headlessSwapchain) {
+            ovr_DestroyTextureSwapChain(m_ovrSession, m_headlessSwapchain);
         }
 
         // We do not destroy actionsets and actions, since they are tied to the instance.
