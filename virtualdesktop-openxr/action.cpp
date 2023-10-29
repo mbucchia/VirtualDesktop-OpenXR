@@ -1377,26 +1377,42 @@ namespace virtualdesktop_openxr {
             preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
             m_localizedControllerType[side] = "Touch Controller";
 
+#if 1
+            // Calibration procedure.
+            //
+            // 1) Disable this block during calibration.
+            //
+            // 2) Build the BasicXrApp and SampleSceneWin32 samples from the vdxr-poses-calibration branch of
+            //    OpenXR-MixedReality.
+            //
+            // 3) Set OpenXR runtime to Oculus, run SampleSceneWin32
+            //
+            // 4) Set OpenXR to VDXR, run BasicXrApp
+            //
+            // 5) Set the motion controllers to be static on a stable surface
+            //
+            // 6) Record "ovrPose" below from the BasicXrApp debug output ("grip[0]")
+            //
+            // 7) Record "oculusGripPose", "oculusAimPose" and "oculusPalmPose" below from the SampleSceneWin32 debug
+            //    output ("aim[0]", "grip[0]" and "palm[0]")
+            //
+            // Set OpenXR to VDXR, run SampleSceneWin32 to validate the poses.
+
             {
-                // From calibration procedure
-                const OVR::Posef ovrPose{{-0.7192316f, -0.15637077f, -0.5820495f, 0.34564787f},
-                                         {0.48454887f, -0.37446237f, 0.013122156f}};
-                const OVR::Posef oculusGripPose{{-0.45004797f, -0.42644554f, -0.42588502f, 0.65895593f},
-                                                {0.49489617f, -0.32592848f, 0.019237727f}};
-                const OVR::Posef oculusPalmPose{{-0.74661934f, -0.105046116f, -0.5934637f, 0.28164816f},
-                                                {0.50309825f, -0.31396562f, 0.00853183f}};
+                const XrPosef ovrPose{{-0.674230993f, -0.198653698f, -0.616646290f, 0.354537159f},
+                                      {0.749186218f, 0.800360203f, 0.057806406f}};
+                const XrPosef oculusGripPose{{-0.406630576f, -0.480359077f, -0.434706628f, 0.644155979f},
+                                             {0.755659044f, 0.849373817f, 0.065275185f}};
+                const XrPosef oculusAimPose{{-0.674230397f, -0.198649853f, -0.616646528f, 0.354540110f},
+                                            {0.711199582f, 0.760591149f, 0.057151683f}};
+                const XrPosef oculusPalmPose{{-0.702564955f, -0.144149646f, -0.631613493f, 0.294427931f},
+                                             {0.764413357f, 0.861913800f, 0.055729911f}};
 
-                const auto calibratePose = [&ovrPose](const OVR::Posef& oculusPose) {
-                    OVR::Posef pose;
-                    pose.Translation = ovrPose.Translation - oculusPose.Translation;
-                    pose.Rotation = ovrPose.Rotation.Conj() * oculusPose.Rotation;
-                    return ovrPoseToXrPose(pose);
-                };
-
-                gripPose = calibratePose(oculusGripPose);
-                palmPose = calibratePose(oculusPalmPose);
-                aimPose = Pose::MakePose(Quaternion::Identity(), XrVector3f{gripPose.position.x, 0.004f, -0.05f});
+                gripPose = Pose::Multiply(oculusGripPose, Pose::Invert(ovrPose));
+                aimPose = Pose::Multiply(oculusAimPose, Pose::Invert(ovrPose));
+                palmPose = Pose::Multiply(oculusPalmPose, Pose::Invert(ovrPose));
             }
+#endif
 
             // Try to map with the preferred bindings.
             auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
