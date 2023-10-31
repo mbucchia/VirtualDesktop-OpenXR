@@ -484,7 +484,10 @@ namespace virtualdesktop_openxr {
         }
 
         // Setup common parameters.
-        CHECK_OVRCMD(ovr_SetTrackingOriginType(m_ovrSession, ovrTrackingOrigin_FloorLevel));
+        // Virtual Desktop has a mode called "Stage Tracking" which requires us to use floor as the origin. For Oculus,
+        // we use eye level for convenience.
+        CHECK_OVRCMD(ovr_SetTrackingOriginType(
+            m_ovrSession, !m_useOculusRuntime ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel));
     }
 
     bool OpenXrRuntime::initializeFaceTrackingMmf() {

@@ -436,22 +436,26 @@ namespace virtualdesktop_openxr {
             result = getHmdPose(time, pose, velocity);
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_LOCAL) {
             // LOCAL space is the origin at eye level.
-            const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
-            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
-            if (std::abs(floorHeight) < FLT_EPSILON) {
-                // Virtual Desktop Stage Tracking mode.
-                if (!m_lastKnownFloorHeight) {
-                    XrPosef referencePose{};
-                    if ((getHmdPose(time, referencePose, nullptr) & XR_SPACE_LOCATION_POSITION_VALID_BIT) &&
-                        std::abs(referencePose.position.y) > FLT_EPSILON) {
-                        Log("Inferred eye height: %.3f\n", referencePose.position.y);
-                        m_lastKnownFloorHeight = referencePose.position.y;
+            if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel) {
+                const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+                TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+                if (std::abs(floorHeight) < FLT_EPSILON) {
+                    // Virtual Desktop Stage Tracking mode.
+                    if (!m_lastKnownFloorHeight) {
+                        XrPosef referencePose{};
+                        if ((getHmdPose(time, referencePose, nullptr) & XR_SPACE_LOCATION_POSITION_VALID_BIT) &&
+                            std::abs(referencePose.position.y) > FLT_EPSILON) {
+                            Log("Inferred eye height: %.3f\n", referencePose.position.y);
+                            m_lastKnownFloorHeight = referencePose.position.y;
+                        }
                     }
+                    pose = Pose::Translation({0, m_lastKnownFloorHeight.value_or(0), 0});
+                } else {
+                    pose = Pose::Translation({0, floorHeight, 0});
+                    m_lastKnownFloorHeight = floorHeight;
                 }
-                pose = Pose::Translation({0, m_lastKnownFloorHeight.value_or(0), 0});
             } else {
-                pose = Pose::Translation({0, floorHeight, 0});
-                m_lastKnownFloorHeight = floorHeight;
+                pose = Pose::Identity();
             }
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
@@ -460,7 +464,13 @@ namespace virtualdesktop_openxr {
             }
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
             // STAGE space is the origin at floor level.
-            pose = Pose::Identity();
+            if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel) {
+                pose = Pose::Identity();
+            } else {
+                const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+                TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+                pose = Pose::Translation({0, -floorHeight, 0});
+            }
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
             if (velocity) {

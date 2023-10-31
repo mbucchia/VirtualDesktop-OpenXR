@@ -177,7 +177,9 @@ namespace virtualdesktop_openxr {
         try {
             // Create a reference space with the origin and the HMD pose.
             m_originSpace = new Space;
-            m_originSpace->referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+            m_originSpace->referenceType = ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel
+                                               ? XR_REFERENCE_SPACE_TYPE_STAGE
+                                               : XR_REFERENCE_SPACE_TYPE_LOCAL;
             m_originSpace->poseInSpace = Pose::Identity();
             m_viewSpace = new Space;
             m_viewSpace->referenceType = XR_REFERENCE_SPACE_TYPE_VIEW;
