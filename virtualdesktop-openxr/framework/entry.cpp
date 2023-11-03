@@ -27,6 +27,8 @@
 #include "dispatch.h"
 #include "log.h"
 
+#include "version.h"
+
 #ifndef RUNTIME_NAMESPACE
 #error Must define RUNTIME_NAMESPACE
 #endif
@@ -47,6 +49,10 @@ using namespace RUNTIME_NAMESPACE;
 using namespace RUNTIME_NAMESPACE::log;
 
 extern "C" {
+
+XrVersion __declspec(dllexport) XRAPI_CALL getVersion() {
+    return XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
+}
 
 // Entry point for the loader.
 XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
@@ -81,6 +87,30 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
     }
 
     Log("%s (%ls)\n", RuntimePrettyName.c_str(), dllHome.wstring().c_str());
+
+#ifndef STANDALONE_RUNTIME
+    {
+        // Trampoline to the standalone/development runtime.
+        const auto standaloneLibraryPath = RegGetString(HKEY_LOCAL_MACHINE, StandaloneRegPrefix, "redirect_to");
+        HMODULE standaloneLibrary = nullptr;
+        PFN_xrNegotiateLoaderRuntimeInterface pfnNegotiateLoaderRuntimeInterface = nullptr;
+        decltype(getVersion)* pfnGetVersion = nullptr;
+        if (standaloneLibraryPath && (standaloneLibrary = LoadLibraryW(standaloneLibraryPath.value().c_str())) &&
+            (pfnNegotiateLoaderRuntimeInterface = (PFN_xrNegotiateLoaderRuntimeInterface)GetProcAddress(
+                 standaloneLibrary, "xrNegotiateLoaderRuntimeInterface")) &&
+            (pfnGetVersion = (decltype(getVersion)*)GetProcAddress(standaloneLibrary, "getVersion"))) {
+            if (pfnGetVersion() >= getVersion()) {
+                Log("Redirecting to standalone runtime (%ls)\n", standaloneLibraryPath.value().c_str());
+                return pfnNegotiateLoaderRuntimeInterface(loaderInfo, runtimeRequest);
+            } else {
+                Log("Cancelled redirection to older standalone runtime.\n");
+            }
+        }
+        if (standaloneLibrary) {
+            FreeLibrary(standaloneLibrary);
+        }
+    }
+#endif
 
     if (!loaderInfo || !runtimeRequest || loaderInfo->structType != XR_LOADER_INTERFACE_STRUCT_LOADER_INFO ||
         loaderInfo->structVersion != XR_LOADER_INFO_STRUCT_VERSION ||

@@ -608,6 +608,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <None Include="framework\dispatch_generator.py" />
     <None Include="packages.config" />
     <None Include="virtualdesktop-openxr-32.json" />
+    <None Include="virtualdesktop-openxr.def" />
     <None Include="virtualdesktop-openxr.json" />
   </ItemGroup>
   <ItemGroup>

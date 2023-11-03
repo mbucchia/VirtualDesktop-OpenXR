@@ -245,7 +245,11 @@ namespace virtualdesktop_openxr {
         const bool needOculusXrPluginWorkaround =
             m_applicationName.find("Oculus VR Plugin") == 0 && m_exeName != "The7thGuestVR-Win64-Shipping.exe";
         if (!needOculusXrPluginWorkaround) {
+#ifndef STANDALONE_RUNTIME
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
+#else
+            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR (Standalone)");
+#endif
         } else {
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
         }
@@ -447,10 +451,6 @@ namespace virtualdesktop_openxr {
     }
 
 } // namespace virtualdesktop_openxr
-
-extern "C" __declspec(dllexport) const char* WINAPI getVersionString() {
-    return virtualdesktop_openxr::RuntimePrettyName.c_str();
-}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {

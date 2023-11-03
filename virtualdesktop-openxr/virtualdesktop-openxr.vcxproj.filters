@@ -171,6 +171,7 @@
     <None Include="AlphaBlending.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="virtualdesktop-openxr.def" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

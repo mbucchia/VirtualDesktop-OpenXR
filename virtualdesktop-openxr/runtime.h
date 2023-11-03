@@ -31,11 +31,12 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::utils;
 
     extern const std::string RuntimePrettyName;
+    const std::string StandaloneRegPrefix = "SOFTWARE\\VirtualDesktop-OpenXR";
 #ifndef STANDALONE_RUNTIME
     // This shares the parent key with other Virtual Desktop values.
     const std::string RegPrefix = "SOFTWARE\\Virtual Desktop, Inc.\\OpenXR";
 #else
-    const std::string RegPrefix = "SOFTWARE\\VirtualDesktop-OpenXR";
+    const std::string RegPrefix = StandaloneRegPrefix;
 #endif
 
     namespace FaceTracking {
