@@ -556,7 +556,7 @@ namespace virtualdesktop_openxr {
                                     prepareAndCommitSwapchainImage(xrDepthSwapchain,
                                                                    i,
                                                                    depth->subImage.imageArrayIndex,
-                                                                   0,
+                                                                   XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT /* Not applicable for depth */,
                                                                    committedSwapchainImages);
                                     layer->EyeFovDepth.DepthTexture[viewIndex] =
                                         xrDepthSwapchain.ovrSwapchain[depth->subImage.imageArrayIndex];
