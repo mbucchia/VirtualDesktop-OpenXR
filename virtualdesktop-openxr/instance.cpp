@@ -391,6 +391,10 @@ namespace virtualdesktop_openxr {
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
 
+        m_extensionsTable.push_back( // For UWP apps.
+            {XR_EXT_WIN32_APPCONTAINER_COMPATIBLE_EXTENSION_NAME,
+             XR_EXT_win32_appcontainer_compatible_SPEC_VERSION});
+
         m_extensionsTable.push_back( // Hidden area mesh.
             {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
 
