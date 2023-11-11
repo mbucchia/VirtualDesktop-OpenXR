@@ -19,3 +19,6 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "external/OVRlay"]
+	path = external/OVRlay
+	url = https://github.com/mbucchia/OVRlay.git

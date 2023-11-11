@@ -159,6 +159,8 @@
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay.dll $(OutDir)
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay.pdb $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -218,6 +220,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay-32.dll $(OutDir)
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay-32.pdb $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -281,6 +285,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay.dll $(OutDir)
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay.pdb $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -407,6 +413,8 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay-32.dll $(OutDir)
+copy $(SolutionDir)\bin\$(Platform)\$(Configuration)WithHooks\OVRlay-32.pdb $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 

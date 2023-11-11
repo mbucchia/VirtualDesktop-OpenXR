@@ -4,6 +4,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtualdesktop-openxr", "virtualdesktop-openxr\virtualdesktop-openxr.vcxproj", "{93D573D0-634F-4BA0-8FE0-FB63D7D00A05}"
+	ProjectSection(ProjectDependencies) = postProject
+		{82D99103-6F0B-470F-BA71-2803947D9793} = {82D99103-6F0B-470F-BA71-2803947D9793}
+		{87ED4518-D41F-4350-8FDC-82538E8E7798} = {87ED4518-D41F-4350-8FDC-82538E8E7798}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution Files", "{A53ED6CB-95D3-4833-8A16-C6A588F16F6E}"
 	ProjectSection(SolutionItems) = preProject
@@ -62,6 +66,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EyeGazeInteractionWin32", "
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomSetup", "CustomSetup\CustomSetup.csproj", "{B6C07936-A1D2-4A80-B559-B55E3F15CC97}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OVRlay", "OVRlay", "{43CC006F-9349-42AD-AE6F-56FA4EDE28A8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OVRlay", "external\OVRlay\OVRlay\OVRlay.vcxproj", "{82D99103-6F0B-470F-BA71-2803947D9793}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShellApp", "external\OVRlay\ShellApp\ShellApp.csproj", "{87ED4518-D41F-4350-8FDC-82538E8E7798}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -155,6 +165,26 @@ Global
 		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.Release|x64.Build.0 = Release|Any CPU
 		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.ReleaseBundle|Win32.ActiveCfg = Release|Any CPU
 		{B6C07936-A1D2-4A80-B559-B55E3F15CC97}.ReleaseBundle|x64.ActiveCfg = Release|Any CPU
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Debug|Win32.ActiveCfg = DebugWithHooks|Win32
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Debug|Win32.Build.0 = DebugWithHooks|Win32
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Debug|x64.ActiveCfg = DebugWithHooks|x64
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Debug|x64.Build.0 = DebugWithHooks|x64
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Release|Win32.ActiveCfg = ReleaseWithHooks|Win32
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Release|Win32.Build.0 = ReleaseWithHooks|Win32
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Release|x64.ActiveCfg = ReleaseWithHooks|x64
+		{82D99103-6F0B-470F-BA71-2803947D9793}.Release|x64.Build.0 = ReleaseWithHooks|x64
+		{82D99103-6F0B-470F-BA71-2803947D9793}.ReleaseBundle|Win32.ActiveCfg = ReleaseWithHooks|Win32
+		{82D99103-6F0B-470F-BA71-2803947D9793}.ReleaseBundle|x64.ActiveCfg = ReleaseWithHooks|x64
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Debug|Win32.Build.0 = Debug|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Debug|x64.Build.0 = Debug|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Release|Win32.ActiveCfg = Release|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Release|Win32.Build.0 = Release|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Release|x64.ActiveCfg = Release|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.Release|x64.Build.0 = Release|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.ReleaseBundle|Win32.ActiveCfg = ReleaseWithHooks|Any CPU
+		{87ED4518-D41F-4350-8FDC-82538E8E7798}.ReleaseBundle|x64.ActiveCfg = ReleaseWithHooks|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -170,6 +200,8 @@ Global
 		{2B7688F8-9AE6-4A67-809B-1BAC82094F21} = {62ABB036-B5EF-46D5-8D8B-2C4D06164B4C}
 		{269C12FA-E68D-470B-A734-4701034306BD} = {62ABB036-B5EF-46D5-8D8B-2C4D06164B4C}
 		{A4D2019B-622D-49B9-9510-16877979807A} = {18290AA7-D4EC-42C7-B417-D2CC3422A207}
+		{82D99103-6F0B-470F-BA71-2803947D9793} = {43CC006F-9349-42AD-AE6F-56FA4EDE28A8}
+		{87ED4518-D41F-4350-8FDC-82538E8E7798} = {43CC006F-9349-42AD-AE6F-56FA4EDE28A8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07E77829-9766-4585-AC6C-0A28BA014E77}
