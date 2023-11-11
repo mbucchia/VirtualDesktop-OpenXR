@@ -153,11 +153,12 @@ namespace virtualdesktop_openxr {
                 ovr_DestroyMirrorTexture(m_ovrSession, m_ovrMirrorSwapChain);
             }
 
-            ovrMirrorTextureDesc mirrorDesc;
+            ovrMirrorTextureDesc mirrorDesc{};
             mirrorDesc.Format = preferSRGB ? OVR_FORMAT_R8G8B8A8_UNORM_SRGB : OVR_FORMAT_R8G8B8A8_UNORM;
             mirrorDesc.Width = width;
             mirrorDesc.Height = height;
-            CHECK_OVRCMD(ovr_CreateMirrorTextureDX(
+            mirrorDesc.MirrorOptions = ovrMirrorOption_RightEyeOnly;
+            CHECK_OVRCMD(ovr_CreateMirrorTextureWithOptionsDX(
                 m_ovrSession, m_ovrSubmissionDevice.Get(), &mirrorDesc, &m_ovrMirrorSwapChain));
             CHECK_OVRCMD(ovr_GetMirrorTextureBufferDX(
                 m_ovrSession, m_ovrMirrorSwapChain, IID_PPV_ARGS(m_mirrorTexture.ReleaseAndGetAddressOf())));
