@@ -159,8 +159,6 @@
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
-copy $(ProjectDir)\guardian.png $(OutDir)
-copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -220,8 +218,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
-copy $(ProjectDir)\guardian.png $(OutDir)
-copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -285,8 +281,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
-copy $(ProjectDir)\guardian.png $(OutDir)
-copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -350,8 +344,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Bundled)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
-copy $(ProjectDir)\guardian.png $(OutDir)
-copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -415,8 +407,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
-copy $(ProjectDir)\guardian.png $(OutDir)
-copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
@@ -480,8 +470,6 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </Link>
     <PostBuildEvent>
       <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Bundled)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
-copy $(ProjectDir)\guardian.png $(OutDir)
-copy $(ProjectDir)\overlay.png $(OutDir)
 copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
 copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
