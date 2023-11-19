@@ -68,7 +68,8 @@ namespace virtualdesktop_openxr {
             CHECK_MSG(m_mirrorWindowHwnd, "Failed to CreateWindowW()");
             m_mirrorWindowReady = true;
 
-            ShowWindow(m_mirrorWindowHwnd, SW_SHOW);
+            // Show but don't steal focus.
+            ShowWindow(m_mirrorWindowHwnd, SW_SHOWNOACTIVATE);
             UpdateWindow(m_mirrorWindowHwnd);
 
             // Service the window.
