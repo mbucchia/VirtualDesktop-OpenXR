@@ -919,7 +919,7 @@ namespace virtualdesktop_openxr {
             }
 
             if (syncInfo->activeActionSets[i].subactionPath == XR_NULL_PATH) {
-                doSide[0] = doSide[1] = true;
+                doSide[xr::Side::Left] = doSide[xr::Side::Right] = true;
             } else {
                 const ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
 

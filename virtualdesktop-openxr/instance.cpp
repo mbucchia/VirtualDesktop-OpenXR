@@ -40,7 +40,6 @@ namespace virtualdesktop_openxr {
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
         TraceLoggingWrite(g_traceProvider, "VirtualDesktopOpenXR", TLArg(runtimeVersion.c_str(), "Version"));
 
-        // Note: this is not compatible with async_submission=1!
         m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
 
         // Watch for changes in the registry.

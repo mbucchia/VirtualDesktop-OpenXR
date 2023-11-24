@@ -597,7 +597,7 @@ namespace virtualdesktop_openxr::utils {
         }
     }
 
-    static inline bool isValidSwapchainRect(ovrTextureSwapChainDesc desc, XrRect2Di rect) {
+    static inline bool isValidSwapchainRect(ovrTextureSwapChainDesc desc, const XrRect2Di& rect) {
         if (rect.offset.x < 0 || rect.offset.y < 0 || rect.extent.width <= 0 || rect.extent.height <= 0) {
             return false;
         }

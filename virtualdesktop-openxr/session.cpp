@@ -164,11 +164,12 @@ namespace virtualdesktop_openxr {
 
         m_frameTimes.clear();
 
-        m_isControllerActive[0] = m_isControllerActive[1] = false;
-        m_controllerAimPose[0] = m_controllerGripPose[0] = m_controllerPalmPose[0] = m_controllerAimPose[1] =
-            m_controllerGripPose[1] = m_controllerPalmPose[1] = Pose::Identity();
-        rebindControllerActions(0);
-        rebindControllerActions(1);
+        m_isControllerActive[xr::Side::Left] = m_isControllerActive[xr::Side::Right] = false;
+        m_controllerAimPose[xr::Side::Left] = m_controllerGripPose[xr::Side::Left] =
+            m_controllerPalmPose[xr::Side::Left] = m_controllerAimPose[xr::Side::Right] =
+                m_controllerGripPose[xr::Side::Right] = m_controllerPalmPose[xr::Side::Right] = Pose::Identity();
+        rebindControllerActions(xr::Side::Left);
+        rebindControllerActions(xr::Side::Right);
         m_activeActionSets.clear();
 
         m_sessionStartTime = ovr_GetTimeInSeconds();
@@ -319,7 +320,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SESSION_NOT_READY;
         }
 
-        m_useAsyncSubmission = !m_isHeadless && getSetting("async_submission").value_or(true);
+        m_useAsyncSubmission = !m_isHeadless && !m_useApplicationDeviceForSubmission &&
+                               !getSetting("quirk_disable_async_submission").value_or(false);
         m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
         // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
 
