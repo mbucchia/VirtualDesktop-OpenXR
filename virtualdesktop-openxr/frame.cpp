@@ -83,10 +83,12 @@ namespace virtualdesktop_openxr {
             m_frameTimerApp.stop();
             m_lastCpuFrameTimeUs = m_frameTimerApp.query();
 
-            TraceLoggingWrite(g_traceProvider,
-                              "App_Statistics",
-                              TLArg(m_frameCompleted - 1, "FrameId"),
-                              TLArg(m_lastCpuFrameTimeUs, "AppFrameCpuTime"));
+            if (m_frameCompleted > 0) {
+                TraceLoggingWrite(g_traceProvider,
+                                  "App_Statistics",
+                                  TLArg(m_frameCompleted - 1, "FrameId"),
+                                  TLArg(m_lastCpuFrameTimeUs, "AppFrameCpuTime"));
+            }
 
             // Wait for a call to xrBeginFrame() to match the previous call to xrWaitFrame().
             {
@@ -258,10 +260,12 @@ namespace virtualdesktop_openxr {
             // with k_numGpuTimers frames latency.
             m_lastGpuFrameTimeUs = m_gpuTimerApp[m_currentTimerIndex] ? m_gpuTimerApp[m_currentTimerIndex]->query() : 0;
 
-            TraceLoggingWrite(g_traceProvider,
-                              "App_Statistics",
-                              TLArg(m_frameCompleted - 1, "FrameId"),
-                              TLArg(m_renderTimerApp.query(), "AppRenderCpuTime"));
+            if (m_frameCompleted > 0) {
+                TraceLoggingWrite(g_traceProvider,
+                                  "App_Statistics",
+                                  TLArg(m_frameCompleted - 1, "FrameId"),
+                                  TLArg(m_renderTimerApp.query(), "AppRenderCpuTime"));
+            }
 
             if (m_frameCompleted >= k_numGpuTimers) {
                 TraceLoggingWrite(g_traceProvider,
