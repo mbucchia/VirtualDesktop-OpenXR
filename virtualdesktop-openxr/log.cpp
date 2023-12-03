@@ -25,7 +25,11 @@
 #include "runtime.h"
 
 namespace {
+#ifdef _DEBUG
+    constexpr uint32_t k_maxLoggedErrors = (uint32_t)-1;
+#else
     constexpr uint32_t k_maxLoggedErrors = 100;
+#endif
     uint32_t g_globalErrorCount = 0;
 } // namespace
 

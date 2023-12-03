@@ -303,6 +303,10 @@ namespace virtualdesktop_openxr::utils {
         PFNGLQUERYCOUNTERPROC glQueryCounter{nullptr};
         PFNGLGETQUERYOBJECTIVPROC glGetQueryObjectiv{nullptr};
         PFNGLGETQUERYOBJECTUI64VPROC glGetQueryObjectui64v{nullptr};
+
+#ifdef _DEBUG
+        PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback{nullptr};
+#endif
     };
 
     struct GlContext {
@@ -314,16 +318,23 @@ namespace virtualdesktop_openxr::utils {
 
     class GlContextSwitch {
       public:
-        GlContextSwitch(const GlContext& context) : m_valid(context.valid) {
+        GlContextSwitch(const GlContext& context, bool ignoreErrors = false)
+            : m_valid(context.valid), m_ignoreErrors(ignoreErrors) {
             if (m_valid) {
                 m_glDC = wglGetCurrentDC();
                 m_glRC = wglGetCurrentContext();
 
-                wglMakeCurrent(context.glDC, context.glRC);
+                // Avoid unnecessary context switches.
+                m_switched = context.glDC != m_glDC || context.glRC != m_glRC;
+                if (m_switched) {
+                    wglMakeCurrent(context.glDC, context.glRC);
 
-                // Reset error codes.
-                while (glGetError() != GL_NO_ERROR)
-                    ;
+                    if (!m_ignoreErrors) {
+                        // Reset error codes.
+                        while (glGetError() != GL_NO_ERROR)
+                            ;
+                    }
+                }
             }
         }
 
@@ -331,14 +342,20 @@ namespace virtualdesktop_openxr::utils {
             if (m_valid) {
                 const auto error = glGetError();
 
-                wglMakeCurrent(m_glDC, m_glRC);
+                if (m_switched) {
+                    wglMakeCurrent(m_glDC, m_glRC);
+                }
 
-                CHECK_MSG(error == GL_NO_ERROR, fmt::format("OpenGL error: 0x{:x}", error));
+                if (!m_ignoreErrors) {
+                    CHECK_MSG(error == GL_NO_ERROR, fmt::format("OpenGL error: 0x{:x}", error));
+                }
             }
         }
 
       private:
         const bool m_valid;
+        const bool m_ignoreErrors;
+        bool m_switched{false};
         HDC m_glDC;
         HGLRC m_glRC;
     };
@@ -581,7 +598,8 @@ namespace virtualdesktop_openxr::utils {
     static size_t glGetBytePerPixels(GLenum format) {
         switch (format) {
         case GL_DEPTH_COMPONENT16:
-            return 2;
+            // TODO: This should be 2, but fails with "GL_INVALID_VALUE error generated. Memory object too small".
+            return 4;
         case GL_RGBA8:
         case GL_SRGB8_ALPHA8:
         case GL_DEPTH24_STENCIL8:

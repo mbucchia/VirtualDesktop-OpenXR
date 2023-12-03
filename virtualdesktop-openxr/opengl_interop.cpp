@@ -33,6 +33,18 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::log;
     using namespace virtualdesktop_openxr::utils;
 
+#ifdef _DEBUG
+    void APIENTRY DebugProc(GLenum source,
+                            GLenum type,
+                            GLuint id,
+                            GLenum severity,
+                            GLsizei length,
+                            const GLchar* message,
+                            const void* userParam) {
+        ErrorLog("OpenGL Debug Message: %s\n", message);
+    }
+#endif
+
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetOpenGLGraphicsRequirementsKHR
     XrResult OpenXrRuntime::xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
                                                                XrSystemId systemId,
@@ -88,6 +100,10 @@ namespace virtualdesktop_openxr {
 
         GlContextSwitch context(m_glContext);
 
+#ifdef _DEBUG
+        m_glDispatch.glDebugMessageCallback(DebugProc, nullptr);
+#endif
+
         // Check that this is the correct adapter for the HMD.
         LUID adapterLuid{};
         m_glDispatch.glGetUnsignedBytevEXT(GL_DEVICE_LUID_EXT, (GLubyte*)&adapterLuid);
@@ -142,12 +158,16 @@ namespace virtualdesktop_openxr {
         GL_GET_PTR(glGetQueryObjectiv);
         GL_GET_PTR(glGetQueryObjectui64v);
 
+#ifdef _DEBUG
+        GL_GET_PTR(glDebugMessageCallback);
+#endif
+
 #undef GL_GET_PTR
     }
 
     void OpenXrRuntime::cleanupOpenGL() {
         if (m_glContext.valid) {
-            GlContextSwitch context(m_glContext);
+            GlContextSwitch context(m_glContext, true /* ignoreErrors */);
 
             glFinish();
 

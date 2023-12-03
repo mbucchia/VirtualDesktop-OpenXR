@@ -270,7 +270,7 @@ namespace virtualdesktop_openxr::utils {
         }
 
         ~GlGpuTimer() override {
-            GlContextSwitch context(m_context);
+            GlContextSwitch context(m_context, true /* ignoreErrors */);
 
             m_dispatch.glDeleteQueries(2, m_queries);
         }
