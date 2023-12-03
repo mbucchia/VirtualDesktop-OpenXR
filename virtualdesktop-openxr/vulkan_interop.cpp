@@ -741,7 +741,7 @@ namespace virtualdesktop_openxr {
                     VkMemoryAllocateInfo allocateInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, &memoryAllocateInfo};
                     allocateInfo.allocationSize = requirements.memoryRequirements.size;
                     allocateInfo.memoryTypeIndex =
-                        findMemoryType(handleProperties.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+                        findMemoryType(handleProperties.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
                     CHECK_VKCMD(m_vkDispatch.vkAllocateMemory(
                         m_vkDevice, &allocateInfo, m_vkAllocator ? &m_vkAllocator.value() : nullptr, &memory));

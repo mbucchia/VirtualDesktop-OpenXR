@@ -154,7 +154,8 @@ namespace virtualdesktop_openxr {
                 }
 
                 // Lower the maximum on a low memory system.
-                views[i].maxImageRectWidth = views[i].maxImageRectHeight = !m_isLowVideoMemorySystem ? 16384 : 8192;
+                // Conformance testing is also create a number of very large textures, so we also lower the limit here.
+                views[i].maxImageRectWidth = views[i].maxImageRectHeight = !(m_isLowVideoMemorySystem || m_isConformanceTest) ? 16384 : 8192;
 
                 // Per Direct3D 11 standard, "devices are required to support 4x MSAA for all render target formats, and
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".
