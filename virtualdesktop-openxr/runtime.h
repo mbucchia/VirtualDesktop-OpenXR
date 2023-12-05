@@ -571,6 +571,7 @@ namespace virtualdesktop_openxr {
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_faceStateFile;
         FaceTracking::FaceState* m_faceState{nullptr};
+        bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};
         ovrTextureSwapChain m_headlessSwapchain{nullptr};

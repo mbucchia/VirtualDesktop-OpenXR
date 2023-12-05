@@ -201,6 +201,7 @@ namespace virtualdesktop_openxr {
 
         // FIXME: Put application quirks below.
 
+        m_isOculusXrPlugin = m_applicationName.find("Oculus VR Plugin") == 0;
         m_isConformanceTest = m_applicationName == "conformance test";
 
         m_instanceCreated = true;
@@ -241,13 +242,14 @@ namespace virtualdesktop_openxr {
         // The OculusXR Plugin only loads successfully when the returned OpenXR runtime name is "Oculus". We fake that
         // if the caller is the OculusXR Plugin, but we return the real runtime name otherwise.
         // Some games (like 7th Guest VR) do not play well when forcing the runtime name, so we exclude them.
-        const bool needOculusXrPluginWorkaround =
-            m_applicationName.find("Oculus VR Plugin") == 0 && m_exeName != "The7thGuestVR-Win64-Shipping.exe";
+        const bool needOculusXrPluginWorkaround = m_isOculusXrPlugin && m_exeName != "The7thGuestVR-Win64-Shipping.exe";
         if (!needOculusXrPluginWorkaround) {
 #ifndef STANDALONE_RUNTIME
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
 #else
-            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR (Standalone)");
+            sprintf_s(instanceProperties->runtimeName,
+                      sizeof(instanceProperties->runtimeName),
+                      "VirtualDesktopXR (Standalone)");
 #endif
         } else {
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
@@ -391,8 +393,7 @@ namespace virtualdesktop_openxr {
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
 
         m_extensionsTable.push_back( // For UWP apps.
-            {XR_EXT_WIN32_APPCONTAINER_COMPATIBLE_EXTENSION_NAME,
-             XR_EXT_win32_appcontainer_compatible_SPEC_VERSION});
+            {XR_EXT_WIN32_APPCONTAINER_COMPATIBLE_EXTENSION_NAME, XR_EXT_win32_appcontainer_compatible_SPEC_VERSION});
 
         m_extensionsTable.push_back( // Hidden area mesh.
             {XR_KHR_VISIBILITY_MASK_EXTENSION_NAME, XR_KHR_visibility_mask_SPEC_VERSION});
