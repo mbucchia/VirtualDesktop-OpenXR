@@ -518,6 +518,7 @@ namespace virtualdesktop_openxr {
         void cleanupVulkan();
         bool isVulkanSession() const;
         XrResult getSwapchainImagesVulkan(Swapchain& xrSwapchain, XrSwapchainImageVulkanKHR* vkImages, uint32_t count);
+        void cleanupSwapchainImagesVulkan(Swapchain& xrSwapchain);
         void flushVulkanCommandQueue();
         void serializeVulkanFrame();
 
@@ -527,6 +528,7 @@ namespace virtualdesktop_openxr {
         void cleanupOpenGL();
         bool isOpenGLSession() const;
         XrResult getSwapchainImagesOpenGL(Swapchain& xrSwapchain, XrSwapchainImageOpenGLKHR* glImages, uint32_t count);
+        void cleanupSwapchainImagesOpenGL(Swapchain& xrSwapchain);
         void flushOpenGLContext();
         void serializeOpenGLFrame();
 

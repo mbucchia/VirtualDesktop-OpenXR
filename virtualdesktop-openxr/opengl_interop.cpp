@@ -283,6 +283,23 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
+    void OpenXrRuntime::cleanupSwapchainImagesOpenGL(Swapchain& xrSwapchain) {
+        // This will be a no-op if OpenGL is not used.
+        GlContextSwitch context(m_glContext);
+
+        while (!xrSwapchain.glImages.empty()) {
+            GLuint image = xrSwapchain.glImages.back();
+            glDeleteTextures(1, &image);
+            xrSwapchain.glImages.pop_back();
+        }
+
+        while (!xrSwapchain.glMemory.empty()) {
+            GLuint memory = xrSwapchain.glMemory.back();
+            m_glDispatch.glDeleteMemoryObjectsEXT(1, &memory);
+            xrSwapchain.glMemory.pop_back();
+        }
+    }
+
     // Flush any pending work.
     void OpenXrRuntime::flushOpenGLContext() {
         GlContextSwitch context(m_glContext);

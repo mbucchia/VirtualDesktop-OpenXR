@@ -435,32 +435,8 @@ namespace virtualdesktop_openxr {
             xrSwapchain.ovrSwapchain.pop_back();
         }
 
-        while (!xrSwapchain.vkImages.empty()) {
-            m_vkDispatch.vkDestroyImage(
-                m_vkDevice, xrSwapchain.vkImages.back(), m_vkAllocator ? &m_vkAllocator.value() : nullptr);
-            xrSwapchain.vkImages.pop_back();
-        }
-
-        while (!xrSwapchain.vkDeviceMemory.empty()) {
-            m_vkDispatch.vkFreeMemory(
-                m_vkDevice, xrSwapchain.vkDeviceMemory.back(), m_vkAllocator ? &m_vkAllocator.value() : nullptr);
-            xrSwapchain.vkDeviceMemory.pop_back();
-        }
-
-        // This will be a no-op if OpenGL is not used.
-        GlContextSwitch context(m_glContext);
-
-        while (!xrSwapchain.glImages.empty()) {
-            GLuint image = xrSwapchain.glImages.back();
-            glDeleteTextures(1, &image);
-            xrSwapchain.glImages.pop_back();
-        }
-
-        while (!xrSwapchain.glMemory.empty()) {
-            GLuint memory = xrSwapchain.glMemory.back();
-            m_glDispatch.glDeleteMemoryObjectsEXT(1, &memory);
-            xrSwapchain.glMemory.pop_back();
-        }
+        cleanupSwapchainImagesVulkan(xrSwapchain);
+        cleanupSwapchainImagesOpenGL(xrSwapchain);
 
         delete &xrSwapchain;
         m_swapchains.erase(swapchain);

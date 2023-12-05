@@ -801,6 +801,20 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
+    void OpenXrRuntime::cleanupSwapchainImagesVulkan(Swapchain& xrSwapchain) {
+        while (!xrSwapchain.vkImages.empty()) {
+            m_vkDispatch.vkDestroyImage(
+                m_vkDevice, xrSwapchain.vkImages.back(), m_vkAllocator ? &m_vkAllocator.value() : nullptr);
+            xrSwapchain.vkImages.pop_back();
+        }
+
+        while (!xrSwapchain.vkDeviceMemory.empty()) {
+            m_vkDispatch.vkFreeMemory(
+                m_vkDevice, xrSwapchain.vkDeviceMemory.back(), m_vkAllocator ? &m_vkAllocator.value() : nullptr);
+            xrSwapchain.vkDeviceMemory.pop_back();
+        }
+    }
+
     // Wait for all pending commands to finish.
     void OpenXrRuntime::flushVulkanCommandQueue() {
         if (m_vkDispatch.vkQueueSubmit) {
