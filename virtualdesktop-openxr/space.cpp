@@ -435,12 +435,15 @@ namespace virtualdesktop_openxr {
             velocity->velocityFlags = 0;
         }
 
+        // Workaround for REFramework incorrect use of xrLocateViews().
+        const bool ignoreFloorHeight = time == 1;
+
         if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
             // VIEW space if the headset pose.
             result = getHmdPose(time, pose, velocity);
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_LOCAL) {
             // LOCAL space is the origin at eye level.
-            if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel) {
+            if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel && !ignoreFloorHeight) {
                 const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
                 TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
                 if (std::abs(floorHeight) < FLT_EPSILON) {
@@ -468,7 +471,7 @@ namespace virtualdesktop_openxr {
             }
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
             // STAGE space is the origin at floor level.
-            if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel) {
+            if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel || ignoreFloorHeight) {
                 pose = Pose::Identity();
             } else {
                 const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
