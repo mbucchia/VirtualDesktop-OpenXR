@@ -161,10 +161,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
-        Log("Application: %s; Engine: %s\n",
-            createInfo->applicationInfo.applicationName,
-            createInfo->applicationInfo.engineName);
-
         if (XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != XR_VERSION_1_0) {
             return XR_ERROR_API_VERSION_UNSUPPORTED;
         }
@@ -176,6 +172,11 @@ namespace virtualdesktop_openxr {
             m_exeName = fullPath.filename().string();
         }
         m_applicationName = createInfo->applicationInfo.applicationName;
+
+        Log("Application: %s (%s); Engine: %s\n",
+            m_applicationName.c_str(),
+            m_exeName.c_str(),
+            createInfo->applicationInfo.engineName);
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
             TraceLoggingWrite(
@@ -203,6 +204,11 @@ namespace virtualdesktop_openxr {
 
         m_isOculusXrPlugin = m_applicationName.find("Oculus VR Plugin") == 0;
         m_isConformanceTest = m_applicationName == "conformance test";
+
+        if (startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe")) {
+            m_controllerGripOffset.position.z = -0.1f;
+            m_quirkedControllerPoses = true;
+        }
 
         m_instanceCreated = true;
         *instance = (XrInstance)1;

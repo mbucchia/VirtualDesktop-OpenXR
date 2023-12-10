@@ -614,12 +614,13 @@ namespace virtualdesktop_openxr {
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;
         bool m_isControllerActive[xr::Side::Count]{false, false};
         std::string m_cachedControllerType[xr::Side::Count];
-        XrPosef m_controllerAimOffset;
-        XrPosef m_controllerGripOffset;
-        XrPosef m_controllerPalmOffset;
+        XrPosef m_controllerAimOffset{xr::math::Pose::Identity()};
+        XrPosef m_controllerGripOffset{xr::math::Pose::Identity()};
+        XrPosef m_controllerPalmOffset{xr::math::Pose::Identity()};
         XrPosef m_controllerAimPose[xr::Side::Count];
         XrPosef m_controllerGripPose[xr::Side::Count];
         XrPosef m_controllerPalmPose[xr::Side::Count];
+        bool m_quirkedControllerPoses{false};
         std::string m_localizedControllerType[xr::Side::Count];
         XrPath m_currentInteractionProfile[xr::Side::Count]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};

@@ -435,39 +435,43 @@ namespace virtualdesktop_openxr {
 
     // Read dynamic settings from the registry.
     void OpenXrRuntime::refreshSettings() {
-        const auto oldControllerAimOffset = m_controllerAimOffset;
-        m_controllerAimOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
-                                              OVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
-                                              OVR::DegreeToRad((float)getSetting("aim_pose_rot_z").value_or(0.f))}),
-            XrVector3f{getSetting("aim_pose_offset_x").value_or(0.f) / 1000.f,
-                       getSetting("aim_pose_offset_y").value_or(0.f) / 1000.f,
-                       getSetting("aim_pose_offset_z").value_or(0.f) / 1000.f});
+        if (!m_quirkedControllerPoses || getSetting("quirk_disable_quirked_controller_poses").value_or(false)) {
+            const auto oldControllerAimOffset = m_controllerAimOffset;
+            m_controllerAimOffset = Pose::MakePose(
+                Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("aim_pose_rot_z").value_or(0.f))}),
+                XrVector3f{getSetting("aim_pose_offset_x").value_or(0.f) / 1000.f,
+                           getSetting("aim_pose_offset_y").value_or(0.f) / 1000.f,
+                           getSetting("aim_pose_offset_z").value_or(0.f) / 1000.f});
 
-        const auto oldControllerGripOffset = m_controllerGripOffset;
-        m_controllerGripOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("grip_pose_rot_x").value_or(0.f)),
-                                              OVR::DegreeToRad((float)getSetting("grip_pose_rot_y").value_or(0.f)),
-                                              OVR::DegreeToRad((float)getSetting("grip_pose_rot_z").value_or(0.f))}),
-            XrVector3f{getSetting("grip_pose_offset_x").value_or(0) / 1000.f,
-                       getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
-                       getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
+            const auto oldControllerGripOffset = m_controllerGripOffset;
+            m_controllerGripOffset =
+                Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                   {OVR::DegreeToRad((float)getSetting("grip_pose_rot_x").value_or(0.f)),
+                                    OVR::DegreeToRad((float)getSetting("grip_pose_rot_y").value_or(0.f)),
+                                    OVR::DegreeToRad((float)getSetting("grip_pose_rot_z").value_or(0.f))}),
+                               XrVector3f{getSetting("grip_pose_offset_x").value_or(0) / 1000.f,
+                                          getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
+                                          getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
 
-        const auto oldControllerPalmOffset = m_controllerPalmOffset;
-        m_controllerPalmOffset = Pose::MakePose(
-            Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("palm_pose_rot_x").value_or(0.f)),
-                                              OVR::DegreeToRad((float)getSetting("palm_pose_rot_y").value_or(0.f)),
-                                              OVR::DegreeToRad((float)getSetting("palm_pose_rot_z").value_or(0.f))}),
-            XrVector3f{getSetting("palm_pose_offset_x").value_or(0) / 1000.f,
-                       getSetting("palm_pose_offset_y").value_or(0) / 1000.f,
-                       getSetting("palm_pose_offset_z").value_or(0) / 1000.f});
+            const auto oldControllerPalmOffset = m_controllerPalmOffset;
+            m_controllerPalmOffset =
+                Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                   {OVR::DegreeToRad((float)getSetting("palm_pose_rot_x").value_or(0.f)),
+                                    OVR::DegreeToRad((float)getSetting("palm_pose_rot_y").value_or(0.f)),
+                                    OVR::DegreeToRad((float)getSetting("palm_pose_rot_z").value_or(0.f))}),
+                               XrVector3f{getSetting("palm_pose_offset_x").value_or(0) / 1000.f,
+                                          getSetting("palm_pose_offset_y").value_or(0) / 1000.f,
+                                          getSetting("palm_pose_offset_z").value_or(0) / 1000.f});
 
-        // Force re-evaluating poses.
-        if (!Pose::Equals(oldControllerAimOffset, m_controllerAimOffset) ||
-            !Pose::Equals(oldControllerGripOffset, m_controllerGripOffset) ||
-            !Pose::Equals(oldControllerPalmOffset, m_controllerPalmOffset)) {
-            m_cachedControllerType[0].clear();
-            m_cachedControllerType[1].clear();
+            // Force re-evaluating poses.
+            if (!Pose::Equals(oldControllerAimOffset, m_controllerAimOffset) ||
+                !Pose::Equals(oldControllerGripOffset, m_controllerGripOffset) ||
+                !Pose::Equals(oldControllerPalmOffset, m_controllerPalmOffset)) {
+                m_cachedControllerType[0].clear();
+                m_cachedControllerType[1].clear();
+            }
         }
 
         m_useMirrorWindow = getSetting("mirror_window").value_or(false);
