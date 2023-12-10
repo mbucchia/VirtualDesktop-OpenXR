@@ -168,6 +168,7 @@ namespace virtualdesktop_openxr {
         m_controllerAimPose[xr::Side::Left] = m_controllerGripPose[xr::Side::Left] =
             m_controllerPalmPose[xr::Side::Left] = m_controllerAimPose[xr::Side::Right] =
                 m_controllerGripPose[xr::Side::Right] = m_controllerPalmPose[xr::Side::Right] = Pose::Identity();
+        m_currentInteractionProfile[xr::Side::Left] = m_currentInteractionProfile[xr::Side::Right] = XR_NULL_PATH;
         rebindControllerActions(xr::Side::Left);
         rebindControllerActions(xr::Side::Right);
         m_activeActionSets.clear();
