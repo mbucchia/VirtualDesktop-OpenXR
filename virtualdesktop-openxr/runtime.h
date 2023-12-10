@@ -557,7 +557,6 @@ namespace virtualdesktop_openxr {
         ovrEyeRenderDesc m_cachedEyeInfo[xr::StereoView::Count]{};
         mutable std::optional<float> m_lastKnownFloorHeight;
         LARGE_INTEGER m_qpcFrequency{};
-        double m_ovrTimeReference{0};
         double m_ovrTimeFromQpcTimeOffset{0};
         XrPath m_stringIndex{0};
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;

@@ -377,10 +377,6 @@ namespace virtualdesktop_openxr {
             ovr_SetBool(m_ovrSession, "IsVDXR", true);
         }
 
-        // Bogus apps may use single-precision floating point values to represent time. We will offset all values to
-        // keep them low.
-        m_ovrTimeReference = std::max(0.0, ovr_GetTimeInSeconds() - 5.0);
-
         // Calibrate the timestamp conversion.
         m_ovrTimeFromQpcTimeOffset = INFINITY;
         for (int i = 0; i < 100; i++) {

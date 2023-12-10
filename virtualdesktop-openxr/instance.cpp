@@ -435,11 +435,11 @@ namespace virtualdesktop_openxr {
     }
 
     XrTime OpenXrRuntime::ovrTimeToXrTime(double ovrTime) const {
-        return (XrTime)((ovrTime - m_ovrTimeReference) * 1e9);
+        return (XrTime)(ovrTime * 1e9);
     }
 
     double OpenXrRuntime::xrTimeToOvrTime(XrTime xrTime) const {
-        return m_ovrTimeReference + xrTime / 1e9;
+        return xrTime / 1e9;
     }
 
     std::optional<int> OpenXrRuntime::getSetting(const std::string& value) const {
