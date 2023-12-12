@@ -113,4 +113,5 @@ static constexpr int ovrHmd_Quest3 = 23;
 #undef xrPathToString
 
 // FMT formatter.
+#define FMT_HEADER_ONLY
 #include <fmt/format.h>
