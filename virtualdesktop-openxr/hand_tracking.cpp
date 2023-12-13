@@ -29,6 +29,19 @@
 // Implements the necessary support for the XR_EXT_hand_tracking extension:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_EXT_hand_tracking
 
+namespace xr {
+    static inline std::string ToString(const virtualdesktop_openxr::BodyTracking::Pose& pose) {
+        return fmt::format("p: ({:.3f}, {:.3f}, {:.3f}), o:({:.3f}, {:.3f}, {:.3f}, {:.3f})",
+                           pose.position.x,
+                           pose.position.y,
+                           pose.position.z,
+                           pose.orientation.x,
+                           pose.orientation.y,
+                           pose.orientation.z,
+                           pose.orientation.w);
+    }
+} // namespace xr
+
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::log;
@@ -53,8 +66,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        // TODO: Implement hand tracking.
-        if (true) {
+        if (!(m_handJointsState && m_handJointsState->HandTrackingActive)) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -70,7 +82,7 @@ namespace virtualdesktop_openxr {
         std::unique_lock lock(m_handTrackersMutex);
 
         HandTracker& xrHandTracker = *new HandTracker;
-        xrHandTracker.side = createInfo->hand == XR_HAND_LEFT_EXT ? 0 : 1;
+        xrHandTracker.side = createInfo->hand == XR_HAND_LEFT_EXT ? xr::Side::Left : xr::Side::Right;
 
         *handTracker = (XrHandTrackerEXT)&xrHandTracker;
 
@@ -151,8 +163,61 @@ namespace virtualdesktop_openxr {
         const auto flags1 = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
         const auto flags2 = getControllerPose(xrHandTracker.side, locateInfo->time, basePose, nullptr);
 
-        // TODO: Implement proper hand tracking.
-        locations->isActive = XR_FALSE;
+        // Check the hand state.
+        if (m_handJointsState && m_handJointsState->HandTrackingActive &&
+            ((xrHandTracker.side == xr::Side::Left && m_handJointsState->LeftHandActive) ||
+             m_handJointsState->RightHandActive)) {
+            const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
+                                                               ? m_handJointsState->LeftHandJointStates
+                                                               : m_handJointsState->RightHandJointStates;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrLocateHandJointsEXT",
+                TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
+                TLArg(m_handJointsState->HandTrackingActive, "HandTrackingActive"),
+                TLArg(xrHandTracker.side == xr::Side::Left ? m_handJointsState->LeftHandActive
+                                                           : m_handJointsState->RightHandActive,
+                      "HandActive"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_PALM_EXT].Pose).c_str(), "Palm"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_WRIST_EXT].Pose).c_str(), "Wrist"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_THUMB_METACARPAL_EXT].Pose).c_str(), "ThumbMetacarpal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_THUMB_PROXIMAL_EXT].Pose).c_str(), "ThumbProximal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_THUMB_DISTAL_EXT].Pose).c_str(), "ThumbDistal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_THUMB_TIP_EXT].Pose).c_str(), "ThumbTip"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_INDEX_METACARPAL_EXT].Pose).c_str(), "IndexMetacarpal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_INDEX_PROXIMAL_EXT].Pose).c_str(), "IndexProximal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_INDEX_INTERMEDIATE_EXT].Pose).c_str(), "IndexIntermediate"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_INDEX_DISTAL_EXT].Pose).c_str(), "IndexDistal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_INDEX_TIP_EXT].Pose).c_str(), "IndexTip"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_MIDDLE_METACARPAL_EXT].Pose).c_str(), "MiddleMetacarpal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT].Pose).c_str(), "MiddleProximal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_MIDDLE_INTERMEDIATE_EXT].Pose).c_str(), "MiddleIntermediate"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_MIDDLE_DISTAL_EXT].Pose).c_str(), "MiddleDistal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_MIDDLE_TIP_EXT].Pose).c_str(), "MiddleTip"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_RING_METACARPAL_EXT].Pose).c_str(), "RingMetacarpal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_RING_PROXIMAL_EXT].Pose).c_str(), "RingProximal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_RING_INTERMEDIATE_EXT].Pose).c_str(), "RingIntermediate"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_RING_DISTAL_EXT].Pose).c_str(), "RingDistal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_RING_TIP_EXT].Pose).c_str(), "RingTip"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_LITTLE_METACARPAL_EXT].Pose).c_str(), "LittleMetacarpal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_LITTLE_PROXIMAL_EXT].Pose).c_str(), "LittleProximal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_LITTLE_INTERMEDIATE_EXT].Pose).c_str(), "LittleIntermediate"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_LITTLE_DISTAL_EXT].Pose).c_str(), "LittleDistal"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_LITTLE_TIP_EXT].Pose).c_str(), "LittleTip"));
+
+            locations->isActive = XR_TRUE;
+
+        } else {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrLocateHandJointsEXT",
+                              TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
+                              TLArg(m_handJointsState->HandTrackingActive, "HandTrackingActive"),
+                              TLArg(m_handJointsState->LeftHandActive, "LeftHandActive"),
+                              TLArg(m_handJointsState->RightHandActive, "RightHandActive"));
+
+            locations->isActive = XR_FALSE;
+        }
 
         // If base space pose is not valid, we cannot locate.
         if (locations->isActive != XR_TRUE || !Pose::IsPoseValid(flags1) || !Pose::IsPoseValid(flags2)) {
@@ -169,6 +234,55 @@ namespace virtualdesktop_openxr {
                 }
             }
             return XR_SUCCESS;
+        }
+
+        const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
+                                                           ? m_handJointsState->LeftHandJointStates
+                                                           : m_handJointsState->RightHandJointStates;
+        for (uint32_t i = 0; i < locations->jointCount; i++) {
+            // Place the joint relative to the hand.
+            const XrPosef poseOfJointInHand = Pose::Multiply(
+                xr::math::Pose::MakePose(
+                    XrQuaternionf{joints[i].Pose.orientation.x,
+                                  joints[i].Pose.orientation.y,
+                                  joints[i].Pose.orientation.z,
+                                  joints[i].Pose.orientation.w},
+                    XrVector3f{joints[i].Pose.position.x, joints[i].Pose.position.y, joints[i].Pose.position.z}),
+                basePose);
+
+            locations->jointLocations[i].pose = Pose::Multiply(poseOfJointInHand, Pose::Invert(baseSpaceToVirtual));
+            locations->jointLocations[i].locationFlags =
+                (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) | flags2;
+
+            // Forward the rest of the data as-is from the memory mapped file.
+            locations->jointLocations[i].radius = joints[i].Radius;
+
+            if (velocities) {
+                velocities->jointVelocities[i].angularVelocity = {
+                    joints[i].AngularVelocity.x, joints[i].AngularVelocity.y, joints[i].AngularVelocity.z};
+                velocities->jointVelocities[i].linearVelocity = {
+                    joints[i].LinearVelocity.x, joints[i].LinearVelocity.y, joints[i].LinearVelocity.z};
+                velocities->jointVelocities[i].velocityFlags =
+                    XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+
+                TraceLoggingWrite(
+                    g_traceProvider,
+                    "xrLocateHandJointsEXT",
+                    TLArg(i, "JointIndex"),
+                    TLArg(locations->jointLocations[i].locationFlags, "LocationFlags"),
+                    TLArg(xr::ToString(locations->jointLocations[i].pose).c_str(), "Pose"),
+                    TLArg(locations->jointLocations[i].radius, "Radius"),
+                    TLArg(velocities->jointVelocities[i].velocityFlags, "VelocityFlags"),
+                    TLArg(xr::ToString(velocities->jointVelocities[i].angularVelocity).c_str(), "AngularVelocity"),
+                    TLArg(xr::ToString(velocities->jointVelocities[i].linearVelocity).c_str(), "LinearVelocity"));
+            } else {
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrLocateHandJointsEXT",
+                                  TLArg(i, "JointIndex"),
+                                  TLArg(locations->jointLocations[i].locationFlags, "LocationFlags"),
+                                  TLArg(xr::ToString(locations->jointLocations[i].pose).c_str(), "Pose"),
+                                  TLArg(locations->jointLocations[i].radius, "Radius"));
+            }
         }
 
         return XR_SUCCESS;

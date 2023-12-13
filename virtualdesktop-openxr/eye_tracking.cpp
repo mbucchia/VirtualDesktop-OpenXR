@@ -123,8 +123,8 @@ namespace virtualdesktop_openxr {
             eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_faceState->LeftEyeConfidence;
             eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_faceState->RightEyeConfidence;
 
-            FaceTracking::Pose leftEyePose = m_faceState->LeftEyePose;
-            FaceTracking::Pose rightEyePose = m_faceState->RightEyePose;
+            BodyTracking::Pose leftEyePose = m_faceState->LeftEyePose;
+            BodyTracking::Pose rightEyePose = m_faceState->RightEyePose;
             XrPosef eyeGaze[] = {
                 xr::math::Pose::MakePose(
                     XrQuaternionf{leftEyePose.orientation.x,
@@ -201,8 +201,8 @@ namespace virtualdesktop_openxr {
                 return false;
             }
 
-            FaceTracking::Pose leftEyePose = m_faceState->LeftEyePose;
-            FaceTracking::Pose rightEyePose = m_faceState->RightEyePose;
+            BodyTracking::Pose leftEyePose = m_faceState->LeftEyePose;
+            BodyTracking::Pose rightEyePose = m_faceState->RightEyePose;
             XrPosef eyeGaze[] = {
                 xr::math::Pose::MakePose(
                     XrQuaternionf{leftEyePose.orientation.x,
