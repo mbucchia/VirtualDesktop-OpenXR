@@ -161,8 +161,8 @@ namespace virtualdesktop_openxr {
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
 
         if (has_XR_EXT_hand_tracking && handTrackingProperties) {
-            // TODO: Implement hand tracking.
-            handTrackingProperties->supportsHandTracking = XR_FALSE;
+            handTrackingProperties->supportsHandTracking =
+                (m_handJointsState && m_handJointsState->HandTrackingActive) ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -486,21 +486,28 @@ namespace virtualdesktop_openxr {
             m_ovrSession, !m_useOculusRuntime ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel));
     }
 
-    bool OpenXrRuntime::initializeFaceTrackingMmf() {
-        *m_faceStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
-        if (!m_faceStateFile) {
-            TraceLoggingWrite(g_traceProvider, "VirtualDesktopFaceTracker_NotAvailable");
-            return false;
+    void OpenXrRuntime::initializeFaceTrackingMmf() {
+        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
+        if (!m_bodyStateFile) {
+            TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_NotAvailable");
+            return;
         }
 
-        m_faceState = reinterpret_cast<FaceTracking::FaceState*>(
-            MapViewOfFile(m_faceStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(FaceTracking::FaceState)));
+        // To keep compatibility with older versions, we try mapping various versions of the structure.
+        m_handJointsState = reinterpret_cast<BodyTracking::BodyStateV2*>(
+            MapViewOfFile(m_bodyStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(BodyTracking::BodyStateV2)));
+        if (m_handJointsState) {
+            m_faceState = reinterpret_cast<BodyTracking::BodyStateV1*>(m_handJointsState);
+        } else {
+            m_faceState = reinterpret_cast<BodyTracking::BodyStateV1*>(
+                MapViewOfFile(m_bodyStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(BodyTracking::BodyStateV1)));
+        }
+        if (!m_handJointsState) {
+            TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_MappingError_BodyStateV2");
+        }
         if (!m_faceState) {
-            TraceLoggingWrite(g_traceProvider, "VirtualDesktopFaceTracker_MappingError");
-            return false;
+            TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_MappingError_BodyStateV1");
         }
-
-        return true;
     }
 
 } // namespace virtualdesktop_openxr
