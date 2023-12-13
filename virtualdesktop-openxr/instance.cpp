@@ -92,11 +92,16 @@ namespace virtualdesktop_openxr {
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetInstanceProcAddr
     XrResult OpenXrRuntime::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
-        TraceLoggingWrite(g_traceProvider, "xrGetInstanceProcAddr", TLXArg(instance, "Instance"), TLArg(name, "Name"));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrGetInstanceProcAddr",
+                          TLXArg(instance, "Instance"),
+                          TLArg(name, "Name"),
+                          TLPArg(function, "Function"));
 
         const auto result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
 
-        TraceLoggingWrite(g_traceProvider, "xrGetInstanceProcAddr", TLPArg(function, "Function"));
+        TraceLoggingWrite(
+            g_traceProvider, "xrGetInstanceProcAddr", TLPArg(function ? *function : nullptr, "RuntimeFunction"));
 
         return result;
     }
