@@ -210,7 +210,8 @@ namespace virtualdesktop_openxr {
         m_isOculusXrPlugin = m_applicationName.find("Oculus VR Plugin") == 0;
         m_isConformanceTest = m_applicationName == "conformance test";
 
-        if (startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe")) {
+        if ((startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe")) ||
+            startsWith(m_applicationName, "GhostsOfTabor")) {
             m_controllerGripOffset.position.z = -0.1f;
             m_quirkedControllerPoses = true;
         }
