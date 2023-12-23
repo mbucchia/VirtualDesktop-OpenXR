@@ -90,50 +90,38 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        XrSystemHandTrackingPropertiesEXT* handTrackingProperties =
-            reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(properties->next);
-        while (handTrackingProperties) {
-            if (handTrackingProperties->type == XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT) {
-                break;
-            }
-            handTrackingProperties = reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(handTrackingProperties->next);
-        }
+        XrSystemHandTrackingPropertiesEXT* handTrackingProperties{};
+        XrSystemEyeGazeInteractionPropertiesEXT* eyeGazeInteractionProperties{};
+        XrSystemEyeTrackingPropertiesFB* eyeTrackingProperties{};
+        XrSystemFaceTrackingPropertiesFB* faceTrackingProperties{};
+        XrSystemFaceTrackingProperties2FB* faceTrackingProperties2{};
+        XrSystemBodyTrackingPropertiesFB* bodyTrackingProperties{};
+        XrSystemHeadsetIdPropertiesMETA* headsetIdProperties{};
 
-        XrSystemEyeGazeInteractionPropertiesEXT* eyeGazeInteractionProperties =
-            reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(properties->next);
-        while (eyeGazeInteractionProperties) {
-            if (eyeGazeInteractionProperties->type == XR_TYPE_SYSTEM_EYE_GAZE_INTERACTION_PROPERTIES_EXT) {
+        XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(properties->next);
+        while (entry) {
+            switch (entry->type) {
+            case XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT:
+                handTrackingProperties = reinterpret_cast<XrSystemHandTrackingPropertiesEXT*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_EYE_GAZE_INTERACTION_PROPERTIES_EXT:
+                eyeGazeInteractionProperties = reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_EYE_TRACKING_PROPERTIES_FB:
+                eyeTrackingProperties = reinterpret_cast<XrSystemEyeTrackingPropertiesFB*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_FACE_TRACKING_PROPERTIES_FB:
+                faceTrackingProperties = reinterpret_cast<XrSystemFaceTrackingPropertiesFB*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_FACE_TRACKING_PROPERTIES2_FB:
+                faceTrackingProperties2 = reinterpret_cast<XrSystemFaceTrackingProperties2FB*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_HEADSET_ID_PROPERTIES_META:
+                headsetIdProperties = reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(entry);
                 break;
             }
-            eyeGazeInteractionProperties =
-                reinterpret_cast<XrSystemEyeGazeInteractionPropertiesEXT*>(eyeGazeInteractionProperties->next);
-        }
 
-        XrSystemEyeTrackingPropertiesFB* eyeTrackingProperties =
-            reinterpret_cast<XrSystemEyeTrackingPropertiesFB*>(properties->next);
-        while (eyeTrackingProperties) {
-            if (eyeTrackingProperties->type == XR_TYPE_SYSTEM_EYE_TRACKING_PROPERTIES_FB) {
-                break;
-            }
-            eyeTrackingProperties = reinterpret_cast<XrSystemEyeTrackingPropertiesFB*>(eyeTrackingProperties->next);
-        }
-
-        XrSystemFaceTrackingPropertiesFB* faceTrackingProperties =
-            reinterpret_cast<XrSystemFaceTrackingPropertiesFB*>(properties->next);
-        while (faceTrackingProperties) {
-            if (faceTrackingProperties->type == XR_TYPE_SYSTEM_FACE_TRACKING_PROPERTIES_FB) {
-                break;
-            }
-            faceTrackingProperties = reinterpret_cast<XrSystemFaceTrackingPropertiesFB*>(faceTrackingProperties->next);
-        }
-
-        XrSystemHeadsetIdPropertiesMETA* headsetIdProperties =
-            reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(properties->next);
-        while (headsetIdProperties) {
-            if (headsetIdProperties->type == XR_TYPE_SYSTEM_HEADSET_ID_PROPERTIES_META) {
-                break;
-            }
-            headsetIdProperties = reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(headsetIdProperties->next);
+            entry = reinterpret_cast<XrBaseOutStructure*>(entry->next);
         }
 
         properties->vendorId = m_cachedHmdInfo.VendorId;
@@ -162,7 +150,7 @@ namespace virtualdesktop_openxr {
 
         if (has_XR_EXT_hand_tracking && handTrackingProperties) {
             handTrackingProperties->supportsHandTracking =
-                (m_handJointsState && m_handJointsState->HandTrackingActive) ? XR_TRUE : XR_FALSE;
+                (m_bodyState && m_bodyState->HandTrackingActive) ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -181,7 +169,7 @@ namespace virtualdesktop_openxr {
         }
 
         if (has_XR_FB_eye_tracking_social && eyeTrackingProperties) {
-            eyeTrackingProperties->supportsEyeTracking = m_faceState ? XR_TRUE : XR_FALSE;
+            eyeTrackingProperties->supportsEyeTracking = m_bodyState ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -189,11 +177,22 @@ namespace virtualdesktop_openxr {
         }
 
         if (has_XR_FB_face_tracking && faceTrackingProperties) {
-            faceTrackingProperties->supportsFaceTracking = m_faceState ? XR_TRUE : XR_FALSE;
+            faceTrackingProperties->supportsFaceTracking = m_bodyState ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
                               TLArg(!!faceTrackingProperties->supportsFaceTracking, "SupportsFaceTracking"));
+        }
+
+        if (has_XR_FB_face_tracking2 && faceTrackingProperties2) {
+            faceTrackingProperties2->supportsVisualFaceTracking = faceTrackingProperties2->supportsAudioFaceTracking =
+                m_bodyState ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrGetSystemProperties",
+                TLArg(!!faceTrackingProperties2->supportsVisualFaceTracking, "SupportsVisualFaceTracking"),
+                TLArg(!!faceTrackingProperties2->supportsAudioFaceTracking, "SupportsAudioFaceTracking"));
         }
 
         if (has_XR_META_headset_id && headsetIdProperties) {
@@ -450,7 +449,7 @@ namespace virtualdesktop_openxr {
 
             m_eyeTrackingType = EyeTracking::None;
             if (!getSetting("simulate_eye_tracking").value_or(false)) {
-                if (m_faceState) {
+                if (m_bodyState) {
                     m_eyeTrackingType = EyeTracking::Mmf;
                 }
             } else {
@@ -493,20 +492,10 @@ namespace virtualdesktop_openxr {
             return;
         }
 
-        // To keep compatibility with older versions, we try mapping various versions of the structure.
-        m_handJointsState = reinterpret_cast<BodyTracking::BodyStateV2*>(
+        m_bodyState = reinterpret_cast<BodyTracking::BodyStateV2*>(
             MapViewOfFile(m_bodyStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(BodyTracking::BodyStateV2)));
-        if (m_handJointsState) {
-            m_faceState = reinterpret_cast<BodyTracking::BodyStateV1*>(m_handJointsState);
-        } else {
-            m_faceState = reinterpret_cast<BodyTracking::BodyStateV1*>(
-                MapViewOfFile(m_bodyStateFile.get(), FILE_MAP_READ, 0, 0, sizeof(BodyTracking::BodyStateV1)));
-        }
-        if (!m_handJointsState) {
+        if (!m_bodyState) {
             TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_MappingError_BodyStateV2");
-        }
-        if (!m_faceState) {
-            TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_MappingError_BodyStateV1");
         }
     }
 

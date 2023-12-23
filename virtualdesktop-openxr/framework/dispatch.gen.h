@@ -149,6 +149,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_MND_headless{false};
 		bool has_XR_FB_eye_tracking_social{false};
 		bool has_XR_FB_face_tracking{false};
+		bool has_XR_FB_face_tracking2{false};
 
 
 	};
