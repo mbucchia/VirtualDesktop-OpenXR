@@ -487,7 +487,7 @@ namespace virtualdesktop_openxr {
     }
 
     void OpenXrRuntime::initializeFaceTrackingMmf() {
-        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
+        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.BodyState");
         if (!m_bodyStateFile) {
             TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_NotAvailable");
             return;
