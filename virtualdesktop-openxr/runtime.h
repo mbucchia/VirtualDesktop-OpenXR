@@ -67,12 +67,25 @@ namespace virtualdesktop_openxr {
             Vector3 LinearVelocity;
         };
 
+        struct BodyJointLocation {
+            ULONG LocationFlags;
+            Pose Pose;
+        };
+
+        struct SkeletonJoint {
+            int Joint;
+            int ParentJoint;
+            Pose Pose;
+        };
+
         static constexpr int ExpressionCount = 63;
         static_assert(ExpressionCount == XR_FACE_EXPRESSION_COUNT_FB);
+        static constexpr int ExpressionCount2 = 70;
         static constexpr int ConfidenceCount = 2;
         static_assert(ConfidenceCount == XR_FACE_CONFIDENCE_COUNT_FB);
-        static constexpr int JointCount = 26;
-        static_assert(JointCount == XR_HAND_JOINT_COUNT_EXT);
+        static constexpr int HandJointCount = 26;
+        static_assert(HandJointCount == XR_HAND_JOINT_COUNT_EXT);
+        static constexpr int BodyJointCount = 84;
 
         // Older version of the struct, without the hand tracking.
         struct BodyStateV1 {
@@ -102,9 +115,17 @@ namespace virtualdesktop_openxr {
 
             uint8_t HandTrackingActive;
             uint8_t LeftHandActive;
-            FingerJointState LeftHandJointStates[JointCount];
             uint8_t RightHandActive;
-            FingerJointState RightHandJointStates[JointCount];
+            FingerJointState LeftHandJointStates[HandJointCount];
+            FingerJointState RightHandJointStates[HandJointCount];
+
+            uint8_t BodyTrackingActive;
+            uint8_t BodyTrackingCalibrated;
+            uint8_t BodyTrackingHighFidelity;
+            float BodyTrackingConfidence;
+            BodyJointLocation BodyJoints[BodyJointCount];
+            SkeletonJoint SkeletonJoints[BodyJointCount];
+            int SkeletonChangedCount;
         };
 
         static_assert(offsetof(BodyStateV2, FaceIsValid) == offsetof(BodyStateV1, FaceIsValid));
