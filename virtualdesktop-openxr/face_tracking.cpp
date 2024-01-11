@@ -26,8 +26,9 @@
 #include "runtime.h"
 #include "utils.h"
 
-// Implements the necessary support for the XR_FB_face_tracking extension:
+// Implements the necessary support for the XR_FB_face_tracking and XR_FB_face_tracking2 extensions:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_FB_face_tracking
+// https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_FB_face_tracking2
 
 namespace virtualdesktop_openxr {
 
@@ -53,7 +54,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (!m_faceState) {
+        if (!m_bodyState) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -61,7 +62,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+        std::unique_lock lock(m_bodyTrackersMutex);
 
         FaceTracker& xrFaceTracker = *new FaceTracker;
 
@@ -83,7 +84,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+        std::unique_lock lock(m_bodyTrackersMutex);
 
         if (!m_faceTrackers.count(faceTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -115,7 +116,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+        std::unique_lock lock(m_bodyTrackersMutex);
 
         if (!m_faceTrackers.count(faceTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -127,16 +128,16 @@ namespace virtualdesktop_openxr {
         }
 
         // Forward the state from the memory mapped file.
-        if (m_faceState) {
+        if (m_bodyState) {
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION_COUNT_FB; i++) {
-                expressionWeights->weights[i] = m_faceState->ExpressionWeights[i];
+                expressionWeights->weights[i] = m_bodyState->ExpressionWeights[i];
             }
             for (uint32_t i = 0; i < XR_FACE_CONFIDENCE_COUNT_FB; i++) {
-                expressionWeights->confidences[i] = m_faceState->ExpressionConfidences[i];
+                expressionWeights->confidences[i] = m_bodyState->ExpressionConfidences[i];
             }
-            expressionWeights->status.isValid = m_faceState->FaceIsValid ? XR_TRUE : XR_FALSE;
+            expressionWeights->status.isValid = m_bodyState->FaceIsValid ? XR_TRUE : XR_FALSE;
             expressionWeights->status.isEyeFollowingBlendshapesValid =
-                m_faceState->IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
+                m_bodyState->IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
         } else {
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION_COUNT_FB; i++) {
                 expressionWeights->weights[i] = 0.f;
@@ -162,6 +163,149 @@ namespace virtualdesktop_openxr {
             TLArg(expressionWeights->confidences[XR_FACE_CONFIDENCE_LOWER_FACE_FB], "ConfidenceLowerFace"),
             TLArg(expressionWeights->confidences[XR_FACE_CONFIDENCE_UPPER_FACE_FB], "ConfidenceUpperFace"),
             TLArg(!!expressionWeights->status.isEyeFollowingBlendshapesValid, "EyeFollowingBlendshapesValid"),
+            TLArg(expressionWeights->time, "Time"));
+
+        return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrCreateFaceTracker2FB
+    XrResult OpenXrRuntime::xrCreateFaceTracker2FB(XrSession session,
+                                                   const XrFaceTrackerCreateInfo2FB* createInfo,
+                                                   XrFaceTracker2FB* faceTracker) {
+        if (createInfo->type != XR_TYPE_FACE_TRACKER_CREATE_INFO2_FB) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        TraceLoggingWrite(g_traceProvider, "xrCreateFaceTracker2FB", TLXArg(session, "Session"));
+
+        if (!has_XR_FB_face_tracking2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        if (!m_sessionCreated || session != (XrSession)1) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (!m_bodyState) {
+            return XR_ERROR_FEATURE_UNSUPPORTED;
+        }
+
+        if (createInfo->faceExpressionSet != XR_FACE_EXPRESSION_SET2_DEFAULT_FB) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        std::unique_lock lock(m_bodyTrackersMutex);
+
+        FaceTracker& xrFaceTracker = *new FaceTracker;
+        const std::vector<XrFaceTrackingDataSource2FB> sources(
+            createInfo->requestedDataSources, createInfo->requestedDataSources + createInfo->requestedDataSourceCount);
+        xrFaceTracker.canUseVisualSource =
+            std::find_if(sources.cbegin(), sources.cend(), [](const XrFaceTrackingDataSource2FB& source) {
+                return source == XR_FACE_TRACKING_DATA_SOURCE2_VISUAL_FB;
+            }) != sources.cend();
+
+        *faceTracker = (XrFaceTracker2FB)&xrFaceTracker;
+
+        // Maintain a list of known trackers for validation.
+        m_faceTrackers2.insert(*faceTracker);
+
+        TraceLoggingWrite(g_traceProvider, "xrCreateFaceTracker2FB", TLXArg(*faceTracker, "FaceTracker"));
+
+        return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrDestroyFaceTracker2FB
+    XrResult OpenXrRuntime::xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) {
+        TraceLoggingWrite(g_traceProvider, "xrDestroyFaceTrackerFB", TLXArg(faceTracker, "FaceTracker"));
+
+        if (!has_XR_FB_face_tracking2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        std::unique_lock lock(m_bodyTrackersMutex);
+
+        if (!m_faceTrackers2.count(faceTracker)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        FaceTracker* xrFaceTracker = (FaceTracker*)faceTracker;
+
+        delete xrFaceTracker;
+        m_faceTrackers2.erase(faceTracker);
+
+        return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetFaceExpressionWeights2FB
+    XrResult OpenXrRuntime::xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
+                                                          const XrFaceExpressionInfo2FB* expressionInfo,
+                                                          XrFaceExpressionWeights2FB* expressionWeights) {
+        if (expressionInfo->type != XR_TYPE_FACE_EXPRESSION_INFO2_FB ||
+            expressionWeights->type != XR_TYPE_FACE_EXPRESSION_WEIGHTS2_FB) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        TraceLoggingWrite(g_traceProvider,
+                          "xrGetFaceExpressionWeights2FB",
+                          TLXArg(faceTracker, "FaceTracker"),
+                          TLArg(expressionInfo->time));
+
+        if (!has_XR_FB_face_tracking2) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        std::unique_lock lock(m_bodyTrackersMutex);
+
+        if (!m_faceTrackers2.count(faceTracker)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        if (expressionWeights->weightCount != XR_FACE_EXPRESSION2_COUNT_FB ||
+            expressionWeights->confidenceCount != XR_FACE_CONFIDENCE2_COUNT_FB) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        FaceTracker& xrFaceTracker = *(FaceTracker*)faceTracker;
+
+        // Forward the state from the memory mapped file.
+        if (m_bodyState) {
+            for (uint32_t i = 0; i < XR_FACE_EXPRESSION2_COUNT_FB; i++) {
+                expressionWeights->weights[i] = m_bodyState->ExpressionWeights[i];
+            }
+            for (uint32_t i = 0; i < XR_FACE_CONFIDENCE2_COUNT_FB; i++) {
+                expressionWeights->confidences[i] = m_bodyState->ExpressionConfidences[i];
+            }
+            expressionWeights->isValid = m_bodyState->FaceIsValid ? XR_TRUE : XR_FALSE;
+            expressionWeights->isEyeFollowingBlendshapesValid =
+                m_bodyState->IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
+        } else {
+            for (uint32_t i = 0; i < XR_FACE_EXPRESSION2_COUNT_FB; i++) {
+                expressionWeights->weights[i] = 0.f;
+            }
+            for (uint32_t i = 0; i < XR_FACE_CONFIDENCE2_COUNT_FB; i++) {
+                expressionWeights->confidences[i] = 0.f;
+            }
+            expressionWeights->isValid = expressionWeights->isEyeFollowingBlendshapesValid = XR_FALSE;
+        }
+        expressionWeights->dataSource = xrFaceTracker.canUseVisualSource ? XR_FACE_TRACKING_DATA_SOURCE2_VISUAL_FB
+                                                                         : XR_FACE_TRACKING_DATA_SOURCE2_AUDIO_FB;
+
+        // We do not do any extrapolation.
+        expressionWeights->time = expressionInfo->time;
+
+        TraceLoggingWrite(
+            g_traceProvider,
+            "xrGetFaceExpressionWeights2FB",
+            TLArg(!!expressionWeights->isValid, "Valid"),
+            TLArg(expressionWeights->weights[XR_FACE_EXPRESSION2_EYES_CLOSED_L_FB], "LeftEyeClosed"),
+            TLArg(expressionWeights->weights[XR_FACE_EXPRESSION2_EYES_CLOSED_R_FB], "RightEyeClosed"),
+            TLArg(expressionWeights->weights[XR_FACE_EXPRESSION2_MOUTH_LEFT_FB], "MouthToLeft"),
+            TLArg(expressionWeights->weights[XR_FACE_EXPRESSION2_MOUTH_RIGHT_FB], "MouthToRight"),
+            TLArg(expressionWeights->weights[XR_FACE_EXPRESSION2_JAW_DROP_FB], "JawDrop"),
+            TLArg(expressionWeights->weights[XR_FACE_EXPRESSION2_TONGUE_OUT_FB], "TongueOut"),
+            TLArg(expressionWeights->confidences[XR_FACE_CONFIDENCE2_LOWER_FACE_FB], "ConfidenceLowerFace"),
+            TLArg(expressionWeights->confidences[XR_FACE_CONFIDENCE2_UPPER_FACE_FB], "ConfidenceUpperFace"),
+            TLArg(!!expressionWeights->isEyeFollowingBlendshapesValid, "EyeFollowingBlendshapesValid"),
             TLArg(expressionWeights->time, "Time"));
 
         return XR_SUCCESS;

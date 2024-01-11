@@ -35,6 +35,14 @@ namespace virtualdesktop_openxr {
     const std::string RuntimePrettyName =
         fmt::format("VirtualDesktopXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
 
+    XrResult XRAPI_CALL xrCreateFaceTracker2FB(XrSession session,
+                                               const XrFaceTrackerCreateInfo2FB* createInfo,
+                                               XrFaceTracker2FB* faceTracker);
+    XrResult XRAPI_CALL xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker);
+    XrResult XRAPI_CALL xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
+                                                      const XrFaceExpressionInfo2FB* expressionInfo,
+                                                      XrFaceExpressionWeights2FB* expressionWeights);
+
     OpenXrRuntime::OpenXrRuntime() {
         const auto runtimeVersion =
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
@@ -80,8 +88,8 @@ namespace virtualdesktop_openxr {
             xrDestroySession((XrSession)1);
         }
 
-        if (m_faceState) {
-            UnmapViewOfFile(m_faceState);
+        if (m_bodyState) {
+            UnmapViewOfFile(m_bodyState);
         }
 
         if (m_ovrSession) {
@@ -98,7 +106,19 @@ namespace virtualdesktop_openxr {
                           TLArg(name, "Name"),
                           TLPArg(function, "Function"));
 
-        const auto result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
+        XrResult result = XR_ERROR_FUNCTION_UNSUPPORTED;
+
+        // XR_FB_face_tracking2 is not in the SDK yet and requires special handling.
+        const std::string_view apiName(name);
+        if (has_XR_FB_face_tracking2 && apiName == "xrCreateFaceTracker2FB") {
+            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrCreateFaceTracker2FB);
+        } else if (has_XR_FB_face_tracking2 && apiName == "xrDestroyFaceTracker2FB") {
+            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrDestroyFaceTracker2FB);
+        } else if (has_XR_FB_face_tracking2 && apiName == "xrGetFaceExpressionWeights2FB") {
+            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrGetFaceExpressionWeights2FB);
+        } else {
+            result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
+        }
 
         TraceLoggingWrite(
             g_traceProvider, "xrGetInstanceProcAddr", TLPArg(function ? *function : nullptr, "RuntimeFunction"));
@@ -427,10 +447,12 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Headless sessions.
             {XR_MND_HEADLESS_EXTENSION_NAME, XR_MND_headless_SPEC_VERSION});
 
-        m_extensionsTable.push_back( // Face & social eye tracking.
+        m_extensionsTable.push_back( // Face, body & social eye tracking.
             {XR_FB_EYE_TRACKING_SOCIAL_EXTENSION_NAME, XR_FB_eye_tracking_social_SPEC_VERSION});
-        m_extensionsTable.push_back( // Face & social eye tracking.
+        m_extensionsTable.push_back( // Face, body & & social eye tracking.
             {XR_FB_FACE_TRACKING_EXTENSION_NAME, XR_FB_face_tracking_SPEC_VERSION});
+        m_extensionsTable.push_back( // Face, body & & social eye tracking.
+            {XR_FB_FACE_TRACKING2_EXTENSION_NAME, XR_FB_face_tracking2_SPEC_VERSION});
 
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});
@@ -449,6 +471,75 @@ namespace virtualdesktop_openxr {
 
     std::optional<int> OpenXrRuntime::getSetting(const std::string& value) const {
         return RegGetDword(HKEY_LOCAL_MACHINE, RegPrefix, value);
+    }
+
+    XrResult xrCreateFaceTracker2FB(XrSession session,
+                                    const XrFaceTrackerCreateInfo2FB* createInfo,
+                                    XrFaceTracker2FB* faceTracker) {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "xrCreateFaceTracker2FB");
+
+        XrResult result;
+        try {
+            result =
+                dynamic_cast<OpenXrRuntime*>(GetInstance())->xrCreateFaceTracker2FB(session, createInfo, faceTracker);
+        } catch (std::exception& exc) {
+            TraceLoggingWriteTagged(local, "xrCreateFaceTracker2FB_Error", TLArg(exc.what(), "Error"));
+            ErrorLog("xrCreateFaceTracker2FB: %s\n", exc.what());
+            result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWriteStop(local, "xrCreateFaceTracker2FB", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrCreateFaceTracker2FB failed with %s\n", xr::ToCString(result));
+        }
+
+        return result;
+    }
+
+    XrResult xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "xrDestroyFaceTracker2FB");
+
+        XrResult result;
+        try {
+            result = dynamic_cast<OpenXrRuntime*>(GetInstance())->xrDestroyFaceTracker2FB(faceTracker);
+        } catch (std::exception& exc) {
+            TraceLoggingWriteTagged(local, "xrDestroyFaceTracker2FB_Error", TLArg(exc.what(), "Error"));
+            ErrorLog("xrDestroyFaceTracker2FB: %s\n", exc.what());
+            result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWriteStop(local, "xrDestroyFaceTracker2FB", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrDestroyFaceTracker2FB failed with %s\n", xr::ToCString(result));
+        }
+
+        return result;
+    }
+
+    XrResult xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
+                                           const XrFaceExpressionInfo2FB* expressionInfo,
+                                           XrFaceExpressionWeights2FB* expressionWeights) {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "xrGetFaceExpressionWeights2FB");
+
+        XrResult result;
+        try {
+            result = dynamic_cast<OpenXrRuntime*>(GetInstance())
+                         ->xrGetFaceExpressionWeights2FB(faceTracker, expressionInfo, expressionWeights);
+        } catch (std::exception& exc) {
+            TraceLoggingWriteTagged(local, "xrGetFaceExpressionWeights2FB_Error", TLArg(exc.what(), "Error"));
+            ErrorLog("xrGetFaceExpressionWeights2FB: %s\n", exc.what());
+            result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWriteStop(local, "xrGetFaceExpressionWeights2FB", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrGetFaceExpressionWeights2FB failed with %s\n", xr::ToCString(result));
+        }
+
+        return result;
     }
 
     // Singleton class instance.

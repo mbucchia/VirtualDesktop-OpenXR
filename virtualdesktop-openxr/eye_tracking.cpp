@@ -54,11 +54,11 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (!m_faceState) {
+        if (!m_bodyState) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+        std::unique_lock lock(m_bodyTrackersMutex);
 
         EyeTracker& xrEyeTracker = *new EyeTracker;
 
@@ -80,7 +80,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+        std::unique_lock lock(m_bodyTrackersMutex);
 
         if (!m_eyeTrackers.count(eyeTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -112,19 +112,19 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_faceAndEyeTrackersMutex);
+        std::unique_lock lock(m_bodyTrackersMutex);
 
         if (!m_eyeTrackers.count(eyeTracker) || !m_spaces.count(gazeInfo->baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
         }
 
         // Forward the state from the memory mapped file.
-        if (m_faceState) {
-            eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_faceState->LeftEyeConfidence;
-            eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_faceState->RightEyeConfidence;
+        if (m_bodyState) {
+            eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_bodyState->LeftEyeConfidence;
+            eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_bodyState->RightEyeConfidence;
 
-            BodyTracking::Pose leftEyePose = m_faceState->LeftEyePose;
-            BodyTracking::Pose rightEyePose = m_faceState->RightEyePose;
+            BodyTracking::Pose leftEyePose = m_bodyState->LeftEyePose;
+            BodyTracking::Pose rightEyePose = m_bodyState->RightEyePose;
             XrPosef eyeGaze[] = {
                 xr::math::Pose::MakePose(
                     XrQuaternionf{leftEyePose.orientation.x,
@@ -189,20 +189,20 @@ namespace virtualdesktop_openxr {
         if (m_eyeTrackingType == EyeTracking::Mmf) {
             TraceLoggingWrite(g_traceProvider,
                               "VirtualDesktopEyeTracker",
-                              TLArg(!!m_faceState->LeftEyeIsValid, "LeftValid"),
-                              TLArg(m_faceState->LeftEyeConfidence, "LeftConfidence"),
-                              TLArg(!!m_faceState->RightEyeIsValid, "RightValid"),
-                              TLArg(m_faceState->RightEyeConfidence, "RightConfidence"));
+                              TLArg(!!m_bodyState->LeftEyeIsValid, "LeftValid"),
+                              TLArg(m_bodyState->LeftEyeConfidence, "LeftConfidence"),
+                              TLArg(!!m_bodyState->RightEyeIsValid, "RightValid"),
+                              TLArg(m_bodyState->RightEyeConfidence, "RightConfidence"));
 
-            if (!(m_faceState->LeftEyeIsValid && m_faceState->RightEyeIsValid)) {
+            if (!(m_bodyState->LeftEyeIsValid && m_bodyState->RightEyeIsValid)) {
                 return false;
             }
-            if (!(m_faceState->LeftEyeConfidence > 0.5f && m_faceState->RightEyeConfidence > 0.5f)) {
+            if (!(m_bodyState->LeftEyeConfidence > 0.5f && m_bodyState->RightEyeConfidence > 0.5f)) {
                 return false;
             }
 
-            BodyTracking::Pose leftEyePose = m_faceState->LeftEyePose;
-            BodyTracking::Pose rightEyePose = m_faceState->RightEyePose;
+            BodyTracking::Pose leftEyePose = m_bodyState->LeftEyePose;
+            BodyTracking::Pose rightEyePose = m_bodyState->RightEyePose;
             XrPosef eyeGaze[] = {
                 xr::math::Pose::MakePose(
                     XrQuaternionf{leftEyePose.orientation.x,

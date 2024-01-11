@@ -67,45 +67,27 @@ namespace virtualdesktop_openxr {
             Vector3 LinearVelocity;
         };
 
-        struct BodyJointLocation {
-            ULONG LocationFlags;
-            Pose Pose;
-        };
-
         struct SkeletonJoint {
-            int Joint;
-            int ParentJoint;
+            int32_t Joint;
+            int32_t ParentJoint;
             Pose Pose;
         };
 
-        static constexpr int ExpressionCount = 63;
-        static_assert(ExpressionCount == XR_FACE_EXPRESSION_COUNT_FB);
-        static constexpr int ExpressionCount2 = 70;
+        static constexpr int ExpressionCount = 70;
+        static_assert(ExpressionCount == XR_FACE_EXPRESSION2_COUNT_FB);
         static constexpr int ConfidenceCount = 2;
         static_assert(ConfidenceCount == XR_FACE_CONFIDENCE_COUNT_FB);
         static constexpr int HandJointCount = 26;
         static_assert(HandJointCount == XR_HAND_JOINT_COUNT_EXT);
-        static constexpr int BodyJointCount = 84;
-
-        // Older version of the struct, without the hand tracking.
-        struct BodyStateV1 {
-            uint8_t FaceIsValid;
-            uint8_t IsEyeFollowingBlendshapesValid;
-            float ExpressionWeights[ExpressionCount];
-            float ExpressionConfidences[ConfidenceCount];
-            uint8_t LeftEyeIsValid;
-            uint8_t RightEyeIsValid;
-            Pose LeftEyePose;
-            Pose RightEyePose;
-            float LeftEyeConfidence;
-            float RightEyeConfidence;
-        };
+        static constexpr int BodyJointCount = 70;
+        static_assert(BodyJointCount == XR_BODY_JOINT_COUNT_FB);
 
         struct BodyStateV2 {
             uint8_t FaceIsValid;
             uint8_t IsEyeFollowingBlendshapesValid;
             float ExpressionWeights[ExpressionCount];
             float ExpressionConfidences[ConfidenceCount];
+
             uint8_t LeftEyeIsValid;
             uint8_t RightEyeIsValid;
             Pose LeftEyePose;
@@ -118,29 +100,7 @@ namespace virtualdesktop_openxr {
             uint8_t RightHandActive;
             FingerJointState LeftHandJointStates[HandJointCount];
             FingerJointState RightHandJointStates[HandJointCount];
-
-            uint8_t BodyTrackingActive;
-            uint8_t BodyTrackingCalibrated;
-            uint8_t BodyTrackingHighFidelity;
-            float BodyTrackingConfidence;
-            BodyJointLocation BodyJoints[BodyJointCount];
-            SkeletonJoint SkeletonJoints[BodyJointCount];
-            int SkeletonChangedCount;
         };
-
-        static_assert(offsetof(BodyStateV2, FaceIsValid) == offsetof(BodyStateV1, FaceIsValid));
-        static_assert(offsetof(BodyStateV2, IsEyeFollowingBlendshapesValid) ==
-                      offsetof(BodyStateV1, IsEyeFollowingBlendshapesValid));
-        static_assert(offsetof(BodyStateV2, ExpressionWeights) == offsetof(BodyStateV1, ExpressionWeights));
-        static_assert(offsetof(BodyStateV2, ExpressionConfidences) == offsetof(BodyStateV1, ExpressionConfidences));
-        static_assert(offsetof(BodyStateV2, LeftEyeIsValid) == offsetof(BodyStateV1, LeftEyeIsValid));
-        static_assert(offsetof(BodyStateV2, RightEyeIsValid) == offsetof(BodyStateV1, RightEyeIsValid));
-        static_assert(offsetof(BodyStateV2, FaceIsValid) == offsetof(BodyStateV1, FaceIsValid));
-        static_assert(offsetof(BodyStateV2, FaceIsValid) == offsetof(BodyStateV1, FaceIsValid));
-        static_assert(offsetof(BodyStateV2, LeftEyePose) == offsetof(BodyStateV1, LeftEyePose));
-        static_assert(offsetof(BodyStateV2, RightEyePose) == offsetof(BodyStateV1, RightEyePose));
-        static_assert(offsetof(BodyStateV2, LeftEyeConfidence) == offsetof(BodyStateV1, LeftEyeConfidence));
-        static_assert(offsetof(BodyStateV2, RightEyeConfidence) == offsetof(BodyStateV1, RightEyeConfidence));
 
     } // namespace BodyTracking
 
@@ -369,6 +329,13 @@ namespace virtualdesktop_openxr {
         XrResult xrGetFaceExpressionWeightsFB(XrFaceTrackerFB faceTracker,
                                               const XrFaceExpressionInfoFB* expressionInfo,
                                               XrFaceExpressionWeightsFB* expressionWeights) override;
+        XrResult xrCreateFaceTracker2FB(XrSession session,
+                                        const XrFaceTrackerCreateInfo2FB* createInfo,
+                                        XrFaceTracker2FB* faceTracker);
+        XrResult xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker);
+        XrResult xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
+                                               const XrFaceExpressionInfo2FB* expressionInfo,
+                                               XrFaceExpressionWeights2FB* expressionWeights);
 
       private:
         struct Extension {
@@ -481,7 +448,11 @@ namespace virtualdesktop_openxr {
 
         struct EyeTracker {};
 
-        struct FaceTracker {};
+        struct FaceTracker {
+            bool canUseVisualSource{true};
+        };
+
+        struct BodyTracker {};
 
         enum class EyeTracking {
             None = 0,
@@ -501,7 +472,7 @@ namespace virtualdesktop_openxr {
         void enterVisibleMode();
         bool ensureOVRSession();
         void initializeSystem();
-        void initializeFaceTrackingMmf();
+        void initializeBodyTrackingMmf();
 
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
@@ -632,11 +603,9 @@ namespace virtualdesktop_openxr {
         std::string m_applicationName;
         std::string m_exeName;
         bool m_useApplicationDeviceForSubmission{true};
-        bool m_alwaysAdvertiseEyeTracking{false};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_bodyStateFile;
-        BodyTracking::BodyStateV1* m_faceState{nullptr};
-        BodyTracking::BodyStateV2* m_handJointsState{nullptr};
+        BodyTracking::BodyStateV2* m_bodyState{nullptr};
         bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};
@@ -670,9 +639,11 @@ namespace virtualdesktop_openxr {
         std::mutex m_handTrackersMutex;
         std::set<XrHandTrackerEXT> m_handTrackers;
         std::set<XrSpace> m_spaces;
-        std::mutex m_faceAndEyeTrackersMutex;
+        std::mutex m_bodyTrackersMutex;
         std::set<XrEyeTrackerFB> m_eyeTrackers;
         std::set<XrFaceTrackerFB> m_faceTrackers;
+        std::set<XrFaceTracker2FB> m_faceTrackers2;
+        std::set<XrBodyTrackerFB> m_bodyTrackers;
         Space* m_originSpace{nullptr};
         Space* m_viewSpace{nullptr};
         std::map<std::string, std::vector<XrActionSuggestedBinding>> m_suggestedBindings;

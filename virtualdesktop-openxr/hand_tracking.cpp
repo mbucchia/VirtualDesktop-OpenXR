@@ -66,7 +66,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        if (!(m_handJointsState && m_handJointsState->HandTrackingActive)) {
+        if (!(m_bodyState /* XXX && m_bodyState->HandTrackingActive*/)) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -164,20 +164,19 @@ namespace virtualdesktop_openxr {
         const auto flags2 = getControllerPose(xrHandTracker.side, locateInfo->time, basePose, nullptr);
 
         // Check the hand state.
-        if (m_handJointsState && m_handJointsState->HandTrackingActive &&
-            ((xrHandTracker.side == xr::Side::Left && m_handJointsState->LeftHandActive) ||
-             m_handJointsState->RightHandActive)) {
+        if (m_bodyState && m_bodyState->HandTrackingActive &&
+            ((xrHandTracker.side == xr::Side::Left && m_bodyState->LeftHandActive) || m_bodyState->RightHandActive)) {
             const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
-                                                               ? m_handJointsState->LeftHandJointStates
-                                                               : m_handJointsState->RightHandJointStates;
+                                                               ? m_bodyState->LeftHandJointStates
+                                                               : m_bodyState->RightHandJointStates;
 
             TraceLoggingWrite(
                 g_traceProvider,
                 "xrLocateHandJointsEXT",
                 TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
-                TLArg(m_handJointsState->HandTrackingActive, "HandTrackingActive"),
-                TLArg(xrHandTracker.side == xr::Side::Left ? m_handJointsState->LeftHandActive
-                                                           : m_handJointsState->RightHandActive,
+                TLArg(!!m_bodyState->HandTrackingActive, "HandTrackingActive"),
+                TLArg(xrHandTracker.side == xr::Side::Left ? !!m_bodyState->LeftHandActive
+                                                           : !!m_bodyState->RightHandActive,
                       "HandActive"),
                 TLArg(xr::ToString(joints[XR_HAND_JOINT_PALM_EXT].Pose).c_str(), "Palm"),
                 TLArg(xr::ToString(joints[XR_HAND_JOINT_WRIST_EXT].Pose).c_str(), "Wrist"),
@@ -212,9 +211,9 @@ namespace virtualdesktop_openxr {
             TraceLoggingWrite(g_traceProvider,
                               "xrLocateHandJointsEXT",
                               TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
-                              TLArg(m_handJointsState->HandTrackingActive, "HandTrackingActive"),
-                              TLArg(m_handJointsState->LeftHandActive, "LeftHandActive"),
-                              TLArg(m_handJointsState->RightHandActive, "RightHandActive"));
+                              TLArg(!!m_bodyState->HandTrackingActive, "HandTrackingActive"),
+                              TLArg(!!m_bodyState->LeftHandActive, "LeftHandActive"),
+                              TLArg(!!m_bodyState->RightHandActive, "RightHandActive"));
 
             locations->isActive = XR_FALSE;
         }
@@ -236,13 +235,29 @@ namespace virtualdesktop_openxr {
             return XR_SUCCESS;
         }
 
-        const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
-                                                           ? m_handJointsState->LeftHandJointStates
-                                                           : m_handJointsState->RightHandJointStates;
+        const BodyTracking::FingerJointState* joints =
+            xrHandTracker.side == xr::Side::Left ? m_bodyState->LeftHandJointStates : m_bodyState->RightHandJointStates;
+
+        // XXX: Adjust basePose???
+        basePose = Pose::Multiply(
+            Pose::Multiply(
+                Pose::Invert(Pose::MakePose(
+                    XrQuaternionf{joints[0].Pose.orientation.x,
+                                  joints[0].Pose.orientation.y,
+                                  joints[0].Pose.orientation.z,
+                                  joints[0].Pose.orientation.w},
+                    XrVector3f{joints[0].Pose.position.x, joints[0].Pose.position.y, joints[0].Pose.position.z})),
+                Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                   {OVR::DegreeToRad(0.f),
+                                    OVR::DegreeToRad(0.f),
+                                    OVR::DegreeToRad(xrHandTracker.side == xr::Side::Left ? 90.f : -90.f)}),
+                               XrVector3f{0.f, 0.f, 0.f})),
+            basePose);
+
         for (uint32_t i = 0; i < locations->jointCount; i++) {
             // Place the joint relative to the hand.
             const XrPosef poseOfJointInHand = Pose::Multiply(
-                xr::math::Pose::MakePose(
+                Pose::MakePose(
                     XrQuaternionf{joints[i].Pose.orientation.x,
                                   joints[i].Pose.orientation.y,
                                   joints[i].Pose.orientation.z,

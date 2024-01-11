@@ -1700,7 +1700,7 @@ namespace RUNTIME_NAMESPACE {
 
 	// Auto-generated dispatcher handler.
 	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
-		const std::string apiName(name);
+		const std::string_view apiName(name);
 
 		if (apiName == "xrGetInstanceProcAddr") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetInstanceProcAddr);
@@ -2018,6 +2018,9 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (extensionName == "XR_FB_face_tracking") {
 			has_XR_FB_face_tracking = true;
+		}
+		else if (extensionName == "XR_FB_face_tracking2") {
+			has_XR_FB_face_tracking2 = true;
 		}
 
 	}
