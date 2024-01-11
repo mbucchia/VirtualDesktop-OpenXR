@@ -149,8 +149,8 @@ namespace virtualdesktop_openxr {
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
 
         if (has_XR_EXT_hand_tracking && handTrackingProperties) {
-            handTrackingProperties->supportsHandTracking =
-                (m_bodyState && m_bodyState->HandTrackingActive) ? XR_TRUE : XR_FALSE;
+            handTrackingProperties->supportsHandTracking = XR_TRUE;
+                // XXX (m_bodyState && m_bodyState->HandTrackingActive) ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -330,7 +330,6 @@ namespace virtualdesktop_openxr {
             const int release = std::stoi(component);
 
             // FIXME: Identify version-specific quirks.
-            m_alwaysAdvertiseEyeTracking = major == 1 && (minor < 29 || (minor == 29 && release < 2));
 
         } catch (std::exception&) {
         }
@@ -442,9 +441,9 @@ namespace virtualdesktop_openxr {
             m_cachedHmdInfo = hmdInfo;
             Log("Device is: %s (%d)\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.Type);
 
-            // Try initializing the face and eye tracking data through Virtual Desktop, for supported devices only.
-            if (!m_useOculusRuntime && (m_cachedHmdInfo.Type == ovrHmd_QuestPro || m_alwaysAdvertiseEyeTracking)) {
-                initializeFaceTrackingMmf();
+            // Try initializing the body and eye tracking data through Virtual Desktop.
+            if (!m_useOculusRuntime) {
+                initializeBodyTrackingMmf();
             }
 
             m_eyeTrackingType = EyeTracking::None;
@@ -485,8 +484,8 @@ namespace virtualdesktop_openxr {
             m_ovrSession, !m_useOculusRuntime ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel));
     }
 
-    void OpenXrRuntime::initializeFaceTrackingMmf() {
-        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
+    void OpenXrRuntime::initializeBodyTrackingMmf() {
+        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.BodyState");
         if (!m_bodyStateFile) {
             TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_NotAvailable");
             return;

@@ -66,7 +66,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        if (!(m_bodyState && m_bodyState->HandTrackingActive)) {
+        if (!(m_bodyState /* XXX && m_bodyState->HandTrackingActive*/)) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -165,8 +165,7 @@ namespace virtualdesktop_openxr {
 
         // Check the hand state.
         if (m_bodyState && m_bodyState->HandTrackingActive &&
-            ((xrHandTracker.side == xr::Side::Left && m_bodyState->LeftHandActive) ||
-             m_bodyState->RightHandActive)) {
+            ((xrHandTracker.side == xr::Side::Left && m_bodyState->LeftHandActive) || m_bodyState->RightHandActive)) {
             const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
                                                                ? m_bodyState->LeftHandJointStates
                                                                : m_bodyState->RightHandJointStates;
@@ -236,13 +235,29 @@ namespace virtualdesktop_openxr {
             return XR_SUCCESS;
         }
 
-        const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
-                                                           ? m_bodyState->LeftHandJointStates
-                                                           : m_bodyState->RightHandJointStates;
+        const BodyTracking::FingerJointState* joints =
+            xrHandTracker.side == xr::Side::Left ? m_bodyState->LeftHandJointStates : m_bodyState->RightHandJointStates;
+
+        // XXX: Adjust basePose???
+        basePose = Pose::Multiply(
+            Pose::Multiply(
+                Pose::Invert(Pose::MakePose(
+                    XrQuaternionf{joints[0].Pose.orientation.x,
+                                  joints[0].Pose.orientation.y,
+                                  joints[0].Pose.orientation.z,
+                                  joints[0].Pose.orientation.w},
+                    XrVector3f{joints[0].Pose.position.x, joints[0].Pose.position.y, joints[0].Pose.position.z})),
+                Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                   {OVR::DegreeToRad(0.f),
+                                    OVR::DegreeToRad(0.f),
+                                    OVR::DegreeToRad(xrHandTracker.side == xr::Side::Left ? 90.f : -90.f)}),
+                               XrVector3f{0.f, 0.f, 0.f})),
+            basePose);
+
         for (uint32_t i = 0; i < locations->jointCount; i++) {
             // Place the joint relative to the hand.
             const XrPosef poseOfJointInHand = Pose::Multiply(
-                xr::math::Pose::MakePose(
+                Pose::MakePose(
                     XrQuaternionf{joints[i].Pose.orientation.x,
                                   joints[i].Pose.orientation.y,
                                   joints[i].Pose.orientation.z,

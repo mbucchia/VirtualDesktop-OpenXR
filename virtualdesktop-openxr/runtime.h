@@ -97,16 +97,9 @@ namespace virtualdesktop_openxr {
 
             uint8_t HandTrackingActive;
             uint8_t LeftHandActive;
-            FingerJointState LeftHandJointStates[HandJointCount];
             uint8_t RightHandActive;
+            FingerJointState LeftHandJointStates[HandJointCount];
             FingerJointState RightHandJointStates[HandJointCount];
-
-            uint8_t BodyTrackingActive;
-            float BodyTrackingConfidence;
-            Pose BodyJoints[BodyJointCount];
-            uint8_t BodyJointsValidity[BodyJointCount];
-            SkeletonJoint SkeletonJoints[BodyJointCount];
-            uint32_t SkeletonChangedCount;
         };
 
     } // namespace BodyTracking
@@ -479,7 +472,7 @@ namespace virtualdesktop_openxr {
         void enterVisibleMode();
         bool ensureOVRSession();
         void initializeSystem();
-        void initializeFaceTrackingMmf();
+        void initializeBodyTrackingMmf();
 
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
@@ -610,7 +603,6 @@ namespace virtualdesktop_openxr {
         std::string m_applicationName;
         std::string m_exeName;
         bool m_useApplicationDeviceForSubmission{true};
-        bool m_alwaysAdvertiseEyeTracking{false};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_bodyStateFile;
         BodyTracking::BodyStateV2* m_bodyState{nullptr};
