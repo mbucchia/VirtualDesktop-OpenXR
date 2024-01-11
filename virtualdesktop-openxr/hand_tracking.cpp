@@ -238,38 +238,17 @@ namespace virtualdesktop_openxr {
         const BodyTracking::FingerJointState* joints =
             xrHandTracker.side == xr::Side::Left ? m_bodyState->LeftHandJointStates : m_bodyState->RightHandJointStates;
 
-        // XXX: Adjust basePose???
-        basePose = Pose::Multiply(
-            Pose::Multiply(
-                Pose::Invert(Pose::MakePose(
-                    XrQuaternionf{joints[0].Pose.orientation.x,
-                                  joints[0].Pose.orientation.y,
-                                  joints[0].Pose.orientation.z,
-                                  joints[0].Pose.orientation.w},
-                    XrVector3f{joints[0].Pose.position.x, joints[0].Pose.position.y, joints[0].Pose.position.z})),
-                Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                   {OVR::DegreeToRad(0.f),
-                                    OVR::DegreeToRad(0.f),
-                                    OVR::DegreeToRad(xrHandTracker.side == xr::Side::Left ? 90.f : -90.f)}),
-                               XrVector3f{0.f, 0.f, 0.f})),
-            basePose);
-
         for (uint32_t i = 0; i < locations->jointCount; i++) {
-            // Place the joint relative to the hand.
-            const XrPosef poseOfJointInHand = Pose::Multiply(
-                Pose::MakePose(
+            locations->jointLocations[i].pose = Pose::MakePose(
                     XrQuaternionf{joints[i].Pose.orientation.x,
                                   joints[i].Pose.orientation.y,
                                   joints[i].Pose.orientation.z,
                                   joints[i].Pose.orientation.w},
-                    XrVector3f{joints[i].Pose.position.x, joints[i].Pose.position.y, joints[i].Pose.position.z}),
-                basePose);
-
-            locations->jointLocations[i].pose = Pose::Multiply(poseOfJointInHand, Pose::Invert(baseSpaceToVirtual));
+                    XrVector3f{joints[i].Pose.position.x, joints[i].Pose.position.y, joints[i].Pose.position.z});
+            
             locations->jointLocations[i].locationFlags =
                 (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) | flags2;
 
-            // Forward the rest of the data as-is from the memory mapped file.
             locations->jointLocations[i].radius = joints[i].Radius;
 
             if (velocities) {
