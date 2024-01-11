@@ -159,14 +159,11 @@ namespace virtualdesktop_openxr {
         Space& xrBaseSpace = *(Space*)locateInfo->baseSpace;
 
         XrPosef baseSpaceToVirtual = Pose::Identity();
-        XrPosef basePose = Pose::Identity();
-        const auto flags1 = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
-        const auto flags2 = getControllerPose(xrHandTracker.side, locateInfo->time, basePose, nullptr);
+        const auto flags = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
 
         // Check the hand state.
         if (m_bodyState && m_bodyState->HandTrackingActive &&
-            ((xrHandTracker.side == xr::Side::Left && m_bodyState->LeftHandActive) ||
-             m_bodyState->RightHandActive)) {
+            ((xrHandTracker.side == xr::Side::Left && m_bodyState->LeftHandActive) || m_bodyState->RightHandActive)) {
             const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
                                                                ? m_bodyState->LeftHandJointStates
                                                                : m_bodyState->RightHandJointStates;
@@ -220,7 +217,7 @@ namespace virtualdesktop_openxr {
         }
 
         // If base space pose is not valid, we cannot locate.
-        if (locations->isActive != XR_TRUE || !Pose::IsPoseValid(flags1) || !Pose::IsPoseValid(flags2)) {
+        if (locations->isActive != XR_TRUE || !Pose::IsPoseValid(flags)) {
             TraceLoggingWrite(g_traceProvider, "xrLocateHandJointsEXT", TLArg(0, "LocationFlags"));
             for (uint32_t i = 0; i < locations->jointCount; i++) {
                 locations->jointLocations[i].radius = 0.0f;
@@ -236,23 +233,30 @@ namespace virtualdesktop_openxr {
             return XR_SUCCESS;
         }
 
-        const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
-                                                           ? m_bodyState->LeftHandJointStates
-                                                           : m_bodyState->RightHandJointStates;
-        for (uint32_t i = 0; i < locations->jointCount; i++) {
-            // Place the joint relative to the hand.
-            const XrPosef poseOfJointInHand = Pose::Multiply(
-                xr::math::Pose::MakePose(
-                    XrQuaternionf{joints[i].Pose.orientation.x,
-                                  joints[i].Pose.orientation.y,
-                                  joints[i].Pose.orientation.z,
-                                  joints[i].Pose.orientation.w},
-                    XrVector3f{joints[i].Pose.position.x, joints[i].Pose.position.y, joints[i].Pose.position.z}),
-                basePose);
+        const BodyTracking::FingerJointState* joints =
+            xrHandTracker.side == xr::Side::Left ? m_bodyState->LeftHandJointStates : m_bodyState->RightHandJointStates;
 
-            locations->jointLocations[i].pose = Pose::Multiply(poseOfJointInHand, Pose::Invert(baseSpaceToVirtual));
+        // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
+        // enabled. We need to offset to the virtual space.
+        assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
+        const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+        TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+        const XrPosef jointsToVirtual =
+            (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
+        const XrPosef basePose = Pose::Multiply(jointsToVirtual, Pose::Invert(baseSpaceToVirtual));
+
+        for (uint32_t i = 0; i < locations->jointCount; i++) {
+            const XrPosef poseOfJoint = Pose::MakePose(
+                XrQuaternionf{joints[i].Pose.orientation.x,
+                              joints[i].Pose.orientation.y,
+                              joints[i].Pose.orientation.z,
+                              joints[i].Pose.orientation.w},
+                XrVector3f{joints[i].Pose.position.x, joints[i].Pose.position.y, joints[i].Pose.position.z});
+
+            locations->jointLocations[i].pose = Pose::Multiply(poseOfJoint, basePose);
             locations->jointLocations[i].locationFlags =
-                (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) | flags2;
+                (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
+                 XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
 
             // Forward the rest of the data as-is from the memory mapped file.
             locations->jointLocations[i].radius = joints[i].Radius;

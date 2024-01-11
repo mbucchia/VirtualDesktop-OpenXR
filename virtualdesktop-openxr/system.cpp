@@ -330,7 +330,6 @@ namespace virtualdesktop_openxr {
             const int release = std::stoi(component);
 
             // FIXME: Identify version-specific quirks.
-            m_alwaysAdvertiseEyeTracking = major == 1 && (minor < 29 || (minor == 29 && release < 2));
 
         } catch (std::exception&) {
         }
@@ -442,14 +441,14 @@ namespace virtualdesktop_openxr {
             m_cachedHmdInfo = hmdInfo;
             Log("Device is: %s (%d)\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.Type);
 
-            // Try initializing the face and eye tracking data through Virtual Desktop, for supported devices only.
-            if (!m_useOculusRuntime && (m_cachedHmdInfo.Type == ovrHmd_QuestPro || m_alwaysAdvertiseEyeTracking)) {
-                initializeFaceTrackingMmf();
+            // Try initializing the body and eye tracking data through Virtual Desktop.
+            if (!m_useOculusRuntime) {
+                initializeBodyTrackingMmf();
             }
 
             m_eyeTrackingType = EyeTracking::None;
             if (!getSetting("simulate_eye_tracking").value_or(false)) {
-                if (m_bodyState) {
+                if (m_cachedHmdInfo.Type == ovrHmd_QuestPro && m_bodyState) {
                     m_eyeTrackingType = EyeTracking::Mmf;
                 }
             } else {
@@ -485,8 +484,8 @@ namespace virtualdesktop_openxr {
             m_ovrSession, !m_useOculusRuntime ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel));
     }
 
-    void OpenXrRuntime::initializeFaceTrackingMmf() {
-        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.FaceState");
+    void OpenXrRuntime::initializeBodyTrackingMmf() {
+        *m_bodyStateFile.put() = OpenFileMapping(FILE_MAP_READ, false, L"VirtualDesktop.BodyState");
         if (!m_bodyStateFile) {
             TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_NotAvailable");
             return;
