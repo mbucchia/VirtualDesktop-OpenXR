@@ -141,7 +141,7 @@ namespace virtualdesktop_openxr {
 
             eyeGazes->gaze[xr::Side::Left].isValid = XR_FALSE;
             eyeGazes->gaze[xr::Side::Right].isValid = XR_FALSE;
-            if (m_faceState->LeftEyeIsValid || m_faceState->RightEyeIsValid) {
+            if (m_bodyState->LeftEyeIsValid || m_bodyState->RightEyeIsValid) {
                 // TODO: Need optimization here, in all likelyhood, the caller is looking for eye gaze relative to VIEW
                 // space, in which case we are doing 2 back-to-back getHmdPose() that are cancelling each other.
                 Space& xrBaseSpace = *(Space*)gazeInfo->baseSpace;
@@ -151,12 +151,12 @@ namespace virtualdesktop_openxr {
                     Pose::IsPoseValid(
                         locateSpaceToOrigin(xrBaseSpace, gazeInfo->time, baseSpaceToVirtual, nullptr, nullptr))) {
                     // Combine the poses.
-                    if (m_faceState->LeftEyeIsValid) {
+                    if (m_bodyState->LeftEyeIsValid) {
                         eyeGazes->gaze[xr::Side::Left].gazePose = Pose::Multiply(
                             Pose::Multiply(eyeGaze[xr::Side::Left], headPose), Pose::Invert(baseSpaceToVirtual));
                         eyeGazes->gaze[xr::Side::Left].isValid = XR_TRUE;
                     }
-                    if (m_faceState->RightEyeIsValid) {
+                    if (m_bodyState->RightEyeIsValid) {
                         eyeGazes->gaze[xr::Side::Right].gazePose = Pose::Multiply(
                             Pose::Multiply(eyeGaze[xr::Side::Right], headPose), Pose::Invert(baseSpaceToVirtual));
                         eyeGazes->gaze[xr::Side::Right].isValid = XR_TRUE;
