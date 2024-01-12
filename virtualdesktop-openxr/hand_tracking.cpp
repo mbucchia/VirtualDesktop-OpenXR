@@ -66,7 +66,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        if (!(m_bodyState /* XXX && m_bodyState->HandTrackingActive*/)) {
+        if (!(m_bodyState && m_bodyState->HandTrackingActive)) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -239,12 +239,15 @@ namespace virtualdesktop_openxr {
             xrHandTracker.side == xr::Side::Left ? m_bodyState->LeftHandJointStates : m_bodyState->RightHandJointStates;
 
         for (uint32_t i = 0; i < locations->jointCount; i++) {
-            locations->jointLocations[i].pose = Pose::MakePose(
+            const XrPosef poseOfJointInHand = Pose::MakePose(
                     XrQuaternionf{joints[i].Pose.orientation.x,
                                   joints[i].Pose.orientation.y,
                                   joints[i].Pose.orientation.z,
                                   joints[i].Pose.orientation.w},
                     XrVector3f{joints[i].Pose.position.x, joints[i].Pose.position.y, joints[i].Pose.position.z});
+            
+            //locations->jointLocations[i].pose = Pose::Multiply(poseOfJointInHand, Pose::Invert(baseSpaceToVirtual));
+            locations->jointLocations[i].pose = poseOfJointInHand;
             
             locations->jointLocations[i].locationFlags =
                 (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT) | flags2;
