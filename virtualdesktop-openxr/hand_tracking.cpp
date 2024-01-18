@@ -327,4 +327,126 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
+    // Detect hand gestures and convert them into controller inputs.
+    void OpenXrRuntime::processHandGestures(uint32_t side) {
+        if (m_bodyState && ((side == xr::Side::Left && m_bodyState->LeftHandActive) || m_bodyState->RightHandActive)) {
+            const BodyTracking::FingerJointState* joints =
+                side == xr::Side::Left ? m_bodyState->LeftHandJointStates : m_bodyState->RightHandJointStates;
+            const bool otherJointsValid =
+                side == xr::Side::Left ? m_bodyState->LeftHandActive : m_bodyState->RightHandActive;
+            const BodyTracking::FingerJointState* otherJoints =
+                side == xr::Side::Left ? m_bodyState->RightHandJointStates : m_bodyState->LeftHandJointStates;
+            const BodyTracking::HandTrackingAimState& aimState =
+                side == xr::Side::Left ? m_bodyState->LeftAimState : m_bodyState->RightAimState;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "HandGestures",
+                TLArg(side == xr::Side::Left ? "Left" : "Right", "Side"),
+                TLArg(otherJointsValid, "OtherHandActive"),
+                TLArg(aimState.PinchStrengthIndex, "PinchStrengthIndex"),
+                TLArg(xr::ToString(joints[XR_HAND_JOINT_PALM_EXT].Pose).c_str(), "Palm"),
+                TLArg(xr::ToString(otherJoints[XR_HAND_JOINT_INDEX_TIP_EXT].Pose).c_str(), "OtherHandIndexTip"));
+
+            const auto jointActionValue = [](const BodyTracking::FingerJointState& joint1,
+                                             const BodyTracking::FingerJointState& joint2) {
+                static constexpr float NearDistance = 0.01f;
+                static constexpr float FarDistance = 0.03f;
+
+                // Compute the distance between the two joints, and subtract the radii.
+                const float distance = std::max(
+                    Length(XrVector3f{joint1.Pose.position.x, joint1.Pose.position.y, joint1.Pose.position.z} -
+                           XrVector3f{joint2.Pose.position.x, joint2.Pose.position.y, joint2.Pose.position.z}) -
+                        joint1.Radius - joint2.Radius,
+                    0.f);
+
+                return 1.f -
+                       (std::clamp(distance, NearDistance, FarDistance) - NearDistance) / (FarDistance - NearDistance);
+            };
+            static constexpr float Threshold = 0.9f;
+
+            // Pinch.
+            m_cachedInputState.IndexTrigger[side] = aimState.PinchStrengthIndex;
+
+            if (otherJointsValid) {
+                // Select.
+                if (side == xr::Side::Left) {
+                    if (jointActionValue(joints[XR_HAND_JOINT_PALM_EXT], otherJoints[XR_HAND_JOINT_INDEX_TIP_EXT]) >
+                        Threshold) {
+                        m_cachedInputState.Buttons |= ovrButton_Enter;
+                    }
+                }
+
+                // B.
+                if (side == xr::Side::Right) {
+                    if (jointActionValue(joints[XR_HAND_JOINT_PALM_EXT], otherJoints[XR_HAND_JOINT_INDEX_TIP_EXT]) >
+                        Threshold) {
+                        m_cachedInputState.Buttons |= ovrButton_B;
+                    }
+                }
+            }
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "HandGestures",
+                TLArg(side == 0 ? "Left" : "Right", "Side"),
+                TLArg(m_cachedInputState.Buttons & (side == 0 ? ovrButton_LMask : ovrButton_RMask), "Buttons"),
+                TLArg(m_cachedInputState.IndexTrigger[side], "IndexTrigger"),
+                TLArg(m_cachedInputState.HandTrigger[side], "HandTrigger"),
+                TLArg(
+                    fmt::format("{}, {}", m_cachedInputState.Thumbstick[side].x, m_cachedInputState.Thumbstick[side].y)
+                        .c_str(),
+                    "Joystick"));
+        } else {
+            TraceLoggingWrite(g_traceProvider,
+                              "HandGestures",
+                              TLArg(side == xr::Side::Left ? "Left" : "Right", "Side"),
+                              TLArg(!!m_bodyState->LeftHandActive, "LeftHandActive"),
+                              TLArg(!!m_bodyState->RightHandActive, "RightHandActive"));
+        }
+    }
+
+    // Get the pinch pose (replacing aim pose).
+    bool OpenXrRuntime::getPinchPose(int side, const XrPosef& controllerPose, XrPosef& pose) const {
+        if (m_bodyState && ((side == xr::Side::Left && m_bodyState->LeftHandActive) || m_bodyState->RightHandActive)) {
+            const BodyTracking::HandTrackingAimState& aimState =
+                side == xr::Side::Left ? m_bodyState->LeftAimState : m_bodyState->RightAimState;
+            const bool isAimValid = aimState.AimStatus & XR_HAND_TRACKING_AIM_VALID_BIT_FB;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "HandGestures",
+                              TLArg(side == xr::Side::Left ? "Left" : "Right", "Side"),
+                              TLArg(isAimValid, "IsAimValid"));
+            if (!isAimValid) {
+                return false;
+            }
+
+            // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
+            // enabled. We need to offset to the virtual space.
+            assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
+            const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+            const XrPosef baseToVirtual =
+                (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
+
+            pose = Pose::Multiply(
+                Pose::MakePose(
+                    XrQuaternionf{aimState.AimPose.orientation.x,
+                                  aimState.AimPose.orientation.y,
+                                  aimState.AimPose.orientation.z,
+                                  aimState.AimPose.orientation.w},
+                    XrVector3f{aimState.AimPose.position.x, aimState.AimPose.position.y, aimState.AimPose.position.z}),
+                baseToVirtual);
+
+            return true;
+        } else {
+            TraceLoggingWrite(g_traceProvider,
+                              "PinchPose",
+                              TLArg(side == xr::Side::Left ? "Left" : "Right", "Side"),
+                              TLArg(!!m_bodyState->LeftHandActive, "LeftHandActive"),
+                              TLArg(!!m_bodyState->RightHandActive, "RightHandActive"));
+            return false;
+        }
+    }
+
 } // namespace virtualdesktop_openxr

@@ -452,6 +452,10 @@ namespace virtualdesktop_openxr {
         // eye_tracking.cpp
         bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const;
 
+        // hand_tracking.cpp
+        void processHandGestures(uint32_t side);
+        bool getPinchPose(int side, const XrPosef& controllerPose, XrPosef& pose) const;
+
         // frame.cpp
         void asyncSubmissionThread();
         void waitForAsyncSubmissionIdle(bool doRunningStart = false);

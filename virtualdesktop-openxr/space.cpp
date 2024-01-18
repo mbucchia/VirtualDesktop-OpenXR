@@ -507,7 +507,10 @@ namespace virtualdesktop_openxr {
 
                         // Apply the pose offsets.
                         if (isAimPose) {
-                            pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                            // Try using the hand tracking first.
+                            if (!getPinchPose(side, pose, pose)) {
+                                pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                            }
                         } else if (isGripPose) {
                             pose = Pose::Multiply(m_controllerGripPose[side], pose);
                         } else {

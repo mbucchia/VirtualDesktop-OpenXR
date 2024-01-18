@@ -967,6 +967,8 @@ namespace virtualdesktop_openxr {
                               "{}, {}", m_cachedInputState.Thumbstick[side].x, m_cachedInputState.Thumbstick[side].y)
                               .c_str(),
                           "Joystick"));
+
+                processHandGestures(side);
             } else {
                 m_cachedControllerType[side].clear();
                 m_isControllerActive[side] = false;
