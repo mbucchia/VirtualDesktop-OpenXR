@@ -477,9 +477,9 @@ namespace virtualdesktop_openxr {
         return RegGetDword(HKEY_LOCAL_MACHINE, RegPrefix, value);
     }
 
-    XrResult xrCreateFaceTracker2FB(XrSession session,
-                                    const XrFaceTrackerCreateInfo2FB* createInfo,
-                                    XrFaceTracker2FB* faceTracker) {
+    XrResult XRAPI_CALL xrCreateFaceTracker2FB(XrSession session,
+                                               const XrFaceTrackerCreateInfo2FB* createInfo,
+                                               XrFaceTracker2FB* faceTracker) {
         TraceLocalActivity(local);
         TraceLoggingWriteStart(local, "xrCreateFaceTracker2FB");
 
@@ -501,7 +501,7 @@ namespace virtualdesktop_openxr {
         return result;
     }
 
-    XrResult xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) {
+    XrResult XRAPI_CALL xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) {
         TraceLocalActivity(local);
         TraceLoggingWriteStart(local, "xrDestroyFaceTracker2FB");
 
@@ -522,9 +522,9 @@ namespace virtualdesktop_openxr {
         return result;
     }
 
-    XrResult xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
-                                           const XrFaceExpressionInfo2FB* expressionInfo,
-                                           XrFaceExpressionWeights2FB* expressionWeights) {
+    XrResult XRAPI_CALL xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
+                                                      const XrFaceExpressionInfo2FB* expressionInfo,
+                                                      XrFaceExpressionWeights2FB* expressionWeights) {
         TraceLocalActivity(local);
         TraceLoggingWriteStart(local, "xrGetFaceExpressionWeights2FB");
 
