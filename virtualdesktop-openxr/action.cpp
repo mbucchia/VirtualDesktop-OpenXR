@@ -568,7 +568,7 @@ namespace virtualdesktop_openxr {
                     if (value.buttonMap) {
                         combinedState = combinedState.value_or(false) || *value.buttonMap & value.buttonType;
                     } else if (value.floatValue) {
-                        combinedState = combinedState.value_or(false) || value.floatValue[side] > 0.95f;
+                        combinedState = combinedState.value_or(false) || value.floatValue[side] > 0.5f;
                     }
                 }
             }
