@@ -155,7 +155,8 @@ namespace virtualdesktop_openxr {
 
                 // Lower the maximum on a low memory system.
                 // Conformance testing is also create a number of very large textures, so we also lower the limit here.
-                views[i].maxImageRectWidth = views[i].maxImageRectHeight = !(m_isLowVideoMemorySystem || m_isConformanceTest) ? 16384 : 8192;
+                views[i].maxImageRectWidth = views[i].maxImageRectHeight =
+                    !(m_isLowVideoMemorySystem || m_isConformanceTest) ? 16384 : 8192;
 
                 // Per Direct3D 11 standard, "devices are required to support 4x MSAA for all render target formats, and
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".
@@ -347,11 +348,12 @@ namespace virtualdesktop_openxr {
         }
         desc.SampleCount = createInfo->sampleCount;
 
-        if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
-            desc.BindFlags |= ovrTextureBind_DX_RenderTarget;
-        }
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
             desc.BindFlags |= ovrTextureBind_DX_DepthStencil;
+        } else {
+            // Use the bit regardless of XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT. We might run full quad shaders to
+            // pre-process swapchains (eg: alpha or SRGB).
+            desc.BindFlags |= ovrTextureBind_DX_RenderTarget;
         }
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
             desc.BindFlags |= ovrTextureBind_DX_UnorderedAccess;
