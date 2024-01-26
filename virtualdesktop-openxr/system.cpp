@@ -305,6 +305,18 @@ namespace virtualdesktop_openxr {
         Log("OVR: %s\n", versionString.data());
         TraceLoggingWrite(g_traceProvider, "OVR_SDK", TLArg(versionString.data(), "VersionString"));
 
+        *m_OVRlay.put() = LoadLibrary((dllHome /
+#ifdef _WIN64
+                                       L".\\OVRlay.dll"
+#else
+                                       L".\\OVRlay-32.dll"
+#endif
+                                       )
+                                          .c_str());
+        if (m_OVRlay) {
+            Log("Loaded OVRlay\n");
+        }
+
         m_isOVRLoaded = true;
         m_ovrSession = nullptr;
 

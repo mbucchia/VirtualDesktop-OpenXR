@@ -516,6 +516,7 @@ namespace virtualdesktop_openxr {
         // Instance & OVR state.
         bool m_isOVRLoaded{false};
         bool m_useOculusRuntime{false};
+        wil::unique_hmodule m_OVRlay;
         ovrSession m_ovrSession{nullptr};
         bool m_instanceCreated{false};
         bool m_systemCreated{false};
