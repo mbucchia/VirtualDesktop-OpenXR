@@ -68,6 +68,9 @@
     <ClInclude Include="..\external\LibOVR\Include\Extras\OVR_Math.h">
       <Filter>LibOVR</Filter>
     </ClInclude>
+    <ClInclude Include="BodyState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

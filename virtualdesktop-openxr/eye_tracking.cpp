@@ -54,7 +54,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (!m_bodyState) {
+        if (m_eyeTrackingType != EyeTracking::Mmf) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 

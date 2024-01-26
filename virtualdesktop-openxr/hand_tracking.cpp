@@ -66,7 +66,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        if (!(m_bodyState && m_bodyState->HandTrackingActive)) {
+        if (!m_supportsHandTracking) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -162,7 +162,7 @@ namespace virtualdesktop_openxr {
         const auto flags = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
 
         // Check the hand state.
-        if (m_bodyState && m_bodyState->HandTrackingActive &&
+        if (m_bodyState &&
             ((xrHandTracker.side == xr::Side::Left && m_bodyState->LeftHandActive) || m_bodyState->RightHandActive)) {
             const BodyTracking::FingerJointState* joints = xrHandTracker.side == xr::Side::Left
                                                                ? m_bodyState->LeftHandJointStates
@@ -172,7 +172,6 @@ namespace virtualdesktop_openxr {
                 g_traceProvider,
                 "xrLocateHandJointsEXT",
                 TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
-                TLArg(!!m_bodyState->HandTrackingActive, "HandTrackingActive"),
                 TLArg(xrHandTracker.side == xr::Side::Left ? !!m_bodyState->LeftHandActive
                                                            : !!m_bodyState->RightHandActive,
                       "HandActive"),
@@ -209,7 +208,6 @@ namespace virtualdesktop_openxr {
             TraceLoggingWrite(g_traceProvider,
                               "xrLocateHandJointsEXT",
                               TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
-                              TLArg(!!m_bodyState->HandTrackingActive, "HandTrackingActive"),
                               TLArg(!!m_bodyState->LeftHandActive, "LeftHandActive"),
                               TLArg(!!m_bodyState->RightHandActive, "RightHandActive"));
 

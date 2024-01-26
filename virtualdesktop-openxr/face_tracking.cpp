@@ -54,7 +54,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (!m_bodyState) {
+        if (!m_supportsFaceTracking) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
@@ -186,7 +186,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (!m_bodyState) {
+        if (!m_supportsFaceTracking) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 

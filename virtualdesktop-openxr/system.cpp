@@ -90,13 +90,13 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        XrSystemHandTrackingPropertiesEXT* handTrackingProperties{};
-        XrSystemEyeGazeInteractionPropertiesEXT* eyeGazeInteractionProperties{};
-        XrSystemEyeTrackingPropertiesFB* eyeTrackingProperties{};
-        XrSystemFaceTrackingPropertiesFB* faceTrackingProperties{};
-        XrSystemFaceTrackingProperties2FB* faceTrackingProperties2{};
-        XrSystemBodyTrackingPropertiesFB* bodyTrackingProperties{};
-        XrSystemHeadsetIdPropertiesMETA* headsetIdProperties{};
+        XrSystemHandTrackingPropertiesEXT* handTrackingProperties = nullptr;
+        XrSystemEyeGazeInteractionPropertiesEXT* eyeGazeInteractionProperties = nullptr;
+        XrSystemEyeTrackingPropertiesFB* eyeTrackingProperties = nullptr;
+        XrSystemFaceTrackingPropertiesFB* faceTrackingProperties = nullptr;
+        XrSystemFaceTrackingProperties2FB* faceTrackingProperties2 = nullptr;
+        XrSystemBodyTrackingPropertiesFB* bodyTrackingProperties = nullptr;
+        XrSystemHeadsetIdPropertiesMETA* headsetIdProperties = nullptr;
 
         XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(properties->next);
         while (entry) {
@@ -149,8 +149,7 @@ namespace virtualdesktop_openxr {
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
 
         if (has_XR_EXT_hand_tracking && handTrackingProperties) {
-            handTrackingProperties->supportsHandTracking =
-                (m_bodyState && m_bodyState->HandTrackingActive) ? XR_TRUE : XR_FALSE;
+            handTrackingProperties->supportsHandTracking = m_supportsHandTracking ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -169,7 +168,7 @@ namespace virtualdesktop_openxr {
         }
 
         if (has_XR_FB_eye_tracking_social && eyeTrackingProperties) {
-            eyeTrackingProperties->supportsEyeTracking = m_bodyState ? XR_TRUE : XR_FALSE;
+            eyeTrackingProperties->supportsEyeTracking = (m_eyeTrackingType == EyeTracking::Mmf) ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -177,7 +176,7 @@ namespace virtualdesktop_openxr {
         }
 
         if (has_XR_FB_face_tracking && faceTrackingProperties) {
-            faceTrackingProperties->supportsFaceTracking = m_bodyState ? XR_TRUE : XR_FALSE;
+            faceTrackingProperties->supportsFaceTracking = m_supportsFaceTracking ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",
@@ -186,7 +185,7 @@ namespace virtualdesktop_openxr {
 
         if (has_XR_FB_face_tracking2 && faceTrackingProperties2) {
             faceTrackingProperties2->supportsVisualFaceTracking = faceTrackingProperties2->supportsAudioFaceTracking =
-                m_bodyState ? XR_TRUE : XR_FALSE;
+                m_supportsFaceTracking ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(
                 g_traceProvider,
@@ -446,14 +445,30 @@ namespace virtualdesktop_openxr {
                 initializeBodyTrackingMmf();
             }
 
+            // We must latch the body tracking capabilities now, as they are not allowed to change later during the
+            // lifetime of the system.
             m_eyeTrackingType = EyeTracking::None;
             if (!getSetting("simulate_eye_tracking").value_or(false)) {
-                if (m_cachedHmdInfo.Type == ovrHmd_QuestPro && m_bodyState) {
+                if (m_bodyState && ovr_GetBool(m_ovrSession, "SupportsEyeTracking", false)) {
                     m_eyeTrackingType = EyeTracking::Mmf;
                 }
             } else {
                 m_eyeTrackingType = EyeTracking::Simulated;
             }
+
+            if (m_bodyState) {
+                m_supportsHandTracking = ovr_GetBool(m_ovrSession, "SupportsHandTracking", false);
+                m_supportsFaceTracking = ovr_GetBool(m_ovrSession, "SupportsFaceTracking", false);
+            } else {
+                m_supportsHandTracking = m_supportsFaceTracking = false;
+            }
+
+            TraceLoggingWrite(g_traceProvider,
+                              "OVR_ExtendedSupport",
+                              TLArg(!!m_bodyState, "HasBodyState"),
+                              TLArg((int)m_eyeTrackingType, "EyeTrackingType"),
+                              TLArg(m_supportsHandTracking, "SupportsHandTracking"),
+                              TLArg(m_supportsFaceTracking, "SupportsFaceTracking"));
 
             // Cache common information.
             m_displayRefreshRate = hmdInfo.DisplayRefreshRate;

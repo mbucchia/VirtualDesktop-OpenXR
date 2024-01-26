@@ -26,6 +26,8 @@
 
 #include "utils.h"
 
+#include "BodyState.h"
+
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::utils;
@@ -38,71 +40,6 @@ namespace virtualdesktop_openxr {
 #else
     const std::string RegPrefix = StandaloneRegPrefix;
 #endif
-
-    namespace BodyTracking {
-
-        // See type definitions from Virtual Desktop.
-        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/FaceState.cs
-        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/Pose.cs
-        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/Quaternion.cs
-        // https://github.com/guygodin/VirtualDesktop.VRCFaceTracking/blob/main/Vector3.cs
-
-        struct Vector3 {
-            float x, y, z;
-        };
-
-        struct Quaternion {
-            float x, y, z, w;
-        };
-
-        struct Pose {
-            Quaternion orientation;
-            Vector3 position;
-        };
-
-        struct FingerJointState {
-            Pose Pose;
-            float Radius;
-            Vector3 AngularVelocity;
-            Vector3 LinearVelocity;
-        };
-
-        struct SkeletonJoint {
-            int32_t Joint;
-            int32_t ParentJoint;
-            Pose Pose;
-        };
-
-        static constexpr int ExpressionCount = 70;
-        static_assert(ExpressionCount == XR_FACE_EXPRESSION2_COUNT_FB);
-        static constexpr int ConfidenceCount = 2;
-        static_assert(ConfidenceCount == XR_FACE_CONFIDENCE_COUNT_FB);
-        static constexpr int HandJointCount = 26;
-        static_assert(HandJointCount == XR_HAND_JOINT_COUNT_EXT);
-        static constexpr int BodyJointCount = 70;
-        static_assert(BodyJointCount == XR_BODY_JOINT_COUNT_FB);
-
-        struct BodyStateV2 {
-            uint8_t FaceIsValid;
-            uint8_t IsEyeFollowingBlendshapesValid;
-            float ExpressionWeights[ExpressionCount];
-            float ExpressionConfidences[ConfidenceCount];
-
-            uint8_t LeftEyeIsValid;
-            uint8_t RightEyeIsValid;
-            Pose LeftEyePose;
-            Pose RightEyePose;
-            float LeftEyeConfidence;
-            float RightEyeConfidence;
-
-            uint8_t HandTrackingActive;
-            uint8_t LeftHandActive;
-            uint8_t RightHandActive;
-            FingerJointState LeftHandJointStates[HandJointCount];
-            FingerJointState RightHandJointStates[HandJointCount];
-        };
-
-    } // namespace BodyTracking
 
     // This class implements all APIs that the runtime supports.
     class OpenXrRuntime : public OpenXrApi {
@@ -606,6 +543,8 @@ namespace virtualdesktop_openxr {
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_bodyStateFile;
         BodyTracking::BodyStateV2* m_bodyState{nullptr};
+        bool m_supportsHandTracking{false};
+        bool m_supportsFaceTracking{false};
         bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};
