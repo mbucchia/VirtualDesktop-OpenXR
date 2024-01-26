@@ -2022,6 +2022,9 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_FB_face_tracking2") {
 			has_XR_FB_face_tracking2 = true;
 		}
+		else if (extensionName == "XR_FB_hand_tracking_aim") {
+			has_XR_FB_hand_tracking_aim = true;
+		}
 
 	}
 

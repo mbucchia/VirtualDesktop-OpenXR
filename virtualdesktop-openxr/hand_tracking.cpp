@@ -141,12 +141,21 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        XrHandJointVelocitiesEXT* velocities = reinterpret_cast<XrHandJointVelocitiesEXT*>(locations->next);
-        while (velocities) {
-            if (velocities->type == XR_TYPE_HAND_JOINT_VELOCITIES_EXT) {
+        XrHandJointVelocitiesEXT* velocities = nullptr;
+        XrHandTrackingAimStateFB* aimState = nullptr;
+
+        XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(locations->next);
+        while (entry) {
+            switch (entry->type) {
+            case XR_TYPE_HAND_JOINT_VELOCITIES_EXT:
+                velocities = reinterpret_cast<XrHandJointVelocitiesEXT*>(entry);
+                break;
+            case XR_TYPE_HAND_TRACKING_AIM_STATE_FB:
+                aimState = reinterpret_cast<XrHandTrackingAimStateFB*>(entry);
                 break;
             }
-            velocities = reinterpret_cast<XrHandJointVelocitiesEXT*>(velocities->next);
+
+            entry = reinterpret_cast<XrBaseOutStructure*>(entry->next);
         }
 
         if (locations->jointCount != XR_HAND_JOINT_COUNT_EXT ||
@@ -285,6 +294,34 @@ namespace virtualdesktop_openxr {
                                   TLArg(xr::ToString(locations->jointLocations[i].pose).c_str(), "Pose"),
                                   TLArg(locations->jointLocations[i].radius, "Radius"));
             }
+        }
+
+        if (has_XR_FB_hand_tracking_aim && aimState) {
+            const BodyTracking::HandTrackingAimState& aim =
+                xrHandTracker.side == xr::Side::Left ? m_bodyState->LeftAimState : m_bodyState->RightAimState;
+
+            aimState->status = aim.AimStatus;
+            aimState->aimPose = Pose::Multiply(
+                Pose::MakePose(XrQuaternionf{aim.AimPose.orientation.x,
+                                             aim.AimPose.orientation.y,
+                                             aim.AimPose.orientation.z,
+                                             aim.AimPose.orientation.w},
+                               XrVector3f{aim.AimPose.position.x, aim.AimPose.position.y, aim.AimPose.position.z}),
+                basePose);
+            aimState->pinchStrengthIndex = aim.PinchStrengthIndex;
+            aimState->pinchStrengthMiddle = aim.PinchStrengthMiddle;
+            aimState->pinchStrengthRing = aim.PinchStrengthRing;
+            aimState->pinchStrengthLittle = aim.PinchStrengthLittle;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrLocateHandJointsEXT",
+                              TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
+                              TLArg(aimState->status, "Status"),
+                              TLArg(xr::ToString(aimState->aimPose).c_str(), "AimPose"),
+                              TLArg(aimState->pinchStrengthIndex, "PinchStrengthIndex"),
+                              TLArg(aimState->pinchStrengthMiddle, "PinchStrengthMiddle"),
+                              TLArg(aimState->pinchStrengthRing, "PinchStrengthRing"),
+                              TLArg(aimState->pinchStrengthLittle, "PinchStrengthLittle"));
         }
 
         return XR_SUCCESS;
