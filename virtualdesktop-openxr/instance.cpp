@@ -230,7 +230,10 @@ namespace virtualdesktop_openxr {
 
         // FIXME: Put application quirks below.
 
-        m_isOculusXrPlugin = m_applicationName.find("Oculus VR Plugin") == 0;
+        HMODULE ovrPlugin;
+        m_isOculusXrPlugin =
+            m_applicationName.find("Oculus VR Plugin") == 0 ||
+            GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin);
         m_isConformanceTest = m_applicationName == "conformance test";
 
         if ((startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe")) ||
