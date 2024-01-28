@@ -323,6 +323,22 @@ namespace virtualdesktop_openxr {
                     views[i].pose = ovrPoseToXrPose(eyePoses[i]);
                     views[i].fov = m_cachedEyeFov[i];
 
+                    // Debug option to test reprojection.
+                    if (m_jiggleViewRotations) {
+                        static std::mt19937_64 randGen(0);
+
+                        // Scale jitter by FOV.
+                        const float randMax = (views[i].fov.angleRight - views[i].fov.angleLeft) * 0.06f;
+                        std::uniform_real_distribution<float> dist(-randMax, randMax);
+                        const auto randomQuatJiggle =
+                            DirectX::XMVectorSet(dist(randGen), dist(randGen), dist(randGen), dist(randGen));
+                        const auto originalPoseOrientation = xr::math::LoadXrQuaternion(views[i].pose.orientation);
+                        const auto poseOrientationWithJiggle =
+                            DirectX::XMVectorAdd(originalPoseOrientation, randomQuatJiggle);
+                        xr::math::StoreXrQuaternion(&views[i].pose.orientation,
+                                                    DirectX::XMVector4Normalize(poseOrientationWithJiggle));
+                    }
+
                     TraceLoggingWrite(g_traceProvider,
                                       "xrLocateViews",
                                       TLArg(i, "ViewIndex"),

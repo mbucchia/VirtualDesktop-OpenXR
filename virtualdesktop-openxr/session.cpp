@@ -481,11 +481,14 @@ namespace virtualdesktop_openxr {
 
         m_syncGpuWorkInEndFrame = getSetting("quirk_sync_gpu_work_in_end_frame").value_or(false);
 
+        m_jiggleViewRotations = getSetting("jiggle_view_rotations").value_or(false);
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
                           TLArg(m_useRunningStart, "UseRunningStart"),
-                          TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"));
+                          TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
+                          TLArg(m_jiggleViewRotations, "JiggleViewRotations"));
     }
 
 } // namespace virtualdesktop_openxr

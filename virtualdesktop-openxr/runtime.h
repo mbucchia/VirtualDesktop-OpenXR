@@ -605,6 +605,7 @@ namespace virtualdesktop_openxr {
         bool m_currentInteractionProfileDirty{false};
         Haptic m_currentVibration[xr::Side::Count];
         bool m_useRunningStart{true};
+        bool m_jiggleViewRotations{false};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;
