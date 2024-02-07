@@ -24,6 +24,8 @@
 
 #include "pch.h"
 
+#include "BodyState.h"
+
 #define CHECK_OVRCMD(cmd) xr::detail::_CheckOVRResult(cmd, #cmd, FILE_AND_LINE)
 #define CHECK_VKCMD(cmd) xr::detail::_CheckVKResult(cmd, #cmd, FILE_AND_LINE)
 
@@ -81,6 +83,17 @@ namespace xr {
 
     static inline std::string ToString(const XrRect2Di& rect) {
         return fmt::format("x:{}, y:{} w:{} h:{}", rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height);
+    }
+
+    static inline std::string ToString(const virtualdesktop_openxr::BodyTracking::Pose& pose) {
+        return fmt::format("p: ({:.3f}, {:.3f}, {:.3f}), o:({:.3f}, {:.3f}, {:.3f}, {:.3f})",
+                           pose.position.x,
+                           pose.position.y,
+                           pose.position.z,
+                           pose.orientation.x,
+                           pose.orientation.y,
+                           pose.orientation.z,
+                           pose.orientation.w);
     }
 
     namespace math {

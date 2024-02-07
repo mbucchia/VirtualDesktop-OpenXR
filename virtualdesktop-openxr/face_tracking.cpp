@@ -44,7 +44,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateFaceTrackerFB", TLXArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrCreateFaceTrackerFB",
+                          TLXArg(session, "Session"),
+                          TLArg((uint32_t)createInfo->faceExpressionSet, "FaceExpressionSet"));
 
         if (!has_XR_FB_face_tracking) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
@@ -176,7 +179,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        TraceLoggingWrite(g_traceProvider, "xrCreateFaceTracker2FB", TLXArg(session, "Session"));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrCreateFaceTracker2FB",
+                          TLXArg(session, "Session"),
+                          TLArg((uint32_t)createInfo->faceExpressionSet, "FaceExpressionSet"));
 
         if (!has_XR_FB_face_tracking2) {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
@@ -265,7 +271,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        FaceTracker& xrFaceTracker = *(FaceTracker*)faceTracker;
+        const FaceTracker& xrFaceTracker = *(FaceTracker*)faceTracker;
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
