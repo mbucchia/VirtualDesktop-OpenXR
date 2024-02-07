@@ -336,11 +336,11 @@ namespace virtualdesktop_openxr {
             m_cachedInputState.IndexTrigger[side] = aimState.PinchStrengthIndex;
 
             if (otherJointsValid) {
-                // Select.
+                // Y.
                 if (side == xr::Side::Left) {
                     if (jointActionValue(joints[XR_HAND_JOINT_PALM_EXT], otherJoints[XR_HAND_JOINT_INDEX_TIP_EXT]) >
                         Threshold) {
-                        m_cachedInputState.Buttons |= ovrButton_Enter;
+                        m_cachedInputState.Buttons |= ovrButton_Y;
                     }
                 }
 
