@@ -24,11 +24,15 @@
 
 #include "log.h"
 #include "runtime.h"
+#include "trackers.h"
 #include "utils.h"
 
 // Implements the necessary support for the XR_FB_body_tracking and XR_META_body_tracking_full_body extensions:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_FB_body_tracking
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_META_body_tracking_full_body
+
+// Implement emulation for XR_HTCX_vive_tracker_interaction using the body tracking data.
+// https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_HTCX_vive_tracker_interaction
 
 namespace virtualdesktop_openxr {
 
@@ -287,6 +291,132 @@ namespace virtualdesktop_openxr {
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_RIGHT_FOOT_BALL_META].joint).c_str(), "RightFoot"));
 
         return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrEnumerateViveTrackerPathsHTCX
+    XrResult OpenXrRuntime::xrEnumerateViveTrackerPathsHTCX(XrInstance instance,
+                                                            uint32_t pathCapacityInput,
+                                                            uint32_t* pathCountOutput,
+                                                            XrViveTrackerPathsHTCX* paths) {
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEnumerateViveTrackerPathsHTCX",
+                          TLXArg(instance, "Instance"),
+                          TLArg(pathCapacityInput, "PathCapacityInput"));
+
+        uint32_t trackersCount = 0;
+        if (m_supportsBodyTracking) {
+            for (const auto& role : TrackerRoles) {
+                // Ignore lower body joints when not supported.
+                if (!m_supportsFullBodyTracking && role.joint >= XR_BODY_JOINT_COUNT_FB) {
+                    continue;
+                }
+
+                trackersCount++;
+            }
+        }
+
+        if (pathCapacityInput && pathCapacityInput < trackersCount) {
+            return XR_ERROR_SIZE_INSUFFICIENT;
+        }
+
+        *pathCountOutput = trackersCount;
+        TraceLoggingWrite(
+            g_traceProvider, "xrEnumerateViveTrackerPathsHTCX", TLArg(*pathCountOutput, "PathCountOutput"));
+
+        if (pathCapacityInput && paths) {
+            uint32_t i = 0;
+            for (const auto& role : TrackerRoles) {
+                // Ignore lower body joints when not supported.
+                if (!m_supportsFullBodyTracking && role.joint >= XR_BODY_JOINT_COUNT_FB) {
+                    continue;
+                }
+                if (paths[i].type != XR_TYPE_VIVE_TRACKER_PATHS_HTCX) {
+                    return XR_ERROR_VALIDATION_FAILURE;
+                }
+
+                const auto trackerSerial = role.role;
+                const std::string persistentPath = "/user/vive_tracker_htcx/serial/" + trackerSerial;
+                const std::string rolePath = "/user/vive_tracker_htcx/role/" + trackerSerial;
+                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, persistentPath.c_str(), &paths[i].persistentPath));
+                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, rolePath.c_str(), &paths[i].rolePath));
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrEnumerateViveTrackerPathsHTCX",
+                                  TLArg(paths[i].persistentPath, "PersistentPath"),
+                                  TLArg(paths[i].rolePath, "RolePath"),
+                                  TLArg(persistentPath.c_str(), "PersistentPath"),
+                                  TLArg(rolePath.c_str(), "RolePath"));
+                i++;
+            }
+        }
+
+        return XR_SUCCESS;
+    }
+
+    int OpenXrRuntime::getTrackerIndex(const std::string& path) const {
+        std::string role;
+        if (startsWith(path, "/user/vive_tracker_htcx/serial/")) {
+            role = path.substr(31);
+        } else if (startsWith(path, "/user/vive_tracker_htcx/role/")) {
+            role = path.substr(29);
+        }
+
+        // Trim any component path.
+        const size_t offs = role.find('/');
+        if (offs != std::string::npos) {
+            role = role.substr(0, offs);
+        }
+
+        if (!role.empty()) {
+            for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
+                if (TrackerRoles[i].role == role) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    XrSpaceLocationFlags OpenXrRuntime::getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const {
+        TraceLoggingWrite(g_traceProvider,
+                          "VirtualDesktopBodyTracker",
+                          TLArg(m_bodyState->BodyTrackingConfidence, "BodyTrackingConfidence"));
+        if (!m_bodyState->BodyTrackingConfidence) {
+            return 0;
+        }
+
+        const BodyTracking::BodyJointLocation& location = m_bodyState->BodyJoints[joint];
+        TraceLoggingWrite(g_traceProvider,
+                          "VirtualDesktopBodyTracker",
+                          TLArg((int)joint, "JointIndex"),
+                          TLArg(location.LocationFlags, "LocationFlags"));
+        if (!Pose::IsPoseValid(location.LocationFlags)) {
+            return 0;
+        }
+
+        // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
+        // enabled. We need to offset to the virtual space.
+        assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
+        const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+        TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+        const XrPosef jointsToVirtual =
+            (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
+
+        pose = Pose::Multiply(
+            xr::math::Pose::MakePose(
+                XrQuaternionf{location.Pose.orientation.x,
+                              location.Pose.orientation.y,
+                              location.Pose.orientation.z,
+                              location.Pose.orientation.w},
+                XrVector3f{location.Pose.position.x, location.Pose.position.y, location.Pose.position.z}),
+            jointsToVirtual);
+
+        TraceLoggingWrite(g_traceProvider,
+                          "VirtualDesktopBodyTracker",
+                          TLArg((int)joint, "JointIndex"),
+                          TLArg(xr::ToString(pose).c_str(), "Pose"));
+
+        return location.LocationFlags;
     }
 
 } // namespace virtualdesktop_openxr

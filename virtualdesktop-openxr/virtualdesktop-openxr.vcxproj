@@ -516,6 +516,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClInclude Include="..\external\LibOVR\Include\OVR_ErrorCode.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h" />
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h" />
+    <ClInclude Include="trackers.h" />
     <ClInclude Include="BodyState.h" />
     <ClInclude Include="framework\dispatch.gen.h" />
     <ClInclude Include="framework\dispatch.h" />

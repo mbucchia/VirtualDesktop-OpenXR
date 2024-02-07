@@ -24,6 +24,7 @@
 
 #include "log.h"
 #include "runtime.h"
+#include "trackers.h"
 #include "utils.h"
 
 namespace virtualdesktop_openxr {
@@ -512,7 +513,20 @@ namespace virtualdesktop_openxr {
                 const std::string& fullPath = source.first;
                 TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(fullPath.c_str(), "ActionSourcePath"));
 
-                if (!isActionEyeTracker(fullPath)) {
+                const bool isEyeTracker = isActionEyeTracker(fullPath);
+                const int trackerIndex = getTrackerIndex(fullPath);
+
+                if (isEyeTracker) {
+                    result = getEyeTrackerPose(time, pose, gazeSampleTime);
+
+                    // Per spec we must consistently pick one source. We pick the first one.
+                    break;
+                } else if (trackerIndex >= 0) {
+                    result = getBodyJointPose(TrackerRoles[trackerIndex].joint, time, pose);
+
+                    // Per spec we must consistently pick one source. We pick the first one.
+                    break;
+                } else {
                     const bool isGripPose = endsWith(fullPath, "/input/grip/pose") || endsWith(fullPath, "/input/grip");
                     const bool isAimPose = endsWith(fullPath, "/input/aim/pose") || endsWith(fullPath, "/input/aim");
                     const bool isPalmPose =
@@ -536,11 +550,6 @@ namespace virtualdesktop_openxr {
                         // Per spec we must consistently pick one source. We pick the first one.
                         break;
                     }
-                } else {
-                    result = getEyeTrackerPose(time, pose, gazeSampleTime);
-
-                    // Per spec we must consistently pick one source. We pick the first one.
-                    break;
                 }
             }
         }

@@ -264,6 +264,11 @@ namespace virtualdesktop_openxr {
                 }
                 return false;
             });
+        if (has_XR_HTCX_vive_tracker_interaction) {
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/htc/vive_tracker_htcx",
+                [&](const std::string& path) { return getViveTrackerLocalizedSourceName(path) != "<Unknown>"; });
+        }
     }
 
     bool OpenXrRuntime::mapPathToTouchControllerInputState(const Action& xrAction,
@@ -411,6 +416,38 @@ namespace virtualdesktop_openxr {
             return "Aim Pose";
         } else if (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
             return "Palm Pose";
+        } else if (endsWith(path, "/output/haptic")) {
+            return "Haptics";
+        }
+
+        return "<Unknown>";
+    }
+
+    std::string OpenXrRuntime::getViveTrackerLocalizedSourceName(const std::string& path) const {
+        if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system")) {
+            return "System Button";
+        } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/force") ||
+                   endsWith(path, "/input/squeeze")) {
+            return "Grip Press";
+        } else if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu")) {
+            return "Menu Button";
+        } else if (endsWith(path, "/input/trigger/click")) {
+            return "Trigger Press";
+        } else if (endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger")) {
+            return "Trigger";
+        } else if (endsWith(path, "/input/trackpad")) {
+            return "Trackpad";
+        } else if (endsWith(path, "/input/trackpad/x")) {
+            return "Trackpad X axis";
+        } else if (endsWith(path, "/input/trackpad/y")) {
+            return "Trackpad Y axis";
+        } else if (endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                   endsWith(path, "/input/trackpad")) {
+            return "Trackpad Press";
+        } else if (endsWith(path, "/input/trackpad/touch")) {
+            return "Trackpad Touch";
+        } else if (endsWith(path, "/input/grip/pose")) {
+            return "Grip Pose";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
         }

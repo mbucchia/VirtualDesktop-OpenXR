@@ -118,6 +118,7 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) = 0;
 		virtual XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) = 0;
 		virtual XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) = 0;
+		virtual XrResult xrEnumerateViveTrackerPathsHTCX(XrInstance instance, uint32_t pathCapacityInput, uint32_t* pathCountOutput, XrViveTrackerPathsHTCX* paths) = 0;
 		virtual XrResult xrGetAudioOutputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) = 0;
 		virtual XrResult xrGetAudioInputDeviceGuidOculus(XrInstance instance, wchar_t buffer[XR_MAX_AUDIO_DEVICE_STR_SIZE_OCULUS]) = 0;
 		virtual XrResult xrCreateFaceTrackerFB(XrSession session, const XrFaceTrackerCreateInfoFB* createInfo, XrFaceTrackerFB* faceTracker) = 0;
@@ -157,6 +158,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_FB_hand_tracking_aim{false};
 		bool has_XR_FB_body_tracking{false};
 		bool has_XR_META_body_tracking_full_body{false};
+		bool has_XR_HTCX_vive_tracker_interaction{false};
 
 
 	};

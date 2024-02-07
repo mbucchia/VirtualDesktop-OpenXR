@@ -281,6 +281,10 @@ namespace virtualdesktop_openxr {
                                       const XrBodyJointsLocateInfoFB* locateInfo,
                                       XrBodyJointLocationsFB* locations) override;
         XrResult xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) override;
+        XrResult xrEnumerateViveTrackerPathsHTCX(XrInstance instance,
+                                                 uint32_t pathCapacityInput,
+                                                 uint32_t* pathCountOutput,
+                                                 XrViveTrackerPathsHTCX* paths) override;
 
       private:
         struct Extension {
@@ -438,6 +442,7 @@ namespace virtualdesktop_openxr {
                                                 const std::string& path,
                                                 ActionSource& source) const;
         std::string getTouchControllerLocalizedSourceName(const std::string& path) const;
+        std::string getViveTrackerLocalizedSourceName(const std::string& path) const;
         std::optional<std::string> remapSimpleControllerToTouchController(const std::string& path) const;
         std::optional<std::string> remapMicrosoftMotionControllerToTouchController(const std::string& path) const;
         std::optional<std::string> remapViveControllerToTouchController(const std::string& path) const;
@@ -465,6 +470,10 @@ namespace virtualdesktop_openxr {
         // hand_tracking.cpp
         void processHandGestures(uint32_t side);
         bool getPinchPose(int side, const XrPosef& controllerPose, XrPosef& pose) const;
+
+        // body_tracking.cpp
+        int getTrackerIndex(const std::string& path) const;
+        XrSpaceLocationFlags getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const;
 
         // frame.cpp
         void asyncSubmissionThread();
@@ -615,6 +624,8 @@ namespace virtualdesktop_openxr {
         std::string m_localizedControllerType[xr::Side::Count];
         XrPath m_currentInteractionProfile[xr::Side::Count]{XR_NULL_PATH, XR_NULL_PATH};
         bool m_currentInteractionProfileDirty{false};
+        bool m_hasEyeTrackerBindings{false};
+        bool m_hasViveTrackerBindings{false};
         Haptic m_currentVibration[xr::Side::Count];
         bool m_useRunningStart{true};
         bool m_jiggleViewRotations{false};

@@ -68,7 +68,6 @@ namespace virtualdesktop_openxr {
         QueryPerformanceFrequency(&m_qpcFrequency);
 
         initializeExtensionsTable();
-        initializeRemappingTables();
     }
 
     OpenXrRuntime::~OpenXrRuntime() {
@@ -241,6 +240,9 @@ namespace virtualdesktop_openxr {
             m_controllerGripOffset.position.z = -0.1f;
             m_quirkedControllerPoses = true;
         }
+
+        // Do this late, since it might rely on extensions being registered.
+        initializeRemappingTables();
 
         m_instanceCreated = true;
         *instance = (XrInstance)1;
@@ -466,6 +468,9 @@ namespace virtualdesktop_openxr {
             {XR_FB_BODY_TRACKING_EXTENSION_NAME, XR_FB_body_tracking_SPEC_VERSION});
         m_extensionsTable.push_back( // Face, body & social eye tracking.
             {XR_META_BODY_TRACKING_FULL_BODY_EXTENSION_NAME, XR_META_body_tracking_full_body_SPEC_VERSION});
+
+        m_extensionsTable.push_back( // Vive Tracker emulation.
+            {XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, XR_HTCX_vive_tracker_interaction_SPEC_VERSION});
 
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});

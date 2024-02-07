@@ -24,6 +24,7 @@
 
 #include "log.h"
 #include "runtime.h"
+#include "trackers.h"
 #include "utils.h"
 
 namespace virtualdesktop_openxr {
@@ -282,7 +283,8 @@ namespace virtualdesktop_openxr {
             const std::string& subactionPath = getXrPath(createInfo->subactionPaths[i]);
             if (subactionPath != "/user/hand/left" && subactionPath != "/user/hand/right" &&
                 subactionPath != "/user/gamepad" && subactionPath != "/user/head" &&
-                (!has_XR_EXT_eye_gaze_interaction || subactionPath != "/user/eyes_ext")) {
+                (!has_XR_EXT_eye_gaze_interaction || subactionPath != "/user/eyes_ext") &&
+                (!has_XR_HTCX_vive_tracker_interaction || !startsWith(subactionPath, "/user/vive_tracker_htcx/"))) {
                 return XR_ERROR_PATH_UNSUPPORTED;
             }
 
@@ -365,7 +367,40 @@ namespace virtualdesktop_openxr {
         }
 
         const std::string& interactionProfile = getXrPath(suggestedBindings->interactionProfile);
-        if (interactionProfile != "/interaction_profiles/ext/eye_gaze_interaction") {
+        const bool isEyeTracker = interactionProfile == "/interaction_profiles/ext/eye_gaze_interaction";
+        const bool isViveTracker = interactionProfile == "/interaction_profiles/htc/vive_tracker_htcx";
+        if (isEyeTracker) {
+            // Only allow this if the extension is enabled.
+            if (!has_XR_EXT_eye_gaze_interaction) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+
+            // Eye tracker does not go through the controller mappings. Instead, we directly bind the action source.
+            for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
+                const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
+                if (!isActionEyeTracker(path)) {
+                    return XR_ERROR_PATH_UNSUPPORTED;
+                }
+
+                // Always bind the source action.
+                Action& xrAction = *(Action*)suggestedBindings->suggestedBindings[i].action;
+
+                ActionSource source{};
+                source.realPath = path;
+                xrAction.actionSources.insert_or_assign(path, std::move(source));
+            }
+
+            m_hasEyeTrackerBindings = true;
+            m_currentInteractionProfileDirty = true;
+
+        } else if (isViveTracker) {
+            // Only allow this if the extension is enabled.
+            if (!has_XR_HTCX_vive_tracker_interaction) {
+                return XR_ERROR_PATH_UNSUPPORTED;
+            }
+        }
+
+        if (!isEyeTracker) {
             // Set up to use the controller mappings when a controller is rebinding.
             const auto checkValidPathIt = m_controllerValidPathsTable.find(interactionProfile);
             if (checkValidPathIt == m_controllerValidPathsTable.cend()) {
@@ -379,29 +414,25 @@ namespace virtualdesktop_openxr {
                     return XR_ERROR_PATH_UNSUPPORTED;
                 }
 
+                if (isViveTracker && getTrackerIndex(path) >= 0 &&
+                    (endsWith(path, "/grip/pose") || endsWith(path, "/grip"))) {
+                    // Always bind the source action for the pose.
+                    Action& xrAction = *(Action*)suggestedBindings->suggestedBindings[i].action;
+
+                    ActionSource source{};
+                    source.realPath = path;
+                    xrAction.actionSources.insert_or_assign(path, std::move(source));
+                }
+
                 bindings.push_back(suggestedBindings->suggestedBindings[i]);
             }
 
             m_suggestedBindings.insert_or_assign(getXrPath(suggestedBindings->interactionProfile), bindings);
-        } else {
-            // Only allow this if the extension is enabled.
-            if (!has_XR_EXT_eye_gaze_interaction) {
-                return XR_ERROR_PATH_UNSUPPORTED;
-            }
+        }
 
-            // Eye tracker does not go through the controller mappings. Instead, we directly bind the action source.
-            for (uint32_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
-                const std::string& path = getXrPath(suggestedBindings->suggestedBindings[i].binding);
-                if (!isActionEyeTracker(path)) {
-                    return XR_ERROR_PATH_UNSUPPORTED;
-                }
-
-                Action& xrAction = *(Action*)suggestedBindings->suggestedBindings[i].action;
-
-                ActionSource source{};
-                source.realPath = path;
-                xrAction.actionSources.insert_or_assign(path, source);
-            }
+        if (isViveTracker) {
+            m_hasViveTrackerBindings = true;
+            m_currentInteractionProfileDirty = true;
         }
 
         return XR_SUCCESS;
@@ -488,7 +519,15 @@ namespace virtualdesktop_openxr {
         if (topLevelPath == "/user/hand/left" || topLevelPath == "/user/hand/right") {
             interactionProfile->interactionProfile = m_currentInteractionProfile[getActionSide(topLevelPath)];
         } else if (topLevelPath == "/user/eyes_ext") {
-            interactionProfile->interactionProfile = stringToPath("/interaction_profiles/ext/eye_gaze_interaction");
+            if (m_hasEyeTrackerBindings) {
+                interactionProfile->interactionProfile =
+                    stringToPath("/interaction_profiles/ext/eye_gaze_interaction", false /* validate */);
+            }
+        } else if (startsWith(topLevelPath, "/user/vive_tracker_htcx")) {
+            if (m_hasViveTrackerBindings) {
+                interactionProfile->interactionProfile =
+                    stringToPath("/interaction_profiles/htc/vive_tracker_htcx", false /* validate */);
+            }
         } else if (topLevelPath == "/user/head" || topLevelPath == "/user/gamepad") {
         } else {
             return XR_ERROR_PATH_UNSUPPORTED;
@@ -877,6 +916,11 @@ namespace virtualdesktop_openxr {
 
                     // Per spec we must consistently pick one source. We pick the first one.
                     break;
+                } else if (getTrackerIndex(fullPath) >= 0) {
+                    state->isActive = XR_TRUE;
+
+                    // Per spec we must consistently pick one source. We pick the first one.
+                    break;
                 }
             } else {
                 state->isActive = (m_eyeTrackingType != EyeTracking::None) ? XR_TRUE : XR_FALSE;
@@ -928,7 +972,7 @@ namespace virtualdesktop_openxr {
                 }
 
                 const int side = getActionSide(getXrPath(syncInfo->activeActionSets[i].subactionPath));
-                if (side >= 0) {
+                if (side == xr::Side::Left || side == xr::Side::Right) {
                     doSide[side] = true;
                 }
             }
@@ -1074,9 +1118,6 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        TraceLoggingWrite(
-            g_traceProvider, "xrEnumerateBoundSourcesForAction", TLArg(*sourceCountOutput, "SourceCountOutput"));
-
         return XR_SUCCESS;
     }
 
@@ -1119,11 +1160,16 @@ namespace virtualdesktop_openxr {
         std::string localizedName;
         if (!isActionEyeTracker(path)) {
             const int side = getActionSide(path);
+            const int trackerIndex = getTrackerIndex(path);
             if (side >= 0) {
                 bool needSpace = false;
 
                 if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT)) {
-                    localizedName += side == 0 ? "Left Hand" : "Right Hand";
+                    if (trackerIndex < 0) {
+                        localizedName += side == 0 ? "Left Hand" : "Right Hand";
+                    } else {
+                        localizedName += TrackerRoles[trackerIndex].localizedName;
+                    }
                     needSpace = true;
                 }
 
@@ -1131,7 +1177,11 @@ namespace virtualdesktop_openxr {
                     if (needSpace) {
                         localizedName += " ";
                     }
-                    localizedName += m_localizedControllerType[side];
+                    if (trackerIndex < 0) {
+                        localizedName += m_localizedControllerType[side];
+                    } else {
+                        localizedName += "Vive Tracker";
+                    }
                     needSpace = true;
                 }
 
@@ -1139,7 +1189,11 @@ namespace virtualdesktop_openxr {
                     if (needSpace) {
                         localizedName += " ";
                     }
-                    localizedName += getTouchControllerLocalizedSourceName(path);
+                    if (trackerIndex < 0) {
+                        localizedName += getTouchControllerLocalizedSourceName(path);
+                    } else {
+                        localizedName += getViveTrackerLocalizedSourceName(path);
+                    }
                     needSpace = true;
                 }
             }
@@ -1501,7 +1555,7 @@ namespace virtualdesktop_openxr {
                             newSource.floatValue = (float*)relocatePointer((void*)newSource.floatValue);
                             newSource.vector2fValue = (ovrVector2f*)relocatePointer((void*)newSource.vector2fValue);
 
-                            xrAction.actionSources.insert_or_assign(sourcePath, newSource);
+                            xrAction.actionSources.insert_or_assign(sourcePath, std::move(newSource));
                         }
                     }
                 }
@@ -1582,8 +1636,9 @@ namespace virtualdesktop_openxr {
             return xr::Side::Left;
         } else if (startsWith(fullPath, "/user/hand/right")) {
             return xr::Side::Right;
-        } else if (allowExtraPaths && (startsWith(fullPath, "/user/head") || startsWith(fullPath, "/user/gamepad") ||
-                                       startsWith(fullPath, "/user/eyes_ext"))) {
+        } else if (allowExtraPaths &&
+                   (startsWith(fullPath, "/user/head") || startsWith(fullPath, "/user/gamepad") ||
+                    startsWith(fullPath, "/user/eyes_ext") || startsWith(fullPath, "/user/vive_tracker_htcx"))) {
             return xr::Side::Count;
         }
 
