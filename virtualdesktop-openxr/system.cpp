@@ -96,6 +96,7 @@ namespace virtualdesktop_openxr {
         XrSystemFaceTrackingPropertiesFB* faceTrackingProperties = nullptr;
         XrSystemFaceTrackingProperties2FB* faceTrackingProperties2 = nullptr;
         XrSystemBodyTrackingPropertiesFB* bodyTrackingProperties = nullptr;
+        XrSystemPropertiesBodyTrackingFullBodyMETA* fullBodyTrackingProperties = nullptr;
         XrSystemHeadsetIdPropertiesMETA* headsetIdProperties = nullptr;
 
         XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(properties->next);
@@ -115,6 +116,12 @@ namespace virtualdesktop_openxr {
                 break;
             case XR_TYPE_SYSTEM_FACE_TRACKING_PROPERTIES2_FB:
                 faceTrackingProperties2 = reinterpret_cast<XrSystemFaceTrackingProperties2FB*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_BODY_TRACKING_PROPERTIES_FB:
+                bodyTrackingProperties = reinterpret_cast<XrSystemBodyTrackingPropertiesFB*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_PROPERTIES_BODY_TRACKING_FULL_BODY_META:
+                fullBodyTrackingProperties = reinterpret_cast<XrSystemPropertiesBodyTrackingFullBodyMETA*>(entry);
                 break;
             case XR_TYPE_SYSTEM_HEADSET_ID_PROPERTIES_META:
                 headsetIdProperties = reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(entry);
@@ -192,6 +199,23 @@ namespace virtualdesktop_openxr {
                 "xrGetSystemProperties",
                 TLArg(!!faceTrackingProperties2->supportsVisualFaceTracking, "SupportsVisualFaceTracking"),
                 TLArg(!!faceTrackingProperties2->supportsAudioFaceTracking, "SupportsAudioFaceTracking"));
+        }
+
+        if (has_XR_FB_body_tracking && bodyTrackingProperties) {
+            bodyTrackingProperties->supportsBodyTracking = m_supportsBodyTracking ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrGetSystemProperties",
+                              TLArg(!!bodyTrackingProperties->supportsBodyTracking, "SupportsBodyTracking"));
+        }
+
+        if (has_XR_META_body_tracking_full_body && fullBodyTrackingProperties) {
+            fullBodyTrackingProperties->supportsFullBodyTracking = m_supportsFullBodyTracking ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrGetSystemProperties",
+                TLArg(!!fullBodyTrackingProperties->supportsFullBodyTracking, "SupportsFullBodyTracking"));
         }
 
         if (has_XR_META_headset_id && headsetIdProperties) {
@@ -471,8 +495,11 @@ namespace virtualdesktop_openxr {
             if (m_bodyState) {
                 m_supportsHandTracking = ovr_GetBool(m_ovrSession, "SupportsHandTracking", false);
                 m_supportsFaceTracking = ovr_GetBool(m_ovrSession, "SupportsFaceTracking", false);
+                m_supportsBodyTracking = ovr_GetBool(m_ovrSession, "SupportsBodyTracking", false);
+                m_supportsFullBodyTracking = ovr_GetBool(m_ovrSession, "SupportsFullBodyTracking", false);
             } else {
-                m_supportsHandTracking = m_supportsFaceTracking = false;
+                m_supportsHandTracking = m_supportsFaceTracking = m_supportsBodyTracking = m_supportsFullBodyTracking =
+                    false;
             }
 
             TraceLoggingWrite(g_traceProvider,
@@ -480,7 +507,9 @@ namespace virtualdesktop_openxr {
                               TLArg(!!m_bodyState, "HasBodyState"),
                               TLArg((int)m_eyeTrackingType, "EyeTrackingType"),
                               TLArg(m_supportsHandTracking, "SupportsHandTracking"),
-                              TLArg(m_supportsFaceTracking, "SupportsFaceTracking"));
+                              TLArg(m_supportsFaceTracking, "SupportsFaceTracking"),
+                              TLArg(m_supportsBodyTracking, "SupportsBodyTracking"),
+                              TLArg(m_supportsFullBodyTracking, "SupportsFullBodyTracking"));
 
             // Cache common information.
             m_displayRefreshRate = hmdInfo.DisplayRefreshRate;

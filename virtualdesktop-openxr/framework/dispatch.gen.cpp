@@ -1466,6 +1466,90 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrCreateBodyTrackerFB(XrSession session, const XrBodyTrackerCreateInfoFB* createInfo, XrBodyTrackerFB* bodyTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrCreateBodyTrackerFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateBodyTrackerFB(session, createInfo, bodyTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrCreateBodyTrackerFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrCreateBodyTrackerFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrCreateBodyTrackerFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrCreateBodyTrackerFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrDestroyBodyTrackerFB(XrBodyTrackerFB bodyTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrDestroyBodyTrackerFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyBodyTrackerFB(bodyTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrDestroyBodyTrackerFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrDestroyBodyTrackerFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrDestroyBodyTrackerFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrDestroyBodyTrackerFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrLocateBodyJointsFB(XrBodyTrackerFB bodyTracker, const XrBodyJointsLocateInfoFB* locateInfo, XrBodyJointLocationsFB* locations) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrLocateBodyJointsFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrLocateBodyJointsFB(bodyTracker, locateInfo, locations);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrLocateBodyJointsFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrLocateBodyJointsFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrLocateBodyJointsFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrLocateBodyJointsFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetBodySkeletonFB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetBodySkeletonFB(bodyTracker, skeleton);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetBodySkeletonFB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetBodySkeletonFB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetBodySkeletonFB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetBodySkeletonFB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 	XrResult XRAPI_CALL xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrEnumerateDisplayRefreshRatesFB");
@@ -1915,6 +1999,18 @@ namespace RUNTIME_NAMESPACE {
 		else if (has_XR_EXT_hand_tracking && apiName == "xrLocateHandJointsEXT") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrLocateHandJointsEXT);
 		}
+		else if (has_XR_FB_body_tracking && apiName == "xrCreateBodyTrackerFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateBodyTrackerFB);
+		}
+		else if (has_XR_FB_body_tracking && apiName == "xrDestroyBodyTrackerFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrDestroyBodyTrackerFB);
+		}
+		else if (has_XR_FB_body_tracking && apiName == "xrLocateBodyJointsFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrLocateBodyJointsFB);
+		}
+		else if (has_XR_FB_body_tracking && apiName == "xrGetBodySkeletonFB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetBodySkeletonFB);
+		}
 		else if (has_XR_FB_display_refresh_rate && apiName == "xrEnumerateDisplayRefreshRatesFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrEnumerateDisplayRefreshRatesFB);
 		}
@@ -2024,6 +2120,12 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (extensionName == "XR_FB_hand_tracking_aim") {
 			has_XR_FB_hand_tracking_aim = true;
+		}
+		else if (extensionName == "XR_FB_body_tracking") {
+			has_XR_FB_body_tracking = true;
+		}
+		else if (extensionName == "XR_META_body_tracking_full_body") {
+			has_XR_META_body_tracking_full_body = true;
 		}
 
 	}

@@ -58,6 +58,11 @@ namespace virtualdesktop_openxr {
             Vector3 LinearVelocity;
         };
 
+        struct BodyJointLocation {
+            uint64_t LocationFlags;
+            Pose Pose;
+        };
+
         struct SkeletonJoint {
             int32_t Joint;
             int32_t ParentJoint;
@@ -70,6 +75,8 @@ namespace virtualdesktop_openxr {
         static_assert(ConfidenceCount == XR_FACE_CONFIDENCE_COUNT_FB);
         static constexpr int HandJointCount = 26;
         static_assert(HandJointCount == XR_HAND_JOINT_COUNT_EXT);
+        static constexpr int FullBodyJointCount = 84;
+        static_assert(FullBodyJointCount == XR_FULL_BODY_JOINT_COUNT_META);
 
         struct BodyStateV2 {
             uint8_t FaceIsValid;
@@ -92,7 +99,12 @@ namespace virtualdesktop_openxr {
             HandTrackingAimState LeftAimState;
             HandTrackingAimState RightAimState;
 
-            // Body Joints exposed but we do not use them.
+            uint8_t BodyTrackingCalibrated;
+            uint8_t BodyTrackingHighFidelity;
+            float BodyTrackingConfidence;
+            BodyJointLocation BodyJoints[FullBodyJointCount];
+            SkeletonJoint SkeletonJoints[FullBodyJointCount];
+            int32_t SkeletonChangedCount;
         };
 
     } // namespace BodyTracking

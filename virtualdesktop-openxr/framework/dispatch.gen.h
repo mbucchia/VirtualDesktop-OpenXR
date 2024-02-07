@@ -111,6 +111,10 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrCreateHandTrackerEXT(XrSession session, const XrHandTrackerCreateInfoEXT* createInfo, XrHandTrackerEXT* handTracker) = 0;
 		virtual XrResult xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) = 0;
 		virtual XrResult xrLocateHandJointsEXT(XrHandTrackerEXT handTracker, const XrHandJointsLocateInfoEXT* locateInfo, XrHandJointLocationsEXT* locations) = 0;
+		virtual XrResult xrCreateBodyTrackerFB(XrSession session, const XrBodyTrackerCreateInfoFB* createInfo, XrBodyTrackerFB* bodyTracker) = 0;
+		virtual XrResult xrDestroyBodyTrackerFB(XrBodyTrackerFB bodyTracker) = 0;
+		virtual XrResult xrLocateBodyJointsFB(XrBodyTrackerFB bodyTracker, const XrBodyJointsLocateInfoFB* locateInfo, XrBodyJointLocationsFB* locations) = 0;
+		virtual XrResult xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) = 0;
 		virtual XrResult xrEnumerateDisplayRefreshRatesFB(XrSession session, uint32_t displayRefreshRateCapacityInput, uint32_t* displayRefreshRateCountOutput, float* displayRefreshRates) = 0;
 		virtual XrResult xrGetDisplayRefreshRateFB(XrSession session, float* displayRefreshRate) = 0;
 		virtual XrResult xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate) = 0;
@@ -151,6 +155,8 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_FB_face_tracking{false};
 		bool has_XR_FB_face_tracking2{false};
 		bool has_XR_FB_hand_tracking_aim{false};
+		bool has_XR_FB_body_tracking{false};
+		bool has_XR_META_body_tracking_full_body{false};
 
 
 	};

@@ -157,6 +157,9 @@
     <ClCompile Include="face_tracking.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="body_tracking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="virtualdesktop-openxr.json" />

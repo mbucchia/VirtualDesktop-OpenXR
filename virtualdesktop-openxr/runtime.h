@@ -273,6 +273,14 @@ namespace virtualdesktop_openxr {
         XrResult xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
                                                const XrFaceExpressionInfo2FB* expressionInfo,
                                                XrFaceExpressionWeights2FB* expressionWeights);
+        XrResult xrCreateBodyTrackerFB(XrSession session,
+                                       const XrBodyTrackerCreateInfoFB* createInfo,
+                                       XrBodyTrackerFB* bodyTracker) override;
+        XrResult xrDestroyBodyTrackerFB(XrBodyTrackerFB bodyTracker) override;
+        XrResult xrLocateBodyJointsFB(XrBodyTrackerFB bodyTracker,
+                                      const XrBodyJointsLocateInfoFB* locateInfo,
+                                      XrBodyJointLocationsFB* locations) override;
+        XrResult xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) override;
 
       private:
         struct Extension {
@@ -389,7 +397,9 @@ namespace virtualdesktop_openxr {
             bool canUseVisualSource{true};
         };
 
-        struct BodyTracker {};
+        struct BodyTracker {
+            bool useFullBody{false};
+        };
 
         enum class EyeTracking {
             None = 0,
@@ -550,6 +560,8 @@ namespace virtualdesktop_openxr {
         BodyTracking::BodyStateV2* m_bodyState{nullptr};
         bool m_supportsHandTracking{false};
         bool m_supportsFaceTracking{false};
+        bool m_supportsBodyTracking{false};
+        bool m_supportsFullBodyTracking{false};
         bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};

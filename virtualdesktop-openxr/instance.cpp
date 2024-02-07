@@ -462,6 +462,10 @@ namespace virtualdesktop_openxr {
             {XR_FB_FACE_TRACKING_EXTENSION_NAME, XR_FB_face_tracking_SPEC_VERSION});
         m_extensionsTable.push_back( // Face, body & & social eye tracking.
             {XR_FB_FACE_TRACKING2_EXTENSION_NAME, XR_FB_face_tracking2_SPEC_VERSION});
+        m_extensionsTable.push_back( // Face, body & social eye tracking.
+            {XR_FB_BODY_TRACKING_EXTENSION_NAME, XR_FB_body_tracking_SPEC_VERSION});
+        m_extensionsTable.push_back( // Face, body & social eye tracking.
+            {XR_META_BODY_TRACKING_FULL_BODY_EXTENSION_NAME, XR_META_body_tracking_full_body_SPEC_VERSION});
 
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});
