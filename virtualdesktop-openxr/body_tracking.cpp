@@ -145,85 +145,90 @@ namespace virtualdesktop_openxr {
         XrPosef baseSpaceToVirtual = Pose::Identity();
         const auto flags = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
 
-        // Check the hand state.
-        if (m_bodyState && m_bodyState->BodyTrackingConfidence > 0.f) {
-            const BodyTracking::BodyJointLocation* const joints = m_bodyState->BodyJoints;
+        {
+            std::unique_lock lock(m_bodyStateMutex);
 
-            TraceLoggingWrite(
-                g_traceProvider,
-                "xrLocateBodyJointsFB",
-                TLArg(m_bodyState->BodyTrackingConfidence, "BodyTrackingConfidence"),
-                TLArg(joints[XR_FULL_BODY_JOINT_ROOT_META].LocationFlags, "RootLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_ROOT_META].Pose).c_str(), "Root"),
-                TLArg(joints[XR_FULL_BODY_JOINT_HIPS_META].LocationFlags, "HipsLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_HIPS_META].Pose).c_str(), "Hips"),
-                TLArg(joints[XR_FULL_BODY_JOINT_HEAD_META].LocationFlags, "HeadLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_HEAD_META].Pose).c_str(), "Head"),
-                TLArg(joints[XR_FULL_BODY_JOINT_LEFT_HAND_PALM_META].LocationFlags, "LeftPalmLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_LEFT_HAND_PALM_META].Pose).c_str(), "LeftPalm"),
-                TLArg(joints[XR_FULL_BODY_JOINT_RIGHT_HAND_PALM_META].LocationFlags, "RightPalmLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_RIGHT_HAND_PALM_META].Pose).c_str(), "RightPalm"),
-                TLArg(joints[XR_FULL_BODY_JOINT_LEFT_FOOT_BALL_META].LocationFlags, "LeftFootLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_LEFT_FOOT_BALL_META].Pose).c_str(), "LeftFoot"),
-                TLArg(joints[XR_FULL_BODY_JOINT_RIGHT_FOOT_BALL_META].LocationFlags, "RightFootLocationFlags"),
-                TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_RIGHT_FOOT_BALL_META].Pose).c_str(), "RightFoot"));
+            // Check the hand state.
+            if (m_bodyState && m_cachedBodyState.BodyTrackingConfidence > 0.f) {
+                const BodyTracking::BodyJointLocation* const joints = m_cachedBodyState.BodyJoints;
 
-            locations->isActive = XR_TRUE;
+                TraceLoggingWrite(
+                    g_traceProvider,
+                    "xrLocateBodyJointsFB",
+                    TLArg(m_cachedBodyState.BodyTrackingConfidence, "BodyTrackingConfidence"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_ROOT_META].LocationFlags, "RootLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_ROOT_META].Pose).c_str(), "Root"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_HIPS_META].LocationFlags, "HipsLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_HIPS_META].Pose).c_str(), "Hips"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_HEAD_META].LocationFlags, "HeadLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_HEAD_META].Pose).c_str(), "Head"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_LEFT_HAND_PALM_META].LocationFlags, "LeftPalmLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_LEFT_HAND_PALM_META].Pose).c_str(), "LeftPalm"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_RIGHT_HAND_PALM_META].LocationFlags, "RightPalmLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_RIGHT_HAND_PALM_META].Pose).c_str(), "RightPalm"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_LEFT_FOOT_BALL_META].LocationFlags, "LeftFootLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_LEFT_FOOT_BALL_META].Pose).c_str(), "LeftFoot"),
+                    TLArg(joints[XR_FULL_BODY_JOINT_RIGHT_FOOT_BALL_META].LocationFlags, "RightFootLocationFlags"),
+                    TLArg(xr::ToString(joints[XR_FULL_BODY_JOINT_RIGHT_FOOT_BALL_META].Pose).c_str(), "RightFoot"));
 
-        } else {
-            TraceLoggingWrite(g_traceProvider,
-                              "xrLocateBodyJointsFB",
-                              TLArg(m_bodyState->BodyTrackingConfidence, "BodyTrackingConfidence"));
+                locations->isActive = XR_TRUE;
 
-            locations->isActive = XR_FALSE;
-        }
+            } else {
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrLocateBodyJointsFB",
+                                  TLArg(m_cachedBodyState.BodyTrackingConfidence, "BodyTrackingConfidence"));
 
-        // If base space pose is not valid, we cannot locate.
-        if (locations->isActive != XR_TRUE || !Pose::IsPoseValid(flags)) {
-            TraceLoggingWrite(g_traceProvider, "xrLocateBodyJointsFB", TLArg(0, "LocationFlags"));
-            locations->confidence = 0.f;
+                locations->isActive = XR_FALSE;
+            }
+
+            // If base space pose is not valid, we cannot locate.
+            if (locations->isActive != XR_TRUE || !Pose::IsPoseValid(flags)) {
+                TraceLoggingWrite(g_traceProvider, "xrLocateBodyJointsFB", TLArg(0, "LocationFlags"));
+                locations->confidence = 0.f;
+                for (uint32_t i = 0; i < locations->jointCount; i++) {
+                    locations->jointLocations[i].pose = Pose::Identity();
+                    locations->jointLocations[i].locationFlags = 0;
+                }
+                locations->skeletonChangedCount = 0;
+                return XR_SUCCESS;
+            }
+
+            // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
+            // enabled. We need to offset to the virtual space.
+            assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
+            const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+            const XrPosef jointsToVirtual =
+                (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
+            const XrPosef basePose = Pose::Multiply(jointsToVirtual, Pose::Invert(baseSpaceToVirtual));
+
+            locations->confidence = m_cachedBodyState.BodyTrackingConfidence;
             for (uint32_t i = 0; i < locations->jointCount; i++) {
-                locations->jointLocations[i].pose = Pose::Identity();
-                locations->jointLocations[i].locationFlags = 0;
-            }
-            locations->skeletonChangedCount = 0;
-            return XR_SUCCESS;
-        }
+                locations->jointLocations[i].locationFlags = m_cachedBodyState.BodyJoints[i].LocationFlags;
+                if (Pose::IsPoseValid(locations->jointLocations[i].locationFlags)) {
+                    const XrPosef poseOfBodyJoint = Pose::Multiply(
+                        xr::math::Pose::MakePose(XrQuaternionf{m_cachedBodyState.BodyJoints[i].Pose.orientation.x,
+                                                               m_cachedBodyState.BodyJoints[i].Pose.orientation.y,
+                                                               m_cachedBodyState.BodyJoints[i].Pose.orientation.z,
+                                                               m_cachedBodyState.BodyJoints[i].Pose.orientation.w},
+                                                 XrVector3f{m_cachedBodyState.BodyJoints[i].Pose.position.x,
+                                                            m_cachedBodyState.BodyJoints[i].Pose.position.y,
+                                                            m_cachedBodyState.BodyJoints[i].Pose.position.z}),
+                        basePose);
 
-        // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
-        // enabled. We need to offset to the virtual space.
-        assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
-        const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
-        TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
-        const XrPosef jointsToVirtual =
-            (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
-        const XrPosef basePose = Pose::Multiply(jointsToVirtual, Pose::Invert(baseSpaceToVirtual));
+                    locations->jointLocations[i].pose =
+                        Pose::Multiply(poseOfBodyJoint, Pose::Invert(baseSpaceToVirtual));
+                }
 
-        locations->confidence = m_bodyState->BodyTrackingConfidence;
-        for (uint32_t i = 0; i < locations->jointCount; i++) {
-            locations->jointLocations[i].locationFlags = m_bodyState->BodyJoints[i].LocationFlags;
-            if (Pose::IsPoseValid(locations->jointLocations[i].locationFlags)) {
-                const XrPosef poseOfBodyJoint = Pose::Multiply(
-                    xr::math::Pose::MakePose(XrQuaternionf{m_bodyState->BodyJoints[i].Pose.orientation.x,
-                                                           m_bodyState->BodyJoints[i].Pose.orientation.y,
-                                                           m_bodyState->BodyJoints[i].Pose.orientation.z,
-                                                           m_bodyState->BodyJoints[i].Pose.orientation.w},
-                                             XrVector3f{m_bodyState->BodyJoints[i].Pose.position.x,
-                                                        m_bodyState->BodyJoints[i].Pose.position.y,
-                                                        m_bodyState->BodyJoints[i].Pose.position.z}),
-                    basePose);
-
-                locations->jointLocations[i].pose = Pose::Multiply(poseOfBodyJoint, Pose::Invert(baseSpaceToVirtual));
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrLocateBodyJointsFB",
+                                  TLArg(i, "JointIndex"),
+                                  TLArg(locations->jointLocations[i].locationFlags, "LocationFlags"),
+                                  TLArg(xr::ToString(locations->jointLocations[i].pose).c_str(), "Pose"));
             }
 
-            TraceLoggingWrite(g_traceProvider,
-                              "xrLocateBodyJointsFB",
-                              TLArg(i, "JointIndex"),
-                              TLArg(locations->jointLocations[i].locationFlags, "LocationFlags"),
-                              TLArg(xr::ToString(locations->jointLocations[i].pose).c_str(), "Pose"));
+            locations->skeletonChangedCount = m_cachedBodyState.SkeletonChangedCount;
         }
-
-        locations->skeletonChangedCount = m_bodyState->SkeletonChangedCount;
 
         return XR_SUCCESS;
     }
@@ -258,17 +263,19 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
+            std::unique_lock lock(m_bodyStateMutex);
+
             for (uint32_t i = 0; i < skeleton->jointCount; i++) {
-                skeleton->joints[i].joint = m_bodyState->SkeletonJoints[i].Joint;
-                skeleton->joints[i].parentJoint = m_bodyState->SkeletonJoints[i].ParentJoint;
+                skeleton->joints[i].joint = m_cachedBodyState.SkeletonJoints[i].Joint;
+                skeleton->joints[i].parentJoint = m_cachedBodyState.SkeletonJoints[i].ParentJoint;
                 skeleton->joints[i].pose =
-                    xr::math::Pose::MakePose(XrQuaternionf{m_bodyState->SkeletonJoints[i].Pose.orientation.x,
-                                                           m_bodyState->SkeletonJoints[i].Pose.orientation.y,
-                                                           m_bodyState->SkeletonJoints[i].Pose.orientation.z,
-                                                           m_bodyState->SkeletonJoints[i].Pose.orientation.w},
-                                             XrVector3f{m_bodyState->SkeletonJoints[i].Pose.position.x,
-                                                        m_bodyState->SkeletonJoints[i].Pose.position.y,
-                                                        m_bodyState->SkeletonJoints[i].Pose.position.z});
+                    xr::math::Pose::MakePose(XrQuaternionf{m_cachedBodyState.SkeletonJoints[i].Pose.orientation.x,
+                                                           m_cachedBodyState.SkeletonJoints[i].Pose.orientation.y,
+                                                           m_cachedBodyState.SkeletonJoints[i].Pose.orientation.z,
+                                                           m_cachedBodyState.SkeletonJoints[i].Pose.orientation.w},
+                                             XrVector3f{m_cachedBodyState.SkeletonJoints[i].Pose.position.x,
+                                                        m_cachedBodyState.SkeletonJoints[i].Pose.position.y,
+                                                        m_cachedBodyState.SkeletonJoints[i].Pose.position.z});
             }
         } else {
             for (uint32_t i = 0; i < skeleton->jointCount; i++) {
@@ -281,7 +288,6 @@ namespace virtualdesktop_openxr {
         TraceLoggingWrite(
             g_traceProvider,
             "xrGetBodySkeletonFB",
-            TLArg(m_bodyState->BodyTrackingConfidence, "BodyTrackingConfidence"),
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_ROOT_META].joint).c_str(), "Root"),
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_HIPS_META].joint).c_str(), "Hips"),
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_HEAD_META].joint).c_str(), "Head"),
@@ -378,14 +384,16 @@ namespace virtualdesktop_openxr {
     }
 
     XrSpaceLocationFlags OpenXrRuntime::getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const {
+        std::unique_lock lock(m_bodyStateMutex);
+
         TraceLoggingWrite(g_traceProvider,
                           "VirtualDesktopBodyTracker",
-                          TLArg(m_bodyState->BodyTrackingConfidence, "BodyTrackingConfidence"));
-        if (!m_bodyState->BodyTrackingConfidence) {
+                          TLArg(m_cachedBodyState.BodyTrackingConfidence, "BodyTrackingConfidence"));
+        if (!m_cachedBodyState.BodyTrackingConfidence) {
             return 0;
         }
 
-        const BodyTracking::BodyJointLocation& location = m_bodyState->BodyJoints[joint];
+        const BodyTracking::BodyJointLocation& location = m_cachedBodyState.BodyJoints[joint];
         TraceLoggingWrite(g_traceProvider,
                           "VirtualDesktopBodyTracker",
                           TLArg((int)joint, "JointIndex"),

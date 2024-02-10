@@ -552,6 +552,40 @@ namespace virtualdesktop_openxr {
         if (!m_bodyState) {
             TraceLoggingWrite(g_traceProvider, "VirtualDesktopBodyTracker_MappingError_BodyStateV2");
         }
+
+        *m_bodyStateEvent.put() = OpenEvent(SYNCHRONIZE, false, L"VirtualDesktop.BodyStateEvent2");
+    }
+
+    void OpenXrRuntime::bodyStateWatcherThread() {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "BodyStateWatcherThread");
+
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+        while (true) {
+            // Wait for the next update.
+            {
+                TraceLocalActivity(wait);
+                TraceLoggingWriteStart(wait, "BodyStateWatcherThread_Wait");
+                const auto status = WaitForSingleObject(m_bodyStateEvent.get(), 100 /* ms */);
+                TraceLoggingWriteStop(wait, "BodyStateWatcherThread_Wait", TLArg(status, "Status"));
+            }
+
+            if (m_terminateBodyStateThread) {
+                break;
+            }
+
+            // Cache the new state.
+            {
+                std::unique_lock lock(m_bodyStateMutex);
+                m_cachedBodyState = *m_bodyState;
+            }
+
+            // Avoid spurious wakeup when the event was not reset quickly-enough.
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+
+        TraceLoggingWriteStop(local, "BodyStateWatcherThread");
     }
 
 } // namespace virtualdesktop_openxr

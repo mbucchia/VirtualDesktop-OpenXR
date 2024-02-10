@@ -120,11 +120,13 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
-            eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_bodyState->LeftEyeConfidence;
-            eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_bodyState->RightEyeConfidence;
+            std::unique_lock lock(m_bodyStateMutex);
 
-            BodyTracking::Pose leftEyePose = m_bodyState->LeftEyePose;
-            BodyTracking::Pose rightEyePose = m_bodyState->RightEyePose;
+            eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_cachedBodyState.LeftEyeConfidence;
+            eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_cachedBodyState.RightEyeConfidence;
+
+            BodyTracking::Pose leftEyePose = m_cachedBodyState.LeftEyePose;
+            BodyTracking::Pose rightEyePose = m_cachedBodyState.RightEyePose;
             XrPosef eyeGaze[] = {
                 xr::math::Pose::MakePose(
                     XrQuaternionf{leftEyePose.orientation.x,
@@ -141,7 +143,7 @@ namespace virtualdesktop_openxr {
 
             eyeGazes->gaze[xr::Side::Left].isValid = XR_FALSE;
             eyeGazes->gaze[xr::Side::Right].isValid = XR_FALSE;
-            if (m_bodyState->LeftEyeIsValid || m_bodyState->RightEyeIsValid) {
+            if (m_cachedBodyState.LeftEyeIsValid || m_cachedBodyState.RightEyeIsValid) {
                 // TODO: Need optimization here, in all likelyhood, the caller is looking for eye gaze relative to VIEW
                 // space, in which case we are doing 2 back-to-back getHmdPose() that are cancelling each other.
                 Space& xrBaseSpace = *(Space*)gazeInfo->baseSpace;
@@ -151,12 +153,12 @@ namespace virtualdesktop_openxr {
                     Pose::IsPoseValid(
                         locateSpaceToOrigin(xrBaseSpace, gazeInfo->time, baseSpaceToVirtual, nullptr, nullptr))) {
                     // Combine the poses.
-                    if (m_bodyState->LeftEyeIsValid) {
+                    if (m_cachedBodyState.LeftEyeIsValid) {
                         eyeGazes->gaze[xr::Side::Left].gazePose = Pose::Multiply(
                             Pose::Multiply(eyeGaze[xr::Side::Left], headPose), Pose::Invert(baseSpaceToVirtual));
                         eyeGazes->gaze[xr::Side::Left].isValid = XR_TRUE;
                     }
-                    if (m_bodyState->RightEyeIsValid) {
+                    if (m_cachedBodyState.RightEyeIsValid) {
                         eyeGazes->gaze[xr::Side::Right].gazePose = Pose::Multiply(
                             Pose::Multiply(eyeGaze[xr::Side::Right], headPose), Pose::Invert(baseSpaceToVirtual));
                         eyeGazes->gaze[xr::Side::Right].isValid = XR_TRUE;
@@ -187,22 +189,24 @@ namespace virtualdesktop_openxr {
 
     bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const {
         if (m_eyeTrackingType == EyeTracking::Mmf) {
+            std::unique_lock lock(m_bodyStateMutex);
+
             TraceLoggingWrite(g_traceProvider,
                               "VirtualDesktopEyeTracker",
-                              TLArg(!!m_bodyState->LeftEyeIsValid, "LeftValid"),
-                              TLArg(m_bodyState->LeftEyeConfidence, "LeftConfidence"),
-                              TLArg(!!m_bodyState->RightEyeIsValid, "RightValid"),
-                              TLArg(m_bodyState->RightEyeConfidence, "RightConfidence"));
+                              TLArg(!!m_cachedBodyState.LeftEyeIsValid, "LeftValid"),
+                              TLArg(m_cachedBodyState.LeftEyeConfidence, "LeftConfidence"),
+                              TLArg(!!m_cachedBodyState.RightEyeIsValid, "RightValid"),
+                              TLArg(m_cachedBodyState.RightEyeConfidence, "RightConfidence"));
 
-            if (!(m_bodyState->LeftEyeIsValid && m_bodyState->RightEyeIsValid)) {
+            if (!(m_cachedBodyState.LeftEyeIsValid && m_cachedBodyState.RightEyeIsValid)) {
                 return false;
             }
-            if (!(m_bodyState->LeftEyeConfidence > 0.5f && m_bodyState->RightEyeConfidence > 0.5f)) {
+            if (!(m_cachedBodyState.LeftEyeConfidence > 0.5f && m_cachedBodyState.RightEyeConfidence > 0.5f)) {
                 return false;
             }
 
-            BodyTracking::Pose leftEyePose = m_bodyState->LeftEyePose;
-            BodyTracking::Pose rightEyePose = m_bodyState->RightEyePose;
+            BodyTracking::Pose leftEyePose = m_cachedBodyState.LeftEyePose;
+            BodyTracking::Pose rightEyePose = m_cachedBodyState.RightEyePose;
             XrPosef eyeGaze[] = {
                 xr::math::Pose::MakePose(
                     XrQuaternionf{leftEyePose.orientation.x,

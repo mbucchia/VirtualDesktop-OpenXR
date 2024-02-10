@@ -218,6 +218,13 @@ namespace virtualdesktop_openxr {
             m_needStartAsyncSubmissionThread = true;
         }
 
+        // Shutdown the body state watcher.
+        if (m_bodyStateWatcherThread.joinable()) {
+            m_terminateBodyStateThread = true;
+            m_bodyStateWatcherThread.join();
+            m_bodyStateWatcherThread = {};
+        }
+
         // Shutdown the mirror window.
         if (m_mirrorWindowThread.joinable()) {
             // Avoid race conditions where the window will not receive the message.
@@ -325,6 +332,16 @@ namespace virtualdesktop_openxr {
                                !getSetting("quirk_disable_async_submission").value_or(false);
         m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
         // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
+
+        // Start the body watcher thread.
+        if (m_supportsHandTracking ||
+            ((has_XR_EXT_eye_gaze_interaction || has_XR_FB_eye_tracking_social) &&
+             m_eyeTrackingType == EyeTracking::Mmf) ||
+            ((has_XR_FB_face_tracking || has_XR_FB_face_tracking2) && m_supportsFaceTracking) ||
+            ((has_XR_FB_body_tracking || has_XR_HTCX_vive_tracker_interaction) && m_supportsBodyTracking)) {
+            m_terminateBodyStateThread = false;
+            m_bodyStateWatcherThread = std::thread([&]() { bodyStateWatcherThread(); });
+        }
 
         m_sessionBegun = true;
         updateSessionState();

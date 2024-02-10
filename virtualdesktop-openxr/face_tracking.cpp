@@ -132,15 +132,17 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
+            std::unique_lock lock(m_bodyStateMutex);
+
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION_COUNT_FB; i++) {
-                expressionWeights->weights[i] = m_bodyState->ExpressionWeights[i];
+                expressionWeights->weights[i] = m_cachedBodyState.ExpressionWeights[i];
             }
             for (uint32_t i = 0; i < XR_FACE_CONFIDENCE_COUNT_FB; i++) {
-                expressionWeights->confidences[i] = m_bodyState->ExpressionConfidences[i];
+                expressionWeights->confidences[i] = m_cachedBodyState.ExpressionConfidences[i];
             }
-            expressionWeights->status.isValid = m_bodyState->FaceIsValid ? XR_TRUE : XR_FALSE;
+            expressionWeights->status.isValid = m_cachedBodyState.FaceIsValid ? XR_TRUE : XR_FALSE;
             expressionWeights->status.isEyeFollowingBlendshapesValid =
-                m_bodyState->IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
+                m_cachedBodyState.IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
         } else {
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION_COUNT_FB; i++) {
                 expressionWeights->weights[i] = 0.f;
@@ -275,15 +277,17 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
+            std::unique_lock lock(m_bodyStateMutex);
+
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION2_COUNT_FB; i++) {
-                expressionWeights->weights[i] = m_bodyState->ExpressionWeights[i];
+                expressionWeights->weights[i] = m_cachedBodyState.ExpressionWeights[i];
             }
             for (uint32_t i = 0; i < XR_FACE_CONFIDENCE2_COUNT_FB; i++) {
-                expressionWeights->confidences[i] = m_bodyState->ExpressionConfidences[i];
+                expressionWeights->confidences[i] = m_cachedBodyState.ExpressionConfidences[i];
             }
-            expressionWeights->isValid = m_bodyState->FaceIsValid ? XR_TRUE : XR_FALSE;
+            expressionWeights->isValid = m_cachedBodyState.FaceIsValid ? XR_TRUE : XR_FALSE;
             expressionWeights->isEyeFollowingBlendshapesValid =
-                m_bodyState->IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
+                m_cachedBodyState.IsEyeFollowingBlendshapesValid ? XR_TRUE : XR_FALSE;
         } else {
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION2_COUNT_FB; i++) {
                 expressionWeights->weights[i] = 0.f;

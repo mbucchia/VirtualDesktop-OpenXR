@@ -424,6 +424,7 @@ namespace virtualdesktop_openxr {
         bool ensureOVRSession();
         void initializeSystem();
         void initializeBodyTrackingMmf();
+        void bodyStateWatcherThread();
 
         // session.cpp
         void updateSessionState(bool forceSendEvent = false);
@@ -644,7 +645,7 @@ namespace virtualdesktop_openxr {
         ovrMirrorTexture m_ovrMirrorSwapChain{nullptr};
         ComPtr<ID3D11Texture2D> m_mirrorTexture;
 
-        // Async submittion thread.
+        // Async submission thread.
         bool m_useAsyncSubmission{false};
         bool m_needStartAsyncSubmissionThread{false};
         bool m_terminateAsyncThread{false};
@@ -653,6 +654,12 @@ namespace virtualdesktop_openxr {
         std::condition_variable m_asyncSubmissionCondVar;
         std::vector<ovrLayer_Union> m_layersForAsyncSubmission;
         std::chrono::high_resolution_clock::time_point m_lastWaitToBeginFrameTime{};
+
+        // Body tracking thread.
+        bool m_terminateBodyStateThread{false};
+        std::thread m_bodyStateWatcherThread;
+        mutable std::mutex m_bodyStateMutex;
+        wil::unique_handle m_bodyStateEvent;
 
         // Graphics API interop.
         ComPtr<ID3D11Device5> m_d3d11Device;
@@ -707,6 +714,7 @@ namespace virtualdesktop_openxr {
         uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         ovrInputState m_cachedInputState;
+        BodyTracking::BodyStateV2 m_cachedBodyState{};
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
 
