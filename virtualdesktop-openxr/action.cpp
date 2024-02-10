@@ -106,7 +106,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        std::unique_lock lock(m_actionsAndSpacesMutex);
+        std::shared_lock lock(m_actionsAndSpacesMutex);
 
         const auto it = m_strings.find(path);
         if (it == m_strings.cend()) {
@@ -504,7 +504,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        std::unique_lock lock(m_actionsAndSpacesMutex);
+        std::shared_lock lock(m_actionsAndSpacesMutex);
 
         if (m_activeActionSets.empty()) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;
@@ -1086,7 +1086,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        std::unique_lock lock(m_actionsAndSpacesMutex);
+        std::shared_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_actions.count(enumerateInfo->action)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -1141,7 +1141,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        std::unique_lock lock(m_actionsAndSpacesMutex);
+        std::shared_lock lock(m_actionsAndSpacesMutex);
 
         if (m_activeActionSets.empty()) {
             return XR_ERROR_ACTIONSET_NOT_ATTACHED;

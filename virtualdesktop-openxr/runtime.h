@@ -596,16 +596,16 @@ namespace virtualdesktop_openxr {
         bool m_sessionStopping{false};
         bool m_sessionExiting{false};
         XrFovf m_cachedEyeFov[xr::StereoView::Count];
-        std::mutex m_actionsAndSpacesMutex;
+        std::shared_mutex m_actionsAndSpacesMutex;
         std::map<XrPath, std::string> m_strings; // protected by actionsAndSpacesMutex
         std::set<XrActionSet> m_actionSets;
         std::set<XrActionSet> m_activeActionSets;
         std::set<XrAction> m_actions;
         std::set<XrAction> m_actionsForCleanup;
-        std::mutex m_handTrackersMutex;
+        std::shared_mutex m_handTrackersMutex;
         std::set<XrHandTrackerEXT> m_handTrackers;
         std::set<XrSpace> m_spaces;
-        std::mutex m_bodyTrackersMutex;
+        std::shared_mutex m_bodyTrackersMutex;
         std::set<XrEyeTrackerFB> m_eyeTrackers;
         std::set<XrFaceTrackerFB> m_faceTrackers;
         std::set<XrFaceTracker2FB> m_faceTrackers2;
@@ -658,7 +658,7 @@ namespace virtualdesktop_openxr {
         // Body tracking thread.
         bool m_terminateBodyStateThread{false};
         std::thread m_bodyStateWatcherThread;
-        mutable std::mutex m_bodyStateMutex;
+        mutable std::shared_mutex m_bodyStateMutex;
         wil::unique_handle m_bodyStateEvent;
 
         // Graphics API interop.

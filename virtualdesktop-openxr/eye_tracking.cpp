@@ -112,7 +112,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock2(m_actionsAndSpacesMutex);
 
         if (!m_eyeTrackers.count(eyeTracker) || !m_spaces.count(gazeInfo->baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -120,7 +121,7 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             eyeGazes->gaze[xr::Side::Left].gazeConfidence = m_cachedBodyState.LeftEyeConfidence;
             eyeGazes->gaze[xr::Side::Right].gazeConfidence = m_cachedBodyState.RightEyeConfidence;
@@ -189,7 +190,7 @@ namespace virtualdesktop_openxr {
 
     bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const {
         if (m_eyeTrackingType == EyeTracking::Mmf) {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             TraceLoggingWrite(g_traceProvider,
                               "VirtualDesktopEyeTracker",

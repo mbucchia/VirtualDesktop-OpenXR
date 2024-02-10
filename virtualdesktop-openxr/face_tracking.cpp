@@ -119,7 +119,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock(m_bodyTrackersMutex);
 
         if (!m_faceTrackers.count(faceTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -132,7 +132,7 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION_COUNT_FB; i++) {
                 expressionWeights->weights[i] = m_cachedBodyState.ExpressionWeights[i];
@@ -262,7 +262,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock(m_bodyTrackersMutex);
 
         if (!m_faceTrackers2.count(faceTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -277,7 +277,7 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             for (uint32_t i = 0; i < XR_FACE_EXPRESSION2_COUNT_FB; i++) {
                 expressionWeights->weights[i] = m_cachedBodyState.ExpressionWeights[i];

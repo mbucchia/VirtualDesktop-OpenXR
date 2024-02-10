@@ -122,7 +122,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_handTrackersMutex);
+        std::shared_lock lock(m_handTrackersMutex);
+        std::shared_lock lock2(m_actionsAndSpacesMutex);
 
         if (!m_handTrackers.count(handTracker) || !m_spaces.count(locateInfo->baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -158,7 +159,7 @@ namespace virtualdesktop_openxr {
         const auto flags = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
 
         {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             // Check the hand state.
             if (m_bodyState && ((xrHandTracker.side == xr::Side::Left && m_cachedBodyState.LeftHandActive) ||
@@ -302,7 +303,7 @@ namespace virtualdesktop_openxr {
 
     // Detect hand gestures and convert them into controller inputs.
     void OpenXrRuntime::processHandGestures(uint32_t side) {
-        std::unique_lock lock(m_bodyStateMutex);
+        std::shared_lock lock(m_bodyStateMutex);
 
         if (m_bodyState &&
             ((side == xr::Side::Left && m_cachedBodyState.LeftHandActive) || m_cachedBodyState.RightHandActive)) {
@@ -384,7 +385,7 @@ namespace virtualdesktop_openxr {
 
     // Get the pinch pose (replacing aim pose).
     bool OpenXrRuntime::getPinchPose(int side, const XrPosef& controllerPose, XrPosef& pose) const {
-        std::unique_lock lock(m_bodyStateMutex);
+        std::shared_lock lock(m_bodyStateMutex);
 
         if (m_bodyState &&
             ((side == xr::Side::Left && m_cachedBodyState.LeftHandActive) || m_cachedBodyState.RightHandActive)) {

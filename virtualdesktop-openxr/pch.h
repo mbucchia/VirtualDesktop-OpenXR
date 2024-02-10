@@ -41,6 +41,7 @@
 #include <mutex>
 #include <random>
 #include <set>
+#include <shared_mutex>
 #include <optional>
 #include <sstream>
 #include <string>

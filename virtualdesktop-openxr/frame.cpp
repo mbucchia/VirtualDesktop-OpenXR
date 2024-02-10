@@ -403,7 +403,7 @@ namespace virtualdesktop_openxr {
                     return XR_ERROR_LAYER_INVALID;
                 }
 
-                std::unique_lock lock3(m_actionsAndSpacesMutex);
+                std::shared_lock lock3(m_actionsAndSpacesMutex);
 
                 if (!m_spaces.count(frameEndInfo->layers[i]->space)) {
                     return XR_ERROR_HANDLE_INVALID;

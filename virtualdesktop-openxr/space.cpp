@@ -202,7 +202,7 @@ namespace virtualdesktop_openxr {
 
         location->locationFlags = 0;
 
-        std::unique_lock lock(m_actionsAndSpacesMutex);
+        std::shared_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_spaces.count(space) || !m_spaces.count(baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -290,7 +290,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
-        std::unique_lock lock(m_actionsAndSpacesMutex);
+        std::shared_lock lock(m_actionsAndSpacesMutex);
 
         if (!m_spaces.count(viewLocateInfo->space)) {
             return XR_ERROR_HANDLE_INVALID;

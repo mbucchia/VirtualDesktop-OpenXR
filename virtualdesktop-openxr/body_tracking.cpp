@@ -127,7 +127,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock2(m_actionsAndSpacesMutex);
 
         if (!m_bodyTrackers.count(bodyTracker) || !m_spaces.count(locateInfo->baseSpace)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -146,7 +147,7 @@ namespace virtualdesktop_openxr {
         const auto flags = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
 
         {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             // Check the hand state.
             if (m_bodyState && m_cachedBodyState.BodyTrackingConfidence > 0.f) {
@@ -248,7 +249,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        std::unique_lock lock(m_bodyTrackersMutex);
+        std::shared_lock lock(m_bodyTrackersMutex);
 
         if (!m_bodyTrackers.count(bodyTracker)) {
             return XR_ERROR_HANDLE_INVALID;
@@ -263,7 +264,7 @@ namespace virtualdesktop_openxr {
 
         // Forward the state from the memory mapped file.
         if (m_bodyState) {
-            std::unique_lock lock(m_bodyStateMutex);
+            std::shared_lock lock(m_bodyStateMutex);
 
             for (uint32_t i = 0; i < skeleton->jointCount; i++) {
                 skeleton->joints[i].joint = m_cachedBodyState.SkeletonJoints[i].Joint;
@@ -384,7 +385,7 @@ namespace virtualdesktop_openxr {
     }
 
     XrSpaceLocationFlags OpenXrRuntime::getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const {
-        std::unique_lock lock(m_bodyStateMutex);
+        std::shared_lock lock(m_bodyStateMutex);
 
         TraceLoggingWrite(g_traceProvider,
                           "VirtualDesktopBodyTracker",
