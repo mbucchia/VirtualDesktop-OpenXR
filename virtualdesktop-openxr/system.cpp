@@ -497,9 +497,10 @@ namespace virtualdesktop_openxr {
                 m_supportsFaceTracking = ovr_GetBool(m_ovrSession, "SupportsFaceTracking", false);
                 m_supportsBodyTracking = ovr_GetBool(m_ovrSession, "SupportsBodyTracking", false);
                 m_supportsFullBodyTracking = ovr_GetBool(m_ovrSession, "SupportsFullBodyTracking", false);
+                m_emulateViveTrackers = ovr_GetBool(m_ovrSession, "EmulateTrackers", false);
             } else {
                 m_supportsHandTracking = m_supportsFaceTracking = m_supportsBodyTracking = m_supportsFullBodyTracking =
-                    false;
+                    m_emulateViveTrackers = false;
             }
 
             TraceLoggingWrite(g_traceProvider,
@@ -509,7 +510,8 @@ namespace virtualdesktop_openxr {
                               TLArg(m_supportsHandTracking, "SupportsHandTracking"),
                               TLArg(m_supportsFaceTracking, "SupportsFaceTracking"),
                               TLArg(m_supportsBodyTracking, "SupportsBodyTracking"),
-                              TLArg(m_supportsFullBodyTracking, "SupportsFullBodyTracking"));
+                              TLArg(m_supportsFullBodyTracking, "SupportsFullBodyTracking"),
+                              TLArg(m_emulateViveTrackers, "EmulateViveTrackers"));
 
             // Cache common information.
             m_displayRefreshRate = hmdInfo.DisplayRefreshRate;

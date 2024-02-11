@@ -311,7 +311,7 @@ namespace virtualdesktop_openxr {
                           TLArg(pathCapacityInput, "PathCapacityInput"));
 
         uint32_t trackersCount = 0;
-        if (m_supportsBodyTracking) {
+        if (m_supportsBodyTracking && m_emulateViveTrackers) {
             for (const auto& role : TrackerRoles) {
                 // Ignore lower body joints when not supported.
                 if (!m_supportsFullBodyTracking && role.joint >= XR_BODY_JOINT_COUNT_FB) {
@@ -360,6 +360,10 @@ namespace virtualdesktop_openxr {
     }
 
     int OpenXrRuntime::getTrackerIndex(const std::string& path) const {
+        if (!m_supportsBodyTracking || !m_emulateViveTrackers) {
+            return -1;
+        }
+
         std::string role;
         if (startsWith(path, "/user/vive_tracker_htcx/serial/")) {
             role = path.substr(31);
@@ -375,6 +379,10 @@ namespace virtualdesktop_openxr {
 
         if (!role.empty()) {
             for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
+                // Ignore lower body joints when not supported.
+                if (!m_supportsFullBodyTracking && TrackerRoles[i].joint >= XR_BODY_JOINT_COUNT_FB) {
+                    continue;
+                }
                 if (TrackerRoles[i].role == role) {
                     return i;
                 }
