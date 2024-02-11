@@ -573,6 +573,7 @@ namespace virtualdesktop_openxr {
         bool m_supportsBodyTracking{false};
         bool m_supportsFullBodyTracking{false};
         bool m_emulateViveTrackers{false};
+        bool m_emulateIndexControllers{false};
         bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};

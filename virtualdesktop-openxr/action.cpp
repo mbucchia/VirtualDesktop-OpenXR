@@ -1429,9 +1429,14 @@ namespace virtualdesktop_openxr {
         }
 
         if (!m_cachedControllerType[side].empty()) {
-            // Identify the physical controller type.
-            preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
-            m_localizedControllerType[side] = "Touch Controller";
+            // The physical controller type is always Oculus Touch, but we also support Index Controller emulation.
+            if (!m_emulateIndexControllers) {
+                preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+                m_localizedControllerType[side] = "Touch Controller";
+            } else {
+                preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
+                m_localizedControllerType[side] = "Index Controller";
+            }
 
 #if 1
             // Calibration procedure.
@@ -1474,6 +1479,10 @@ namespace virtualdesktop_openxr {
             auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
             if (bindings != m_suggestedBindings.cend()) {
                 actualInteractionProfile = preferredInteractionProfile;
+                if (m_emulateIndexControllers) {
+                    // Map index to touch.
+                    preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+                }
             }
             if (bindings == m_suggestedBindings.cend()) {
                 // In order of preference.
