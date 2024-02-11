@@ -337,16 +337,12 @@ namespace virtualdesktop_openxr::utils {
                 m_glDC = wglGetCurrentDC();
                 m_glRC = wglGetCurrentContext();
 
-                // Avoid unnecessary context switches.
-                m_switched = context.glDC != m_glDC || context.glRC != m_glRC;
-                if (m_switched) {
-                    wglMakeCurrent(context.glDC, context.glRC);
+                wglMakeCurrent(context.glDC, context.glRC);
 
-                    if (!m_ignoreErrors) {
-                        // Reset error codes.
-                        while (glGetError() != GL_NO_ERROR)
-                            ;
-                    }
+                if (!m_ignoreErrors) {
+                    // Reset error codes.
+                    while (glGetError() != GL_NO_ERROR)
+                        ;
                 }
             }
         }
@@ -355,9 +351,7 @@ namespace virtualdesktop_openxr::utils {
             if (m_valid) {
                 const auto error = glGetError();
 
-                if (m_switched) {
-                    wglMakeCurrent(m_glDC, m_glRC);
-                }
+                wglMakeCurrent(m_glDC, m_glRC);
 
                 if (!m_ignoreErrors) {
                     CHECK_MSG(error == GL_NO_ERROR, fmt::format("OpenGL error: 0x{:x}", error));
@@ -368,7 +362,6 @@ namespace virtualdesktop_openxr::utils {
       private:
         const bool m_valid;
         const bool m_ignoreErrors;
-        bool m_switched{false};
         HDC m_glDC;
         HGLRC m_glRC;
     };
