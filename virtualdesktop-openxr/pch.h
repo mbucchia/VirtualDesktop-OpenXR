@@ -23,9 +23,11 @@
 #pragma once
 
 // Standard library.
+#define _USE_MATH_DEFINES
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <condition_variable>
 #include <cstdarg>
 #include <ctime>

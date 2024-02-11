@@ -411,14 +411,15 @@ namespace virtualdesktop_openxr {
         const XrPosef jointsToVirtual =
             (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
 
-        pose = Pose::Multiply(
-            xr::math::Pose::MakePose(
-                XrQuaternionf{location.Pose.orientation.x,
-                              location.Pose.orientation.y,
-                              location.Pose.orientation.z,
-                              location.Pose.orientation.w},
-                XrVector3f{location.Pose.position.x, location.Pose.position.y, location.Pose.position.z}),
-            jointsToVirtual);
+        pose = Pose::Multiply(Pose::Multiply(TrackerRoles[joint].transform,
+                                             xr::math::Pose::MakePose(XrQuaternionf{location.Pose.orientation.x,
+                                                                                    location.Pose.orientation.y,
+                                                                                    location.Pose.orientation.z,
+                                                                                    location.Pose.orientation.w},
+                                                                      XrVector3f{location.Pose.position.x,
+                                                                                 location.Pose.position.y,
+                                                                                 location.Pose.position.z})),
+                              jointsToVirtual);
 
         TraceLoggingWrite(g_traceProvider,
                           "VirtualDesktopBodyTracker",
