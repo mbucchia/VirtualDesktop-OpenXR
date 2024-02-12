@@ -34,7 +34,7 @@ const TrackerRoleMapping TrackerRoles[] = {
     // clang-format off
     {"chest", "Chest", XR_FULL_BODY_JOINT_CHEST_META, xr::math::Pose::Orientation({M_PI_2, 0, 0})},
     {"waist", "Waist", XR_FULL_BODY_JOINT_HIPS_META, xr::math::Pose::Orientation({M_PI_2, 0, 0})},
-    {"left_shoulder", "Left Shoulder", XR_FULL_BODY_JOINT_LEFT_SCAPULA_META},
+    {"left_shoulder", "Left Shoulder", XR_FULL_BODY_JOINT_LEFT_SCAPULA_META, xr::math::Pose::Orientation({0, M_PI, 0})},
     {"right_shoulder", "Right Shoulder", XR_FULL_BODY_JOINT_RIGHT_SCAPULA_META},
     {"left_elbow", "Left Elbow", XR_FULL_BODY_JOINT_LEFT_ARM_LOWER_META, xr::math::Pose::Orientation({0, M_PI, 0})},
     {"right_elbow", "Right Elbow", XR_FULL_BODY_JOINT_RIGHT_ARM_LOWER_META},

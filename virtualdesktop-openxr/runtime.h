@@ -27,6 +27,7 @@
 #include "utils.h"
 
 #include "BodyState.h"
+#include "trackers.h"
 
 namespace virtualdesktop_openxr {
 
@@ -477,6 +478,7 @@ namespace virtualdesktop_openxr {
 
         // body_tracking.cpp
         int getTrackerIndex(const std::string& path) const;
+        bool isTrackerEnabled(uint32_t index) const;
         XrSpaceLocationFlags getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const;
 
         // frame.cpp
@@ -577,6 +579,7 @@ namespace virtualdesktop_openxr {
         bool m_supportsFullBodyTracking{false};
         bool m_emulateViveTrackers{false};
         bool m_emulateIndexControllers{false};
+        bool m_isTrackerDisabled[std::size(TrackerRoles)]{};
         bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};

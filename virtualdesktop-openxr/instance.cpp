@@ -24,6 +24,7 @@
 
 #include "log.h"
 #include "runtime.h"
+#include "trackers.h"
 #include "utils.h"
 #include "version.h"
 
@@ -51,6 +52,11 @@ namespace virtualdesktop_openxr {
         TraceLoggingWrite(g_traceProvider, "VirtualDesktopOpenXR", TLArg(runtimeVersion.c_str(), "Version"));
 
         m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
+
+        // Latch the disabled trackers now.
+        for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
+            m_isTrackerDisabled[i] = getSetting(TrackerRoles[i].role + "_tracker_disabled").value_or(false);
+        }
 
         // Watch for changes in the registry.
         try {

@@ -359,9 +359,8 @@ namespace virtualdesktop_openxr {
 
         uint32_t trackersCount = 0;
         if (m_supportsBodyTracking && m_emulateViveTrackers) {
-            for (const auto& role : TrackerRoles) {
-                // Ignore lower body joints when not supported.
-                if (!m_supportsFullBodyTracking && role.joint >= XR_BODY_JOINT_COUNT_FB) {
+            for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
+                if (!isTrackerEnabled(i)) {
                     continue;
                 }
 
@@ -378,28 +377,29 @@ namespace virtualdesktop_openxr {
             g_traceProvider, "xrEnumerateViveTrackerPathsHTCX", TLArg(*pathCountOutput, "PathCountOutput"));
 
         if (pathCapacityInput && paths) {
-            uint32_t i = 0;
-            for (const auto& role : TrackerRoles) {
-                // Ignore lower body joints when not supported.
-                if (!m_supportsFullBodyTracking && role.joint >= XR_BODY_JOINT_COUNT_FB) {
+            uint32_t count = 0;
+            for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
+                if (!isTrackerEnabled(i)) {
                     continue;
                 }
-                if (paths[i].type != XR_TYPE_VIVE_TRACKER_PATHS_HTCX) {
+
+                if (paths[count].type != XR_TYPE_VIVE_TRACKER_PATHS_HTCX) {
                     return XR_ERROR_VALIDATION_FAILURE;
                 }
 
-                const auto trackerSerial = role.role;
+                const auto trackerSerial = TrackerRoles[i].role;
                 const std::string persistentPath = "/user/vive_tracker_htcx/serial/" + trackerSerial;
                 const std::string rolePath = "/user/vive_tracker_htcx/role/" + trackerSerial;
-                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, persistentPath.c_str(), &paths[i].persistentPath));
-                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, rolePath.c_str(), &paths[i].rolePath));
+                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, persistentPath.c_str(), &paths[count].persistentPath));
+                CHECK_XRCMD(xrStringToPath(XR_NULL_HANDLE, rolePath.c_str(), &paths[count].rolePath));
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateViveTrackerPathsHTCX",
-                                  TLArg(paths[i].persistentPath, "PersistentPath"),
-                                  TLArg(paths[i].rolePath, "RolePath"),
+                                  TLArg(paths[count].persistentPath, "PersistentPath"),
+                                  TLArg(paths[count].rolePath, "RolePath"),
                                   TLArg(persistentPath.c_str(), "PersistentPath"),
                                   TLArg(rolePath.c_str(), "RolePath"));
-                i++;
+
+                count++;
             }
         }
 
@@ -426,10 +426,10 @@ namespace virtualdesktop_openxr {
 
         if (!role.empty()) {
             for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
-                // Ignore lower body joints when not supported.
-                if (!m_supportsFullBodyTracking && TrackerRoles[i].joint >= XR_BODY_JOINT_COUNT_FB) {
+                if (!isTrackerEnabled(i)) {
                     continue;
                 }
+
                 if (TrackerRoles[i].role == role) {
                     return i;
                 }
@@ -437,6 +437,18 @@ namespace virtualdesktop_openxr {
         }
 
         return -1;
+    }
+
+    bool OpenXrRuntime::isTrackerEnabled(uint32_t index) const {
+        // Ignore lower body joints when not supported.
+        if (!m_supportsFullBodyTracking && TrackerRoles[index].joint >= XR_BODY_JOINT_COUNT_FB) {
+            return false;
+        }
+        if (m_isTrackerDisabled[index]) {
+            return false;
+        }
+
+        return true;
     }
 
     XrSpaceLocationFlags OpenXrRuntime::getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const {
