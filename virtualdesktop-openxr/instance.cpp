@@ -42,6 +42,8 @@ namespace virtualdesktop_openxr {
     XrResult XRAPI_CALL xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker,
                                                       const XrFaceExpressionInfo2FB* expressionInfo,
                                                       XrFaceExpressionWeights2FB* expressionWeights);
+    XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
+                                                          const XrBodyTrackingFidelityMETA fidelity);
 
     OpenXrRuntime::OpenXrRuntime() {
         const auto runtimeVersion =
@@ -117,6 +119,9 @@ namespace virtualdesktop_openxr {
             result = XR_SUCCESS;
         } else if (has_XR_FB_face_tracking2 && apiName == "xrGetFaceExpressionWeights2FB") {
             *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrGetFaceExpressionWeights2FB);
+            result = XR_SUCCESS;
+        } else if (has_XR_META_body_tracking_fidelity && apiName == "xrRequestBodyTrackingFidelityMETA") {
+            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrRequestBodyTrackingFidelityMETA);
             result = XR_SUCCESS;
         } else {
             result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
@@ -468,6 +473,8 @@ namespace virtualdesktop_openxr {
             {XR_FB_BODY_TRACKING_EXTENSION_NAME, XR_FB_body_tracking_SPEC_VERSION});
         m_extensionsTable.push_back( // Face, body & social eye tracking.
             {XR_META_BODY_TRACKING_FULL_BODY_EXTENSION_NAME, XR_META_body_tracking_full_body_SPEC_VERSION});
+        m_extensionsTable.push_back( // Face, body & social eye tracking.
+            {XR_META_BODY_TRACKING_FIDELITY_EXTENSION_NAME, XR_META_body_tracking_fidelity_SPEC_VERSION});
 
         m_extensionsTable.push_back( // Vive Tracker emulation.
             {XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, XR_HTCX_vive_tracker_interaction_SPEC_VERSION});
@@ -555,6 +562,29 @@ namespace virtualdesktop_openxr {
         TraceLoggingWriteStop(local, "xrGetFaceExpressionWeights2FB", TLArg(xr::ToCString(result), "Result"));
         if (XR_FAILED(result)) {
             ErrorLog("xrGetFaceExpressionWeights2FB failed with %s\n", xr::ToCString(result));
+        }
+
+        return result;
+    }
+
+    XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
+                                                          const XrBodyTrackingFidelityMETA fidelity) {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "xrRequestBodyTrackingFidelityMETA");
+
+        XrResult result;
+        try {
+            result =
+                dynamic_cast<OpenXrRuntime*>(GetInstance())->xrRequestBodyTrackingFidelityMETA(bodyTracker, fidelity);
+        } catch (std::exception& exc) {
+            TraceLoggingWriteTagged(local, "xrRequestBodyTrackingFidelityMETA_Error", TLArg(exc.what(), "Error"));
+            ErrorLog("xrRequestBodyTrackingFidelityMETA: %s\n", exc.what());
+            result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWriteStop(local, "xrRequestBodyTrackingFidelityMETA", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrRequestBodyTrackingFidelityMETA failed with %s\n", xr::ToCString(result));
         }
 
         return result;

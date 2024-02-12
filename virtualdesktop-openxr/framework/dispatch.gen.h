@@ -158,6 +158,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_FB_hand_tracking_aim{false};
 		bool has_XR_FB_body_tracking{false};
 		bool has_XR_META_body_tracking_full_body{false};
+		bool has_XR_META_body_tracking_fidelity{false};
 		bool has_XR_HTCX_vive_tracker_interaction{false};
 
 

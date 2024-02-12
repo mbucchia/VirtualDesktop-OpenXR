@@ -97,6 +97,7 @@ namespace virtualdesktop_openxr {
         XrSystemFaceTrackingProperties2FB* faceTrackingProperties2 = nullptr;
         XrSystemBodyTrackingPropertiesFB* bodyTrackingProperties = nullptr;
         XrSystemPropertiesBodyTrackingFullBodyMETA* fullBodyTrackingProperties = nullptr;
+        XrSystemPropertiesBodyTrackingFidelityMETA* bodyTrackingFidelityProperties = nullptr;
         XrSystemHeadsetIdPropertiesMETA* headsetIdProperties = nullptr;
 
         XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(properties->next);
@@ -122,6 +123,9 @@ namespace virtualdesktop_openxr {
                 break;
             case XR_TYPE_SYSTEM_PROPERTIES_BODY_TRACKING_FULL_BODY_META:
                 fullBodyTrackingProperties = reinterpret_cast<XrSystemPropertiesBodyTrackingFullBodyMETA*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_PROPERTIES_BODY_TRACKING_FIDELITY_META:
+                bodyTrackingFidelityProperties = reinterpret_cast<XrSystemPropertiesBodyTrackingFidelityMETA*>(entry);
                 break;
             case XR_TYPE_SYSTEM_HEADSET_ID_PROPERTIES_META:
                 headsetIdProperties = reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(entry);
@@ -216,6 +220,16 @@ namespace virtualdesktop_openxr {
                 g_traceProvider,
                 "xrGetSystemProperties",
                 TLArg(!!fullBodyTrackingProperties->supportsFullBodyTracking, "SupportsFullBodyTracking"));
+        }
+
+        if (has_XR_META_body_tracking_fidelity && bodyTrackingFidelityProperties) {
+            bodyTrackingFidelityProperties->supportsBodyTrackingFidelity =
+                m_supportsFullBodyTracking ? XR_TRUE : XR_FALSE;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrGetSystemProperties",
+                TLArg(!!bodyTrackingFidelityProperties->supportsBodyTrackingFidelity, "SupportsBodyTrackingFidelity"));
         }
 
         if (has_XR_META_headset_id && headsetIdProperties) {

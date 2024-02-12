@@ -30,6 +30,7 @@
 // Implements the necessary support for the XR_FB_body_tracking and XR_META_body_tracking_full_body extensions:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_FB_body_tracking
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_META_body_tracking_full_body
+// https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_META_body_tracking_fidelity
 
 // Implement emulation for XR_HTCX_vive_tracker_interaction using the body tracking data.
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_HTCX_vive_tracker_interaction
@@ -134,6 +135,19 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        XrBodyTrackingFidelityStatusMETA* fidelityStatus = nullptr;
+
+        XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(locations->next);
+        while (entry) {
+            switch (entry->type) {
+            case XR_TYPE_BODY_TRACKING_FIDELITY_STATUS_META:
+                fidelityStatus = reinterpret_cast<XrBodyTrackingFidelityStatusMETA*>(entry);
+                break;
+            }
+
+            entry = reinterpret_cast<XrBaseOutStructure*>(entry->next);
+        }
+
         const BodyTracker& xrBodyTracker = *(BodyTracker*)bodyTracker;
 
         if ((!xrBodyTracker.useFullBody && locations->jointCount != XR_BODY_JOINT_COUNT_FB) ||
@@ -180,6 +194,14 @@ namespace virtualdesktop_openxr {
                                   TLArg(m_cachedBodyState.BodyTrackingConfidence, "BodyTrackingConfidence"));
 
                 locations->isActive = XR_FALSE;
+            }
+
+            // Report the fidelity.
+            if (has_XR_META_body_tracking_fidelity && fidelityStatus) {
+                fidelityStatus->fidelity = (xrBodyTracker.maxFidelity == XR_BODY_TRACKING_FIDELITY_HIGH_META &&
+                                            m_cachedBodyState.BodyTrackingHighFidelity)
+                                               ? XR_BODY_TRACKING_FIDELITY_HIGH_META
+                                               : XR_BODY_TRACKING_FIDELITY_LOW_META;
             }
 
             // If base space pose is not valid, we cannot locate.
@@ -296,6 +318,31 @@ namespace virtualdesktop_openxr {
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_RIGHT_HAND_PALM_META].joint).c_str(), "RightPalm"),
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_LEFT_FOOT_BALL_META].joint).c_str(), "LeftFoot"),
             TLArg(xr::ToString(skeleton->joints[XR_FULL_BODY_JOINT_RIGHT_FOOT_BALL_META].joint).c_str(), "RightFoot"));
+
+        return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrRequestBodyTrackingFidelityMETA
+    XrResult OpenXrRuntime::xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
+                                                              const XrBodyTrackingFidelityMETA fidelity) {
+        TraceLoggingWrite(g_traceProvider,
+                          "xrRequestBodyTrackingFidelityMETA",
+                          TLXArg(bodyTracker, "BodyTracker"),
+                          TLArg((int)fidelity, "Fidelity"));
+
+        if (!has_XR_META_body_tracking_fidelity) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        std::shared_lock lock(m_bodyTrackersMutex);
+
+        if (!m_bodyTrackers.count(bodyTracker)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        BodyTracker& xrBodyTracker = *(BodyTracker*)bodyTracker;
+
+        xrBodyTracker.maxFidelity = fidelity;
 
         return XR_SUCCESS;
     }

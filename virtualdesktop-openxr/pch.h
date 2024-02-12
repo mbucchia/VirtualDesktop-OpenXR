@@ -101,6 +101,7 @@ static constexpr int ovrHmd_Quest3 = 23;
 // Oculus extra headers.
 #include "fb_face_tracking2.h"
 #include "meta_body_tracking_full_body.h"
+#include "meta_body_tracking_fidelity.h"
 
 // OpenXR loader interfaces.
 #include <loader_interfaces.h>

@@ -2151,6 +2151,9 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_META_body_tracking_full_body") {
 			has_XR_META_body_tracking_full_body = true;
 		}
+		else if (extensionName == "XR_META_body_tracking_fidelity") {
+			has_XR_META_body_tracking_fidelity = true;
+		}
 		else if (extensionName == "XR_HTCX_vive_tracker_interaction") {
 			has_XR_HTCX_vive_tracker_interaction = true;
 		}

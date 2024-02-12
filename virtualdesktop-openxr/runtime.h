@@ -281,6 +281,8 @@ namespace virtualdesktop_openxr {
                                       const XrBodyJointsLocateInfoFB* locateInfo,
                                       XrBodyJointLocationsFB* locations) override;
         XrResult xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) override;
+        XrResult xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
+                                                   const XrBodyTrackingFidelityMETA fidelity);
         XrResult xrEnumerateViveTrackerPathsHTCX(XrInstance instance,
                                                  uint32_t pathCapacityInput,
                                                  uint32_t* pathCountOutput,
@@ -403,6 +405,7 @@ namespace virtualdesktop_openxr {
 
         struct BodyTracker {
             bool useFullBody{false};
+            XrBodyTrackingFidelityMETA maxFidelity{XR_BODY_TRACKING_FIDELITY_LOW_META};
         };
 
         enum class EyeTracking {
