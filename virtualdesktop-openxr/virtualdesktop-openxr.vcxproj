@@ -145,7 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -204,7 +204,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -265,7 +265,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -328,7 +328,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -391,7 +391,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -454,7 +454,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -516,6 +516,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClInclude Include="..\external\LibOVR\Include\OVR_ErrorCode.h" />
     <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h" />
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h" />
+    <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h" />
     <ClInclude Include="trackers.h" />
     <ClInclude Include="BodyState.h" />
     <ClInclude Include="framework\dispatch.gen.h" />
@@ -543,6 +544,20 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4244;4305</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">4244;4305</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4244;4305</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4244;4305</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">4244;4305</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4244;4305</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="action.cpp" />
     <ClCompile Include="audio.cpp" />

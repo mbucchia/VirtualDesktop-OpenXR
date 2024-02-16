@@ -29,6 +29,109 @@
 // Implements the necessary support for the XR_EXT_hand_tracking extension:
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_EXT_hand_tracking
 
+namespace {
+
+    using namespace virtualdesktop_openxr;
+    using namespace xr::math;
+
+    void convertSteamVRBonesToFingerJoints(uint32_t side,
+                                           const XrPosef& basePose,
+                                           BodyTracking::FingerJointState* joints,
+                                           vr::VRBoneTransform_t* bones) {
+        const auto vrPoseToXrPose = [](const vr::VRBoneTransform_t& vrPose) {
+            XrPosef xrPose;
+            xrPose.position.x = vrPose.position.v[0];
+            xrPose.position.y = vrPose.position.v[1];
+            xrPose.position.z = vrPose.position.v[2];
+            xrPose.orientation.x = vrPose.orientation.x;
+            xrPose.orientation.y = vrPose.orientation.y;
+            xrPose.orientation.z = vrPose.orientation.z;
+            xrPose.orientation.w = vrPose.orientation.w;
+
+            return xrPose;
+        };
+
+        const auto xrPoseToBodyTrackingPose = [](const XrPosef& xrPose) {
+            BodyTracking::Pose bodyTrackingPose;
+            bodyTrackingPose.position.x = xrPose.position.x;
+            bodyTrackingPose.position.y = xrPose.position.y;
+            bodyTrackingPose.position.z = xrPose.position.z;
+            bodyTrackingPose.orientation.x = xrPose.orientation.x;
+            bodyTrackingPose.orientation.y = xrPose.orientation.y;
+            bodyTrackingPose.orientation.z = xrPose.orientation.z;
+            bodyTrackingPose.orientation.w = xrPose.orientation.w;
+            return bodyTrackingPose;
+        };
+
+        // We must apply the transforms in order of the bone structure:
+        // https://github.com/ValveSoftware/openvr/wiki/Hand-Skeleton#bone-structure
+        XrVector3f barycenter{};
+        XrPosef accumulatedPose = basePose;
+        XrPosef wristPose;
+        for (uint32_t i = 0; i <= eBone_PinkyFinger4; i++) {
+            accumulatedPose = Pose::Multiply(vrPoseToXrPose(bones[i]), accumulatedPose);
+
+            // Palm is estimated after this loop.
+            if (i != XR_HAND_JOINT_PALM_EXT) {
+                // We need extra rotations to convert from what SteamVR expects to what OpenXR expects.
+                XrPosef correctedPose;
+                if (i != XR_HAND_JOINT_WRIST_EXT) {
+                    correctedPose = Pose::Multiply(
+                        Pose::Orientation({(side == xr::Side::Left) ? 0.f : (float)M_PI, (float)-M_PI_2, (float)M_PI}),
+                        accumulatedPose);
+                } else {
+                    correctedPose = Pose::Multiply(
+                        Pose::Orientation(
+                            {(float)M_PI, 0.f, (side == xr::Side::Left) ? (float)-M_PI_2 : (float)M_PI_2}),
+                        accumulatedPose);
+                }
+                joints[i].Pose = xrPoseToBodyTrackingPose(correctedPose);
+            }
+
+            switch (i) {
+            case XR_HAND_JOINT_WRIST_EXT:
+                joints[i].Radius = 0.016f;
+                wristPose = accumulatedPose;
+                break;
+
+            case XR_HAND_JOINT_INDEX_METACARPAL_EXT:
+            case XR_HAND_JOINT_INDEX_PROXIMAL_EXT:
+            case XR_HAND_JOINT_MIDDLE_METACARPAL_EXT:
+            case XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT:
+            case XR_HAND_JOINT_RING_METACARPAL_EXT:
+            case XR_HAND_JOINT_RING_PROXIMAL_EXT:
+            case XR_HAND_JOINT_LITTLE_METACARPAL_EXT:
+            case XR_HAND_JOINT_LITTLE_PROXIMAL_EXT:
+                joints[i].Radius = 0.016f;
+                barycenter = barycenter + accumulatedPose.position;
+                break;
+
+            // Reset to the wrist base pose once we reach the tip.
+            case XR_HAND_JOINT_THUMB_TIP_EXT:
+            case XR_HAND_JOINT_INDEX_TIP_EXT:
+            case XR_HAND_JOINT_MIDDLE_TIP_EXT:
+            case XR_HAND_JOINT_RING_TIP_EXT:
+            case XR_HAND_JOINT_LITTLE_TIP_EXT:
+                joints[i].Radius = 0.008f;
+                accumulatedPose = wristPose;
+                break;
+
+            default:
+                joints[i].Radius = 0.008f;
+                break;
+            }
+        }
+
+        // SteamVR doesn't have palm, we compute the barycenter of the metacarpal and proximal for
+        // index/middle/ring/little fingers.
+        barycenter = barycenter / 8.0f;
+        joints[XR_HAND_JOINT_PALM_EXT].Radius = 0.016f;
+        joints[XR_HAND_JOINT_PALM_EXT].Pose = xrPoseToBodyTrackingPose(
+            Pose::MakePose(joints[XR_HAND_JOINT_MIDDLE_METACARPAL_EXT].Pose.orientation, barycenter));
+    }
+
+} // namespace
+
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::log;
@@ -158,15 +261,18 @@ namespace virtualdesktop_openxr {
         XrPosef baseSpaceToVirtual = Pose::Identity();
         const auto flags = locateSpaceToOrigin(xrBaseSpace, locateInfo->time, baseSpaceToVirtual, nullptr, nullptr);
 
+        BodyTracking::FingerJointState simulationJointStates[XR_HAND_JOINT_COUNT_EXT];
+        BodyTracking::FingerJointState* joints = nullptr;
+
         {
             std::shared_lock lock(m_bodyStateMutex);
 
             // Check the hand state.
+            bool needHeightAdjustment = true;
             if (m_bodyState && ((xrHandTracker.side == xr::Side::Left && m_cachedBodyState.LeftHandActive) ||
                                 m_cachedBodyState.RightHandActive)) {
-                const BodyTracking::FingerJointState* const joints = xrHandTracker.side == xr::Side::Left
-                                                                         ? m_cachedBodyState.LeftHandJointStates
-                                                                         : m_cachedBodyState.RightHandJointStates;
+                joints = xrHandTracker.side == xr::Side::Left ? m_cachedBodyState.LeftHandJointStates
+                                                              : m_cachedBodyState.RightHandJointStates;
 
                 TraceLoggingWrite(g_traceProvider,
                                   "xrLocateHandJointsEXT",
@@ -185,13 +291,47 @@ namespace virtualdesktop_openxr {
                 locations->isActive = XR_TRUE;
 
             } else {
+                XrPosef basePose = Pose::Identity();
+                const auto flags2 = getControllerPose(xrHandTracker.side, locateInfo->time, basePose, nullptr);
+
                 TraceLoggingWrite(g_traceProvider,
                                   "xrLocateHandJointsEXT",
                                   TLArg(xrHandTracker.side == xr::Side::Left ? "Left" : "Right", "Side"),
                                   TLArg(!!m_cachedBodyState.LeftHandActive, "LeftHandActive"),
-                                  TLArg(!!m_cachedBodyState.RightHandActive, "RightHandActive"));
+                                  TLArg(!!m_cachedBodyState.RightHandActive, "RightHandActive"),
+                                  TLArg(flags2, "ControllerLocationFlags"));
 
-                locations->isActive = XR_FALSE;
+                if (Pose::IsPoseValid(flags2)) {
+                    // Use hand simulation.
+                    const uint32_t side = xrHandTracker.side == xr::Side::Left ? 0 : 1;
+                    vr::VRBoneTransform_t bones[eBone_Count];
+                    MyFingerCurls curls{};
+                    const bool touchA = xrHandTracker.side == xr::Side::Left
+                                            ? (m_cachedInputState.Touches & ovrButton_X)
+                                            : (m_cachedInputState.Touches & ovrButton_A);
+                    const bool touchB = xrHandTracker.side == xr::Side::Left
+                                            ? (m_cachedInputState.Touches & ovrButton_Y)
+                                            : (m_cachedInputState.Touches & ovrButton_B);
+                    curls.thumb = touchB ? 1.f : touchA ? 0.5f : 0.f;
+                    curls.index = m_cachedInputState.IndexTrigger[side];
+                    curls.middle = curls.ring = curls.pinky = m_cachedInputState.HandTrigger[side];
+                    m_handSimulation[side].ComputeSkeletonTransforms(xrHandTracker.side == xr::Side::Left
+                                                                         ? vr::TrackedControllerRole_LeftHand
+                                                                         : vr::TrackedControllerRole_RightHand,
+                                                                     curls,
+                                                                     {},
+                                                                     bones);
+                    convertSteamVRBonesToFingerJoints(xrHandTracker.side,
+                                                      Pose::Multiply(m_controllerHandPose[side], basePose),
+                                                      simulationJointStates,
+                                                      bones);
+                    joints = simulationJointStates;
+                    needHeightAdjustment = false;
+
+                    locations->isActive = XR_TRUE;
+                } else {
+                    locations->isActive = XR_FALSE;
+                }
             }
 
             // If base space pose is not valid, we cannot locate.
@@ -211,17 +351,16 @@ namespace virtualdesktop_openxr {
                 return XR_SUCCESS;
             }
 
-            const BodyTracking::FingerJointState* const joints = xrHandTracker.side == xr::Side::Left
-                                                                     ? m_cachedBodyState.LeftHandJointStates
-                                                                     : m_cachedBodyState.RightHandJointStates;
-
-            // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
-            // enabled. We need to offset to the virtual space.
-            assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
-            const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
-            TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
-            const XrPosef jointsToVirtual =
-                (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
+            XrPosef jointsToVirtual = Pose::Identity();
+            if (needHeightAdjustment) {
+                // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
+                // enabled. We need to offset to the virtual space.
+                assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
+                const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+                TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+                jointsToVirtual =
+                    (std::abs(floorHeight) >= FLT_EPSILON) ? Pose::Translation({0, floorHeight, 0}) : Pose::Identity();
+            }
             const XrPosef basePose = Pose::Multiply(jointsToVirtual, Pose::Invert(baseSpaceToVirtual));
 
             for (uint32_t i = 0; i < locations->jointCount; i++) {

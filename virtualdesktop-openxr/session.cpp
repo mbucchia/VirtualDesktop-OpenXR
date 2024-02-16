@@ -166,8 +166,9 @@ namespace virtualdesktop_openxr {
 
         m_isControllerActive[xr::Side::Left] = m_isControllerActive[xr::Side::Right] = false;
         m_controllerAimPose[xr::Side::Left] = m_controllerGripPose[xr::Side::Left] =
-            m_controllerPalmPose[xr::Side::Left] = m_controllerAimPose[xr::Side::Right] =
-                m_controllerGripPose[xr::Side::Right] = m_controllerPalmPose[xr::Side::Right] = Pose::Identity();
+            m_controllerPalmPose[xr::Side::Left] = m_controllerHandPose[xr::Side::Left] =
+                m_controllerAimPose[xr::Side::Right] = m_controllerGripPose[xr::Side::Right] =
+                    m_controllerPalmPose[xr::Side::Right] = m_controllerHandPose[xr::Side::Right] = Pose::Identity();
         m_currentInteractionProfile[xr::Side::Left] = m_currentInteractionProfile[xr::Side::Right] = XR_NULL_PATH;
         rebindControllerActions(xr::Side::Left);
         rebindControllerActions(xr::Side::Right);
@@ -483,10 +484,21 @@ namespace virtualdesktop_openxr {
                                           getSetting("palm_pose_offset_y").value_or(0) / 1000.f,
                                           getSetting("palm_pose_offset_z").value_or(0) / 1000.f});
 
+            const auto oldControllerHandOffset = m_controllerHandOffset;
+            m_controllerHandOffset =
+                Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                   {OVR::DegreeToRad((float)getSetting("hand_pose_rot_x").value_or(0.f)),
+                                    OVR::DegreeToRad((float)getSetting("hand_pose_rot_y").value_or(0.f)),
+                                    OVR::DegreeToRad((float)getSetting("hand_pose_rot_z").value_or(0.f))}),
+                               XrVector3f{getSetting("hand_pose_offset_x").value_or(0) / 1000.f,
+                                          getSetting("hand_pose_offset_y").value_or(0) / 1000.f,
+                                          getSetting("hand_pose_offset_z").value_or(0) / 1000.f});
+
             // Force re-evaluating poses.
             if (!Pose::Equals(oldControllerAimOffset, m_controllerAimOffset) ||
                 !Pose::Equals(oldControllerGripOffset, m_controllerGripOffset) ||
-                !Pose::Equals(oldControllerPalmOffset, m_controllerPalmOffset)) {
+                !Pose::Equals(oldControllerPalmOffset, m_controllerPalmOffset) ||
+                !Pose::Equals(oldControllerHandOffset, m_controllerHandOffset)) {
                 m_cachedControllerType[0].clear();
                 m_cachedControllerType[1].clear();
             }

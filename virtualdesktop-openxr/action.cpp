@@ -1414,6 +1414,7 @@ namespace virtualdesktop_openxr {
         XrPosef gripPose = Pose::Identity();
         XrPosef aimPose = Pose::Identity();
         XrPosef palmPose = Pose::Identity();
+        XrPosef handPose = Pose::Identity();
 
         // Remove all old bindings for this controller.
         for (const auto& action : m_actions) {
@@ -1472,6 +1473,10 @@ namespace virtualdesktop_openxr {
                 gripPose = Pose::Multiply(oculusGripPose, Pose::Invert(ovrPose));
                 aimPose = Pose::Multiply(oculusAimPose, Pose::Invert(ovrPose));
                 palmPose = Pose::Multiply(oculusPalmPose, Pose::Invert(ovrPose));
+
+                // Determined experimentally.
+                handPose = Pose::MakePose(Quaternion::RotationRollPitchYaw({(float)M_PI_4, 0.f, 0.f}),
+                                          XrVector3f{0.f, 0.1f, -0.05f});
             }
 #endif
 
@@ -1585,6 +1590,7 @@ namespace virtualdesktop_openxr {
             auto adjustedGripPose = Pose::Multiply(m_controllerGripOffset, gripPose);
             auto adjustedAimPose = Pose::Multiply(m_controllerAimOffset, aimPose);
             auto adjustedPalmPose = Pose::Multiply(m_controllerPalmOffset, palmPose);
+            auto adjustedHandPose = Pose::Multiply(m_controllerHandOffset, handPose);
             if (side == 1) {
                 const auto flipHandedness = [](XrPosef& pose) {
                     // Mirror pose along the X axis.
@@ -1596,14 +1602,17 @@ namespace virtualdesktop_openxr {
                 flipHandedness(adjustedGripPose);
                 flipHandedness(adjustedAimPose);
                 flipHandedness(adjustedPalmPose);
+                flipHandedness(adjustedHandPose);
             }
 
             m_controllerGripPose[side] = adjustedGripPose;
             m_controllerAimPose[side] = adjustedAimPose;
             m_controllerPalmPose[side] = adjustedPalmPose;
+            m_controllerHandPose[side] = adjustedHandPose;
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
-            m_controllerGripPose[side] = m_controllerAimPose[side] = m_controllerPalmPose[side] = Pose::Identity();
+            m_controllerGripPose[side] = m_controllerAimPose[side] = m_controllerPalmPose[side] =
+                m_controllerHandPose[side] = Pose::Identity();
         }
 
         m_currentInteractionProfileDirty =

@@ -27,6 +27,7 @@
 #include "utils.h"
 
 #include "BodyState.h"
+#include <hand_simulation.h>
 #include "trackers.h"
 
 namespace virtualdesktop_openxr {
@@ -626,9 +627,11 @@ namespace virtualdesktop_openxr {
         XrPosef m_controllerAimOffset{xr::math::Pose::Identity()};
         XrPosef m_controllerGripOffset{xr::math::Pose::Identity()};
         XrPosef m_controllerPalmOffset{xr::math::Pose::Identity()};
+        XrPosef m_controllerHandOffset{xr::math::Pose::Identity()};
         XrPosef m_controllerAimPose[xr::Side::Count];
         XrPosef m_controllerGripPose[xr::Side::Count];
         XrPosef m_controllerPalmPose[xr::Side::Count];
+        XrPosef m_controllerHandPose[xr::Side::Count];
         bool m_quirkedControllerPoses{false};
         std::string m_localizedControllerType[xr::Side::Count];
         XrPath m_currentInteractionProfile[xr::Side::Count]{XR_NULL_PATH, XR_NULL_PATH};
@@ -638,6 +641,7 @@ namespace virtualdesktop_openxr {
         Haptic m_currentVibration[xr::Side::Count];
         bool m_useRunningStart{true};
         bool m_jiggleViewRotations{false};
+        MyHandSimulation m_handSimulation[xr::Side::Count];
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;
