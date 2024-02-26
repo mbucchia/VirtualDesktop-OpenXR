@@ -1313,8 +1313,7 @@ namespace virtualdesktop_openxr {
                             m_currentVibration[side].frequency =
                                 vibration->frequency == XR_FREQUENCY_UNSPECIFIED ? 160 : vibration->frequency;
                             // General recommendation is 20ms for short pulses.
-                            m_currentVibration[side].duration =
-                                vibration->duration == XR_MIN_HAPTIC_DURATION ? 20'000'000 : vibration->duration;
+                            m_currentVibration[side].duration = std::max((XrDuration)20'000'000, vibration->duration);
                         } else {
                             // OpenComposite seems to pass an amplitude of 0 sometimes. Assume this means stopping.
                             m_currentVibration[side].frequency = 0.f;
