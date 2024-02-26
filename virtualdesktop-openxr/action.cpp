@@ -1430,14 +1430,9 @@ namespace virtualdesktop_openxr {
         }
 
         if (!m_cachedControllerType[side].empty()) {
-            // The physical controller type is always Oculus Touch, but we also support Index Controller emulation.
-            if (!m_emulateIndexControllers) {
-                preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
-                m_localizedControllerType[side] = "Touch Controller";
-            } else {
-                preferredInteractionProfile = "/interaction_profiles/valve/index_controller";
-                m_localizedControllerType[side] = "Index Controller";
-            }
+            // The physical controller type is always Oculus Touch.
+            preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+            m_localizedControllerType[side] = "Touch Controller";
 
 #if 1
             // Calibration procedure.
@@ -1481,13 +1476,18 @@ namespace virtualdesktop_openxr {
 #endif
 
             // Try to map with the preferred bindings.
-            auto bindings = m_suggestedBindings.find(preferredInteractionProfile);
-            if (bindings != m_suggestedBindings.cend()) {
+            // When using Index Controller emulation, try that profile first.
+            auto bindings = m_suggestedBindings.end();
+            if (m_emulateIndexControllers &&
+                (bindings = m_suggestedBindings.find("/interaction_profiles/valve/index_controller")) !=
+                    m_suggestedBindings.cend()) {
+                // Map index to touch.
+                actualInteractionProfile = "/interaction_profiles/valve/index_controller";
+                preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
+                m_localizedControllerType[side] = "Index Controller";
+            } else if ((bindings = m_suggestedBindings.find(preferredInteractionProfile)) !=
+                       m_suggestedBindings.cend()) {
                 actualInteractionProfile = preferredInteractionProfile;
-                if (m_emulateIndexControllers) {
-                    // Map index to touch.
-                    preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
-                }
             }
             if (bindings == m_suggestedBindings.cend()) {
                 // In order of preference.
