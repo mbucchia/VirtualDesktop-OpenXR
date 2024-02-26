@@ -578,7 +578,8 @@ namespace virtualdesktop_openxr {
         TraceLocalActivity(local);
         TraceLoggingWriteStart(local, "BodyStateWatcherThread");
 
-        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+        SetThreadPriority(GetCurrentThread(),
+                          getSetting("body_state_watcher_priority").value_or(THREAD_PRIORITY_TIME_CRITICAL));
 
         while (true) {
             // Wait for the next update.

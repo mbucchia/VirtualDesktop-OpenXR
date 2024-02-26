@@ -557,11 +557,14 @@ namespace virtualdesktop_openxr {
                                     }
 
                                     // Fill out depth buffer information.
-                                    prepareAndCommitSwapchainImage(xrDepthSwapchain,
-                                                                   i,
-                                                                   depth->subImage.imageArrayIndex,
-                                                                   XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT /* Not applicable for depth */,
-                                                                   committedSwapchainImages);
+                                    prepareAndCommitSwapchainImage(
+                                        xrDepthSwapchain,
+                                        i,
+                                        depth->subImage.imageArrayIndex,
+                                        XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT /* Not applicable for depth
+                                                                                             */
+                                        ,
+                                        committedSwapchainImages);
                                     layer->EyeFovDepth.DepthTexture[viewIndex] =
                                         xrDepthSwapchain.ovrSwapchain[depth->subImage.imageArrayIndex];
 
@@ -886,7 +889,8 @@ namespace virtualdesktop_openxr {
         TraceLocalActivity(local);
         TraceLoggingWriteStart(local, "AsyncSubmissionThread");
 
-        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+        SetThreadPriority(GetCurrentThread(),
+                          getSetting("async_submission_priority").value_or(THREAD_PRIORITY_TIME_CRITICAL));
 
         std::optional<long long> lastWaitedFrameId;
         while (true) {
