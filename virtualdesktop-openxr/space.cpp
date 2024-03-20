@@ -622,7 +622,9 @@ namespace virtualdesktop_openxr {
                               TLArg(xr::ToString(state.LinearVelocity).c_str(), "LinearVelocity"));
         }
 
-        const bool isTracked = OVR_SUCCESS(result);
+        // Untracked or unavailable controllers return ovrSuccess_DeviceUnavailable = 1002
+        // which is for some reason considered a success.
+        const bool isTracked = OVR_UNQUALIFIED_SUCCESS(result);
         if (isTracked) {
             locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                               XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
