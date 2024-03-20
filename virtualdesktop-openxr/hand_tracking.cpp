@@ -307,7 +307,7 @@ namespace virtualdesktop_openxr {
             bool needHeightAdjustment = true;
             if (m_bodyState && xrHandTracker.useOpticalTracking &&
                 ((xrHandTracker.side == xr::Side::Left && m_cachedBodyState.LeftHandActive) ||
-                 m_cachedBodyState.RightHandActive)) {
+                 (xrHandTracker.side == xr::Side::Right && m_cachedBodyState.RightHandActive))) {
                 joints = xrHandTracker.side == xr::Side::Left ? m_cachedBodyState.LeftHandJointStates
                                                               : m_cachedBodyState.RightHandJointStates;
 
