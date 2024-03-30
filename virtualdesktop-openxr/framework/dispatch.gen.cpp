@@ -2187,8 +2187,8 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_EXT_hand_tracking") {
 			has_XR_EXT_hand_tracking = true;
 		}
-		else if (extensionName == "XR_EXT_hand_joints_motion_range") {
-			has_XR_EXT_hand_joints_motion_range = true;
+		else if (extensionName == "XR_EXT_hand_tracking_data_source") {
+			has_XR_EXT_hand_tracking_data_source = true;
 		}
 		else if (extensionName == "XR_EXT_eye_gaze_interaction") {
 			has_XR_EXT_eye_gaze_interaction = true;

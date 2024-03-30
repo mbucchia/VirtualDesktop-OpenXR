@@ -46,7 +46,7 @@ SPECIAL_API = ['xrDestroyInstance']
 VERY_SPECIAL_API = ['xrGetInstanceProperties']
 EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enable', 'XR_KHR_vulkan_enable2', 'XR_KHR_opengl_enable',
               'XR_KHR_composition_layer_depth', 'XR_KHR_composition_layer_cylinder', 'XR_KHR_composition_layer_cube', 'XR_KHR_visibility_mask',
-              'XR_KHR_win32_convert_performance_counter_time', 'XR_FB_display_refresh_rate', 'XR_EXT_hand_tracking', 'XR_EXT_hand_joints_motion_range',
+              'XR_KHR_win32_convert_performance_counter_time', 'XR_FB_display_refresh_rate', 'XR_EXT_hand_tracking', 'XR_EXT_hand_tracking_data_source',
               'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id', 'XR_OCULUS_audio_device_guid', 'XR_MND_headless',
               'XR_FB_eye_tracking_social', 'XR_FB_face_tracking', 'XR_FB_face_tracking2', 'XR_FB_hand_tracking_aim',
               'XR_FB_body_tracking', 'XR_META_body_tracking_full_body', 'XR_META_body_tracking_fidelity', 'XR_HTCX_vive_tracker_interaction']

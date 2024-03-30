@@ -397,6 +397,8 @@ namespace virtualdesktop_openxr {
 
         struct HandTracker {
             int side;
+            bool useOpticalTracking{true};
+            bool useHandJointsSimulation{false};
         };
 
         struct EyeTracker {};

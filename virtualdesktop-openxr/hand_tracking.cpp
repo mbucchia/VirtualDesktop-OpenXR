@@ -169,10 +169,42 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        const XrHandTrackingDataSourceInfoEXT* dataSource = nullptr;
+
+        const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(createInfo->next);
+        while (entry) {
+            switch (entry->type) {
+            case XR_TYPE_HAND_TRACKING_DATA_SOURCE_INFO_EXT:
+                dataSource = reinterpret_cast<const XrHandTrackingDataSourceInfoEXT*>(entry);
+                break;
+            }
+
+            entry = reinterpret_cast<const XrBaseInStructure*>(entry->next);
+        }
+
         std::unique_lock lock(m_handTrackersMutex);
 
         HandTracker& xrHandTracker = *new HandTracker;
         xrHandTracker.side = createInfo->hand == XR_HAND_LEFT_EXT ? xr::Side::Left : xr::Side::Right;
+
+        // By default, we always want optical hand tracking and we want data simulated from the motion controller iff
+        // Index Controller emulation is enabled.
+        xrHandTracker.useOpticalTracking = true;
+        xrHandTracker.useHandJointsSimulation = m_emulateIndexControllers;
+
+        if (has_XR_EXT_hand_tracking_data_source && dataSource) {
+            xrHandTracker.useOpticalTracking = xrHandTracker.useHandJointsSimulation = false;
+            for (uint32_t i = 0; i < dataSource->requestedDataSourceCount; i++) {
+                switch (dataSource->requestedDataSources[i]) {
+                case XR_HAND_TRACKING_DATA_SOURCE_UNOBSTRUCTED_EXT:
+                    xrHandTracker.useOpticalTracking = true;
+                    break;
+                case XR_HAND_TRACKING_DATA_SOURCE_CONTROLLER_EXT:
+                    xrHandTracker.useHandJointsSimulation = true;
+                    break;
+                }
+            }
+        }
 
         *handTracker = (XrHandTrackerEXT)&xrHandTracker;
 
@@ -234,6 +266,7 @@ namespace virtualdesktop_openxr {
 
         XrHandJointVelocitiesEXT* velocities = nullptr;
         XrHandTrackingAimStateFB* aimState = nullptr;
+        XrHandTrackingDataSourceStateEXT* dataSourceState = nullptr;
 
         XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(locations->next);
         while (entry) {
@@ -243,6 +276,9 @@ namespace virtualdesktop_openxr {
                 break;
             case XR_TYPE_HAND_TRACKING_AIM_STATE_FB:
                 aimState = reinterpret_cast<XrHandTrackingAimStateFB*>(entry);
+                break;
+            case XR_TYPE_HAND_TRACKING_DATA_SOURCE_STATE_EXT:
+                dataSourceState = reinterpret_cast<XrHandTrackingDataSourceStateEXT*>(entry);
                 break;
             }
 
@@ -269,8 +305,9 @@ namespace virtualdesktop_openxr {
 
             // Check the hand state.
             bool needHeightAdjustment = true;
-            if (m_bodyState && ((xrHandTracker.side == xr::Side::Left && m_cachedBodyState.LeftHandActive) ||
-                                m_cachedBodyState.RightHandActive)) {
+            if (m_bodyState && xrHandTracker.useOpticalTracking &&
+                ((xrHandTracker.side == xr::Side::Left && m_cachedBodyState.LeftHandActive) ||
+                 m_cachedBodyState.RightHandActive)) {
                 joints = xrHandTracker.side == xr::Side::Left ? m_cachedBodyState.LeftHandJointStates
                                                               : m_cachedBodyState.RightHandJointStates;
 
@@ -290,7 +327,12 @@ namespace virtualdesktop_openxr {
 
                 locations->isActive = XR_TRUE;
 
-            } else {
+                if (has_XR_EXT_hand_tracking_data_source && dataSourceState) {
+                    dataSourceState->isActive = XR_TRUE;
+                    dataSourceState->dataSource = XR_HAND_TRACKING_DATA_SOURCE_UNOBSTRUCTED_EXT;
+                }
+
+            } else if (xrHandTracker.useHandJointsSimulation) {
                 XrPosef basePose = Pose::Identity();
                 const auto flags2 = getControllerPose(xrHandTracker.side, locateInfo->time, basePose, nullptr);
 
@@ -328,9 +370,18 @@ namespace virtualdesktop_openxr {
                     joints = simulationJointStates;
                     needHeightAdjustment = false;
 
+                    if (has_XR_EXT_hand_tracking_data_source && dataSourceState) {
+                        dataSourceState->isActive = XR_TRUE;
+                        dataSourceState->dataSource = XR_HAND_TRACKING_DATA_SOURCE_CONTROLLER_EXT;
+                    }
+
                     locations->isActive = XR_TRUE;
                 } else {
                     locations->isActive = XR_FALSE;
+
+                    if (has_XR_EXT_hand_tracking_data_source && dataSourceState) {
+                        dataSourceState->isActive = XR_FALSE;
+                    }
                 }
             }
 

@@ -439,6 +439,8 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Hand tracking.
             {XR_EXT_HAND_TRACKING_EXTENSION_NAME, XR_EXT_hand_tracking_SPEC_VERSION});
         m_extensionsTable.push_back( // Hand tracking.
+            {XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME, XR_EXT_hand_tracking_data_source_SPEC_VERSION});
+        m_extensionsTable.push_back( // Hand tracking.
             {XR_FB_HAND_TRACKING_AIM_EXTENSION_NAME, XR_FB_hand_tracking_aim_SPEC_VERSION});
 
         m_extensionsTable.push_back( // Eye tracking.
