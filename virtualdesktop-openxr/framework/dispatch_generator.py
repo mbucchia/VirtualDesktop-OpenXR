@@ -37,7 +37,9 @@ from generator import write
 from xrconventions import OpenXRConventions
 
 # Things we can configure.
-EXCLUDED_API = ['xrGetInstanceProcAddr', 'xrEnumerateApiLayerProperties']
+EXCLUDED_API = ['xrGetInstanceProcAddr',
+                'xrEnumerateApiLayerProperties', 'xrCreateApiLayerInstance',
+                'xrNegotiateLoaderApiLayerInterface', 'xrNegotiateLoaderRuntimeInterface']
 # We rewrite the trampoline for these
 SPECIAL_API = ['xrDestroyInstance']
 # We rewrite the trampoline and prototype for these

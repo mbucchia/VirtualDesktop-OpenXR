@@ -127,6 +127,9 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrCreateEyeTrackerFB(XrSession session, const XrEyeTrackerCreateInfoFB* createInfo, XrEyeTrackerFB* eyeTracker) = 0;
 		virtual XrResult xrDestroyEyeTrackerFB(XrEyeTrackerFB eyeTracker) = 0;
 		virtual XrResult xrGetEyeGazesFB(XrEyeTrackerFB eyeTracker, const XrEyeGazesInfoFB* gazeInfo, XrEyeGazesFB* eyeGazes) = 0;
+		virtual XrResult xrCreateFaceTracker2FB(XrSession session, const XrFaceTrackerCreateInfo2FB* createInfo, XrFaceTracker2FB* faceTracker) = 0;
+		virtual XrResult xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) = 0;
+		virtual XrResult xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker, const XrFaceExpressionInfo2FB* expressionInfo, XrFaceExpressionWeights2FB* expressionWeights) = 0;
 
 
 	protected:

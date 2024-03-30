@@ -1802,6 +1802,69 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrCreateFaceTracker2FB(XrSession session, const XrFaceTrackerCreateInfo2FB* createInfo, XrFaceTracker2FB* faceTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrCreateFaceTracker2FB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrCreateFaceTracker2FB(session, createInfo, faceTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrCreateFaceTracker2FB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrCreateFaceTracker2FB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrCreateFaceTracker2FB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrCreateFaceTracker2FB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrDestroyFaceTracker2FB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrDestroyFaceTracker2FB(faceTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrDestroyFaceTracker2FB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrDestroyFaceTracker2FB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrDestroyFaceTracker2FB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrDestroyFaceTracker2FB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker, const XrFaceExpressionInfo2FB* expressionInfo, XrFaceExpressionWeights2FB* expressionWeights) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrGetFaceExpressionWeights2FB");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrGetFaceExpressionWeights2FB(faceTracker, expressionInfo, expressionWeights);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrGetFaceExpressionWeights2FB_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrGetFaceExpressionWeights2FB: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrGetFaceExpressionWeights2FB", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrGetFaceExpressionWeights2FB failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 
 	// Auto-generated dispatcher handler.
 	XrResult OpenXrApi::xrGetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function) {
@@ -2067,6 +2130,15 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (has_XR_FB_eye_tracking_social && apiName == "xrGetEyeGazesFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetEyeGazesFB);
+		}
+		else if (has_XR_FB_face_tracking2 && apiName == "xrCreateFaceTracker2FB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateFaceTracker2FB);
+		}
+		else if (has_XR_FB_face_tracking2 && apiName == "xrDestroyFaceTracker2FB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrDestroyFaceTracker2FB);
+		}
+		else if (has_XR_FB_face_tracking2 && apiName == "xrGetFaceExpressionWeights2FB") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetFaceExpressionWeights2FB);
 		}
 		else {
 			return XR_ERROR_FUNCTION_UNSUPPORTED;
