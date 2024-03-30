@@ -230,8 +230,7 @@ namespace virtualdesktop_openxr {
             GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin);
         m_isConformanceTest = m_applicationName == "conformance test";
 
-        if ((startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe")) ||
-            startsWith(m_applicationName, "GhostsOfTabor")) {
+        if ((startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe"))) {
             m_controllerGripOffset.position.z = -0.1f;
             m_quirkedControllerPoses = true;
         }
