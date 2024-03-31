@@ -8,6 +8,10 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 
 # Details and instructions on the Wiki: https://github.com/mbucchia/VirtualDesktop-OpenXR/wiki
 
+## Contributors
+
+- Mathias Peter Nordskog | Roughy
+
 ## Donate
 
 Donations are welcome and totally optional. Please use [my GitHub sponsorship page](https://github.com/sponsors/mbucchia) to make one-time or recurring donations!
