@@ -188,9 +188,10 @@ namespace virtualdesktop_openxr {
         xrHandTracker.side = createInfo->hand == XR_HAND_LEFT_EXT ? xr::Side::Left : xr::Side::Right;
 
         // By default, we always want optical hand tracking and we want data simulated from the motion controller iff
-        // Index Controller emulation is enabled.
+        // Index Controller emulation is enabled. However, the OculusXR plugin does not use the data correctly, so we
+        // also exclude it.
         xrHandTracker.useOpticalTracking = true;
-        xrHandTracker.useHandJointsSimulation = m_emulateIndexControllers;
+        xrHandTracker.useHandJointsSimulation = m_emulateIndexControllers && !m_isOculusXrPlugin;
 
         if (has_XR_EXT_hand_tracking_data_source && dataSource) {
             xrHandTracker.useOpticalTracking = xrHandTracker.useHandJointsSimulation = false;
