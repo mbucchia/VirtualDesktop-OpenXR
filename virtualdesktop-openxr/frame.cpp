@@ -483,13 +483,13 @@ namespace virtualdesktop_openxr {
                         }
 
                         // Fill out color buffer information.
-                        prepareAndCommitSwapchainImage(xrSwapchain,
-                                                       i,
-                                                       proj->views[viewIndex].subImage.imageArrayIndex,
-                                                       frameEndInfo->layers[i]->layerFlags,
-                                                       committedSwapchainImages);
+                        preprocessSwapchainImage(xrSwapchain,
+                                                 i,
+                                                 proj->views[viewIndex].subImage.imageArrayIndex,
+                                                 frameEndInfo->layers[i]->layerFlags,
+                                                 committedSwapchainImages);
                         layer->EyeFov.ColorTexture[viewIndex] =
-                            xrSwapchain.ovrSwapchain[proj->views[viewIndex].subImage.imageArrayIndex];
+                            xrSwapchain.resolvedSlices[proj->views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
 
                         if (!isValidSwapchainRect(xrSwapchain.ovrDesc, proj->views[viewIndex].subImage.imageRect)) {
                             return XR_ERROR_SWAPCHAIN_RECT_INVALID;
@@ -557,16 +557,14 @@ namespace virtualdesktop_openxr {
                                     }
 
                                     // Fill out depth buffer information.
-                                    prepareAndCommitSwapchainImage(
+                                    preprocessSwapchainImage(
                                         xrDepthSwapchain,
                                         i,
                                         depth->subImage.imageArrayIndex,
-                                        XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT /* Not applicable for depth
-                                                                                             */
-                                        ,
+                                        XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
                                         committedSwapchainImages);
                                     layer->EyeFovDepth.DepthTexture[viewIndex] =
-                                        xrDepthSwapchain.ovrSwapchain[depth->subImage.imageArrayIndex];
+                                        xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
 
                                     if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
                                         return XR_ERROR_SWAPCHAIN_RECT_INVALID;
@@ -673,12 +671,12 @@ namespace virtualdesktop_openxr {
                     }
 
                     // Fill out color buffer information.
-                    prepareAndCommitSwapchainImage(xrSwapchain,
-                                                   i,
-                                                   quad->subImage.imageArrayIndex,
-                                                   frameEndInfo->layers[i]->layerFlags,
-                                                   committedSwapchainImages);
-                    layer->Quad.ColorTexture = xrSwapchain.ovrSwapchain[quad->subImage.imageArrayIndex];
+                    preprocessSwapchainImage(xrSwapchain,
+                                             i,
+                                             quad->subImage.imageArrayIndex,
+                                             frameEndInfo->layers[i]->layerFlags,
+                                             committedSwapchainImages);
+                    layer->Quad.ColorTexture = xrSwapchain.resolvedSlices[quad->subImage.imageArrayIndex].ovrSwapchain;
 
                     if (!isValidSwapchainRect(xrSwapchain.ovrDesc, quad->subImage.imageRect)) {
                         return XR_ERROR_SWAPCHAIN_RECT_INVALID;
@@ -752,9 +750,9 @@ namespace virtualdesktop_openxr {
                     }
 
                     // Fill out color buffer information.
-                    prepareAndCommitSwapchainImage(
+                    preprocessSwapchainImage(
                         xrSwapchain, i, 0, frameEndInfo->layers[i]->layerFlags, committedSwapchainImages);
-                    layer->Cube.CubeMapTexture = xrSwapchain.ovrSwapchain[0];
+                    layer->Cube.CubeMapTexture = xrSwapchain.resolvedSlices[0].ovrSwapchain;
 
                     if (!m_spaces.count(cube->space)) {
                         return XR_ERROR_HANDLE_INVALID;

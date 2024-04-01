@@ -513,6 +513,19 @@ namespace virtualdesktop_openxr::utils {
         return false;
     }
 
+    static DXGI_FORMAT getUnorderedAccessViewFormat(DXGI_FORMAT format) {
+        switch (format) {
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+            return DXGI_FORMAT_B8G8R8A8_UNORM;
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+            return DXGI_FORMAT_B8G8R8X8_UNORM;
+        }
+
+        return format;
+    }
+
     static ovrTextureFormat dxgiToOvrTextureFormat(DXGI_FORMAT format) {
         switch (format) {
         case DXGI_FORMAT_R8G8B8A8_UNORM:

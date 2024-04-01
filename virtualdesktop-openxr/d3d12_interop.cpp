@@ -160,7 +160,7 @@ namespace virtualdesktop_openxr {
                                                     XrSwapchainImageD3D12KHR* d3d12Images,
                                                     uint32_t count) {
         // Detect whether this is the first call for this swapchain.
-        const bool initialized = !xrSwapchain.slices[0].empty();
+        const bool initialized = !xrSwapchain.appSwapchain.images.empty();
 
         const bool needTransition = xrSwapchain.xrDesc.usageFlags & (XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT |
                                                                      XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);

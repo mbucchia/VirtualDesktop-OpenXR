@@ -189,13 +189,7 @@
     <FxCompile Include="FullScreenQuadVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="PassthroughPS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="AlphaBlendingCS.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="AlphaBlendingTexArrayCS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

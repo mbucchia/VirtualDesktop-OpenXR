@@ -193,7 +193,7 @@ namespace virtualdesktop_openxr {
         GlContextSwitch context(m_glContext);
 
         // Detect whether this is the first call for this swapchain.
-        const bool initialized = !xrSwapchain.slices[0].empty();
+        const bool initialized = !xrSwapchain.appSwapchain.images.empty();
 
         std::vector<HANDLE> textureHandles;
         if (!initialized) {

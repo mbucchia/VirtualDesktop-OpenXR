@@ -355,42 +355,24 @@ namespace virtualdesktop_openxr {
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
             desc.BindFlags |= ovrTextureBind_DX_DepthStencil;
         } else {
-            // Use the bit regardless of XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT. We might run full quad shaders to
-            // pre-process swapchains (eg: alpha or SRGB).
-            desc.BindFlags |= ovrTextureBind_DX_RenderTarget;
+            // Use the bits regardless of XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT or
+            // XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT. We might run full quad shaders to pre-process swapchains.
+            desc.BindFlags |= (ovrTextureBind_DX_RenderTarget | ovrTextureBind_DX_UnorderedAccess);
         }
         if (createInfo->usageFlags & XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT) {
             desc.BindFlags |= ovrTextureBind_DX_UnorderedAccess;
         }
-
-        // There are situations in OVR where we cannot use the OVR swapchain alone:
-        // - POVR does not let you submit a slice of a texture array and always reads from the first slice.
-        //   To mitigate this, we will create several swapchains with ArraySize=1 and we will make copies during
-        //   xrEndFrame().
 
         ovrTextureSwapChain ovrSwapchain{};
         CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &ovrSwapchain));
 
         // Create the internal struct.
         Swapchain& xrSwapchain = *new Swapchain;
-        xrSwapchain.ovrSwapchain.push_back(ovrSwapchain);
+        xrSwapchain.appSwapchain.ovrSwapchain = ovrSwapchain;
         CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, ovrSwapchain, &xrSwapchain.ovrSwapchainLength));
-        xrSwapchain.slices.push_back({});
-        xrSwapchain.lastProcessedIndex.push_back(-1);
-        xrSwapchain.imagesResourceView.push_back({});
-        xrSwapchain.renderTargetView.push_back({});
         xrSwapchain.ovrDesc = desc;
         xrSwapchain.xrDesc = *createInfo;
         xrSwapchain.dxgiFormatForSubmission = dxgiFormatForSubmission;
-
-        // Lazily-filled state.
-        for (int i = 1; i < desc.ArraySize; i++) {
-            xrSwapchain.ovrSwapchain.push_back(nullptr);
-            xrSwapchain.slices.push_back({});
-            xrSwapchain.lastProcessedIndex.push_back(-1);
-            xrSwapchain.imagesResourceView.push_back({});
-            xrSwapchain.renderTargetView.push_back({});
-        }
 
         *swapchain = (XrSwapchain)&xrSwapchain;
 
@@ -433,12 +415,16 @@ namespace virtualdesktop_openxr {
 
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
-        while (!xrSwapchain.ovrSwapchain.empty()) {
-            auto ovrSwapchain = xrSwapchain.ovrSwapchain.back();
+        if (!xrSwapchain.resolvedSlices.empty() &&
+            xrSwapchain.resolvedSlices[0].ovrSwapchain != xrSwapchain.appSwapchain.ovrSwapchain) {
+            ovr_DestroyTextureSwapChain(m_ovrSession, xrSwapchain.appSwapchain.ovrSwapchain);
+        }
+        while (!xrSwapchain.resolvedSlices.empty()) {
+            auto ovrSwapchain = xrSwapchain.resolvedSlices.back().ovrSwapchain;
             if (ovrSwapchain) {
                 ovr_DestroyTextureSwapChain(m_ovrSession, ovrSwapchain);
             }
-            xrSwapchain.ovrSwapchain.pop_back();
+            xrSwapchain.resolvedSlices.pop_back();
         }
 
         cleanupSwapchainImagesVulkan(xrSwapchain);
@@ -524,7 +510,14 @@ namespace virtualdesktop_openxr {
         if (xrSwapchain.acquiredIndices.empty()) {
             // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a
             // bug.
-            CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(m_ovrSession, xrSwapchain.ovrSwapchain[0], &imageIndex));
+            int currentIndex = imageIndex;
+            CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(
+                m_ovrSession, xrSwapchain.appSwapchain.ovrSwapchain, &currentIndex));
+            TraceLoggingWrite(g_traceProvider,
+                              "xrAcquireSwapchainImage",
+                              TLArg(currentIndex, "CurrentIndex"),
+                              TLArg(imageIndex, "ExpectedIndex"));
+            imageIndex = currentIndex;
         }
 
         xrSwapchain.acquiredIndices.push_back(imageIndex);
@@ -592,7 +585,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_CALL_ORDER_INVALID;
         }
 
-        // We will commit the texture to OVR during xrEndFrame() in order to handle texture arrays properly.
+        // Update the state of the swapchain.
+        CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.appSwapchain.ovrSwapchain));
         xrSwapchain.lastReleasedIndex = xrSwapchain.lastWaitedIndex;
         xrSwapchain.lastWaitedIndex = -1;
         xrSwapchain.acquiredIndices.pop_front();

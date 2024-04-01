@@ -296,15 +296,23 @@ namespace virtualdesktop_openxr {
             uint32_t extensionVersion;
         };
 
-        struct Swapchain {
-            // The OVR swapchain objects. For texture arrays, we must have one swapchain per slice due to OVR
-            // limitation.
-            std::vector<ovrTextureSwapChain> ovrSwapchain;
-            int ovrSwapchainLength{0};
+        struct SwapchainSlice {
+            ovrTextureSwapChain ovrSwapchain;
             std::vector<ComPtr<ID3D11Texture2D>> images;
 
-            // The cached textures used for copy between swapchains.
-            std::vector<std::vector<ComPtr<ID3D11Texture2D>>> slices;
+            // Resources for copy/resolve/pre-processing.
+            std::vector<ComPtr<ID3D11UnorderedAccessView>> uavs;
+            int lastProcessedIndex{-1};
+        };
+
+        struct Swapchain {
+            // The OVR swapchain objects and images we return to the application.
+            SwapchainSlice appSwapchain;
+            int ovrSwapchainLength{0};
+
+            // For texture arrays and multisample swapchains, we must resolve into another swapchain that will actually
+            // be used by OVR.
+            std::vector<SwapchainSlice> resolvedSlices;
 
             // The last manipulated swapchain image index.
             std::deque<int> acquiredIndices;
@@ -314,15 +322,6 @@ namespace virtualdesktop_openxr {
 
             // Whether a static image swapchain has been acquired at least once.
             bool frozen{false};
-
-            // Resources needed to resolve MSAA and/or format conversion or alpha correction.
-            std::vector<int> lastProcessedIndex;
-            std::vector<std::vector<ComPtr<ID3D11ShaderResourceView>>> imagesResourceView;
-            std::vector<std::vector<ComPtr<ID3D11RenderTargetView>>> renderTargetView;
-            ComPtr<ID3D11Texture2D> resolved;
-            ComPtr<ID3D11Buffer> convertConstants;
-            ComPtr<ID3D11UnorderedAccessView> convertAccessView;
-            ComPtr<ID3D11ShaderResourceView> convertResourceView;
 
             // Resources needed for interop.
             std::vector<ComPtr<ID3D11Texture2D>> d3d11Images;
@@ -496,13 +495,12 @@ namespace virtualdesktop_openxr {
         void cleanupSubmissionDevice();
         std::vector<HANDLE> getSwapchainImages(Swapchain& xrSwapchain);
         XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain, XrSwapchainImageD3D11KHR* d3d11Images, uint32_t count);
-        void prepareAndCommitSwapchainImage(Swapchain& xrSwapchain,
-                                            uint32_t layerIndex,
-                                            uint32_t slice,
-                                            XrCompositionLayerFlags compositionFlags,
-                                            std::set<std::pair<ovrTextureSwapChain, uint32_t>>& committed);
+        void preprocessSwapchainImage(Swapchain& xrSwapchain,
+                                      uint32_t layerIndex,
+                                      uint32_t slice,
+                                      XrCompositionLayerFlags compositionFlags,
+                                      std::set<std::pair<ovrTextureSwapChain, uint32_t>>& processed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
-        void ensureSwapchainIntermediateResources(Swapchain& xrSwapchain) const;
         void flushD3D11Context();
         void flushSubmissionContext();
         void serializeD3D11Frame();
@@ -596,7 +594,11 @@ namespace virtualdesktop_openxr {
         ComPtr<ID3D11Fence> m_ovrSubmissionFence;
         wil::unique_handle m_eventForSubmissionFence;
         bool m_syncGpuWorkInEndFrame{false};
-        ComPtr<ID3D11ComputeShader> m_alphaCorrectShader[2];
+        ComPtr<ID3D11SamplerState> m_linearClampSampler;
+        ComPtr<ID3D11VertexShader> m_fullQuadVS;
+        // TODO: Depth resolve shader.
+        ComPtr<ID3D11ComputeShader> m_alphaCorrectShader;
+        ComPtr<ID3D11Buffer> m_alphaCorrectContants;
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
@@ -712,12 +714,6 @@ namespace virtualdesktop_openxr {
         // Workaround: the AMD driver does not seem to like closing the handle for the shared fence when using
         // OpenGL. We keep it alive for the whole session.
         wil::shared_handle m_fenceHandleForAMDWorkaround;
-
-        // Common resources needed for sRGB color conversion.
-        ComPtr<ID3D11SamplerState> m_linearClampSampler;
-        ComPtr<ID3D11RasterizerState> m_noDepthRasterizer;
-        ComPtr<ID3D11VertexShader> m_fullQuadVS;
-        ComPtr<ID3D11PixelShader> m_colorConversionPS;
 
         // Frame state.
         std::mutex m_frameMutex;
