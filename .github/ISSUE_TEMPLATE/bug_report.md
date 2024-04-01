@@ -12,7 +12,7 @@ assignees: ''
 **Describe the bug**
 
 _A clear and concise description of what the bug is._
-_Always attach (upload, do not copy/paste) the `OpenXT.log` file that can be found at `%ProgramData%\Virtual Desktop`_
+_Always attach (upload, do not copy/paste) the `OpenXR.log` file that can be found at `%ProgramData%\Virtual Desktop`_
 
 **Environment**
 
