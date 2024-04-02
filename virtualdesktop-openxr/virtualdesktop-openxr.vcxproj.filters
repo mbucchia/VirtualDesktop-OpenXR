@@ -192,5 +192,8 @@
     <FxCompile Include="AlphaBlendingCS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="ResolveMultisampledDepthPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

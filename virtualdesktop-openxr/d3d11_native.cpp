@@ -28,6 +28,7 @@
 
 #include "AlphaBlendingCS.h"
 #include "FullScreenQuadVS.h"
+#include "ResolveMultisampledDepthPS.h"
 
 // Implements native support to submit swapchains to OVR.
 // Implements the necessary support for the XR_KHR_D3D11_enable extension:
@@ -37,6 +38,10 @@ namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::log;
     using namespace virtualdesktop_openxr::utils;
+
+    struct ResolveMultisampledDepthPSConstants {
+        alignas(4) uint32_t slice;
+    };
 
     struct AlphaBlendingCSConstants {
         alignas(4) bool ignoreAlpha;
@@ -218,10 +223,14 @@ namespace virtualdesktop_openxr {
         CHECK_HRCMD(m_ovrSubmissionDevice->CreateVertexShader(
             g_FullScreenQuadVS, sizeof(g_FullScreenQuadVS), nullptr, m_fullQuadVS.ReleaseAndGetAddressOf()));
         setDebugName(m_fullQuadVS.Get(), "FullQuad VS");
+        CHECK_HRCMD(m_ovrSubmissionDevice->CreatePixelShader(g_ResolveMultisampledDepthPS,
+                                                             sizeof(g_ResolveMultisampledDepthPS),
+                                                             nullptr,
+                                                             m_resolveMultisampledDepthPS.ReleaseAndGetAddressOf()));
+        setDebugName(m_resolveMultisampledDepthPS.Get(), "Resolve MSAA Depth PS");
 
         {
-            D3D11_SAMPLER_DESC desc;
-            ZeroMemory(&desc, sizeof(desc));
+            D3D11_SAMPLER_DESC desc{};
             desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
             desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
             desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -231,8 +240,41 @@ namespace virtualdesktop_openxr {
             desc.MaxLOD = D3D11_MIP_LOD_BIAS_MAX;
             CHECK_HRCMD(
                 m_ovrSubmissionDevice->CreateSamplerState(&desc, m_linearClampSampler.ReleaseAndGetAddressOf()));
+            setDebugName(m_linearClampSampler.Get(), "Linear Sampler");
         }
+        {
+            D3D11_SAMPLER_DESC desc{};
+            desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.MaxAnisotropy = 1;
+            desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+            desc.MinLOD = D3D11_MIP_LOD_BIAS_MIN;
+            desc.MaxLOD = D3D11_MIP_LOD_BIAS_MAX;
+            CHECK_HRCMD(m_ovrSubmissionDevice->CreateSamplerState(&desc, m_pointClampSampler.ReleaseAndGetAddressOf()));
+            setDebugName(m_pointClampSampler.Get(), "Point Sampler");
+        }
+        {
+            D3D11_DEPTH_STENCIL_DESC desc{};
+            desc.DepthEnable = TRUE;
+            desc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+            desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+            CHECK_HRCMD(
+                m_ovrSubmissionDevice->CreateDepthStencilState(&desc, m_noDepthReadState.ReleaseAndGetAddressOf()));
+            setDebugName(m_noDepthReadState.Get(), "No Depth Test State");
+        }
+        {
+            D3D11_BUFFER_DESC desc{};
+            desc.ByteWidth = ((sizeof(ResolveMultisampledDepthPSConstants) + 15) / 16) * 16;
+            desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+            desc.Usage = D3D11_USAGE_DYNAMIC;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
+            CHECK_HRCMD(
+                m_ovrSubmissionDevice->CreateBuffer(&desc, nullptr, m_resolveMultisampledDepthConstants.ReleaseAndGetAddressOf()));
+            setDebugName(m_resolveMultisampledDepthConstants.Get(), "Resolve MSAA Depth Constants");
+        }
         {
             D3D11_BUFFER_DESC desc{};
             desc.ByteWidth = ((sizeof(AlphaBlendingCSConstants) + 15) / 16) * 16;
@@ -241,8 +283,8 @@ namespace virtualdesktop_openxr {
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
             CHECK_HRCMD(
-                m_ovrSubmissionDevice->CreateBuffer(&desc, nullptr, m_alphaCorrectContants.ReleaseAndGetAddressOf()));
-            setDebugName(m_alphaCorrectContants.Get(), "AlphaBlending Constants");
+                m_ovrSubmissionDevice->CreateBuffer(&desc, nullptr, m_alphaCorrectConstants.ReleaseAndGetAddressOf()));
+            setDebugName(m_alphaCorrectConstants.Get(), "AlphaBlending Constants");
         }
 
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
@@ -301,10 +343,14 @@ namespace virtualdesktop_openxr {
         }
 
         m_dxgiSwapchain.Reset();
-        m_alphaCorrectShader.Reset();
-        m_alphaCorrectContants.Reset();
         m_fullQuadVS.Reset();
+        m_resolveMultisampledDepthPS.Reset();
+        m_resolveMultisampledDepthConstants.Reset();
+        m_alphaCorrectShader.Reset();
+        m_alphaCorrectConstants.Reset();
         m_linearClampSampler.Reset();
+        m_pointClampSampler.Reset();
+        m_noDepthReadState.Reset();
 
         m_ovrSubmissionFence.Reset();
         m_ovrSubmissionContextState.Reset();
@@ -461,26 +507,128 @@ namespace virtualdesktop_openxr {
         // 1). This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
         const bool needPremultiplyAlpha =
             layerIndex > 0 && (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
-        const bool needCopy = xrSwapchain.resolvedSlices[slice].lastProcessedIndex == lastReleasedIndex || slice > 0;
+        const bool needCopy = xrSwapchain.resolvedSlices[slice].lastProcessedIndex == lastReleasedIndex || slice > 0 ||
+                              xrSwapchain.ovrDesc.SampleCount > 1;
 
         const bool needCommit = needClearAlpha || needPremultiplyAlpha || needCopy;
 
         if (needCopy) {
             // Circumvent some of OVR's limitations:
             // - For texture arrays, we must do a copy to slice 0 into another swapchain.
+            // - For MSAA, we must resolve into a non-MSAA swapchain.
             // - Committing into a swapchain automatically acquires the next image. When an app renders certain
             //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current OVR swapchain
             //   image. All the processing needed (eg: alpha correction) was done during initial processing (the first
             //   time we saw the last released image), so no need to redo it.
-            // TODO: Resolve MSAA here.
-            m_ovrSubmissionContext->CopySubresourceRegion(xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
-                                                          0,
-                                                          0,
-                                                          0,
-                                                          0,
-                                                          xrSwapchain.appSwapchain.images[lastReleasedIndex].Get(),
-                                                          slice,
-                                                          nullptr);
+            if (xrSwapchain.ovrDesc.SampleCount == 1) {
+                m_ovrSubmissionContext->CopySubresourceRegion(
+                    xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    xrSwapchain.appSwapchain.images[lastReleasedIndex].Get(),
+                    slice,
+                    nullptr);
+            } else {
+                // Resolve MSAA. For depth buffers, this requires a shader.
+                if (!(xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+                    m_ovrSubmissionContext->ResolveSubresource(
+                        xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
+                        0,
+                        xrSwapchain.appSwapchain.images[lastReleasedIndex].Get(),
+                        slice,
+                        xrSwapchain.dxgiFormatForSubmission);
+                } else {
+                    // We are about to do something destructive to the application context. Save the context. It will be
+                    // restored at the end of xrEndFrame().
+                    if (m_d3d11Device == m_ovrSubmissionDevice && !m_d3d11ContextState) {
+                        m_ovrSubmissionContext->SwapDeviceContextState(m_ovrSubmissionContextState.Get(),
+                                                                       m_d3d11ContextState.ReleaseAndGetAddressOf());
+                    }
+
+                    if (xrSwapchain.appSwapchain.srvs.size() <= lastReleasedIndex) {
+                        xrSwapchain.appSwapchain.srvs.resize(lastReleasedIndex + 1);
+                    }
+                    if (!xrSwapchain.appSwapchain.srvs[lastReleasedIndex]) {
+                        D3D11_SHADER_RESOURCE_VIEW_DESC desc{};
+                        desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY;
+                        desc.Format = getShaderResourceViewFormat(xrSwapchain.dxgiFormatForSubmission);
+                        desc.Texture2DMSArray.ArraySize = xrSwapchain.ovrDesc.ArraySize;
+                        CHECK_HRCMD(m_ovrSubmissionDevice->CreateShaderResourceView(
+                            xrSwapchain.appSwapchain.images[lastReleasedIndex].Get(),
+                            &desc,
+                            xrSwapchain.appSwapchain.srvs[lastReleasedIndex].ReleaseAndGetAddressOf()));
+                        setDebugName(
+                            xrSwapchain.appSwapchain.srvs[lastReleasedIndex].Get(),
+                            fmt::format(
+                                "Runtime Slice SRV[{}, {}, {}]", slice, lastReleasedIndex, (void*)&xrSwapchain));
+                    }
+                    if (xrSwapchain.resolvedSlices[slice].dsvs.size() <= ovrDestIndex) {
+                        xrSwapchain.resolvedSlices[slice].dsvs.resize(ovrDestIndex + 1);
+                    }
+                    if (!xrSwapchain.resolvedSlices[slice].dsvs[ovrDestIndex]) {
+                        D3D11_DEPTH_STENCIL_VIEW_DESC desc{};
+                        desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+                        desc.Format = xrSwapchain.dxgiFormatForSubmission;
+                        CHECK_HRCMD(m_ovrSubmissionDevice->CreateDepthStencilView(
+                            xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
+                            &desc,
+                            xrSwapchain.resolvedSlices[slice].dsvs[ovrDestIndex].ReleaseAndGetAddressOf()));
+                        setDebugName(
+                            xrSwapchain.resolvedSlices[slice].dsvs[ovrDestIndex].Get(),
+                            fmt::format("Runtime Slice DSV[{}, {}, {}]", slice, ovrDestIndex, (void*)&xrSwapchain));
+                    }
+
+                    m_ovrSubmissionContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+                    m_ovrSubmissionContext->VSSetShader(m_fullQuadVS.Get(), nullptr, 0);
+                    m_ovrSubmissionContext->PSSetShader(m_resolveMultisampledDepthPS.Get(), nullptr, 0);
+
+                    m_ovrSubmissionContext->OMSetRenderTargets(
+                        0, nullptr, xrSwapchain.resolvedSlices[slice].dsvs[ovrDestIndex].Get());
+                    D3D11_VIEWPORT viewport{};
+                    viewport.Width = (float)xrSwapchain.ovrDesc.Width;
+                    viewport.Height = (float)xrSwapchain.ovrDesc.Height;
+                    viewport.MaxDepth = 1.f;
+                    m_ovrSubmissionContext->RSSetViewports(1, &viewport);
+                    m_ovrSubmissionContext->OMSetDepthStencilState(m_noDepthReadState.Get(), 0xff);
+                    {
+                        ResolveMultisampledDepthPSConstants constants{};
+                        constants.slice = slice;
+
+                        D3D11_MAPPED_SUBRESOURCE mappedResources;
+                        CHECK_HRCMD(m_ovrSubmissionContext->Map(m_resolveMultisampledDepthConstants.Get(),
+                                                                0,
+                                                                D3D11_MAP_WRITE_DISCARD,
+                                                                0,
+                                                                &mappedResources));
+                        memcpy(mappedResources.pData, &constants, sizeof(constants));
+                        m_ovrSubmissionContext->Unmap(m_resolveMultisampledDepthConstants.Get(), 0);
+                        m_ovrSubmissionContext->PSSetConstantBuffers(
+                            0, 1, m_resolveMultisampledDepthConstants.GetAddressOf());
+                    }
+                    ID3D11SamplerState* sampler[] = {m_pointClampSampler.Get()};
+                    m_ovrSubmissionContext->PSSetSamplers(0, 1, sampler);
+                    ID3D11ShaderResourceView* SRV[] = {xrSwapchain.appSwapchain.srvs[lastReleasedIndex].Get()};
+                    m_ovrSubmissionContext->PSSetShaderResources(0, 1, SRV);
+
+                    m_ovrSubmissionContext->Draw(3, 0);
+
+                    // Unbind all resources to avoid D3D validation errors.
+                    {
+                        m_ovrSubmissionContext->OMSetRenderTargets(0, nullptr, nullptr);
+                        m_ovrSubmissionContext->VSSetShader(nullptr, nullptr, 0);
+                        m_ovrSubmissionContext->PSSetShader(nullptr, nullptr, 0);
+                        ID3D11Buffer* nullCBV[] = {nullptr};
+                        m_ovrSubmissionContext->PSSetConstantBuffers(0, 1, nullCBV);
+                        ID3D11SamplerState* nullSampler[] = {nullptr};
+                        m_ovrSubmissionContext->PSSetSamplers(0, 1, nullSampler);
+                        ID3D11ShaderResourceView* nullSRV[] = {nullptr};
+                        m_ovrSubmissionContext->PSGetShaderResources(0, 1, nullSRV);
+                    }
+                }
+            }
         }
 
         if (needClearAlpha || needPremultiplyAlpha) {
@@ -502,10 +650,10 @@ namespace virtualdesktop_openxr {
 
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
                 CHECK_HRCMD(m_ovrSubmissionContext->Map(
-                    m_alphaCorrectContants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
+                    m_alphaCorrectConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
                 memcpy(mappedResources.pData, &constants, sizeof(constants));
-                m_ovrSubmissionContext->Unmap(m_alphaCorrectContants.Get(), 0);
-                m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, m_alphaCorrectContants.GetAddressOf());
+                m_ovrSubmissionContext->Unmap(m_alphaCorrectConstants.Get(), 0);
+                m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, m_alphaCorrectConstants.GetAddressOf());
             }
 
             if (xrSwapchain.resolvedSlices[slice].uavs.size() <= ovrDestIndex) {

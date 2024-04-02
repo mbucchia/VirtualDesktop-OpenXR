@@ -301,7 +301,9 @@ namespace virtualdesktop_openxr {
             std::vector<ComPtr<ID3D11Texture2D>> images;
 
             // Resources for copy/resolve/pre-processing.
+            std::vector<ComPtr<ID3D11ShaderResourceView>> srvs;
             std::vector<ComPtr<ID3D11UnorderedAccessView>> uavs;
+            std::vector<ComPtr<ID3D11DepthStencilView>> dsvs;
             int lastProcessedIndex{-1};
         };
 
@@ -595,10 +597,13 @@ namespace virtualdesktop_openxr {
         wil::unique_handle m_eventForSubmissionFence;
         bool m_syncGpuWorkInEndFrame{false};
         ComPtr<ID3D11SamplerState> m_linearClampSampler;
+        ComPtr<ID3D11SamplerState> m_pointClampSampler;
+        ComPtr<ID3D11DepthStencilState> m_noDepthReadState;
         ComPtr<ID3D11VertexShader> m_fullQuadVS;
-        // TODO: Depth resolve shader.
+        ComPtr<ID3D11PixelShader> m_resolveMultisampledDepthPS;
+        ComPtr<ID3D11Buffer> m_resolveMultisampledDepthConstants;
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader;
-        ComPtr<ID3D11Buffer> m_alphaCorrectContants;
+        ComPtr<ID3D11Buffer> m_alphaCorrectConstants;
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};

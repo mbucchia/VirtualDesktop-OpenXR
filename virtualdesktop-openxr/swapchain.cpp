@@ -162,9 +162,7 @@ namespace virtualdesktop_openxr {
                 // 8x MSAA for all render target formats except R32G32B32A32 formats.".
                 // We could go and check every supported render target formats to find a possibly higher count, but we
                 // do not bother.
-                // TODO: We do not support MSAA swapchains today, as they are incompatible with our alpha correction
-                // shaders.
-                views[i].maxSwapchainSampleCount = 1;
+                views[i].maxSwapchainSampleCount = 4;
                 views[i].recommendedSwapchainSampleCount = 1;
 
                 // Recommend the resolution with distortion accounted for.

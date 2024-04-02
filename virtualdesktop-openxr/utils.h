@@ -513,6 +513,15 @@ namespace virtualdesktop_openxr::utils {
         return false;
     }
 
+    static DXGI_FORMAT getShaderResourceViewFormat(DXGI_FORMAT format) {
+        switch (format) {
+        case DXGI_FORMAT_D32_FLOAT:
+            return DXGI_FORMAT_R32_FLOAT;
+        }
+
+        return format;
+    }
+
     static DXGI_FORMAT getUnorderedAccessViewFormat(DXGI_FORMAT format) {
         switch (format) {
         case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:

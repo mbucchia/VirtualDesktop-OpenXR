@@ -7,8 +7,7 @@ namespace virtualdesktop_openxr::utils {
     // An asynchronous GPU timer for Direct3D 11.
     struct D3D11GpuTimer : public ITimer {
         D3D11GpuTimer(ID3D11Device* device, ID3D11DeviceContext* context) : m_context(context) {
-            D3D11_QUERY_DESC queryDesc;
-            ZeroMemory(&queryDesc, sizeof(D3D11_QUERY_DESC));
+            D3D11_QUERY_DESC queryDesc{};
             queryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
             CHECK_HRCMD(device->CreateQuery(&queryDesc, m_timeStampDis.ReleaseAndGetAddressOf()));
             queryDesc.Query = D3D11_QUERY_TIMESTAMP;
