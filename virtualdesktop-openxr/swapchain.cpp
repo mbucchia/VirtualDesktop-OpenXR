@@ -103,7 +103,7 @@ namespace virtualdesktop_openxr {
         }
 
         configurationProperties->viewConfigurationType = viewConfigurationType;
-        configurationProperties->fovMutable = XR_FALSE;
+        configurationProperties->fovMutable = XR_TRUE;
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetViewConfigurationProperties",
