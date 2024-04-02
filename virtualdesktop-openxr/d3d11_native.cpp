@@ -271,8 +271,8 @@ namespace virtualdesktop_openxr {
             desc.Usage = D3D11_USAGE_DYNAMIC;
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-            CHECK_HRCMD(
-                m_ovrSubmissionDevice->CreateBuffer(&desc, nullptr, m_resolveMultisampledDepthConstants.ReleaseAndGetAddressOf()));
+            CHECK_HRCMD(m_ovrSubmissionDevice->CreateBuffer(
+                &desc, nullptr, m_resolveMultisampledDepthConstants.ReleaseAndGetAddressOf()));
             setDebugName(m_resolveMultisampledDepthConstants.Get(), "Resolve MSAA Depth Constants");
         }
         {
@@ -364,15 +364,50 @@ namespace virtualdesktop_openxr {
         // Detect whether this is the first call for this swapchain.
         const bool initialized = !xrSwapchain.appSwapchain.images.empty();
 
+        D3D11_TEXTURE2D_DESC textureDesc{};
+        if (!initialized && !xrSwapchain.appSwapchain.ovrSwapchain) {
+            textureDesc.Format = getTypelessFormat(xrSwapchain.dxgiFormatForSubmission);
+            textureDesc.Width = xrSwapchain.ovrDesc.Width;
+            textureDesc.Height = xrSwapchain.ovrDesc.Height;
+            textureDesc.ArraySize = (xrSwapchain.ovrDesc.Type != ovrTexture_Cube) ? xrSwapchain.ovrDesc.ArraySize : 6;
+            textureDesc.MipLevels = xrSwapchain.ovrDesc.MipLevels;
+            textureDesc.SampleDesc.Count = xrSwapchain.ovrDesc.SampleCount;
+
+            textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            if (xrSwapchain.ovrDesc.BindFlags & ovrTextureBind_DX_RenderTarget) {
+                textureDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+            }
+            if (xrSwapchain.ovrDesc.BindFlags & ovrTextureBind_DX_UnorderedAccess) {
+                textureDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+            }
+            if (xrSwapchain.ovrDesc.BindFlags & ovrTextureBind_DX_DepthStencil) {
+                textureDesc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+            }
+
+            textureDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+            if (xrSwapchain.ovrDesc.Type == ovrTexture_Cube) {
+                textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
+            }
+            if (xrSwapchain.ovrDesc.MiscFlags & ovrTextureMisc_AllowGenerateMips) {
+                textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+            }
+        }
+
         // Query the textures for the swapchain.
         std::vector<HANDLE> handles;
         for (int i = 0; i < xrSwapchain.ovrSwapchainLength; i++) {
             if (!initialized) {
                 ComPtr<ID3D11Texture2D> swapchainTexture;
-                CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
-                                                             xrSwapchain.appSwapchain.ovrSwapchain,
-                                                             i,
-                                                             IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
+                if (xrSwapchain.appSwapchain.ovrSwapchain) {
+                    CHECK_OVRCMD(
+                        ovr_GetTextureSwapChainBufferDX(m_ovrSession,
+                                                        xrSwapchain.appSwapchain.ovrSwapchain,
+                                                        i,
+                                                        IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
+                } else {
+                    CHECK_HRCMD(m_ovrSubmissionDevice->CreateTexture2D(
+                        &textureDesc, nullptr, swapchainTexture.ReleaseAndGetAddressOf()));
+                }
                 setDebugName(swapchainTexture.Get(),
                              fmt::format("OVR Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
@@ -439,10 +474,7 @@ namespace virtualdesktop_openxr {
                     CHECK_HRCMD(m_d3d11Device->OpenSharedResource(textureHandles[i],
                                                                   IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
                 } else {
-                    CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
-                                                                 xrSwapchain.appSwapchain.ovrSwapchain,
-                                                                 i,
-                                                                 IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                    d3d11Texture = xrSwapchain.appSwapchain.images[i];
                 }
 
                 setDebugName(d3d11Texture.Get(), fmt::format("App Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
@@ -485,11 +517,11 @@ namespace virtualdesktop_openxr {
                                                  uint32_t layerIndex,
                                                  uint32_t slice,
                                                  XrCompositionLayerFlags compositionFlags,
-                                                 std::set<std::pair<ovrTextureSwapChain, uint32_t>>& processed) {
+                                                 std::set<std::pair<Swapchain*, uint32_t>>& processed) {
         // If the texture was never used or already committed, do nothing.
         // TODO: If the same swapchain is used with different bits in several layers, the bits are not honored. This is
         // a very uncommon case.
-        const auto tuple = std::make_pair(xrSwapchain.appSwapchain.ovrSwapchain, slice);
+        const auto tuple = std::make_pair(&xrSwapchain, slice);
         if (xrSwapchain.appSwapchain.images.empty() || processed.count(tuple)) {
             return;
         }
@@ -507,7 +539,8 @@ namespace virtualdesktop_openxr {
         // 1). This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
         const bool needPremultiplyAlpha =
             layerIndex > 0 && (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
-        const bool needCopy = xrSwapchain.resolvedSlices[slice].lastProcessedIndex == lastReleasedIndex || slice > 0 ||
+        const bool needCopy = xrSwapchain.resolvedSlices[slice].lastProcessedIndex == lastReleasedIndex ||
+                              (slice > 0 || !xrSwapchain.appSwapchain.ovrSwapchain) ||
                               xrSwapchain.ovrDesc.SampleCount > 1;
 
         const bool needCommit = needClearAlpha || needPremultiplyAlpha || needCopy;
@@ -700,8 +733,7 @@ namespace virtualdesktop_openxr {
     // when resolving MSAA.
     void OpenXrRuntime::ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const {
         if (xrSwapchain.resolvedSlices.size() <= slice) {
-            if (slice == 0 && xrSwapchain.ovrDesc.SampleCount == 1) {
-                // If we do not need to resolve MSAA, then we can reuse the application swapchain as-is.
+            if (slice == 0 && xrSwapchain.appSwapchain.ovrSwapchain) {
                 xrSwapchain.resolvedSlices.push_back(xrSwapchain.appSwapchain);
             } else {
                 xrSwapchain.resolvedSlices.resize(slice + 1);

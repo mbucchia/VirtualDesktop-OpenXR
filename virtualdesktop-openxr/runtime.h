@@ -501,7 +501,7 @@ namespace virtualdesktop_openxr {
                                       uint32_t layerIndex,
                                       uint32_t slice,
                                       XrCompositionLayerFlags compositionFlags,
-                                      std::set<std::pair<ovrTextureSwapChain, uint32_t>>& processed);
+                                      std::set<std::pair<Swapchain*, uint32_t>>& processed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void flushD3D11Context();
         void flushSubmissionContext();

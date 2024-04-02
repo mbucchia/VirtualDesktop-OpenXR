@@ -390,7 +390,7 @@ namespace virtualdesktop_openxr {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
-            std::set<std::pair<ovrTextureSwapChain, uint32_t>> committedSwapchainImages;
+            std::set<std::pair<Swapchain*, uint32_t>> processedSwapchainImages;
 
             bool isProj0SRGB = false;
             bool isFirstProjectionLayer = true;
@@ -487,7 +487,7 @@ namespace virtualdesktop_openxr {
                                                  i,
                                                  proj->views[viewIndex].subImage.imageArrayIndex,
                                                  frameEndInfo->layers[i]->layerFlags,
-                                                 committedSwapchainImages);
+                                                 processedSwapchainImages);
                         layer->EyeFov.ColorTexture[viewIndex] =
                             xrSwapchain.resolvedSlices[proj->views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
 
@@ -562,7 +562,7 @@ namespace virtualdesktop_openxr {
                                         i,
                                         depth->subImage.imageArrayIndex,
                                         XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
-                                        committedSwapchainImages);
+                                        processedSwapchainImages);
                                     layer->EyeFovDepth.DepthTexture[viewIndex] =
                                         xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
 
@@ -675,7 +675,7 @@ namespace virtualdesktop_openxr {
                                              i,
                                              quad->subImage.imageArrayIndex,
                                              frameEndInfo->layers[i]->layerFlags,
-                                             committedSwapchainImages);
+                                             processedSwapchainImages);
                     layer->Quad.ColorTexture = xrSwapchain.resolvedSlices[quad->subImage.imageArrayIndex].ovrSwapchain;
 
                     if (!isValidSwapchainRect(xrSwapchain.ovrDesc, quad->subImage.imageRect)) {
@@ -751,7 +751,7 @@ namespace virtualdesktop_openxr {
 
                     // Fill out color buffer information.
                     preprocessSwapchainImage(
-                        xrSwapchain, i, 0, frameEndInfo->layers[i]->layerFlags, committedSwapchainImages);
+                        xrSwapchain, i, 0, frameEndInfo->layers[i]->layerFlags, processedSwapchainImages);
                     layer->Cube.CubeMapTexture = xrSwapchain.resolvedSlices[0].ovrSwapchain;
 
                     if (!m_spaces.count(cube->space)) {
