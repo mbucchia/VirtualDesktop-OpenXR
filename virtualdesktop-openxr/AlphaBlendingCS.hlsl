@@ -7,7 +7,7 @@ cbuffer config : register(b0) {
     bool isUnpremultipliedAlpha;
 };
 
-RWTexture2D<float4> inoutTexture : register(u0);
+RWTexture2D<unorm float4> inoutTexture : register(u0);
 
 [numthreads(32, 32, 1)]
 void main(uint2 pos : SV_DispatchThreadID) {
