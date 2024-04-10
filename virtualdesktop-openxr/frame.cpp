@@ -390,10 +390,9 @@ namespace virtualdesktop_openxr {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
-            std::set<std::pair<Swapchain*, uint32_t>> processedSwapchainImages;
-
-            bool isProj0SRGB = false;
-            bool isFirstProjectionLayer = true;
+            m_precompositor.displayTime = frameEndInfo->displayTime;
+            m_precompositor.isFirstProjectionLayer = true;
+            m_precompositor.processedSwapchainImages.clear();
 
             // Construct the list of layers.
             std::vector<ovrLayer_Union> layersAllocator;
@@ -410,181 +409,26 @@ namespace virtualdesktop_openxr {
                 }
 
                 layersAllocator.push_back({});
-                auto* layer = &layersAllocator.back();
-                layer->Header.Flags = 0;
+                auto& layer = layersAllocator.back();
+                layer.Header.Flags = 0;
+
+                m_precompositor.layerIndex = i;
 
                 // OpenGL needs to flip the texture vertically, which OVR can conveniently do for us.
                 if (isOpenGLSession()) {
-                    layer->Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
+                    layer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
                 }
 
                 if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
                     const XrCompositionLayerProjection* proj =
                         reinterpret_cast<const XrCompositionLayerProjection*>(frameEndInfo->layers[i]);
 
-                    TraceLoggingWrite(g_traceProvider,
-                                      "xrEndFrame_Layer",
-                                      TLArg("Proj", "Type"),
-                                      TLArg(proj->layerFlags, "Flags"),
-                                      TLXArg(proj->space, "Space"));
-
-                    if (proj->viewCount != xr::StereoView::Count) {
-                        return XR_ERROR_VALIDATION_FAILURE;
+                    const XrResult result = handleProjectionLayer(*proj, layer);
+                    if (XR_FAILED(result)) {
+                        return result;
                     }
 
-                    // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
-                    static_assert(offsetof(decltype(layer->EyeFov), ColorTexture) ==
-                                  offsetof(decltype(layer->EyeFovDepth), ColorTexture));
-                    static_assert(offsetof(decltype(layer->EyeFov), Viewport) ==
-                                  offsetof(decltype(layer->EyeFovDepth), Viewport));
-                    static_assert(offsetof(decltype(layer->EyeFov), Fov) ==
-                                  offsetof(decltype(layer->EyeFovDepth), Fov));
-                    static_assert(offsetof(decltype(layer->EyeFov), RenderPose) ==
-                                  offsetof(decltype(layer->EyeFovDepth), RenderPose));
-                    static_assert(offsetof(decltype(layer->EyeFov), SensorSampleTime) ==
-                                  offsetof(decltype(layer->EyeFovDepth), SensorSampleTime));
-
-                    // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
-                    layer->Header.Type = ovrLayerType_EyeFov;
-
-                    for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
-                        TraceLoggingWrite(
-                            g_traceProvider,
-                            "xrEndFrame_View",
-                            TLArg("Proj", "Type"),
-                            TLArg(viewIndex, "ViewIndex"),
-                            TLXArg(proj->views[viewIndex].subImage.swapchain, "Swapchain"),
-                            TLArg(proj->views[viewIndex].subImage.imageArrayIndex, "ImageArrayIndex"),
-                            TLArg(xr::ToString(proj->views[viewIndex].subImage.imageRect).c_str(), "ImageRect"),
-                            TLArg(xr::ToString(proj->views[viewIndex].pose).c_str(), "Pose"),
-                            TLArg(xr::ToString(proj->views[viewIndex].fov).c_str(), "Fov"));
-
-                        if (!Quaternion::IsNormalized(proj->views[viewIndex].pose.orientation)) {
-                            return XR_ERROR_POSE_INVALID;
-                        }
-
-                        if (!m_swapchains.count(proj->views[viewIndex].subImage.swapchain)) {
-                            return XR_ERROR_HANDLE_INVALID;
-                        }
-
-                        Swapchain& xrSwapchain = *(Swapchain*)proj->views[viewIndex].subImage.swapchain;
-
-                        if (xrSwapchain.lastReleasedIndex == -1) {
-                            return XR_ERROR_LAYER_INVALID;
-                        }
-
-                        if (proj->views[viewIndex].subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize ||
-                            xrSwapchain.xrDesc.faceCount != 1) {
-                            return XR_ERROR_VALIDATION_FAILURE;
-                        }
-
-                        if (isFirstProjectionLayer) {
-                            isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
-                        }
-
-                        // Fill out color buffer information.
-                        preprocessSwapchainImage(xrSwapchain,
-                                                 i,
-                                                 proj->views[viewIndex].subImage.imageArrayIndex,
-                                                 frameEndInfo->layers[i]->layerFlags,
-                                                 processedSwapchainImages);
-                        layer->EyeFov.ColorTexture[viewIndex] =
-                            xrSwapchain.resolvedSlices[proj->views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
-
-                        if (!isValidSwapchainRect(xrSwapchain.ovrDesc, proj->views[viewIndex].subImage.imageRect)) {
-                            return XR_ERROR_SWAPCHAIN_RECT_INVALID;
-                        }
-                        layer->EyeFov.Viewport[viewIndex].Pos.x = proj->views[viewIndex].subImage.imageRect.offset.x;
-                        layer->EyeFov.Viewport[viewIndex].Pos.y = proj->views[viewIndex].subImage.imageRect.offset.y;
-                        layer->EyeFov.Viewport[viewIndex].Size.w =
-                            proj->views[viewIndex].subImage.imageRect.extent.width;
-                        layer->EyeFov.Viewport[viewIndex].Size.h =
-                            proj->views[viewIndex].subImage.imageRect.extent.height;
-
-                        // Fill out pose and FOV information.
-                        XrPosef layerPose;
-                        locateSpace(*(Space*)proj->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
-                        layer->EyeFov.RenderPose[viewIndex] =
-                            xrPoseToOvrPose(Pose::Multiply(proj->views[viewIndex].pose, layerPose));
-
-                        XrFovf fov = proj->views[viewIndex].fov;
-                        layer->EyeFov.Fov[viewIndex].DownTan = -tan(fov.angleDown);
-                        layer->EyeFov.Fov[viewIndex].UpTan = tan(fov.angleUp);
-                        layer->EyeFov.Fov[viewIndex].LeftTan = -tan(fov.angleLeft);
-                        layer->EyeFov.Fov[viewIndex].RightTan = tan(fov.angleRight);
-
-                        // In the case of OpenXR, we expect the app to use the predictedDisplayTime to query the
-                        // head pose, and pass that same time as displayTime.
-                        layer->EyeFov.SensorSampleTime = xrTimeToOvrTime(frameEndInfo->displayTime);
-
-                        // Submit depth.
-                        if (has_XR_KHR_composition_layer_depth) {
-                            const XrBaseInStructure* entry =
-                                reinterpret_cast<const XrBaseInStructure*>(proj->views[viewIndex].next);
-                            while (entry) {
-                                if (entry->type == XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR) {
-                                    const XrCompositionLayerDepthInfoKHR* depth =
-                                        reinterpret_cast<const XrCompositionLayerDepthInfoKHR*>(entry);
-
-                                    layer->Header.Type = ovrLayerType_EyeFovDepth;
-
-                                    TraceLoggingWrite(
-                                        g_traceProvider,
-                                        "xrEndFrame_View",
-                                        TLArg("Depth", "Type"),
-                                        TLArg(viewIndex, "ViewIndex"),
-                                        TLXArg(depth->subImage.swapchain, "Swapchain"),
-                                        TLArg(depth->subImage.imageArrayIndex, "ImageArrayIndex"),
-                                        TLArg(xr::ToString(depth->subImage.imageRect).c_str(), "ImageRect"),
-                                        TLArg(depth->nearZ, "Near"),
-                                        TLArg(depth->farZ, "Far"),
-                                        TLArg(depth->minDepth, "MinDepth"),
-                                        TLArg(depth->maxDepth, "MaxDepth"));
-
-                                    if (!m_swapchains.count(depth->subImage.swapchain)) {
-                                        return XR_ERROR_HANDLE_INVALID;
-                                    }
-
-                                    Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
-
-                                    if (xrDepthSwapchain.lastReleasedIndex == -1) {
-                                        return XR_ERROR_LAYER_INVALID;
-                                    }
-
-                                    if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
-                                        xrSwapchain.xrDesc.faceCount != 1) {
-                                        return XR_ERROR_VALIDATION_FAILURE;
-                                    }
-
-                                    // Fill out depth buffer information.
-                                    preprocessSwapchainImage(
-                                        xrDepthSwapchain,
-                                        i,
-                                        depth->subImage.imageArrayIndex,
-                                        XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
-                                        processedSwapchainImages);
-                                    layer->EyeFovDepth.DepthTexture[viewIndex] =
-                                        xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
-
-                                    if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
-                                        return XR_ERROR_SWAPCHAIN_RECT_INVALID;
-                                    }
-
-                                    // Fill out projection information.
-                                    layer->EyeFovDepth.ProjectionDesc.Projection22 =
-                                        depth->farZ / (depth->nearZ - depth->farZ);
-                                    layer->EyeFovDepth.ProjectionDesc.Projection23 =
-                                        (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
-                                    layer->EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
-
-                                    break;
-                                }
-                                entry = entry->next;
-                            }
-                        }
-                    }
-
-                    isFirstProjectionLayer = false;
+                    m_precompositor.isFirstProjectionLayer = false;
 
                 } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD ||
                            (has_XR_KHR_composition_layer_cylinder &&
@@ -593,187 +437,22 @@ namespace virtualdesktop_openxr {
                         reinterpret_cast<const XrCompositionLayerQuad*>(frameEndInfo->layers[i]);
                     const XrCompositionLayerCylinderKHR* cylinder =
                         reinterpret_cast<const XrCompositionLayerCylinderKHR*>(frameEndInfo->layers[i]);
-                    const bool isCylinder = frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR;
 
-                    // Make sure that we can use the XrCompositionLayerQuad part of XrCompositionLayerCylinderKHR
-                    // equivalently.
-                    static_assert(offsetof(XrCompositionLayerQuad, layerFlags) ==
-                                  offsetof(XrCompositionLayerCylinderKHR, layerFlags));
-                    static_assert(offsetof(XrCompositionLayerQuad, space) ==
-                                  offsetof(XrCompositionLayerCylinderKHR, space));
-                    static_assert(offsetof(XrCompositionLayerQuad, eyeVisibility) ==
-                                  offsetof(XrCompositionLayerCylinderKHR, eyeVisibility));
-                    static_assert(offsetof(XrCompositionLayerQuad, subImage) ==
-                                  offsetof(XrCompositionLayerCylinderKHR, subImage));
-                    static_assert(offsetof(XrCompositionLayerQuad, pose) ==
-                                  offsetof(XrCompositionLayerCylinderKHR, pose));
-
-                    TraceLoggingWrite(g_traceProvider,
-                                      "xrEndFrame_Layer",
-                                      TLArg(!isCylinder ? "Quad" : "Cylinder", "Type"),
-                                      TLArg(quad->layerFlags, "Flags"),
-                                      TLXArg(quad->space, "Space"));
-                    if (!isCylinder) {
-                        TraceLoggingWrite(g_traceProvider,
-                                          "xrEndFrame_View",
-                                          TLArg("Quad", "Type"),
-                                          TLXArg(quad->subImage.swapchain, "Swapchain"),
-                                          TLArg(quad->subImage.imageArrayIndex, "ImageArrayIndex"),
-                                          TLArg(xr::ToString(quad->subImage.imageRect).c_str(), "ImageRect"),
-                                          TLArg(xr::ToString(quad->pose).c_str(), "Pose"),
-                                          TLArg(quad->size.width, "Width"),
-                                          TLArg(quad->size.height, "Height"),
-                                          TLArg(xr::ToCString(quad->eyeVisibility), "EyeVisibility"));
-                    } else {
-                        TraceLoggingWrite(g_traceProvider,
-                                          "xrEndFrame_View",
-                                          TLArg("Cylinder", "Type"),
-                                          TLXArg(cylinder->subImage.swapchain, "Swapchain"),
-                                          TLArg(cylinder->subImage.imageArrayIndex, "ImageArrayIndex"),
-                                          TLArg(xr::ToString(cylinder->subImage.imageRect).c_str(), "ImageRect"),
-                                          TLArg(xr::ToString(cylinder->pose).c_str(), "Pose"),
-                                          TLArg(cylinder->radius, "Radius"),
-                                          TLArg(cylinder->centralAngle, "CentralAngle"),
-                                          TLArg(cylinder->aspectRatio, "AspectRatio"),
-                                          TLArg(xr::ToCString(cylinder->eyeVisibility), "EyeVisibility"));
+                    const XrResult result = handleQuadCylinderLayer(*quad, *cylinder, layer);
+                    if (XR_FAILED(result)) {
+                        return result;
                     }
 
-                    // Make sure that we can use the Quad part of Cylinder equivalently.
-                    static_assert(offsetof(decltype(layer->Quad), ColorTexture) ==
-                                  offsetof(decltype(layer->Cylinder), ColorTexture));
-                    static_assert(offsetof(decltype(layer->Quad), Viewport) ==
-                                  offsetof(decltype(layer->Cylinder), Viewport));
-                    static_assert(offsetof(decltype(layer->Quad), QuadPoseCenter) ==
-                                  offsetof(decltype(layer->Cylinder), CylinderPoseCenter));
-
-                    layer->Header.Type = isCylinder ? ovrLayerType_Cylinder : ovrLayerType_Quad;
-
-                    if (!Quaternion::IsNormalized(quad->pose.orientation)) {
-                        return XR_ERROR_POSE_INVALID;
-                    }
-
-                    if (!m_swapchains.count(quad->subImage.swapchain)) {
-                        return XR_ERROR_HANDLE_INVALID;
-                    }
-
-                    Swapchain& xrSwapchain = *(Swapchain*)quad->subImage.swapchain;
-
-                    if (xrSwapchain.lastReleasedIndex == -1) {
-                        return XR_ERROR_LAYER_INVALID;
-                    }
-
-                    // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
-                    // We cannot achieve conformance for this particular (but uncommon) API usage.
-
-                    if (quad->subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize ||
-                        xrSwapchain.xrDesc.faceCount != 1) {
-                        return XR_ERROR_VALIDATION_FAILURE;
-                    }
-
-                    // Fill out color buffer information.
-                    preprocessSwapchainImage(xrSwapchain,
-                                             i,
-                                             quad->subImage.imageArrayIndex,
-                                             frameEndInfo->layers[i]->layerFlags,
-                                             processedSwapchainImages);
-                    layer->Quad.ColorTexture = xrSwapchain.resolvedSlices[quad->subImage.imageArrayIndex].ovrSwapchain;
-
-                    if (!isValidSwapchainRect(xrSwapchain.ovrDesc, quad->subImage.imageRect)) {
-                        return XR_ERROR_SWAPCHAIN_RECT_INVALID;
-                    }
-                    layer->Quad.Viewport.Pos.x = quad->subImage.imageRect.offset.x;
-                    layer->Quad.Viewport.Pos.y = quad->subImage.imageRect.offset.y;
-                    layer->Quad.Viewport.Size.w = quad->subImage.imageRect.extent.width;
-                    layer->Quad.Viewport.Size.h = quad->subImage.imageRect.extent.height;
-
-                    if (!m_spaces.count(quad->space)) {
-                        return XR_ERROR_HANDLE_INVALID;
-                    }
-                    Space& xrSpace = *(Space*)quad->space;
-
-                    // Fill out pose and quad information.
-                    if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
-                        XrPosef layerPose;
-                        locateSpace(*(Space*)quad->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
-                        layer->Quad.QuadPoseCenter = xrPoseToOvrPose(Pose::Multiply(quad->pose, layerPose));
-                    } else {
-                        layer->Quad.QuadPoseCenter = xrPoseToOvrPose(Pose::Multiply(quad->pose, xrSpace.poseInSpace));
-                        layer->Header.Flags |= ovrLayerFlag_HeadLocked;
-                    }
-
-                    if (!isCylinder) {
-                        layer->Quad.QuadSize.x = quad->size.width;
-                        layer->Quad.QuadSize.y = quad->size.height;
-                    } else {
-                        layer->Cylinder.CylinderRadius = cylinder->radius;
-                        layer->Cylinder.CylinderAngle = cylinder->centralAngle;
-                        layer->Cylinder.CylinderAspectRatio = cylinder->aspectRatio;
-                    }
                 } else if (has_XR_KHR_composition_layer_cube &&
                            frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_CUBE_KHR) {
                     const XrCompositionLayerCubeKHR* cube =
                         reinterpret_cast<const XrCompositionLayerCubeKHR*>(frameEndInfo->layers[i]);
 
-                    TraceLoggingWrite(g_traceProvider,
-                                      "xrEndFrame_Layer",
-                                      TLArg("Cube", "Type"),
-                                      TLArg(cube->layerFlags, "Flags"),
-                                      TLXArg(cube->space, "Space"));
-                    TraceLoggingWrite(g_traceProvider,
-                                      "xrEndFrame_View",
-                                      TLArg("Cube", "Type"),
-                                      TLXArg(cube->swapchain, "Swapchain"),
-                                      TLArg(cube->imageArrayIndex, "ImageArrayIndex"),
-                                      TLArg(xr::ToString(cube->orientation).c_str(), "Pose"),
-                                      TLArg(xr::ToCString(cube->eyeVisibility), "EyeVisibility"));
-                    layer->Header.Type = ovrLayerType_Cube;
-
-                    if (!Quaternion::IsNormalized(cube->orientation)) {
-                        return XR_ERROR_POSE_INVALID;
+                    const XrResult result = handleCubeLayer(*cube, layer);
+                    if (XR_FAILED(result)) {
+                        return result;
                     }
 
-                    if (!m_swapchains.count(cube->swapchain)) {
-                        return XR_ERROR_HANDLE_INVALID;
-                    }
-
-                    Swapchain& xrSwapchain = *(Swapchain*)cube->swapchain;
-
-                    if (xrSwapchain.lastReleasedIndex == -1) {
-                        return XR_ERROR_LAYER_INVALID;
-                    }
-
-                    // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
-                    // We cannot achieve conformance for this particular (but uncommon) API usage.
-
-                    if (cube->imageArrayIndex != 0 || xrSwapchain.xrDesc.faceCount != 6) {
-                        return XR_ERROR_VALIDATION_FAILURE;
-                    }
-
-                    // Fill out color buffer information.
-                    preprocessSwapchainImage(
-                        xrSwapchain, i, 0, frameEndInfo->layers[i]->layerFlags, processedSwapchainImages);
-                    layer->Cube.CubeMapTexture = xrSwapchain.resolvedSlices[0].ovrSwapchain;
-
-                    if (!m_spaces.count(cube->space)) {
-                        return XR_ERROR_HANDLE_INVALID;
-                    }
-                    Space& xrSpace = *(Space*)cube->space;
-
-                    // Fill out the rotation.
-                    if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
-                        XrPosef layerPose;
-                        locateSpace(*(Space*)cube->space, *m_originSpace, frameEndInfo->displayTime, layerPose);
-                        layer->Cube.Orientation =
-                            xrPoseToOvrPose(
-                                Pose::Multiply(Pose::MakePose(cube->orientation, XrVector3f{0, 0, 0}), layerPose))
-                                .Orientation;
-                    } else {
-                        layer->Cube.Orientation =
-                            xrPoseToOvrPose(Pose::Multiply(Pose::MakePose(cube->orientation, XrVector3f{0, 0, 0}),
-                                                           xrSpace.poseInSpace))
-                                .Orientation;
-                        layer->Header.Flags |= ovrLayerFlag_HeadLocked;
-                    }
                 } else {
                     return XR_ERROR_LAYER_INVALID;
                 }
@@ -836,7 +515,7 @@ namespace virtualdesktop_openxr {
                 if (!m_isHeadless && m_useMirrorWindow && !m_mirrorWindowThread.joinable()) {
                     createMirrorWindow();
                 }
-                updateMirrorWindow(isProj0SRGB);
+                updateMirrorWindow(m_precompositor.isProj0SRGB);
             } catch (std::exception& exc) {
                 TraceLoggingWrite(g_traceProvider, "MirrorWindow", TLArg(exc.what(), "Error"));
                 ErrorLog("Failed to update the mirror window: %s\n", exc.what());
@@ -878,6 +557,343 @@ namespace virtualdesktop_openxr {
                               TLArg(m_frameBegun, "FrameBegun"),
                               TLArg(m_frameCompleted, "FrameCompleted"));
             m_frameCondVar.notify_all();
+        }
+
+        return XR_SUCCESS;
+    }
+
+    XrResult OpenXrRuntime::handleProjectionLayer(const XrCompositionLayerProjection& proj, ovrLayer_Union& layer) {
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEndFrame_Layer",
+                          TLArg("Proj", "Type"),
+                          TLArg(proj.layerFlags, "Flags"),
+                          TLXArg(proj.space, "Space"));
+
+        if (proj.viewCount != xr::StereoView::Count) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
+        static_assert(offsetof(decltype(layer.EyeFov), ColorTexture) ==
+                      offsetof(decltype(layer.EyeFovDepth), ColorTexture));
+        static_assert(offsetof(decltype(layer.EyeFov), Viewport) == offsetof(decltype(layer.EyeFovDepth), Viewport));
+        static_assert(offsetof(decltype(layer.EyeFov), Fov) == offsetof(decltype(layer.EyeFovDepth), Fov));
+        static_assert(offsetof(decltype(layer.EyeFov), RenderPose) ==
+                      offsetof(decltype(layer.EyeFovDepth), RenderPose));
+        static_assert(offsetof(decltype(layer.EyeFov), SensorSampleTime) ==
+                      offsetof(decltype(layer.EyeFovDepth), SensorSampleTime));
+
+        // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
+        layer.Header.Type = ovrLayerType_EyeFov;
+
+        for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEndFrame_View",
+                              TLArg("Proj", "Type"),
+                              TLArg(viewIndex, "ViewIndex"),
+                              TLXArg(proj.views[viewIndex].subImage.swapchain, "Swapchain"),
+                              TLArg(proj.views[viewIndex].subImage.imageArrayIndex, "ImageArrayIndex"),
+                              TLArg(xr::ToString(proj.views[viewIndex].subImage.imageRect).c_str(), "ImageRect"),
+                              TLArg(xr::ToString(proj.views[viewIndex].pose).c_str(), "Pose"),
+                              TLArg(xr::ToString(proj.views[viewIndex].fov).c_str(), "Fov"));
+
+            if (!Quaternion::IsNormalized(proj.views[viewIndex].pose.orientation)) {
+                return XR_ERROR_POSE_INVALID;
+            }
+
+            if (!m_swapchains.count(proj.views[viewIndex].subImage.swapchain)) {
+                return XR_ERROR_HANDLE_INVALID;
+            }
+
+            Swapchain& xrSwapchain = *(Swapchain*)proj.views[viewIndex].subImage.swapchain;
+
+            if (xrSwapchain.lastReleasedIndex == -1) {
+                return XR_ERROR_LAYER_INVALID;
+            }
+
+            if (proj.views[viewIndex].subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize ||
+                xrSwapchain.xrDesc.faceCount != 1) {
+                return XR_ERROR_VALIDATION_FAILURE;
+            }
+
+            if (m_precompositor.isFirstProjectionLayer) {
+                m_precompositor.isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
+            }
+
+            // Fill out color buffer information.
+            preprocessSwapchainImage(xrSwapchain,
+                                     m_precompositor.layerIndex,
+                                     proj.views[viewIndex].subImage.imageArrayIndex,
+                                     proj.layerFlags,
+                                     m_precompositor.processedSwapchainImages);
+            layer.EyeFov.ColorTexture[viewIndex] =
+                xrSwapchain.resolvedSlices[proj.views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
+
+            if (!isValidSwapchainRect(xrSwapchain.ovrDesc, proj.views[viewIndex].subImage.imageRect)) {
+                return XR_ERROR_SWAPCHAIN_RECT_INVALID;
+            }
+            layer.EyeFov.Viewport[viewIndex].Pos.x = proj.views[viewIndex].subImage.imageRect.offset.x;
+            layer.EyeFov.Viewport[viewIndex].Pos.y = proj.views[viewIndex].subImage.imageRect.offset.y;
+            layer.EyeFov.Viewport[viewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
+            layer.EyeFov.Viewport[viewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
+
+            // Fill out pose and FOV information.
+            XrPosef layerPose;
+            locateSpace(*(Space*)proj.space, *m_originSpace, m_precompositor.displayTime, layerPose);
+            layer.EyeFov.RenderPose[viewIndex] = xrPoseToOvrPose(Pose::Multiply(proj.views[viewIndex].pose, layerPose));
+
+            XrFovf fov = proj.views[viewIndex].fov;
+            layer.EyeFov.Fov[viewIndex].DownTan = -tan(fov.angleDown);
+            layer.EyeFov.Fov[viewIndex].UpTan = tan(fov.angleUp);
+            layer.EyeFov.Fov[viewIndex].LeftTan = -tan(fov.angleLeft);
+            layer.EyeFov.Fov[viewIndex].RightTan = tan(fov.angleRight);
+
+            // In the case of OpenXR, we expect the app to use the predictedDisplayTime to query the
+            // head pose, and pass that same time as displayTime.
+            layer.EyeFov.SensorSampleTime = xrTimeToOvrTime(m_precompositor.displayTime);
+
+            // Submit depth.
+            if (has_XR_KHR_composition_layer_depth) {
+                const XrBaseInStructure* entry = reinterpret_cast<const XrBaseInStructure*>(proj.views[viewIndex].next);
+                while (entry) {
+                    if (entry->type == XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR) {
+                        const XrCompositionLayerDepthInfoKHR* depth =
+                            reinterpret_cast<const XrCompositionLayerDepthInfoKHR*>(entry);
+
+                        layer.Header.Type = ovrLayerType_EyeFovDepth;
+
+                        TraceLoggingWrite(g_traceProvider,
+                                          "xrEndFrame_View",
+                                          TLArg("Depth", "Type"),
+                                          TLArg(viewIndex, "ViewIndex"),
+                                          TLXArg(depth->subImage.swapchain, "Swapchain"),
+                                          TLArg(depth->subImage.imageArrayIndex, "ImageArrayIndex"),
+                                          TLArg(xr::ToString(depth->subImage.imageRect).c_str(), "ImageRect"),
+                                          TLArg(depth->nearZ, "Near"),
+                                          TLArg(depth->farZ, "Far"),
+                                          TLArg(depth->minDepth, "MinDepth"),
+                                          TLArg(depth->maxDepth, "MaxDepth"));
+
+                        if (!m_swapchains.count(depth->subImage.swapchain)) {
+                            return XR_ERROR_HANDLE_INVALID;
+                        }
+
+                        Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
+
+                        if (xrDepthSwapchain.lastReleasedIndex == -1) {
+                            return XR_ERROR_LAYER_INVALID;
+                        }
+
+                        if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
+                            xrSwapchain.xrDesc.faceCount != 1) {
+                            return XR_ERROR_VALIDATION_FAILURE;
+                        }
+
+                        // Fill out depth buffer information.
+                        preprocessSwapchainImage(
+                            xrDepthSwapchain,
+                            m_precompositor.layerIndex,
+                            depth->subImage.imageArrayIndex,
+                            XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
+                            m_precompositor.processedSwapchainImages);
+                        layer.EyeFovDepth.DepthTexture[viewIndex] =
+                            xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
+
+                        if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
+                            return XR_ERROR_SWAPCHAIN_RECT_INVALID;
+                        }
+
+                        // Fill out projection information.
+                        layer.EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
+                        layer.EyeFovDepth.ProjectionDesc.Projection23 =
+                            (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
+                        layer.EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
+
+                        break;
+                    }
+                    entry = entry->next;
+                }
+            }
+        }
+        return XR_SUCCESS;
+    }
+
+    XrResult OpenXrRuntime::handleQuadCylinderLayer(const XrCompositionLayerQuad& quad,
+                                                    const XrCompositionLayerCylinderKHR& cylinder,
+                                                    ovrLayer_Union& layer) {
+        const bool isCylinder = quad.type == XR_TYPE_COMPOSITION_LAYER_CYLINDER_KHR;
+
+        // Make sure that we can use the XrCompositionLayerQuad part of XrCompositionLayerCylinderKHR
+        // equivalently.
+        static_assert(offsetof(XrCompositionLayerQuad, layerFlags) ==
+                      offsetof(XrCompositionLayerCylinderKHR, layerFlags));
+        static_assert(offsetof(XrCompositionLayerQuad, space) == offsetof(XrCompositionLayerCylinderKHR, space));
+        static_assert(offsetof(XrCompositionLayerQuad, eyeVisibility) ==
+                      offsetof(XrCompositionLayerCylinderKHR, eyeVisibility));
+        static_assert(offsetof(XrCompositionLayerQuad, subImage) == offsetof(XrCompositionLayerCylinderKHR, subImage));
+        static_assert(offsetof(XrCompositionLayerQuad, pose) == offsetof(XrCompositionLayerCylinderKHR, pose));
+
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEndFrame_Layer",
+                          TLArg(!isCylinder ? "Quad" : "Cylinder", "Type"),
+                          TLArg(quad.layerFlags, "Flags"),
+                          TLXArg(quad.space, "Space"));
+        if (!isCylinder) {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEndFrame_View",
+                              TLArg("Quad", "Type"),
+                              TLXArg(quad.subImage.swapchain, "Swapchain"),
+                              TLArg(quad.subImage.imageArrayIndex, "ImageArrayIndex"),
+                              TLArg(xr::ToString(quad.subImage.imageRect).c_str(), "ImageRect"),
+                              TLArg(xr::ToString(quad.pose).c_str(), "Pose"),
+                              TLArg(quad.size.width, "Width"),
+                              TLArg(quad.size.height, "Height"),
+                              TLArg(xr::ToCString(quad.eyeVisibility), "EyeVisibility"));
+        } else {
+            TraceLoggingWrite(g_traceProvider,
+                              "xrEndFrame_View",
+                              TLArg("Cylinder", "Type"),
+                              TLXArg(cylinder.subImage.swapchain, "Swapchain"),
+                              TLArg(cylinder.subImage.imageArrayIndex, "ImageArrayIndex"),
+                              TLArg(xr::ToString(cylinder.subImage.imageRect).c_str(), "ImageRect"),
+                              TLArg(xr::ToString(cylinder.pose).c_str(), "Pose"),
+                              TLArg(cylinder.radius, "Radius"),
+                              TLArg(cylinder.centralAngle, "CentralAngle"),
+                              TLArg(cylinder.aspectRatio, "AspectRatio"),
+                              TLArg(xr::ToCString(cylinder.eyeVisibility), "EyeVisibility"));
+        }
+
+        // Make sure that we can use the Quad part of Cylinder equivalently.
+        static_assert(offsetof(decltype(layer.Quad), ColorTexture) == offsetof(decltype(layer.Cylinder), ColorTexture));
+        static_assert(offsetof(decltype(layer.Quad), Viewport) == offsetof(decltype(layer.Cylinder), Viewport));
+        static_assert(offsetof(decltype(layer.Quad), QuadPoseCenter) ==
+                      offsetof(decltype(layer.Cylinder), CylinderPoseCenter));
+
+        layer.Header.Type = isCylinder ? ovrLayerType_Cylinder : ovrLayerType_Quad;
+
+        if (!Quaternion::IsNormalized(quad.pose.orientation)) {
+            return XR_ERROR_POSE_INVALID;
+        }
+
+        if (!m_swapchains.count(quad.subImage.swapchain)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        Swapchain& xrSwapchain = *(Swapchain*)quad.subImage.swapchain;
+
+        if (xrSwapchain.lastReleasedIndex == -1) {
+            return XR_ERROR_LAYER_INVALID;
+        }
+
+        // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
+        // We cannot achieve conformance for this particular (but uncommon) API usage.
+
+        if (quad.subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize || xrSwapchain.xrDesc.faceCount != 1) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        // Fill out color buffer information.
+        preprocessSwapchainImage(xrSwapchain,
+                                 m_precompositor.layerIndex,
+                                 quad.subImage.imageArrayIndex,
+                                 quad.layerFlags,
+                                 m_precompositor.processedSwapchainImages);
+        layer.Quad.ColorTexture = xrSwapchain.resolvedSlices[quad.subImage.imageArrayIndex].ovrSwapchain;
+
+        if (!isValidSwapchainRect(xrSwapchain.ovrDesc, quad.subImage.imageRect)) {
+            return XR_ERROR_SWAPCHAIN_RECT_INVALID;
+        }
+        layer.Quad.Viewport.Pos.x = quad.subImage.imageRect.offset.x;
+        layer.Quad.Viewport.Pos.y = quad.subImage.imageRect.offset.y;
+        layer.Quad.Viewport.Size.w = quad.subImage.imageRect.extent.width;
+        layer.Quad.Viewport.Size.h = quad.subImage.imageRect.extent.height;
+
+        if (!m_spaces.count(quad.space)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+        Space& xrSpace = *(Space*)quad.space;
+
+        // Fill out pose and quad information.
+        if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
+            XrPosef layerPose;
+            locateSpace(*(Space*)quad.space, *m_originSpace, m_precompositor.displayTime, layerPose);
+            layer.Quad.QuadPoseCenter = xrPoseToOvrPose(Pose::Multiply(quad.pose, layerPose));
+        } else {
+            layer.Quad.QuadPoseCenter = xrPoseToOvrPose(Pose::Multiply(quad.pose, xrSpace.poseInSpace));
+            layer.Header.Flags |= ovrLayerFlag_HeadLocked;
+        }
+
+        if (!isCylinder) {
+            layer.Quad.QuadSize.x = quad.size.width;
+            layer.Quad.QuadSize.y = quad.size.height;
+        } else {
+            layer.Cylinder.CylinderRadius = cylinder.radius;
+            layer.Cylinder.CylinderAngle = cylinder.centralAngle;
+            layer.Cylinder.CylinderAspectRatio = cylinder.aspectRatio;
+        }
+
+        return XR_SUCCESS;
+    }
+
+    XrResult OpenXrRuntime::handleCubeLayer(const XrCompositionLayerCubeKHR& cube, ovrLayer_Union& layer) {
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEndFrame_Layer",
+                          TLArg("Cube", "Type"),
+                          TLArg(cube.layerFlags, "Flags"),
+                          TLXArg(cube.space, "Space"));
+        TraceLoggingWrite(g_traceProvider,
+                          "xrEndFrame_View",
+                          TLArg("Cube", "Type"),
+                          TLXArg(cube.swapchain, "Swapchain"),
+                          TLArg(cube.imageArrayIndex, "ImageArrayIndex"),
+                          TLArg(xr::ToString(cube.orientation).c_str(), "Pose"),
+                          TLArg(xr::ToCString(cube.eyeVisibility), "EyeVisibility"));
+        layer.Header.Type = ovrLayerType_Cube;
+
+        if (!Quaternion::IsNormalized(cube.orientation)) {
+            return XR_ERROR_POSE_INVALID;
+        }
+
+        if (!m_swapchains.count(cube.swapchain)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        Swapchain& xrSwapchain = *(Swapchain*)cube.swapchain;
+
+        if (xrSwapchain.lastReleasedIndex == -1) {
+            return XR_ERROR_LAYER_INVALID;
+        }
+
+        // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
+        // We cannot achieve conformance for this particular (but uncommon) API usage.
+
+        if (cube.imageArrayIndex != 0 || xrSwapchain.xrDesc.faceCount != 6) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        // Fill out color buffer information.
+        preprocessSwapchainImage(
+            xrSwapchain, m_precompositor.layerIndex, 0, cube.layerFlags, m_precompositor.processedSwapchainImages);
+        layer.Cube.CubeMapTexture = xrSwapchain.resolvedSlices[0].ovrSwapchain;
+
+        if (!m_spaces.count(cube.space)) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+        Space& xrSpace = *(Space*)cube.space;
+
+        // Fill out the rotation.
+        if (xrSpace.referenceType != XR_REFERENCE_SPACE_TYPE_VIEW) {
+            XrPosef layerPose;
+            locateSpace(*(Space*)cube.space, *m_originSpace, m_precompositor.displayTime, layerPose);
+            layer.Cube.Orientation =
+                xrPoseToOvrPose(Pose::Multiply(Pose::MakePose(cube.orientation, XrVector3f{0, 0, 0}), layerPose))
+                    .Orientation;
+        } else {
+            layer.Cube.Orientation =
+                xrPoseToOvrPose(
+                    Pose::Multiply(Pose::MakePose(cube.orientation, XrVector3f{0, 0, 0}), xrSpace.poseInSpace))
+                    .Orientation;
+            layer.Header.Flags |= ovrLayerFlag_HeadLocked;
         }
 
         return XR_SUCCESS;

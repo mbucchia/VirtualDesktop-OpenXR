@@ -343,6 +343,15 @@ namespace virtualdesktop_openxr {
             ovrTextureSwapChainDesc ovrDesc;
         };
 
+        struct PrecompositorState {
+            // State for the current frame.
+            std::set<std::pair<Swapchain*, uint32_t>> processedSwapchainImages;
+            XrTime displayTime{0};
+            bool isProj0SRGB{false};
+            bool isFirstProjectionLayer{true};
+            uint32_t layerIndex{0};
+        };
+
         struct Space {
             // Information recorded at creation.
             XrReferenceSpaceType referenceType;
@@ -490,6 +499,11 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const;
 
         // frame.cpp
+        XrResult handleProjectionLayer(const XrCompositionLayerProjection& proj, ovrLayer_Union& layer);
+        XrResult handleQuadCylinderLayer(const XrCompositionLayerQuad& quad,
+                                         const XrCompositionLayerCylinderKHR& cylinder,
+                                         ovrLayer_Union& layer);
+        XrResult handleCubeLayer(const XrCompositionLayerCubeKHR& cube, ovrLayer_Union& layer);
         void asyncSubmissionThread();
         void waitForAsyncSubmissionIdle(bool doRunningStart = false);
 
@@ -660,6 +674,7 @@ namespace virtualdesktop_openxr {
         bool m_useRunningStart{true};
         bool m_jiggleViewRotations{false};
         MyHandSimulation m_handSimulation[xr::Side::Count];
+        PrecompositorState m_precompositor;
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;
