@@ -303,6 +303,7 @@ namespace virtualdesktop_openxr {
             // Resources for copy/resolve/pre-processing.
             std::vector<ComPtr<ID3D11ShaderResourceView>> srvs;
             std::vector<ComPtr<ID3D11UnorderedAccessView>> uavs;
+            std::vector<ComPtr<ID3D11RenderTargetView>> rtvs;
             std::vector<ComPtr<ID3D11DepthStencilView>> dsvs;
             int lastProcessedIndex{-1};
         };
@@ -321,6 +322,9 @@ namespace virtualdesktop_openxr {
             int lastWaitedIndex{-1};
             int lastReleasedIndex{-1};
             uint32_t nextIndex{0};
+
+            // For precompositor needs (drawing our own stereo projection).
+            SwapchainSlice stereoProjection[xr::StereoView::Count];
 
             // Whether a static image swapchain has been acquired at least once.
             bool frozen{false};
@@ -503,6 +507,11 @@ namespace virtualdesktop_openxr {
                                       XrCompositionLayerFlags compositionFlags,
                                       std::set<std::pair<Swapchain*, uint32_t>>& processed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
+        void ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const;
+        void populateSwapchainSlice(const Swapchain& xrSwapchain,
+                                    SwapchainSlice& slice,
+                                    uint32_t sliceIndex,
+                                    const char* debugName) const;
         void flushD3D11Context();
         void flushSubmissionContext();
         void serializeD3D11Frame();

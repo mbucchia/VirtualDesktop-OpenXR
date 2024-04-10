@@ -479,7 +479,7 @@ namespace virtualdesktop_openxr {
 
                 setDebugName(d3d11Texture.Get(), fmt::format("App Swapchain Texture[{}, {}]", i, (void*)&xrSwapchain));
 
-                xrSwapchain.d3d11Images.push_back(d3d11Texture);
+                xrSwapchain.d3d11Images.push_back(std::move(d3d11Texture));
             }
 
             d3d11Images[i].texture = xrSwapchain.d3d11Images[i].Get();
@@ -740,31 +740,55 @@ namespace virtualdesktop_openxr {
             }
         }
         if (!xrSwapchain.resolvedSlices[slice].ovrSwapchain) {
-            auto desc = xrSwapchain.ovrDesc;
-            desc.SampleCount = 1;
-            desc.ArraySize = 1;
-            CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
-                m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &xrSwapchain.resolvedSlices[slice].ovrSwapchain));
+            populateSwapchainSlice(xrSwapchain, xrSwapchain.resolvedSlices[slice], slice, "Runtime Slice");
+        }
+    }
 
-            int count = -1;
-            CHECK_OVRCMD(
-                ovr_GetTextureSwapChainLength(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain, &count));
-            if (count != xrSwapchain.ovrSwapchainLength) {
-                throw std::runtime_error("Swapchain image count mismatch");
+    void OpenXrRuntime::ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const {
+        for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+            if (!xrSwapchain.stereoProjection[eye].ovrSwapchain) {
+                populateSwapchainSlice(xrSwapchain, xrSwapchain.stereoProjection[eye], eye, "Precompositor");
+
+                for (uint32_t i = 0; i < xrSwapchain.stereoProjection[eye].images.size(); i++) {
+                    D3D11_RENDER_TARGET_VIEW_DESC desc{};
+                    desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+                    desc.Format = xrSwapchain.dxgiFormatForSubmission;
+                    ComPtr<ID3D11RenderTargetView> rtv;
+                    CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
+                        xrSwapchain.stereoProjection[eye].images[i].Get(), &desc, rtv.ReleaseAndGetAddressOf()));
+                    setDebugName(rtv.Get(), fmt::format("Precompositor RTV [{}, {}, {}]", eye, i, (void*)&xrSwapchain));
+                    xrSwapchain.stereoProjection[eye].rtvs.push_back(std::move(rtv));
+                }
             }
+        }
+    }
 
-            // Query the textures for the swapchain.
-            for (int i = 0; i < count; i++) {
-                ComPtr<ID3D11Texture2D> texture;
-                CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
-                                                             xrSwapchain.resolvedSlices[slice].ovrSwapchain,
-                                                             i,
-                                                             IID_PPV_ARGS(texture.ReleaseAndGetAddressOf())));
-                setDebugName(texture.Get(),
-                             fmt::format("Runtime Slice Texture[{}, {}, {}]", slice, i, (void*)&xrSwapchain));
+    void OpenXrRuntime::populateSwapchainSlice(const Swapchain& xrSwapchain,
+                                               SwapchainSlice& slice,
+                                               uint32_t sliceIndex,
+                                               const char* debugName) const {
+        auto desc = xrSwapchain.ovrDesc;
+        desc.SampleCount = 1;
+        desc.ArraySize = 1;
+        CHECK_OVRCMD(
+            ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &slice.ovrSwapchain));
 
-                xrSwapchain.resolvedSlices[slice].images.push_back(texture);
-            }
+        int count = -1;
+        CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, slice.ovrSwapchain, &count));
+        if (count != xrSwapchain.ovrSwapchainLength) {
+            throw std::runtime_error("Swapchain image count mismatch");
+        }
+
+        // Query the textures for the swapchain.
+        for (int i = 0; i < count; i++) {
+            ComPtr<ID3D11Texture2D> texture;
+            CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(
+                m_ovrSession, slice.ovrSwapchain, i, IID_PPV_ARGS(texture.ReleaseAndGetAddressOf())));
+            setDebugName(
+                texture.Get(),
+                fmt::format(std::string(debugName) + " Texture[{}, {}, {}]", sliceIndex, i, (void*)&xrSwapchain));
+
+            slice.images.push_back(std::move(texture));
         }
     }
 
