@@ -134,6 +134,13 @@ namespace virtualdesktop_openxr {
 
                 CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
                     m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_headlessSwapchain));
+
+                if (!m_useOculusRuntime) {
+                    // This is a workaround needed to allow multiple EyeFov layers with different FOVs, and force
+                    // Virtual Desktop to use the FOV of the bottom layer as the carrier layer.
+                    // This must be done after the compositor is instanciated, which is at the latest right above.
+                    CHECK_MSG(ovr_SetBool(m_ovrSession, "UseBottomLayerFov", true), "");
+                }
             }
 
             if (m_needStartAsyncSubmissionThread) {
@@ -411,9 +418,11 @@ namespace virtualdesktop_openxr {
             m_precompositor.isFirstProjectionLayer = true;
             m_precompositor.processedSwapchainImages.clear();
 
+            const bool usesQuadViews = m_primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO;
+
             // Construct the list of layers.
             std::vector<ovrLayer_Union> layersAllocator;
-            layersAllocator.reserve(frameEndInfo->layerCount + 1);
+            layersAllocator.reserve((frameEndInfo->layerCount * (usesQuadViews ? 2 : 1)) + 1);
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 if (!frameEndInfo->layers[i]) {
                     return XR_ERROR_LAYER_INVALID;
@@ -440,9 +449,21 @@ namespace virtualdesktop_openxr {
                     const XrCompositionLayerProjection* proj =
                         reinterpret_cast<const XrCompositionLayerProjection*>(frameEndInfo->layers[i]);
 
-                    const XrResult result = handleProjectionLayer(*proj, layer);
+                    ovrLayer_Union* layerForFocusView = nullptr;
+                    if (usesQuadViews) {
+                        layersAllocator.push_back({});
+                        layerForFocusView = &layersAllocator.back();
+                        layerForFocusView->Header.Flags = layer.Header.Flags;
+                    }
+
+                    const XrResult result = handleProjectionLayer(*proj, layer, layerForFocusView);
                     if (XR_FAILED(result)) {
                         return result;
+                    }
+
+                    // In debug mode, only show the focus view.
+                    if (m_debugFocusViews) {
+                        layer.Header.Type = ovrLayerType_Disabled;
                     }
 
                     m_precompositor.isFirstProjectionLayer = false;
@@ -579,14 +600,17 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    XrResult OpenXrRuntime::handleProjectionLayer(const XrCompositionLayerProjection& proj, ovrLayer_Union& layer) {
+    XrResult OpenXrRuntime::handleProjectionLayer(const XrCompositionLayerProjection& proj,
+                                                  ovrLayer_Union& layer,
+                                                  ovrLayer_Union* layerForFocusView) {
         TraceLoggingWrite(g_traceProvider,
                           "xrEndFrame_Layer",
                           TLArg("Proj", "Type"),
                           TLArg(proj.layerFlags, "Flags"),
                           TLXArg(proj.space, "Space"));
 
-        if (proj.viewCount != xr::StereoView::Count) {
+        const uint32_t viewCount = !layerForFocusView ? xr::StereoView::Count : xr::QuadView::Count;
+        if (proj.viewCount != viewCount) {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
@@ -602,8 +626,13 @@ namespace virtualdesktop_openxr {
 
         // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
         layer.Header.Type = ovrLayerType_EyeFov;
+        if (layerForFocusView) {
+            layerForFocusView->Header.Type = ovrLayerType_EyeFov;
+        }
 
-        for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
+        ovrLayer_Union* target = &layer;
+
+        for (uint32_t viewIndex = 0; viewIndex < viewCount; viewIndex++) {
             TraceLoggingWrite(g_traceProvider,
                               "xrEndFrame_View",
                               TLArg("Proj", "Type"),
@@ -613,6 +642,10 @@ namespace virtualdesktop_openxr {
                               TLArg(xr::ToString(proj.views[viewIndex].subImage.imageRect).c_str(), "ImageRect"),
                               TLArg(xr::ToString(proj.views[viewIndex].pose).c_str(), "Pose"),
                               TLArg(xr::ToString(proj.views[viewIndex].fov).c_str(), "Fov"));
+
+            if (viewIndex == xr::QuadView::FocusLeft) {
+                target = layerForFocusView;
+            }
 
             if (!Quaternion::IsNormalized(proj.views[viewIndex].pose.orientation)) {
                 return XR_ERROR_POSE_INVALID;
@@ -637,37 +670,40 @@ namespace virtualdesktop_openxr {
                 m_precompositor.isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
             }
 
+            const uint32_t ovrViewIndex = viewIndex % xr::StereoView::Count;
+
             // Fill out color buffer information.
             preprocessSwapchainImage(xrSwapchain,
                                      m_precompositor.layerIndex,
                                      proj.views[viewIndex].subImage.imageArrayIndex,
                                      proj.layerFlags,
                                      m_precompositor.processedSwapchainImages);
-            layer.EyeFov.ColorTexture[viewIndex] =
+            target->EyeFov.ColorTexture[ovrViewIndex] =
                 xrSwapchain.resolvedSlices[proj.views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
 
             if (!isValidSwapchainRect(xrSwapchain.ovrDesc, proj.views[viewIndex].subImage.imageRect)) {
                 return XR_ERROR_SWAPCHAIN_RECT_INVALID;
             }
-            layer.EyeFov.Viewport[viewIndex].Pos.x = proj.views[viewIndex].subImage.imageRect.offset.x;
-            layer.EyeFov.Viewport[viewIndex].Pos.y = proj.views[viewIndex].subImage.imageRect.offset.y;
-            layer.EyeFov.Viewport[viewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
-            layer.EyeFov.Viewport[viewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
+            target->EyeFov.Viewport[ovrViewIndex].Pos.x = proj.views[viewIndex].subImage.imageRect.offset.x;
+            target->EyeFov.Viewport[ovrViewIndex].Pos.y = proj.views[viewIndex].subImage.imageRect.offset.y;
+            target->EyeFov.Viewport[ovrViewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
+            target->EyeFov.Viewport[ovrViewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
 
             // Fill out pose and FOV information.
             XrPosef layerPose;
             locateSpace(*(Space*)proj.space, *m_originSpace, m_precompositor.displayTime, layerPose);
-            layer.EyeFov.RenderPose[viewIndex] = xrPoseToOvrPose(Pose::Multiply(proj.views[viewIndex].pose, layerPose));
+            target->EyeFov.RenderPose[ovrViewIndex] =
+                xrPoseToOvrPose(Pose::Multiply(proj.views[viewIndex].pose, layerPose));
 
             XrFovf fov = proj.views[viewIndex].fov;
-            layer.EyeFov.Fov[viewIndex].DownTan = -tan(fov.angleDown);
-            layer.EyeFov.Fov[viewIndex].UpTan = tan(fov.angleUp);
-            layer.EyeFov.Fov[viewIndex].LeftTan = -tan(fov.angleLeft);
-            layer.EyeFov.Fov[viewIndex].RightTan = tan(fov.angleRight);
+            target->EyeFov.Fov[ovrViewIndex].DownTan = -tan(fov.angleDown);
+            target->EyeFov.Fov[ovrViewIndex].UpTan = tan(fov.angleUp);
+            target->EyeFov.Fov[ovrViewIndex].LeftTan = -tan(fov.angleLeft);
+            target->EyeFov.Fov[ovrViewIndex].RightTan = tan(fov.angleRight);
 
             // In the case of OpenXR, we expect the app to use the predictedDisplayTime to query the
             // head pose, and pass that same time as displayTime.
-            layer.EyeFov.SensorSampleTime = xrTimeToOvrTime(m_precompositor.displayTime);
+            target->EyeFov.SensorSampleTime = xrTimeToOvrTime(m_precompositor.displayTime);
 
             // Submit depth.
             if (has_XR_KHR_composition_layer_depth) {
@@ -692,7 +728,7 @@ namespace virtualdesktop_openxr {
                         // Some games (like WRC) will not properly submit depth. We bypass all the checks if the runtime
                         // does not care about depth.
                         if (m_shouldUseDepth || m_isConformanceTest) {
-                            layer.Header.Type = ovrLayerType_EyeFovDepth;
+                            target->Header.Type = ovrLayerType_EyeFovDepth;
 
                             if (!m_swapchains.count(depth->subImage.swapchain)) {
                                 return XR_ERROR_HANDLE_INVALID;
@@ -716,7 +752,7 @@ namespace virtualdesktop_openxr {
                                 depth->subImage.imageArrayIndex,
                                 XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
                                 m_precompositor.processedSwapchainImages);
-                            layer.EyeFovDepth.DepthTexture[viewIndex] =
+                            target->EyeFovDepth.DepthTexture[ovrViewIndex] =
                                 xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
 
                             if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
@@ -724,10 +760,11 @@ namespace virtualdesktop_openxr {
                             }
 
                             // Fill out projection information.
-                            layer.EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
-                            layer.EyeFovDepth.ProjectionDesc.Projection23 =
+                            target->EyeFovDepth.ProjectionDesc.Projection22 =
+                                depth->farZ / (depth->nearZ - depth->farZ);
+                            target->EyeFovDepth.ProjectionDesc.Projection23 =
                                 (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
-                            layer.EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
+                            target->EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
                         } else {
                             TraceLoggingWrite(g_traceProvider, "xrEndFrame_View_IgnoreDepth");
                         }

@@ -188,7 +188,7 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const {
+    bool OpenXrRuntime::getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) {
         if (m_eyeTrackingType == EyeTracking::Mmf) {
             std::shared_lock lock(m_bodyStateMutex);
 
@@ -262,6 +262,40 @@ namespace virtualdesktop_openxr {
         }
 
         return true;
+    }
+
+    bool OpenXrRuntime::getEyeGaze(
+        XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime, bool suppressBlinking) {
+        // Clear the cache.
+        const auto now = std::chrono::steady_clock::now();
+        if ((now - m_lastGoodEyeTrackingData).count() >= 600'000'000) {
+            m_lastGoodEyeGaze.reset();
+        }
+
+        bool result = getEyeGaze(time, getStateOnly, unitVector, sampleTime);
+        if (result) {
+            m_lastGoodEyeTrackingData = now;
+            if (!getStateOnly) {
+                m_lastGoodEyeGaze = unitVector;
+            }
+        }
+
+        // To avoid warping during blinking, we use a reasonably recent cached gaze vector.
+        bool useCache = false;
+        if (suppressBlinking) {
+            if (!result && m_lastGoodEyeGaze) {
+                unitVector = m_lastGoodEyeGaze.value();
+                result = useCache = true;
+            }
+        }
+
+        TraceLoggingWrite(g_traceProvider,
+                          "VirtualDesktopEyeTracker",
+                          TLArg(result, "Valid"),
+                          TLArg(useCache, "UsingCache"),
+                          TLArg(xr::ToString(unitVector).c_str(), "GazeUnitVector"));
+
+        return result;
     }
 
 } // namespace virtualdesktop_openxr

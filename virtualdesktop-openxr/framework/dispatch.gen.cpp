@@ -2229,6 +2229,12 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_HTCX_vive_tracker_interaction") {
 			has_XR_HTCX_vive_tracker_interaction = true;
 		}
+		else if (extensionName == "XR_VARJO_quad_views") {
+			has_XR_VARJO_quad_views = true;
+		}
+		else if (extensionName == "XR_VARJO_foveated_rendering") {
+			has_XR_VARJO_foveated_rendering = true;
+		}
 
 	}
 
