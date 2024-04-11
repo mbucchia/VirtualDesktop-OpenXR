@@ -42,6 +42,9 @@ namespace virtualdesktop_openxr {
         referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_VIEW);
         referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_LOCAL);
         referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_STAGE);
+        if (has_XR_VARJO_foveated_rendering) {
+            referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO);
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateReferenceSpaces",
@@ -90,7 +93,9 @@ namespace virtualdesktop_openxr {
 
         if (createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_VIEW &&
             createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL &&
-            createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE) {
+            createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE &&
+            (!has_XR_VARJO_foveated_rendering ||
+             createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO)) {
             return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
         }
 
@@ -282,11 +287,16 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        if (viewLocateInfo->viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (viewLocateInfo->viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (m_primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO ||
+             viewLocateInfo->viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO)) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
-        if (viewCapacityInput && viewCapacityInput < xr::StereoView::Count) {
+        if (viewCapacityInput &&
+            viewCapacityInput < (viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO
+                                     ? xr::StereoView::Count
+                                     : xr::QuadView::Count)) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
 
@@ -296,7 +306,9 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        *viewCountOutput = xr::StereoView::Count;
+        *viewCountOutput =
+            +(viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO ? xr::StereoView::Count
+                                                                                                 : xr::QuadView::Count);
         TraceLoggingWrite(g_traceProvider, "xrLocateViews", TLArg(*viewCountOutput, "ViewCountOutput"));
 
         if (viewCapacityInput && views) {
@@ -306,6 +318,40 @@ namespace virtualdesktop_openxr {
                 locateSpace(*m_viewSpace, *(Space*)viewLocateInfo->space, viewLocateInfo->displayTime, headPose);
 
             if (viewState->viewStateFlags & (XR_VIEW_STATE_POSITION_VALID_BIT | XR_VIEW_STATE_ORIENTATION_VALID_BIT)) {
+                // Override default to specify whether foveated rendering is desired when the
+                // application does not specify.
+                const bool usesQuadViews =
+                    viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO;
+                bool foveatedRenderingActive = usesQuadViews && m_preferFoveatedRendering;
+
+                if (usesQuadViews && has_XR_VARJO_foveated_rendering) {
+                    const XrViewLocateFoveatedRenderingVARJO* foveatedLocate =
+                        reinterpret_cast<const XrViewLocateFoveatedRenderingVARJO*>(viewLocateInfo->next);
+                    while (foveatedLocate) {
+                        if (foveatedLocate->type == XR_TYPE_VIEW_LOCATE_FOVEATED_RENDERING_VARJO) {
+                            foveatedRenderingActive = foveatedLocate->foveatedRenderingActive;
+                            break;
+                        }
+                        foveatedLocate =
+                            reinterpret_cast<const XrViewLocateFoveatedRenderingVARJO*>(foveatedLocate->next);
+                    }
+
+                    TraceLoggingWrite(
+                        g_traceProvider, "xrLocateViews", TLArg(foveatedRenderingActive, "FoveatedRenderingActive"));
+                }
+
+                // Query the eye tracker if needed.
+                bool isGazeValid = false;
+                XrVector3f gazeUnitVector{};
+                if (foveatedRenderingActive) {
+                    XrTime dummyTime{};
+                    isGazeValid = getEyeGaze(viewLocateInfo->displayTime,
+                                             false /* getStateOnly */,
+                                             gazeUnitVector,
+                                             dummyTime,
+                                             true /* suppressBlinking */);
+                }
+
                 // Calculate poses for each eye.
                 ovrPosef hmdToEyePose[xr::StereoView::Count];
                 hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
@@ -321,8 +367,53 @@ namespace virtualdesktop_openxr {
                         return XR_ERROR_VALIDATION_FAILURE;
                     }
 
-                    views[i].pose = ovrPoseToXrPose(eyePoses[i]);
-                    views[i].fov = m_cachedEyeFov[i];
+                    XrView viewForGazeProjection{};
+                    if (i >= xr::QuadView::FocusLeft && isGazeValid) {
+                        viewForGazeProjection.pose = ovrPoseToXrPose(hmdToEyePose[i - 2]);
+                        viewForGazeProjection.fov = views[i - 2].fov;
+                    }
+                    views[i].pose = ovrPoseToXrPose(eyePoses[i % xr::StereoView::Count]);
+                    XrVector2f projectedGaze;
+                    if (i < xr::StereoView::Count || !isGazeValid ||
+                        !ProjectPoint(viewForGazeProjection, gazeUnitVector, projectedGaze)) {
+                        views[i].fov = m_cachedEyeFov[i];
+
+                    } else {
+                        // Shift FOV according to the eye gaze.
+                        // We also widen the FOV when near the edges of the headset to make sure
+                        // there's enough overlap between the two eyes.
+                        const uint32_t stereoViewIndex = i % xr::StereoView::Count;
+                        TraceLoggingWrite(g_traceProvider,
+                                          "xrLocateViews",
+                                          TLArg(i, "ViewIndex"),
+                                          TLArg(xr::ToString(projectedGaze).c_str(), "ProjectedGaze"));
+                        m_projectedEyeGaze[stereoViewIndex] = projectedGaze;
+                        m_projectedEyeGaze[stereoViewIndex] =
+                            m_projectedEyeGaze[stereoViewIndex] + XrVector2f{stereoViewIndex == xr::StereoView::Left
+                                                                                 ? -m_horizontalFocusOffset
+                                                                                 : m_horizontalFocusOffset,
+                                                                             m_verticalFocusOffset};
+                        const XrVector2f v = m_projectedEyeGaze[stereoViewIndex] - m_centerOfFov[stereoViewIndex];
+                        const float horizontalFovSection =
+                            m_horizontalFovSection[1] *
+                            (1.f + (std::clamp(abs(v.x) - m_focusWideningDeadzone, 0.f, 1.f) *
+                                    m_horizontalFocusWideningMultiplier));
+                        const float verticalFovSection =
+                            m_verticalFovSection[1] * (1.f + (std::clamp(abs(v.y) - m_focusWideningDeadzone, 0.f, 1.f) *
+                                                              m_verticalFocusWideningMultiplier));
+                        const XrVector2f min{
+                            std::clamp(m_projectedEyeGaze[stereoViewIndex].x - horizontalFovSection, -1.f, 1.f),
+                            std::clamp(m_projectedEyeGaze[stereoViewIndex].y - verticalFovSection, -1.f, 1.f)};
+                        const XrVector2f max{
+                            std::clamp(m_projectedEyeGaze[stereoViewIndex].x + horizontalFovSection, -1.f, 1.f),
+                            std::clamp(m_projectedEyeGaze[stereoViewIndex].y + verticalFovSection, -1.f, 1.f)};
+                        TraceLoggingWrite(g_traceProvider,
+                                          "xrLocateViews",
+                                          TLArg(i, "ViewIndex"),
+                                          TLArg(xr::ToString(min).c_str(), "FocusTopLeft"),
+                                          TLArg(xr::ToString(max).c_str(), "FocusBottomRight"));
+                        views[i].fov = xr::math::ComputeBoundingFov(m_cachedEyeFov[stereoViewIndex], min, max);
+                    }
 
                     // Debug option to test reprojection.
                     if (m_jiggleViewRotations) {
@@ -379,7 +470,7 @@ namespace virtualdesktop_openxr {
                                                     XrTime time,
                                                     XrPosef& pose,
                                                     XrSpaceVelocity* velocity,
-                                                    XrEyeGazeSampleTimeEXT* gazeSampleTime) const {
+                                                    XrEyeGazeSampleTimeEXT* gazeSampleTime) {
         XrPosef spaceToVirtual = Pose::Identity();
         XrSpaceVelocity spaceToVirtualVelocity{};
         XrPosef baseSpaceToVirtual = Pose::Identity();
@@ -444,7 +535,7 @@ namespace virtualdesktop_openxr {
                                                             XrTime time,
                                                             XrPosef& pose,
                                                             XrSpaceVelocity* velocity,
-                                                            XrEyeGazeSampleTimeEXT* gazeSampleTime) const {
+                                                            XrEyeGazeSampleTimeEXT* gazeSampleTime) {
         XrSpaceLocationFlags result = 0;
 
         if (velocity) {
@@ -499,6 +590,13 @@ namespace virtualdesktop_openxr {
                       XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
             if (velocity) {
                 velocity->velocityFlags = XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+            }
+        } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO) {
+            pose = Pose::Identity();
+            XrVector3f dummyVector{};
+            XrTime dummyTime;
+            if (getEyeGaze(time, true /* getStateOnly */, dummyVector, dummyTime, true /* suppressBlinking */)) {
+                result = XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
             }
         } else if (xrSpace.action != XR_NULL_HANDLE) {
             // Action spaces for motion controllers.
@@ -648,7 +746,7 @@ namespace virtualdesktop_openxr {
 
     XrSpaceLocationFlags OpenXrRuntime::getEyeTrackerPose(XrTime time,
                                                           XrPosef& pose,
-                                                          XrEyeGazeSampleTimeEXT* sampleTime) const {
+                                                          XrEyeGazeSampleTimeEXT* sampleTime) {
         XrVector3f eyeGazeVector{0, 0, -1};
         XrTime timeOfSample;
         if (!getEyeGaze(time, false /* getStateOnly */, eyeGazeVector, timeOfSample)) {
@@ -659,8 +757,7 @@ namespace virtualdesktop_openxr {
             Quaternion::RotationRollPitchYaw({tan(eyeGazeVector.y), -tan(eyeGazeVector.x), 0.f}), XrVector3f{0, 0, 0});
 
         // TODO: Need optimization here, in all likelyhood, the caller is looking for eye gaze relative to VIEW
-        // space,
-        // in which case we are doing 2 back-to-back getHmdPose() that are cancelling each other.
+        // space, in which case we are doing 2 back-to-back getHmdPose() that are cancelling each other.
         XrPosef headPose;
         if (!Pose::IsPoseValid(getHmdPose(time, headPose, nullptr))) {
             return 0;

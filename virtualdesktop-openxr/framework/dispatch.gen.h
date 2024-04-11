@@ -163,6 +163,8 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_META_body_tracking_full_body{false};
 		bool has_XR_META_body_tracking_fidelity{false};
 		bool has_XR_HTCX_vive_tracker_interaction{false};
+		bool has_XR_VARJO_quad_views{false};
+		bool has_XR_VARJO_foveated_rendering{false};
 
 
 	};

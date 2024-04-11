@@ -534,6 +534,13 @@ namespace virtualdesktop_openxr {
             {XR_MND_HEADLESS_EXTENSION_NAME, XR_MND_headless_SPEC_VERSION});
 #endif
 
+        if (getSetting("enable_quad_views").value_or(false)) {
+            m_extensionsTable.push_back( // Quad views.
+                {XR_VARJO_QUAD_VIEWS_EXTENSION_NAME, XR_VARJO_quad_views_SPEC_VERSION});
+            m_extensionsTable.push_back( // Foveated rendering with quad views.
+                {XR_VARJO_FOVEATED_RENDERING_EXTENSION_NAME, XR_VARJO_foveated_rendering_SPEC_VERSION});
+        }
+
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});
         m_extensionsTable.push_back({XR_META_HEADSET_ID_EXTENSION_NAME, XR_META_headset_id_SPEC_VERSION});

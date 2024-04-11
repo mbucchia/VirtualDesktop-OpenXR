@@ -49,7 +49,8 @@ EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enabl
               'XR_KHR_win32_convert_performance_counter_time', 'XR_FB_display_refresh_rate', 'XR_EXT_hand_tracking', 'XR_EXT_hand_tracking_data_source',
               'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id', 'XR_OCULUS_audio_device_guid', 'XR_MND_headless',
               'XR_FB_eye_tracking_social', 'XR_FB_face_tracking', 'XR_FB_face_tracking2', 'XR_FB_hand_tracking_aim',
-              'XR_FB_body_tracking', 'XR_META_body_tracking_full_body', 'XR_META_body_tracking_fidelity', 'XR_HTCX_vive_tracker_interaction']
+              'XR_FB_body_tracking', 'XR_META_body_tracking_full_body', 'XR_META_body_tracking_fidelity', 'XR_HTCX_vive_tracker_interaction',
+              'XR_VARJO_quad_views', 'XR_VARJO_foveated_rendering']
 
 SILENT_ERRORS = {
     'xrSuggestInteractionProfileBindings': ['XR_ERROR_PATH_UNSUPPORTED'],

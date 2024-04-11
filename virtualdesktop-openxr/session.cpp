@@ -317,7 +317,9 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        if (!m_isHeadless && beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (!m_isHeadless && beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (!has_XR_VARJO_quad_views ||
+             beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO)) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
@@ -334,15 +336,25 @@ namespace virtualdesktop_openxr {
         m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
         // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
 
+        m_primaryViewConfigurationType = beginInfo->primaryViewConfigurationType;
+        if (m_primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
+            Log("Beginning session with quad views\n");
+        }
+
         // Start the body watcher thread.
         if (m_supportsHandTracking ||
-            ((has_XR_EXT_eye_gaze_interaction || has_XR_FB_eye_tracking_social) &&
+            ((has_XR_EXT_eye_gaze_interaction || has_XR_FB_eye_tracking_social ||
+              (m_primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO &&
+               (has_XR_VARJO_foveated_rendering || m_preferFoveatedRendering))) &&
              m_eyeTrackingType == EyeTracking::Mmf) ||
             ((has_XR_FB_face_tracking || has_XR_FB_face_tracking2) && m_supportsFaceTracking) ||
             ((has_XR_FB_body_tracking || has_XR_HTCX_vive_tracker_interaction) && m_supportsBodyTracking)) {
             m_terminateBodyStateThread = false;
             m_bodyStateWatcherThread = std::thread([&]() { bodyStateWatcherThread(); });
         }
+
+        m_lastGoodEyeTrackingData = std::chrono::steady_clock::now();
+        m_lastGoodEyeGaze.reset();
 
         m_sessionBegun = true;
         updateSessionState();
@@ -527,6 +539,8 @@ namespace virtualdesktop_openxr {
                           TLArg(m_shouldUseDepth, "ShouldUseDepth"),
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"));
+
+        m_debugFocusViews = getSetting("debug_focus_view").value_or(false);
     }
 
 } // namespace virtualdesktop_openxr

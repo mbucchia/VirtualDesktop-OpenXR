@@ -98,6 +98,7 @@ namespace virtualdesktop_openxr {
         XrSystemBodyTrackingPropertiesFB* bodyTrackingProperties = nullptr;
         XrSystemPropertiesBodyTrackingFullBodyMETA* fullBodyTrackingProperties = nullptr;
         XrSystemPropertiesBodyTrackingFidelityMETA* bodyTrackingFidelityProperties = nullptr;
+        XrSystemFoveatedRenderingPropertiesVARJO* foveatedRenderingProperties = nullptr;
         XrSystemHeadsetIdPropertiesMETA* headsetIdProperties = nullptr;
 
         XrBaseOutStructure* entry = reinterpret_cast<XrBaseOutStructure*>(properties->next);
@@ -126,6 +127,9 @@ namespace virtualdesktop_openxr {
                 break;
             case XR_TYPE_SYSTEM_PROPERTIES_BODY_TRACKING_FIDELITY_META:
                 bodyTrackingFidelityProperties = reinterpret_cast<XrSystemPropertiesBodyTrackingFidelityMETA*>(entry);
+                break;
+            case XR_TYPE_SYSTEM_FOVEATED_RENDERING_PROPERTIES_VARJO:
+                foveatedRenderingProperties = reinterpret_cast<XrSystemFoveatedRenderingPropertiesVARJO*>(entry);
                 break;
             case XR_TYPE_SYSTEM_HEADSET_ID_PROPERTIES_META:
                 headsetIdProperties = reinterpret_cast<XrSystemHeadsetIdPropertiesMETA*>(entry);
@@ -232,6 +236,15 @@ namespace virtualdesktop_openxr {
                 TLArg(!!bodyTrackingFidelityProperties->supportsBodyTrackingFidelity, "SupportsBodyTrackingFidelity"));
         }
 
+        if (has_XR_VARJO_foveated_rendering && foveatedRenderingProperties) {
+            foveatedRenderingProperties->supportsFoveatedRendering = m_supportsFaceTracking;
+
+            TraceLoggingWrite(
+                g_traceProvider,
+                "xrGetSystemProperties",
+                TLArg(!!foveatedRenderingProperties->supportsFoveatedRendering, "SupportsFoveatedRendering"));
+        }
+
         if (has_XR_META_headset_id && headsetIdProperties) {
             uint8_t uuid[] = {82, 80, 120, 165, 90, 171, 77, 201, 184, 2, 30, 189, 108, 124, 255, 244};
             memcpy(&headsetIdProperties->id, uuid, sizeof(uuid));
@@ -265,7 +278,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
-        if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+        if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (!has_XR_VARJO_quad_views || viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO)) {
             return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
         }
 
@@ -545,17 +559,79 @@ namespace virtualdesktop_openxr {
             m_cachedProjectionResolution =
                 ovr_GetFovTextureSize(m_ovrSession, ovrEye_Left, m_cachedEyeInfo[xr::StereoView::Left].Fov, 1.f);
 
-            for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
-                m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
-                m_cachedEyeFov[i].angleUp = atan(m_cachedEyeInfo[i].Fov.UpTan);
-                m_cachedEyeFov[i].angleLeft = -atan(m_cachedEyeInfo[i].Fov.LeftTan);
-                m_cachedEyeFov[i].angleRight = atan(m_cachedEyeInfo[i].Fov.RightTan);
+            // Read quad views settings.
+            m_focusPixelDensity = getSetting("focus_density").value_or(100) / 100.f;
+            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(50) / 100.f;
+            m_horizontalFocusOffset = getSetting("qv_horizontal_focus_offset").value_or(0) / 100.f;
+            m_verticalFocusOffset = getSetting("qv_vertical_fixed_focus").value_or(0) / 100.f;
+            m_horizontalFovSection[0] = getSetting("qv_horizontal_focus_section_fixed").value_or(50) / 100.f;
+            m_verticalFovSection[0] = getSetting("qv_vertical_focus_section_fixed").value_or(50) / 100.f;
+            m_horizontalFovSection[1] = getSetting("qv_horizontal_focus_section").value_or(35) / 100.f;
+            m_verticalFovSection[1] = getSetting("qv_vertical_focus_section").value_or(35) / 100.f;
+            m_preferFoveatedRendering =
+                m_supportsFaceTracking && getSetting("prefer_foveated_rendering").value_or(true);
+            TraceLoggingWrite(g_traceProvider,
+                              "QuadViews",
+                              TLArg(m_focusPixelDensity, "FocusDensity"),
+                              TLArg(m_peripheralPixelDensity, "PeripheralDensity"),
+                              TLArg(m_horizontalFocusOffset, "HorizontalFocusOffset"),
+                              TLArg(m_verticalFocusOffset, "VerticalFocusOffset"),
+                              TLArg(m_horizontalFovSection[0], "HorizontalFovSectionFixed"),
+                              TLArg(m_verticalFovSection[0], "VerticalFovSectionFixed"),
+                              TLArg(m_horizontalFovSection[1], "HorizontalFovSection"),
+                              TLArg(m_verticalFovSection[1], "VerticalFovSection"),
+                              TLArg(m_preferFoveatedRendering, "PreferFoveatedRendering"));
+
+            ovrPosef hmdToEyePose[xr::StereoView::Count];
+            hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
+            hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
+
+            ovrPosef eyePoses[xr::StereoView::Count]{{}, {}};
+            ovr_CalcEyePoses(OVR::Posef::Identity(), hmdToEyePose, eyePoses);
+
+            for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+                m_cachedEyeFov[eye].angleDown = -atan(m_cachedEyeInfo[eye].Fov.DownTan);
+                m_cachedEyeFov[eye].angleUp = atan(m_cachedEyeInfo[eye].Fov.UpTan);
+                m_cachedEyeFov[eye].angleLeft = -atan(m_cachedEyeInfo[eye].Fov.LeftTan);
+                m_cachedEyeFov[eye].angleRight = atan(m_cachedEyeInfo[eye].Fov.RightTan);
 
                 TraceLoggingWrite(g_traceProvider,
                                   "OVR_EyeRenderInfo",
-                                  TLArg(i == xr::StereoView::Left ? "Left" : "Right", "Eye"),
-                                  TLArg(xr::ToString(m_cachedEyeInfo[i].HmdToEyePose).c_str(), "EyePose"),
-                                  TLArg(xr::ToString(m_cachedEyeFov[i]).c_str(), "Fov"));
+                                  TLArg(eye == xr::StereoView::Left ? "Left" : "Right", "Eye"),
+                                  TLArg(xr::ToString(m_cachedEyeInfo[eye].HmdToEyePose).c_str(), "EyePose"),
+                                  TLArg(xr::ToString(m_cachedEyeFov[eye]).c_str(), "Fov"));
+
+                // Calculate the "resting" gaze position.
+                XrVector2f projectedGaze{};
+                XrView view;
+                view.pose = ovrPoseToXrPose(eyePoses[eye]);
+                view.fov = m_cachedEyeFov[eye];
+                ProjectPoint(view, {0.f, 0.f, -1.f}, projectedGaze);
+                m_projectedEyeGaze[eye] = m_centerOfFov[eye] = projectedGaze;
+                m_projectedEyeGaze[eye] =
+                    m_projectedEyeGaze[eye] +
+                    XrVector2f{eye == xr::StereoView::Left ? -m_horizontalFocusOffset : m_horizontalFocusOffset,
+                               m_verticalFocusOffset};
+
+                {
+                    // Populate the FOV for the focus view when no eye tracking is used.
+                    const XrVector2f min{std::clamp(m_projectedEyeGaze[eye].x - m_horizontalFovSection[0], -1.f, 1.f),
+                                         std::clamp(m_projectedEyeGaze[eye].y - m_verticalFovSection[0], -1.f, 1.f)};
+                    const XrVector2f max{std::clamp(m_projectedEyeGaze[eye].x + m_horizontalFovSection[0], -1.f, 1.f),
+                                         std::clamp(m_projectedEyeGaze[eye].y + m_verticalFovSection[0], -1.f, 1.f)};
+                    m_cachedEyeFov[xr::StereoView::Count + eye] =
+                        xr::math::ComputeBoundingFov(m_cachedEyeFov[eye], min, max);
+                }
+                {
+                    // Populate the FOV for the focus view when eye tracking is used.
+                    // This is only used for computing resolutions (eg: xrEnumerateViewConfigurationViews).
+                    const XrVector2f min{std::clamp(m_projectedEyeGaze[eye].x - m_horizontalFovSection[1], -1.f, 1.f),
+                                         std::clamp(m_projectedEyeGaze[eye].y - m_verticalFovSection[1], -1.f, 1.f)};
+                    const XrVector2f max{std::clamp(m_projectedEyeGaze[eye].x + m_horizontalFovSection[1], -1.f, 1.f),
+                                         std::clamp(m_projectedEyeGaze[eye].y + m_verticalFovSection[1], -1.f, 1.f)};
+                    m_cachedEyeFov[xr::StereoView::Count + 2 + eye] =
+                        xr::math::ComputeBoundingFov(m_cachedEyeFov[eye], min, max);
+                }
             }
         }
 

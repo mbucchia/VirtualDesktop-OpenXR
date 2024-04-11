@@ -477,18 +477,20 @@ namespace virtualdesktop_openxr {
                                          XrTime time,
                                          XrPosef& pose,
                                          XrSpaceVelocity* velocity = nullptr,
-                                         XrEyeGazeSampleTimeEXT* gazeSampleTime = nullptr) const;
+                                         XrEyeGazeSampleTimeEXT* gazeSampleTime = nullptr);
         XrSpaceLocationFlags locateSpaceToOrigin(const Space& xrSpace,
                                                  XrTime time,
                                                  XrPosef& pose,
                                                  XrSpaceVelocity* velocity,
-                                                 XrEyeGazeSampleTimeEXT* gazeSampleTime) const;
+                                                 XrEyeGazeSampleTimeEXT* gazeSampleTime);
         XrSpaceLocationFlags getHmdPose(XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
         XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
-        XrSpaceLocationFlags getEyeTrackerPose(XrTime time, XrPosef& pose, XrEyeGazeSampleTimeEXT* sampleTime) const;
+        XrSpaceLocationFlags getEyeTrackerPose(XrTime time, XrPosef& pose, XrEyeGazeSampleTimeEXT* sampleTime);
 
         // eye_tracking.cpp
-        bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime) const;
+        bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime);
+        bool
+        getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime, bool suppressBlinking);
 
         // hand_tracking.cpp
         void processHandGestures(uint32_t side);
@@ -500,7 +502,9 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags getBodyJointPose(XrFullBodyJointMETA joint, XrTime time, XrPosef& pose) const;
 
         // frame.cpp
-        XrResult handleProjectionLayer(const XrCompositionLayerProjection& proj, ovrLayer_Union& layer);
+        XrResult handleProjectionLayer(const XrCompositionLayerProjection& proj,
+                                       ovrLayer_Union& layer,
+                                       ovrLayer_Union* layerForFocusView);
         XrResult handleQuadCylinderLayer(const XrCompositionLayerQuad& quad,
                                          const XrCompositionLayerCylinderKHR& cylinder,
                                          ovrLayer_Union& layer);
@@ -603,6 +607,8 @@ namespace virtualdesktop_openxr {
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_bodyStateFile;
         BodyTracking::BodyStateV2* m_bodyState{nullptr};
+        std::chrono::time_point<std::chrono::steady_clock> m_lastGoodEyeTrackingData{};
+        std::optional<XrVector3f> m_lastGoodEyeGaze;
         bool m_supportsHandTracking{false};
         bool m_supportsFaceTracking{false};
         bool m_supportsBodyTracking{false};
@@ -616,6 +622,16 @@ namespace virtualdesktop_openxr {
         bool m_isLowVideoMemorySystem{false};
         ovrTextureSwapChain m_headlessSwapchain{nullptr};
         bool m_forceSlowpathSwapchains{false};
+        float m_focusPixelDensity{1.f};
+        float m_peripheralPixelDensity{0.5f};
+        float m_horizontalFocusOffset{0.f};
+        float m_verticalFocusOffset{0.f};
+        float m_horizontalFovSection[2]{0.5f, 0.35f};
+        float m_verticalFovSection[2]{0.5f, 0.35f};
+        float m_horizontalFocusWideningMultiplier{0.5f};
+        float m_verticalFocusWideningMultiplier{0.2f};
+        float m_focusWideningDeadzone{0.15f};
+        bool m_preferFoveatedRendering{true};
 
         // Session state.
         bool m_isHeadless{false};
@@ -643,7 +659,11 @@ namespace virtualdesktop_openxr {
         bool m_sessionLossPending{false};
         bool m_sessionStopping{false};
         bool m_sessionExiting{false};
-        XrFovf m_cachedEyeFov[xr::StereoView::Count];
+        XrViewConfigurationType m_primaryViewConfigurationType{XR_VIEW_CONFIGURATION_TYPE_MAX_ENUM};
+        // [0] = left, [1] = right
+        // [2] = left focus non-foveated, [3] = right focus non-foveated,
+        // [4] = left focus foveated, [5] = right focus foveated
+        XrFovf m_cachedEyeFov[xr::QuadView::Count + 2];
         std::shared_mutex m_actionsAndSpacesMutex;
         std::map<XrPath, std::string> m_strings; // protected by actionsAndSpacesMutex
         std::set<XrActionSet> m_actionSets;
@@ -683,6 +703,9 @@ namespace virtualdesktop_openxr {
         bool m_jiggleViewRotations{false};
         MyHandSimulation m_handSimulation[xr::Side::Count];
         PrecompositorState m_precompositor;
+        XrVector2f m_centerOfFov[xr::StereoView::Count]{};
+        XrVector2f m_projectedEyeGaze[xr::StereoView::Count]{};
+        bool m_debugFocusViews{false};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;
