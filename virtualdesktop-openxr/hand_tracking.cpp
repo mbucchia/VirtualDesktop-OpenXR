@@ -304,6 +304,12 @@ namespace virtualdesktop_openxr {
         {
             std::shared_lock lock(m_bodyStateMutex);
 
+            locations->isActive = XR_FALSE;
+
+            if (has_XR_EXT_hand_tracking_data_source && dataSourceState) {
+                dataSourceState->isActive = XR_FALSE;
+            }
+
             // Check the hand state.
             bool needHeightAdjustment = true;
             if (m_bodyState && xrHandTracker.useOpticalTracking &&
@@ -377,12 +383,6 @@ namespace virtualdesktop_openxr {
                     }
 
                     locations->isActive = XR_TRUE;
-                } else {
-                    locations->isActive = XR_FALSE;
-
-                    if (has_XR_EXT_hand_tracking_data_source && dataSourceState) {
-                        dataSourceState->isActive = XR_FALSE;
-                    }
                 }
             }
 
