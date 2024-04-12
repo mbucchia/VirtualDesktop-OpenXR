@@ -73,9 +73,13 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
-        // There is no mask for the focus area.
-        if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO &&
-            viewIndex >= xr::StereoView::Count) {
+        // There is no mask for the focus area or when using FOV tangents.
+        const bool useFovTangents =
+            viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+            (std::abs(m_fovTangentX - 1.f) > FLT_EPSILON || std::abs(m_fovTangentY - 1.f) > FLT_EPSILON);
+        if ((viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO &&
+             viewIndex >= xr::StereoView::Count) ||
+            useFovTangents) {
             visibilityMask->vertexCountOutput = 0;
             visibilityMask->indexCountOutput = 0;
             return XR_SUCCESS;

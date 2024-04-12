@@ -634,6 +634,8 @@ namespace virtualdesktop_openxr {
         float m_verticalFocusWideningMultiplier{0.2f};
         float m_focusWideningDeadzone{0.15f};
         bool m_preferFoveatedRendering{true};
+        float m_fovTangentX{1.f};
+        float m_fovTangentY{1.f};
 
         // Session state.
         bool m_isHeadless{false};
@@ -665,7 +667,8 @@ namespace virtualdesktop_openxr {
         // [0] = left, [1] = right
         // [2] = left focus non-foveated, [3] = right focus non-foveated,
         // [4] = left focus foveated, [5] = right focus foveated
-        XrFovf m_cachedEyeFov[xr::QuadView::Count + 2];
+        // [6] = left with tangent, [7] = right with tangent
+        XrFovf m_cachedEyeFov[xr::QuadView::Count + xr::StereoView::Count + xr::StereoView::Count];
         std::shared_mutex m_actionsAndSpacesMutex;
         std::map<XrPath, std::string> m_strings; // protected by actionsAndSpacesMutex
         std::set<XrActionSet> m_actionSets;

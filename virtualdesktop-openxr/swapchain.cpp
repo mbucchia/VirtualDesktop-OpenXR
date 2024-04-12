@@ -220,8 +220,12 @@ namespace virtualdesktop_openxr {
                 fov.LeftTan = tan(-m_cachedEyeFov[viewFovIndex].angleLeft);
                 fov.RightTan = tan(m_cachedEyeFov[viewFovIndex].angleRight);
 
-                const ovrSizei viewportSize = ovr_GetFovTextureSize(
+                ovrSizei viewportSize = ovr_GetFovTextureSize(
                     m_ovrSession, (i % xr::StereoView::Count) == 0 ? ovrEye_Left : ovrEye_Right, fov, pixelDensity);
+                if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
+                    viewportSize.w = (int)(viewportSize.w * m_fovTangentX);
+                    viewportSize.h = (int)(viewportSize.h * m_fovTangentY);
+                }
                 views[i].recommendedImageRectWidth =
                     xr::math::AlignTo<2>(std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth));
                 views[i].recommendedImageRectHeight =
@@ -249,9 +253,11 @@ namespace virtualdesktop_openxr {
                         views[xr::QuadView::FocusLeft].recommendedImageRectHeight,
                         m_focusPixelDensity);
                 } else {
-                    Log("Recommended resolution: %ux%u\n",
+                    Log("Recommended resolution: %ux%u (%.3f/%.3f tangents)\n",
                         views[xr::StereoView::Left].recommendedImageRectWidth,
-                        views[xr::StereoView::Left].recommendedImageRectHeight);
+                        views[xr::StereoView::Left].recommendedImageRectHeight,
+                        m_fovTangentX,
+                        m_fovTangentY);
                 }
                 m_loggedResolution = true;
             }

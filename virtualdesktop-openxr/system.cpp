@@ -585,6 +585,11 @@ namespace virtualdesktop_openxr {
                               TLArg(m_verticalFovSection[1], "VerticalFovSection"),
                               TLArg(m_preferFoveatedRendering, "PreferFoveatedRendering"));
 
+            m_fovTangentX = getSetting("fov_tangent_x").value_or(100) / 100.f;
+            m_fovTangentY = getSetting("fov_tangent_y").value_or(100) / 100.f;
+            TraceLoggingWrite(
+                g_traceProvider, "FovTangents", TLArg(m_fovTangentX, "TangentX"), TLArg(m_fovTangentY, "TangentY"));
+
             ovrPosef hmdToEyePose[xr::StereoView::Count];
             hmdToEyePose[xr::StereoView::Left] = m_cachedEyeInfo[xr::StereoView::Left].HmdToEyePose;
             hmdToEyePose[xr::StereoView::Right] = m_cachedEyeInfo[xr::StereoView::Right].HmdToEyePose;
@@ -632,7 +637,17 @@ namespace virtualdesktop_openxr {
                                          std::clamp(m_projectedEyeGaze[eye].y - m_verticalFovSection[1], -1.f, 1.f)};
                     const XrVector2f max{std::clamp(m_projectedEyeGaze[eye].x + m_horizontalFovSection[1], -1.f, 1.f),
                                          std::clamp(m_projectedEyeGaze[eye].y + m_verticalFovSection[1], -1.f, 1.f)};
-                    m_cachedEyeFov[xr::StereoView::Count + 2 + eye] =
+                    m_cachedEyeFov[xr::StereoView::Count + xr::StereoView::Count + eye] =
+                        xr::math::ComputeBoundingFov(m_cachedEyeFov[eye], min, max);
+                }
+                {
+                    // Populate the FOV for the focus view when eye tracking is used.
+                    // This is only used for computing resolutions (eg: xrEnumerateViewConfigurationViews).
+                    const XrVector2f min{std::clamp(m_projectedEyeGaze[eye].x - m_fovTangentX, -1.f, 1.f),
+                                         std::clamp(m_projectedEyeGaze[eye].y - m_fovTangentY, -1.f, 1.f)};
+                    const XrVector2f max{std::clamp(m_projectedEyeGaze[eye].x + m_fovTangentX, -1.f, 1.f),
+                                         std::clamp(m_projectedEyeGaze[eye].y + m_fovTangentY, -1.f, 1.f)};
+                    m_cachedEyeFov[xr::StereoView::Count + 2 * xr::StereoView::Count + eye] =
                         xr::math::ComputeBoundingFov(m_cachedEyeFov[eye], min, max);
                 }
             }
