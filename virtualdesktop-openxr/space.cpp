@@ -340,6 +340,10 @@ namespace virtualdesktop_openxr {
                         g_traceProvider, "xrLocateViews", TLArg(foveatedRenderingActive, "FoveatedRenderingActive"));
                 }
 
+                const bool useFovTangents =
+                    viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO &&
+                    (std::abs(m_fovTangentX - 1.f) > FLT_EPSILON || std::abs(m_fovTangentY - 1.f) > FLT_EPSILON);
+
                 // Query the eye tracker if needed.
                 bool isGazeValid = false;
                 XrVector3f gazeUnitVector{};
@@ -376,7 +380,8 @@ namespace virtualdesktop_openxr {
                     XrVector2f projectedGaze;
                     if (i < xr::StereoView::Count || !isGazeValid ||
                         !ProjectPoint(viewForGazeProjection, gazeUnitVector, projectedGaze)) {
-                        views[i].fov = m_cachedEyeFov[i];
+                        views[i].fov =
+                            m_cachedEyeFov[!useFovTangents ? i : (xr::QuadView::Count + xr::StereoView::Count + i)];
 
                     } else {
                         // Shift FOV according to the eye gaze.
