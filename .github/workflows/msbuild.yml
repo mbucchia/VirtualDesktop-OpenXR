@@ -42,9 +42,9 @@ jobs:
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
 
     - name: Build
-      env:
-        PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
-        PFX_NAME: "comodo"
+    #  env:
+    #    PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
+    #    PFX_NAME: "comodo"
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         # Need to build vdproj. We must invoke this tool from inside its own folder.
@@ -67,14 +67,14 @@ jobs:
         copy LICENSE bin/x64/ReleaseBundle/
         copy THIRD_PARTY bin/x64/ReleaseBundle/
 
-    - name: Signing
-      env:
-        PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
-        PFX_NAME: "comodo"
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-        $pfxName = if ($env:PFX_NAME) { $env:PFX_NAME } else { "selfsigncert" };
-        installer/signtool.exe sign /d "VirtualDesktop-OpenXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/VirtualDesktopXR.msi
+    #- name: Signing
+    #  env:
+    #    PFX_PASSWORD: ${{ secrets.PFX_PASSWORD }}
+    #    PFX_NAME: "comodo"
+    #  working-directory: ${{env.GITHUB_WORKSPACE}}
+    #  run: |
+    #    $pfxName = if ($env:PFX_NAME) { $env:PFX_NAME } else { "selfsigncert" };
+    #    installer/signtool.exe sign /d "VirtualDesktop-OpenXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/VirtualDesktopXR.msi
 
     - name: Publish
       uses: actions/upload-artifact@v2
