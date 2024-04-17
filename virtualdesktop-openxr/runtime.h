@@ -610,6 +610,7 @@ namespace virtualdesktop_openxr {
         bool m_isConformanceTest{false};
         bool m_isLowVideoMemorySystem{false};
         ovrTextureSwapChain m_headlessSwapchain{nullptr};
+        bool m_forceSlowpathSwapchains{false};
 
         // Session state.
         bool m_isHeadless{false};

@@ -235,6 +235,9 @@ namespace virtualdesktop_openxr {
             m_quirkedControllerPoses = true;
         }
 
+        // OVRPlugin will acquire/release images multiple times per frame.
+        m_forceSlowpathSwapchains = m_isOculusXrPlugin || getSetting("quirk_force_slowpath_swapchains").value_or(false);
+
         // Do this late, since it might rely on extensions being registered.
         initializeRemappingTables();
 

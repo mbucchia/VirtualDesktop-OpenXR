@@ -371,10 +371,14 @@ namespace virtualdesktop_openxr {
         // - LibOVR does not support sampling from a specific slice of a texture array.
         // - Our pre-processing shader does not support cubemaps.
         // - Our pre-processing shader does not support MSAA.
-        if (desc.ArraySize == 1 && desc.Type == ovrTexture_2D && desc.SampleCount == 1) {
+        if (desc.ArraySize == 1 && desc.Type == ovrTexture_2D && desc.SampleCount == 1 && !m_forceSlowpathSwapchains) {
             CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &ovrSwapchain));
             CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, ovrSwapchain, &length));
         } else {
+            Log("Creating a slow-path swapchain (%d/%d/%d)\n",
+                desc.ArraySize,
+                desc.SampleCount,
+                m_forceSlowpathSwapchains);
             length = desc.StaticImage ? 1 : 3;
         }
 
