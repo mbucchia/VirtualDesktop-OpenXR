@@ -258,6 +258,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
+        if (locateInfo->time <= 0) {
+            return XR_ERROR_TIME_INVALID;
+        }
+
         std::shared_lock lock(m_handTrackersMutex);
         std::shared_lock lock2(m_actionsAndSpacesMutex);
 

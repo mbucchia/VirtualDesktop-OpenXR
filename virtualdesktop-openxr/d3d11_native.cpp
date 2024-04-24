@@ -518,6 +518,8 @@ namespace virtualdesktop_openxr {
                                                  uint32_t slice,
                                                  XrCompositionLayerFlags compositionFlags,
                                                  std::set<std::pair<Swapchain*, uint32_t>>& processed) {
+        ensureSwapchainSliceResources(xrSwapchain, slice);
+
         // If the texture was never used or already committed, do nothing.
         // TODO: If the same swapchain is used with different bits in several layers, the bits are not honored. This is
         // a very uncommon case.
@@ -525,8 +527,6 @@ namespace virtualdesktop_openxr {
         if (xrSwapchain.appSwapchain.images.empty() || processed.count(tuple)) {
             return;
         }
-
-        ensureSwapchainSliceResources(xrSwapchain, slice);
 
         const bool needClearAlpha =
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
