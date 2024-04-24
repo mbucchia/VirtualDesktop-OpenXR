@@ -422,6 +422,7 @@ namespace virtualdesktop_openxr {
         // Tell Virtual Desktop that this is a VirtualDesktopXR session.
         if (!m_useOculusRuntime) {
             ovr_SetBool(m_ovrSession, "IsVDXR", true);
+            ovr_SetBool(m_ovrSession, "IsOpenComposite", m_isOpenComposite);
         }
 
         // Calibrate the timestamp conversion.

@@ -608,6 +608,7 @@ namespace virtualdesktop_openxr {
         bool m_isTrackerDisabled[std::size(TrackerRoles)]{};
         bool m_isOculusXrPlugin{false};
         bool m_isConformanceTest{false};
+        bool m_isOpenComposite{false};
         bool m_isLowVideoMemorySystem{false};
         ovrTextureSwapChain m_headlessSwapchain{nullptr};
         bool m_forceSlowpathSwapchains{false};

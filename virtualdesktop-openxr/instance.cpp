@@ -229,6 +229,10 @@ namespace virtualdesktop_openxr {
             m_applicationName.find("Oculus VR Plugin") == 0 ||
             GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin);
         m_isConformanceTest = m_applicationName == "conformance test";
+        m_isOpenComposite = startsWith(m_applicationName, "OpenComposite_");
+        if (m_isOpenComposite) {
+            Log("Detected OpenComposite - OpenComposite is not supported, use at your own risks!\n");
+        }
 
         if ((startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe"))) {
             m_controllerGripOffset.position.z = -0.1f;
