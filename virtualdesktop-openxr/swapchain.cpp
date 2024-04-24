@@ -368,17 +368,19 @@ namespace virtualdesktop_openxr {
         int length = 0;
         // If and only if the swapchain images are directly usable by LibOVR, we create an OVR swapchain. Otherwise, we
         // will create images ourselves.
-        // - LibOVR does not support sampling from a specific slice of a texture array.
         // - Our pre-processing shader does not support cubemaps.
         // - Our pre-processing shader does not support MSAA.
-        if (desc.ArraySize == 1 && desc.Type == ovrTexture_2D && desc.SampleCount == 1 && !m_forceSlowpathSwapchains) {
+        if (desc.Type == ovrTexture_2D && desc.SampleCount == 1 && !m_forceSlowpathSwapchains) {
+            if (desc.ArraySize > 1) {
+                Log("Creating a swapchain with texture array\n");
+            }
             CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &ovrSwapchain));
             CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, ovrSwapchain, &length));
         } else {
-            Log("Creating a slow-path swapchain (%d/%d/%d)\n",
-                desc.ArraySize,
-                desc.SampleCount,
-                m_forceSlowpathSwapchains);
+            Log("Creating a slow-path swapchain (reason: %d)\n",
+                desc.Type != ovrTexture_2D ? 1
+                : desc.SampleCount != 1    ? 2
+                                           : 3);
             length = desc.StaticImage ? 1 : 3;
         }
 
@@ -521,21 +523,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_CALL_ORDER_INVALID;
         }
 
-        // Query the image index from OVR.
-        int imageIndex = xrSwapchain.nextIndex;
-        if (xrSwapchain.acquiredIndices.empty() && xrSwapchain.appSwapchain.ovrSwapchain) {
-            // "Re-synchronize" to the underlying swapchain. This should not be needed, but add robustness in case of a
-            // bug.
-            int currentIndex = imageIndex;
-            CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(
-                m_ovrSession, xrSwapchain.appSwapchain.ovrSwapchain, &currentIndex));
-            TraceLoggingWrite(g_traceProvider,
-                              "xrAcquireSwapchainImage",
-                              TLArg(currentIndex, "CurrentIndex"),
-                              TLArg(imageIndex, "ExpectedIndex"));
-            imageIndex = currentIndex;
-        }
-
+        // We don't query the image index from OVR: this is because LibOVR producer/consumer model works much
+        // differently than OpenXR. We maintain our own index and there is logic in preprocessSwapchainImage() to ensure
+        // we pass the correct image to the compositor.
+        const int imageIndex = xrSwapchain.nextIndex;
         xrSwapchain.acquiredIndices.push_back(imageIndex);
         xrSwapchain.frozen = xrSwapchain.ovrDesc.StaticImage;
         xrSwapchain.nextIndex = imageIndex + 1;
@@ -602,9 +593,8 @@ namespace virtualdesktop_openxr {
         }
 
         // Update the state of the swapchain.
-        if (xrSwapchain.appSwapchain.ovrSwapchain) {
-            CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.appSwapchain.ovrSwapchain));
-        }
+        // We never commit images here: this is because LibOVR producer/consumer model works much differently than
+        // OpenXR. We will perform swapchain commits in preprocessSwapchainImage().
         xrSwapchain.lastReleasedIndex = xrSwapchain.lastWaitedIndex;
         xrSwapchain.lastWaitedIndex = -1;
         xrSwapchain.acquiredIndices.pop_front();

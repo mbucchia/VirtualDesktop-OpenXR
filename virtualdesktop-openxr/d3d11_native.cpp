@@ -528,31 +528,60 @@ namespace virtualdesktop_openxr {
 
         ensureSwapchainSliceResources(xrSwapchain, slice);
 
-        int ovrDestIndex = -1;
-        CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(
-            m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain, &ovrDestIndex));
-        const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
-
         const bool needClearAlpha =
             layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
         // Workaround: this is questionable, but an app should always submit layer 0 without alpha-blending (ie: alpha =
         // 1). This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
         const bool needPremultiplyAlpha =
             layerIndex > 0 && (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
-        const bool needCopy = xrSwapchain.resolvedSlices[slice].lastProcessedIndex == lastReleasedIndex ||
-                              (slice > 0 || !xrSwapchain.appSwapchain.ovrSwapchain) ||
-                              xrSwapchain.ovrDesc.SampleCount > 1;
+        const bool needCopy = (slice > 0 || !xrSwapchain.appSwapchain.ovrSwapchain);
 
-        const bool needCommit = needClearAlpha || needPremultiplyAlpha || needCopy;
+        const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
+
+        TraceLoggingWrite(g_traceProvider,
+                          "PreprocessSwapchainImage",
+                          TLArg(lastReleasedIndex, "LastReleasedIndex"),
+                          TLArg(slice, "Slice"),
+                          TLArg(needClearAlpha, "NeedClearAlpha"),
+                          TLArg(needPremultiplyAlpha, "NeedPremultiplyAlpha"),
+                          TLArg(needCopy, "NeedCopy"));
+
+        int ovrDestIndex = -1;
+        while (true) {
+            CHECK_OVRCMD(ovr_GetTextureSwapChainCurrentIndex(
+                m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain, &ovrDestIndex));
+
+            // If we can use the swapchain with LibOVR directly (without a copy), then let's commit to the swapchain
+            // until the last committed image matches the last released image index.
+            int ovrCommittedIndex = ovrDestIndex - 1;
+            if (ovrCommittedIndex < 0) {
+                ovrCommittedIndex = xrSwapchain.ovrSwapchainLength - 1;
+            }
+            if (needCopy) {
+                TraceLoggingWrite(g_traceProvider, "PreprocessSwapchainImage", TLArg(ovrDestIndex, "DestIndex"));
+                break;
+            }
+            TraceLoggingWrite(
+                g_traceProvider, "PreprocessSwapchainImage_SyncImage", TLArg(ovrCommittedIndex, "CommittedIndex"));
+            if (ovrCommittedIndex == lastReleasedIndex) {
+                break;
+            }
+            CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
+        }
 
         if (needCopy) {
+            const bool isDepthBuffer =
+                (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            TraceLoggingWrite(g_traceProvider,
+                              "PreprocessSwapchainImage_Copy",
+                              TLArg(xrSwapchain.ovrDesc.SampleCount == 1 ? "None"
+                                    : !isDepthBuffer                     ? "Color"
+                                                                         : "Depth",
+                                    "Resolve"));
+
             // Circumvent some of OVR's limitations:
             // - For texture arrays, we must do a copy to slice 0 into another swapchain.
             // - For MSAA, we must resolve into a non-MSAA swapchain.
-            // - Committing into a swapchain automatically acquires the next image. When an app renders certain
-            //   swapchains (eg: quad layers) at a lower frame rate, we must perform a copy to the current OVR swapchain
-            //   image. All the processing needed (eg: alpha correction) was done during initial processing (the first
-            //   time we saw the last released image), so no need to redo it.
             if (xrSwapchain.ovrDesc.SampleCount == 1) {
                 m_ovrSubmissionContext->CopySubresourceRegion(
                     xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
@@ -565,7 +594,7 @@ namespace virtualdesktop_openxr {
                     nullptr);
             } else {
                 // Resolve MSAA. For depth buffers, this requires a shader.
-                if (!(xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+                if (!isDepthBuffer) {
                     m_ovrSubmissionContext->ResolveSubresource(
                         xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
                         0,
@@ -720,10 +749,8 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        xrSwapchain.resolvedSlices[slice].lastProcessedIndex = lastReleasedIndex;
-
-        // Commit the texture to OVR.
-        if (needCommit) {
+        if (needCopy) {
+            // Commit the texture to OVR if using a different swapchain.
             CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
         }
         processed.insert(tuple);

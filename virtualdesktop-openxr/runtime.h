@@ -305,7 +305,6 @@ namespace virtualdesktop_openxr {
             std::vector<ComPtr<ID3D11UnorderedAccessView>> uavs;
             std::vector<ComPtr<ID3D11RenderTargetView>> rtvs;
             std::vector<ComPtr<ID3D11DepthStencilView>> dsvs;
-            int lastProcessedIndex{-1};
         };
 
         struct Swapchain {
