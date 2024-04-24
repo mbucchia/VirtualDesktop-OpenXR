@@ -537,6 +537,8 @@ namespace virtualdesktop_openxr {
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Left, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Left]);
             m_cachedEyeInfo[xr::StereoView::Right] =
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Right, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Right]);
+            m_cachedProjectionResolution =
+                ovr_GetFovTextureSize(m_ovrSession, ovrEye_Left, m_cachedEyeInfo[xr::StereoView::Left].Fov, 1.f);
 
             for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
                 m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);

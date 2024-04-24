@@ -522,6 +522,7 @@ namespace virtualdesktop_openxr {
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const;
         void populateSwapchainSlice(const Swapchain& xrSwapchain,
+                                    const ovrTextureSwapChainDesc& desc,
                                     SwapchainSlice& slice,
                                     uint32_t sliceIndex,
                                     const char* debugName) const;
@@ -582,6 +583,7 @@ namespace virtualdesktop_openxr {
         double m_predictedFrameDuration{0};
         ovrHmdDesc m_cachedHmdInfo{};
         ovrEyeRenderDesc m_cachedEyeInfo[xr::StereoView::Count]{};
+        ovrSizei m_cachedProjectionResolution{};
         mutable std::optional<float> m_lastKnownFloorHeight;
         LARGE_INTEGER m_qpcFrequency{};
         double m_ovrTimeFromQpcTimeOffset{0};

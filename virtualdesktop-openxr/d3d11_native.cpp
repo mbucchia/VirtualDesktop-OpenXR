@@ -767,14 +767,30 @@ namespace virtualdesktop_openxr {
             }
         }
         if (!xrSwapchain.resolvedSlices[slice].ovrSwapchain) {
-            populateSwapchainSlice(xrSwapchain, xrSwapchain.resolvedSlices[slice], slice, "Runtime Slice");
+            auto desc = xrSwapchain.ovrDesc;
+            // Resolve multisampling.
+            desc.SampleCount = 1;
+            // No need for arrays.
+            desc.ArraySize = 1;
+            populateSwapchainSlice(xrSwapchain, desc, xrSwapchain.resolvedSlices[slice], slice, "Runtime Slice");
         }
     }
 
     void OpenXrRuntime::ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const {
         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
             if (!xrSwapchain.stereoProjection[eye].ovrSwapchain) {
-                populateSwapchainSlice(xrSwapchain, xrSwapchain.stereoProjection[eye], eye, "Precompositor");
+                ovrTextureSwapChainDesc desc{};
+                desc.Type = ovrTexture_2D;
+                desc.ArraySize = 1;
+                // TODO: For eye visibility composition, we only need one eye and could make the second eye a very small
+                // footprint.
+                desc.Width = m_cachedProjectionResolution.w;
+                desc.Height = m_cachedProjectionResolution.h;
+                desc.MipLevels = 1;
+                desc.SampleCount = 1;
+                desc.Format = isSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format) ? OVR_FORMAT_B8G8R8A8_UNORM_SRGB
+                                                                                   : OVR_FORMAT_B8G8R8A8_UNORM;
+                populateSwapchainSlice(xrSwapchain, desc, xrSwapchain.stereoProjection[eye], eye, "Precompositor");
 
                 for (uint32_t i = 0; i < xrSwapchain.stereoProjection[eye].images.size(); i++) {
                     D3D11_RENDER_TARGET_VIEW_DESC desc{};
@@ -791,12 +807,10 @@ namespace virtualdesktop_openxr {
     }
 
     void OpenXrRuntime::populateSwapchainSlice(const Swapchain& xrSwapchain,
+                                               const ovrTextureSwapChainDesc& desc,
                                                SwapchainSlice& slice,
                                                uint32_t sliceIndex,
                                                const char* debugName) const {
-        auto desc = xrSwapchain.ovrDesc;
-        desc.SampleCount = 1;
-        desc.ArraySize = 1;
         CHECK_OVRCMD(
             ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &slice.ovrSwapchain));
 
