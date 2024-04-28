@@ -227,9 +227,9 @@ namespace virtualdesktop_openxr {
                     viewportSize.h = (int)(viewportSize.h * m_fovTangentY);
                 }
                 views[i].recommendedImageRectWidth =
-                    xr::math::AlignTo<2>(std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth));
+                    xr::math::AlignTo<4>(std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth));
                 views[i].recommendedImageRectHeight =
-                    xr::math::AlignTo<2>(std::min((uint32_t)viewportSize.h, views[i].maxImageRectHeight));
+                    xr::math::AlignTo<4>(std::min((uint32_t)viewportSize.h, views[i].maxImageRectHeight));
 
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateViewConfigurationViews",
@@ -515,6 +515,11 @@ namespace virtualdesktop_openxr {
                 ovr_DestroyTextureSwapChain(m_ovrSession, ovrSwapchain);
             }
             xrSwapchain.resolvedSlices.pop_back();
+        }
+        for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+            if (xrSwapchain.stereoProjection[eye].ovrSwapchain) {
+                ovr_DestroyTextureSwapChain(m_ovrSession, xrSwapchain.stereoProjection[eye].ovrSwapchain);
+            }
         }
 
         cleanupSwapchainImagesVulkan(xrSwapchain);
