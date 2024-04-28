@@ -41,7 +41,6 @@ namespace virtualdesktop_openxr {
         alignas(4) bool ignoreAlpha;
         alignas(4) bool isUnpremultipliedAlpha;
         alignas(4) bool isSRGB;
-        alignas(4) float smoothingArea;
     };
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrWaitFrame
@@ -619,6 +618,9 @@ namespace virtualdesktop_openxr {
         // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
         layer.Header.Type = ovrLayerType_EyeFov;
 
+        Swapchain* swapchains[xr::StereoView::Count] = {};
+        const XrSwapchainSubImage* subImages[xr::StereoView::Count] = {};
+
         for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
             TraceLoggingWrite(g_traceProvider,
                               "xrEndFrame_View",
@@ -653,9 +655,16 @@ namespace virtualdesktop_openxr {
                 m_precompositor.isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
             }
 
+            const uint32_t ovrViewIndex = viewIndex % xr::StereoView::Count;
+
+            // We only upscale the bottom projection layer.
+            const bool needUpscaling = m_precompositor.isFirstProjectionLayer && m_sharpenFactor > 0.f;
+
             // Fill out color buffer information.
-            resolveSwapchainImage(
-                xrSwapchain, proj.views[viewIndex].subImage.imageArrayIndex, m_precompositor.resolvedSwapchainImages);
+            resolveSwapchainImage(xrSwapchain,
+                                  proj.views[viewIndex].subImage.imageArrayIndex,
+                                  m_precompositor.resolvedSwapchainImages,
+                                  needUpscaling /* Skip committing if we will not use the swapchain directly */);
             layer.EyeFov.ColorTexture[viewIndex] =
                 xrSwapchain.resolvedSlices[proj.views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
 
@@ -673,6 +682,11 @@ namespace virtualdesktop_openxr {
             layer.EyeFov.Viewport[viewIndex].Pos.y = proj.views[viewIndex].subImage.imageRect.offset.y;
             layer.EyeFov.Viewport[viewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
             layer.EyeFov.Viewport[viewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
+
+            if (needUpscaling) {
+                swapchains[ovrViewIndex] = &xrSwapchain;
+                subImages[ovrViewIndex] = &proj.views[viewIndex].subImage;
+            }
 
             // Fill out pose and FOV information.
             XrPosef layerPose;
@@ -756,6 +770,12 @@ namespace virtualdesktop_openxr {
                 }
             }
         }
+
+        // Run the upscaler or sharpening if needed.
+        if (swapchains[xr::StereoView::Right]) {
+            upscaler(swapchains, subImages, layer.EyeFov);
+        }
+
         return XR_SUCCESS;
     }
 
@@ -952,14 +972,12 @@ namespace virtualdesktop_openxr {
                                                  uint32_t layerIndex,
                                                  uint32_t slice,
                                                  XrCompositionLayerFlags compositionFlags,
-                                                 XrRect2Di viewport,
-                                                 bool isFocusView) {
+                                                 XrRect2Di viewport) {
         if (!xrSwapchain.dirty) {
             return;
         }
 
         const bool needClearAlpha =
-            isFocusView ||
             (layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT));
         // Workaround: this is questionable, but an app should always submit layer 0 without alpha-blending (ie: alpha =
         // 1). This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
@@ -996,7 +1014,6 @@ namespace virtualdesktop_openxr {
                 constants.ignoreAlpha = needClearAlpha;
                 constants.isUnpremultipliedAlpha = needPremultiplyAlpha;
                 constants.isSRGB = isSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format);
-                constants.smoothingArea = isFocusView ? 0.2f : 0;
 
                 D3D11_MAPPED_SUBRESOURCE mappedResources;
                 CHECK_HRCMD(m_ovrSubmissionContext->Map(

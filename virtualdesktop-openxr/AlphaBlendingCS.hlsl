@@ -7,7 +7,6 @@ cbuffer config : register(b0)
     bool ignoreAlpha;
     bool isUnpremultipliedAlpha;
     bool isSRGB;
-    float smoothingArea;
 };
 
 RWTexture2D<unorm float4> inoutTexture : register(u0);
@@ -43,15 +42,6 @@ void main(uint2 pos : SV_DispatchThreadID)
             c = c < 0.0031308 ? 12.92 * c : 1.13005 * sqrt(c - 0.00228) - 0.13448 * c + 0.005719;
         }
         output.rgb = c;
-    }
-
-    // Smooth the focus view (quad views only).
-    if (smoothingArea)
-    {
-        float2 uv = float2(pos) / dimension;
-        float2 s = smoothstep(float2(0, 0), float2(smoothingArea, smoothingArea), uv) -
-                   smoothstep(float2(1, 1) - float2(smoothingArea, smoothingArea), float2(1, 1), uv);
-        output.a *= max(0.5, s.x * s.y);
     }
 
     inoutTexture[surfacePos] = output;
