@@ -145,6 +145,8 @@ namespace virtualdesktop_openxr {
                 // If we pre-emptively enabled invisible mode, re-initialize OVR for visible session.
                 enterVisibleMode();
             }
+
+            initializePrecompositorResources();
         } else {
             // We initialize a submission device since OVR needs one to create a swapchain before being able to wait
             // frames.
@@ -532,13 +534,16 @@ namespace virtualdesktop_openxr {
 
         m_jiggleViewRotations = getSetting("jiggle_view_rotations").value_or(false);
 
+        m_sharpenFactor = getSetting("sharpen").value_or(0) / 100.f;
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
                           TLArg(m_useRunningStart, "UseRunningStart"),
                           TLArg(m_shouldUseDepth, "ShouldUseDepth"),
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
-                          TLArg(m_jiggleViewRotations, "JiggleViewRotations"));
+                          TLArg(m_jiggleViewRotations, "JiggleViewRotations"),
+                          TLArg(m_sharpenFactor, "SharpenFactor"));
 
         m_debugFocusViews = getSetting("debug_focus_view").value_or(false);
     }

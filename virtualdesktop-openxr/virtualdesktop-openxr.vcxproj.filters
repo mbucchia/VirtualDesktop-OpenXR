@@ -175,6 +175,9 @@
     <ClCompile Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="precompositor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="virtualdesktop-openxr.json" />
@@ -196,6 +199,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="ResolveMultisampledDepthPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SharpeningCS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

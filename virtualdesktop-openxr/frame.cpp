@@ -647,6 +647,8 @@ namespace virtualdesktop_openxr {
         }
 
         ovrLayer_Union* target = &layer;
+        Swapchain* swapchains[xr::StereoView::Count] = {};
+        const XrSwapchainSubImage* subImages[xr::StereoView::Count] = {};
 
         for (uint32_t viewIndex = 0; viewIndex < viewCount; viewIndex++) {
             TraceLoggingWrite(g_traceProvider,
@@ -689,9 +691,15 @@ namespace virtualdesktop_openxr {
 
             const uint32_t ovrViewIndex = viewIndex % xr::StereoView::Count;
 
+            // We only upscale the bottom projection layer and only the focus view (when applicable).
+            const bool needUpscaling =
+                m_precompositor.isFirstProjectionLayer && (!layerForFocusView || isFocusView) && m_sharpenFactor > 0.f;
+
             // Fill out color buffer information.
-            resolveSwapchainImage(
-                xrSwapchain, proj.views[viewIndex].subImage.imageArrayIndex, m_precompositor.resolvedSwapchainImages);
+            resolveSwapchainImage(xrSwapchain,
+                                  proj.views[viewIndex].subImage.imageArrayIndex,
+                                  m_precompositor.resolvedSwapchainImages,
+                                  needUpscaling /* Skip committing if we will not use the swapchain directly */);
             target->EyeFov.ColorTexture[ovrViewIndex] =
                 xrSwapchain.resolvedSlices[proj.views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
 
@@ -710,6 +718,11 @@ namespace virtualdesktop_openxr {
             target->EyeFov.Viewport[ovrViewIndex].Pos.y = proj.views[viewIndex].subImage.imageRect.offset.y;
             target->EyeFov.Viewport[ovrViewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
             target->EyeFov.Viewport[ovrViewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
+
+            if (needUpscaling) {
+                swapchains[ovrViewIndex] = &xrSwapchain;
+                subImages[ovrViewIndex] = &proj.views[viewIndex].subImage;
+            }
 
             // Fill out pose and FOV information.
             XrPosef layerPose;
@@ -795,6 +808,12 @@ namespace virtualdesktop_openxr {
                 }
             }
         }
+
+        // Run the upscaler or sharpening if needed.
+        if (swapchains[xr::StereoView::Right]) {
+            upscaler(swapchains, subImages, !layerForFocusView ? layer.EyeFov : layerForFocusView->EyeFov);
+        }
+
         return XR_SUCCESS;
     }
 

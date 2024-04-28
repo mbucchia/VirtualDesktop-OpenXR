@@ -330,6 +330,8 @@ namespace virtualdesktop_openxr {
         m_resolveMultisampledDepthConstants.Reset();
         m_alphaCorrectShader.Reset();
         m_alphaCorrectConstants.Reset();
+        m_sharpenShader.Reset();
+        m_sharpenConstants.Reset();
         m_linearClampSampler.Reset();
         m_pointClampSampler.Reset();
         m_noDepthReadState.Reset();
@@ -511,7 +513,8 @@ namespace virtualdesktop_openxr {
     // Prepare a swapchain to be used by OVR.
     void OpenXrRuntime::resolveSwapchainImage(Swapchain& xrSwapchain,
                                               uint32_t slice,
-                                              std::set<std::pair<Swapchain*, uint32_t>>& resolved) {
+                                              std::set<std::pair<Swapchain*, uint32_t>>& resolved,
+                                              bool skipCommit) {
         ensureSwapchainSliceResources(xrSwapchain, slice);
 
         // If the texture was never used or already committed, do nothing.
@@ -528,7 +531,8 @@ namespace virtualdesktop_openxr {
                           "ResolveSwapchainImage",
                           TLArg(lastReleasedIndex, "LastReleasedIndex"),
                           TLArg(slice, "Slice"),
-                          TLArg(needCopy, "NeedCopy"));
+                          TLArg(needCopy, "NeedCopy"),
+                          TLArg(skipCommit, "SkipCommit"));
 
         int ovrDestIndex = -1;
         while (true) {
@@ -541,8 +545,9 @@ namespace virtualdesktop_openxr {
             if (ovrCommittedIndex < 0) {
                 ovrCommittedIndex = xrSwapchain.ovrSwapchainLength - 1;
             }
-            if (needCopy) {
+            if (needCopy || skipCommit) {
                 TraceLoggingWrite(g_traceProvider, "ResolveSwapchainImage", TLArg(ovrDestIndex, "DestIndex"));
+                // lastCommittedIndex must be set below.
                 break;
             }
             TraceLoggingWrite(
@@ -682,9 +687,14 @@ namespace virtualdesktop_openxr {
                 }
             }
 
-            CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
+            if (!skipCommit) {
+                CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
+            }
             xrSwapchain.resolvedSlices[slice].lastCommittedIndex = ovrDestIndex;
+        } else if (skipCommit) {
+            xrSwapchain.resolvedSlices[slice].lastCommittedIndex = lastReleasedIndex;
         }
+
         resolved.insert(tuple);
     }
 
@@ -711,28 +721,50 @@ namespace virtualdesktop_openxr {
     void OpenXrRuntime::ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const {
         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
             if (!xrSwapchain.stereoProjection[eye].ovrSwapchain) {
-                ovrTextureSwapChainDesc desc{};
-                desc.Type = ovrTexture_2D;
-                desc.ArraySize = 1;
-                // TODO: For eye visibility composition, we only need one eye and could make the second eye a very small
-                // footprint.
-                desc.Width = m_cachedProjectionResolution.w;
-                desc.Height = m_cachedProjectionResolution.h;
-                desc.MipLevels = 1;
-                desc.SampleCount = 1;
-                desc.Format = isSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format) ? OVR_FORMAT_B8G8R8A8_UNORM_SRGB
-                                                                                   : OVR_FORMAT_B8G8R8A8_UNORM;
-                populateSwapchainSlice(xrSwapchain, desc, xrSwapchain.stereoProjection[eye], eye, "Precompositor");
+                DXGI_FORMAT format;
+                {
+                    ovrTextureSwapChainDesc desc{};
+                    desc.Type = ovrTexture_2D;
+                    desc.ArraySize = 1;
+                    desc.Width = m_cachedProjectionResolution.w;
+                    desc.Height = m_cachedProjectionResolution.h;
+                    desc.MipLevels = 1;
+                    desc.SampleCount = 1;
+                    if (isSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format)) {
+                        desc.Format = OVR_FORMAT_B8G8R8A8_UNORM_SRGB;
+                        format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+                    } else {
+                        desc.Format = OVR_FORMAT_B8G8R8A8_UNORM;
+                        format = DXGI_FORMAT_B8G8R8A8_UNORM;
+                    }
+                    desc.BindFlags = ovrTextureBind_DX_RenderTarget | ovrTextureBind_DX_UnorderedAccess;
+                    desc.MiscFlags = ovrTextureMisc_DX_Typeless;
+                    populateSwapchainSlice(xrSwapchain, desc, xrSwapchain.stereoProjection[eye], eye, "Precompositor");
+                }
 
                 for (uint32_t i = 0; i < xrSwapchain.stereoProjection[eye].images.size(); i++) {
-                    D3D11_RENDER_TARGET_VIEW_DESC desc{};
-                    desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-                    desc.Format = xrSwapchain.dxgiFormatForSubmission;
-                    ComPtr<ID3D11RenderTargetView> rtv;
-                    CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
-                        xrSwapchain.stereoProjection[eye].images[i].Get(), &desc, rtv.ReleaseAndGetAddressOf()));
-                    setDebugName(rtv.Get(), fmt::format("Precompositor RTV [{}, {}, {}]", eye, i, (void*)&xrSwapchain));
-                    xrSwapchain.stereoProjection[eye].rtvs.push_back(std::move(rtv));
+                    {
+                        D3D11_RENDER_TARGET_VIEW_DESC desc{};
+                        desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+                        desc.Format = format;
+                        ComPtr<ID3D11RenderTargetView> rtv;
+                        CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
+                            xrSwapchain.stereoProjection[eye].images[i].Get(), &desc, rtv.ReleaseAndGetAddressOf()));
+                        setDebugName(rtv.Get(),
+                                     fmt::format("Precompositor RTV [{}, {}, {}]", eye, i, (void*)&xrSwapchain));
+                        xrSwapchain.stereoProjection[eye].rtvs.push_back(std::move(rtv));
+                    }
+                    {
+                        D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
+                        desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+                        desc.Format = getUnorderedAccessViewFormat(format);
+                        ComPtr<ID3D11UnorderedAccessView> uav;
+                        CHECK_HRCMD(m_ovrSubmissionDevice->CreateUnorderedAccessView(
+                            xrSwapchain.stereoProjection[eye].images[i].Get(), &desc, uav.ReleaseAndGetAddressOf()));
+                        setDebugName(uav.Get(),
+                                     fmt::format("Precompositor UAV [{}, {}, {}]", eye, i, (void*)&xrSwapchain));
+                        xrSwapchain.stereoProjection[eye].uavs.push_back(std::move(uav));
+                    }
                 }
             }
         }
