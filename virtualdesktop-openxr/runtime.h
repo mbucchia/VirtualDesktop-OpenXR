@@ -297,7 +297,7 @@ namespace virtualdesktop_openxr {
         };
 
         struct SwapchainSlice {
-            ovrTextureSwapChain ovrSwapchain;
+            ovrTextureSwapChain ovrSwapchain{nullptr};
             std::vector<ComPtr<ID3D11Texture2D>> images;
 
             // Resources for copy/resolve/pre-processing.
@@ -305,6 +305,7 @@ namespace virtualdesktop_openxr {
             std::vector<ComPtr<ID3D11UnorderedAccessView>> uavs;
             std::vector<ComPtr<ID3D11RenderTargetView>> rtvs;
             std::vector<ComPtr<ID3D11DepthStencilView>> dsvs;
+            int lastCommittedIndex{-1};
         };
 
         struct Swapchain {
@@ -518,6 +519,7 @@ namespace virtualdesktop_openxr {
                                       uint32_t layerIndex,
                                       uint32_t slice,
                                       XrCompositionLayerFlags compositionFlags,
+                                      bool skipCommit,
                                       std::set<std::pair<Swapchain*, uint32_t>>& processed);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const;
@@ -558,6 +560,10 @@ namespace virtualdesktop_openxr {
         void cleanupSwapchainImagesOpenGL(Swapchain& xrSwapchain);
         void flushOpenGLContext();
         void serializeOpenGLFrame();
+
+        // precompositor.cpp
+        void upscaler(Swapchain** swapchains, const XrSwapchainSubImage** subImages, ovrLayerEyeFov& layer);
+        void initializePrecompositorResources();
 
         // visibility_mask.cpp
         void convertSteamVRToOpenXRHiddenMesh(const ovrFovPort& fov, XrVector2f* vertices, uint32_t count) const;
@@ -630,6 +636,8 @@ namespace virtualdesktop_openxr {
         ComPtr<ID3D11Buffer> m_resolveMultisampledDepthConstants;
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader;
         ComPtr<ID3D11Buffer> m_alphaCorrectConstants;
+        ComPtr<ID3D11ComputeShader> m_sharpenShader;
+        ComPtr<ID3D11Buffer> m_sharpenConstants;
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
@@ -678,6 +686,7 @@ namespace virtualdesktop_openxr {
         bool m_jiggleViewRotations{false};
         MyHandSimulation m_handSimulation[xr::Side::Count];
         PrecompositorState m_precompositor;
+        float m_sharpenFactor{0.f};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;

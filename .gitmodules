@@ -22,3 +22,9 @@
 [submodule "external/openvr"]
 	path = external/openvr
 	url = https://github.com/ValveSoftware/openvr.git
+[submodule "external/FidelityFX-FSR"]
+	path = external/FidelityFX-FSR
+	url = https://github.com/GPUOpen-Effects/FidelityFX-FSR.git
+[submodule "external/FidelityFX-CAS"]
+	path = external/FidelityFX-CAS
+	url = https://github.com/GPUOpen-Effects/FidelityFX-CAS.git

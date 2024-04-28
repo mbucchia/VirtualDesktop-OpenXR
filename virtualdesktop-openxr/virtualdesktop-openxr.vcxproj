@@ -145,7 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath;$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -200,6 +200,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <VariableName>g_%(Filename)</VariableName>
       <HeaderFileOutput>$(IntDir)%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -210,7 +211,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath;$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -265,6 +266,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <VariableName>g_%(Filename)</VariableName>
       <HeaderFileOutput>$(IntDir)%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -277,7 +279,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath;$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -334,6 +336,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <VariableName>g_%(Filename)</VariableName>
       <HeaderFileOutput>$(IntDir)%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">
@@ -346,7 +349,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath;$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -403,6 +406,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <VariableName>g_%(Filename)</VariableName>
       <HeaderFileOutput>$(IntDir)%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -415,7 +419,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath;$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -472,6 +476,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <VariableName>g_%(Filename)</VariableName>
       <HeaderFileOutput>$(IntDir)%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">
@@ -484,7 +489,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath;$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -541,6 +546,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <VariableName>g_%(Filename)</VariableName>
       <HeaderFileOutput>$(IntDir)%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput />
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\FidelityFX-FSR\ffx-fsr;$(SolutionDir)\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -630,6 +636,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     </ClCompile>
     <ClCompile Include="perf_counter.cpp" />
     <ClCompile Include="mirror_window.cpp" />
+    <ClCompile Include="precompositor.cpp" />
     <ClCompile Include="session.cpp" />
     <ClCompile Include="space.cpp" />
     <ClCompile Include="swapchain.cpp" />
@@ -656,12 +663,10 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ShaderType>Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="ResolveMultisampledDepthPS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">Pixel</ShaderType>
+      <ShaderType>Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="SharpeningCS.hlsl">
+      <ShaderType>Compute</ShaderType>
     </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -573,6 +573,9 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        // We only upscale the bottom projection layer.
+        const bool needUpscaling = m_precompositor.isFirstProjectionLayer && m_sharpenFactor > 0.f;
+
         // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
         static_assert(offsetof(decltype(layer.EyeFov), ColorTexture) ==
                       offsetof(decltype(layer.EyeFovDepth), ColorTexture));
@@ -585,6 +588,9 @@ namespace virtualdesktop_openxr {
 
         // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
         layer.Header.Type = ovrLayerType_EyeFov;
+
+        Swapchain* swapchains[xr::StereoView::Count] = {};
+        const XrSwapchainSubImage* subImages[xr::StereoView::Count] = {};
 
         for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
             TraceLoggingWrite(g_traceProvider,
@@ -606,6 +612,7 @@ namespace virtualdesktop_openxr {
             }
 
             Swapchain& xrSwapchain = *(Swapchain*)proj.views[viewIndex].subImage.swapchain;
+            swapchains[viewIndex] = &xrSwapchain;
 
             if (xrSwapchain.lastReleasedIndex == -1) {
                 return XR_ERROR_LAYER_INVALID;
@@ -625,6 +632,7 @@ namespace virtualdesktop_openxr {
                                      m_precompositor.layerIndex,
                                      proj.views[viewIndex].subImage.imageArrayIndex,
                                      proj.layerFlags,
+                                     needUpscaling, /* Skip committing if we will not use the swapchain directly */
                                      m_precompositor.processedSwapchainImages);
             layer.EyeFov.ColorTexture[viewIndex] =
                 xrSwapchain.resolvedSlices[proj.views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
@@ -636,6 +644,7 @@ namespace virtualdesktop_openxr {
             layer.EyeFov.Viewport[viewIndex].Pos.y = proj.views[viewIndex].subImage.imageRect.offset.y;
             layer.EyeFov.Viewport[viewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
             layer.EyeFov.Viewport[viewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
+            subImages[viewIndex] = &proj.views[viewIndex].subImage;
 
             // Fill out pose and FOV information.
             XrPosef layerPose;
@@ -695,6 +704,7 @@ namespace virtualdesktop_openxr {
                             m_precompositor.layerIndex,
                             depth->subImage.imageArrayIndex,
                             XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
+                            false /* skipCommit */,
                             m_precompositor.processedSwapchainImages);
                         layer.EyeFovDepth.DepthTexture[viewIndex] =
                             xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
@@ -715,6 +725,12 @@ namespace virtualdesktop_openxr {
                 }
             }
         }
+
+        // Run the upscaler or sharpening if needed.
+        if (needUpscaling) {
+            upscaler(swapchains, subImages, layer.EyeFov);
+        }
+
         return XR_SUCCESS;
     }
 
@@ -797,6 +813,7 @@ namespace virtualdesktop_openxr {
                                  m_precompositor.layerIndex,
                                  quad.subImage.imageArrayIndex,
                                  quad.layerFlags,
+                                 false /* skipCommit */,
                                  m_precompositor.processedSwapchainImages);
         layer.Quad.ColorTexture = xrSwapchain.resolvedSlices[quad.subImage.imageArrayIndex].ovrSwapchain;
 
@@ -872,8 +889,12 @@ namespace virtualdesktop_openxr {
         }
 
         // Fill out color buffer information.
-        preprocessSwapchainImage(
-            xrSwapchain, m_precompositor.layerIndex, 0, cube.layerFlags, m_precompositor.processedSwapchainImages);
+        preprocessSwapchainImage(xrSwapchain,
+                                 m_precompositor.layerIndex,
+                                 0,
+                                 cube.layerFlags,
+                                 false /* skipCommit */,
+                                 m_precompositor.processedSwapchainImages);
         layer.Cube.CubeMapTexture = xrSwapchain.resolvedSlices[0].ovrSwapchain;
 
         if (!m_spaces.count(cube.space)) {
