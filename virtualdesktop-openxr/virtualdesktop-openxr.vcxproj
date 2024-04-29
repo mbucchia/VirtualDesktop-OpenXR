@@ -145,7 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\d3dx12;..\external\NVAPI</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -154,7 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib;..\external\NVAPI\amd64</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -213,7 +213,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\d3dx12;..\external\NVAPI</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -222,7 +222,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32;..\external\NVAPI\x86</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -283,7 +283,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\d3dx12;..\external\NVAPI</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -294,7 +294,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib;..\external\NVAPI\amd64</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -355,7 +355,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\d3dx12;..\external\NVAPI</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -366,7 +366,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib;..\external\NVAPI\amd64</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -427,7 +427,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\d3dx12;..\external\NVAPI</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -438,7 +438,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32;..\external\NVAPI\x86</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -499,7 +499,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\d3dx12;..\external\NVAPI</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -510,7 +510,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32;..\external\NVAPI\x86</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
@@ -573,6 +573,8 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h" />
     <ClInclude Include="OVR_Ext.h" />
     <ClInclude Include="RuntimeConfiguration.h" />
+    <ClInclude Include="D3D12Utils.h" />
+    <ClInclude Include="DetoursUtils.h" />
     <ClInclude Include="trackers.h" />
     <ClInclude Include="BodyState.h" />
     <ClInclude Include="framework\dispatch.gen.h" />
@@ -583,6 +585,8 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="resource.h" />
     <ClInclude Include="runtime.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="vrs.h" />
+    <ClInclude Include="VRSUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPI_Util.cpp">
@@ -656,6 +660,8 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClCompile Include="swapchain.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="visibility_mask.cpp" />
+    <ClCompile Include="vrs_d3d11.cpp" />
+    <ClCompile Include="vrs_d3d12.cpp" />
     <ClCompile Include="vulkan_interop.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -674,6 +680,12 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     </FxCompile>
     <FxCompile Include="FullScreenQuadVS.hlsl">
       <ShaderType>Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="GenerateShadingRateMapCS.hlsl">
+      <ShaderType>Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="GenerateShadingRateMapNoArrayCS.hlsl">
+      <ShaderType>Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="ResolveMultisampledDepthPS.hlsl">
       <ShaderType>Pixel</ShaderType>

@@ -26,6 +26,8 @@
 #include "runtime.h"
 #include "utils.h"
 
+#include "vrs.h"
+
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::log;
@@ -76,6 +78,12 @@ namespace virtualdesktop_openxr {
                     return result;
                 }
 
+                if (m_allowVrs) {
+                    vrs::InstallD3D11Hooks(
+                        d3dBindings->device,
+                        {(UINT)m_cachedProjectionResolution.w, (UINT)m_cachedProjectionResolution.h});
+                }
+
                 hasGraphicsBindings = true;
                 break;
             } else if (has_XR_KHR_D3D12_enable && entry->type == XR_TYPE_GRAPHICS_BINDING_D3D12_KHR) {
@@ -89,6 +97,12 @@ namespace virtualdesktop_openxr {
                 const auto result = initializeD3D12(*d3dBindings);
                 if (XR_FAILED(result)) {
                     return result;
+                }
+
+                if (m_allowVrs) {
+                    vrs::InstallD3D12Hooks(
+                        d3dBindings->device,
+                        {(UINT)m_cachedProjectionResolution.w, (UINT)m_cachedProjectionResolution.h});
                 }
 
                 hasGraphicsBindings = true;
@@ -283,6 +297,8 @@ namespace virtualdesktop_openxr {
         // We do not destroy actionsets and actions, since they are tied to the instance.
 
         // FIXME: Add session and frame resource cleanup here.
+        vrs::UninstallD3D11Hooks();
+        vrs::UninstallD3D12Hooks();
         cleanupOpenGL();
         cleanupVulkan();
         cleanupD3D12();
@@ -550,6 +566,8 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        m_enableVrs = getSetting("enable_vrs").value_or(false);
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
@@ -561,7 +579,8 @@ namespace virtualdesktop_openxr {
                           TLArg(m_sharpenFactor, "SharpenFactor"),
                           TLArg(m_overrideWorldScale, "OverrideWorldScale"),
                           TLArg(m_overrideFloorHeight, "OverrideFloorHeight"),
-                          TLArg(m_overrideVisibilityMaskScale, "OverrideVisibilityMaskScale"));
+                          TLArg(m_overrideVisibilityMaskScale, "OverrideVisibilityMaskScale"),
+                          TLArg(m_enableVrs, "EnableVRS"));
 
         m_debugFocusViews = getSetting("debug_focus_view").value_or(false);
     }

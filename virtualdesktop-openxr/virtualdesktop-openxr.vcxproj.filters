@@ -18,6 +18,9 @@
     <Filter Include="LibOVR">
       <UniqueIdentifier>{b687f67d-45a3-42eb-8b4a-b3d206ed8c73}</UniqueIdentifier>
     </Filter>
+    <Filter Include="VRS">
+      <UniqueIdentifier>{2a5e50b5-c13d-42e6-95c1-5c40f30a4b60}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -82,6 +85,18 @@
     </ClInclude>
     <ClInclude Include="OVR_Ext.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12Utils.h">
+      <Filter>VRS</Filter>
+    </ClInclude>
+    <ClInclude Include="DetoursUtils.h">
+      <Filter>VRS</Filter>
+    </ClInclude>
+    <ClInclude Include="VRSUtils.h">
+      <Filter>VRS</Filter>
+    </ClInclude>
+    <ClInclude Include="vrs.h">
+      <Filter>VRS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +193,12 @@
     <ClCompile Include="precompositor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vrs_d3d12.cpp">
+      <Filter>VRS</Filter>
+    </ClCompile>
+    <ClCompile Include="vrs_d3d11.cpp">
+      <Filter>VRS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="virtualdesktop-openxr.json" />
@@ -205,6 +226,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="UpscalingCS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="GenerateShadingRateMapCS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="GenerateShadingRateMapNoArrayCS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

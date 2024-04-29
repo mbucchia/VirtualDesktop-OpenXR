@@ -28,3 +28,6 @@
 [submodule "external/FidelityFX-CAS"]
 	path = external/FidelityFX-CAS
 	url = https://github.com/GPUOpen-Effects/FidelityFX-CAS.git
+[submodule "external/NVAPI"]
+	path = external/NVAPI
+	url = https://github.com/mbucchia/NVAPI.git

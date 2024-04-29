@@ -287,6 +287,7 @@ namespace virtualdesktop_openxr {
         }
 
         m_forceSlowpathSwapchains = getSetting("quirk_force_slowpath_swapchains").value_or(false);
+        m_allowVrs = getSetting("allow_vrs").value_or(false);
 
         m_supersamplingFactor = getSetting("supersampling").value_or(100) / 100.f;
         m_upscalingMultiplier = getSetting("upscaling").value_or(100) / 100.f;
@@ -660,6 +661,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
+        DetourRestoreAfterWith();
         TraceLoggingRegister(virtualdesktop_openxr::log::g_traceProvider);
         virtualdesktop_openxr::utils::InitializeHighPrecisionTimer();
         DetourDllAttach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);

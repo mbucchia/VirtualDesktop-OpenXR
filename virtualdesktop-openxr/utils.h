@@ -28,6 +28,7 @@
 
 #define CHECK_OVRCMD(cmd) xr::detail::_CheckOVRResult(cmd, #cmd, FILE_AND_LINE)
 #define CHECK_VKCMD(cmd) xr::detail::_CheckVKResult(cmd, #cmd, FILE_AND_LINE)
+#define CHECK_NVCMD(cmd) xr::detail::_CheckNVResult(cmd, #cmd, FILE_AND_LINE)
 
 namespace xr {
     static inline std::string ToString(XrVersion version) {
@@ -211,6 +212,23 @@ namespace xr {
 
             return vks;
         }
+
+        [[noreturn]] inline void _ThrowNVResult(NvAPI_Status nvs,
+                                                const char* originator = nullptr,
+                                                const char* sourceLocation = nullptr) {
+            xr::detail::_Throw(xr::detail::_Fmt("NvAPI_Status failure [%x]", nvs), originator, sourceLocation);
+        }
+
+        inline HRESULT _CheckNVResult(NvAPI_Status nvs,
+                                      const char* originator = nullptr,
+                                      const char* sourceLocation = nullptr) {
+            if ((nvs) != NVAPI_OK) {
+                xr::detail::_ThrowNVResult(nvs, originator, sourceLocation);
+            }
+
+            return nvs;
+        }
+
     } // namespace detail
 
     namespace QuadView {

@@ -25,6 +25,7 @@
 #include "log.h"
 #include "runtime.h"
 #include "utils.h"
+#include "vrs.h"
 
 #include "AlphaBlendingCS.h"
 
@@ -185,6 +186,9 @@ namespace virtualdesktop_openxr {
                               TLArg(m_frameWaited, "FrameWaited"),
                               TLArg(m_frameBegun, "FrameBegun"),
                               TLArg(m_frameCompleted, "FrameCompleted"));
+
+            vrs::NewFrameD3D11();
+            vrs::NewFrameD3D12();
         }
 
         TraceLoggingWrite(g_traceProvider,
@@ -385,6 +389,11 @@ namespace virtualdesktop_openxr {
                 serializeOpenGLFrame();
             } else if (!m_isHeadless) {
                 serializeD3D11Frame();
+            }
+
+            if (m_allowVrs) {
+                vrs::SetStateD3D11(false);
+                vrs::SetStateD3D12(false);
             }
 
             // Ensure that we always restore the application device context if needed.
@@ -595,6 +604,11 @@ namespace virtualdesktop_openxr {
             m_currentTimerIndex = (m_currentTimerIndex + 1) % k_numGpuTimers;
 
             m_sessionTotalFrameCount++;
+
+            if (m_allowVrs) {
+                vrs::SetStateD3D11(m_enableVrs);
+                vrs::SetStateD3D12(m_enableVrs);
+            }
 
             // Signal xrBeginFrame().
             TraceLoggingWrite(g_traceProvider,

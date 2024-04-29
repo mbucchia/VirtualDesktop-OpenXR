@@ -659,6 +659,7 @@ namespace virtualdesktop_openxr {
         bool m_preferFoveatedRendering{true};
         float m_fovTangentX{1.f};
         float m_fovTangentY{1.f};
+        bool m_allowVrs{false};
 
         // Session state.
         bool m_isHeadless{false};
@@ -747,6 +748,7 @@ namespace virtualdesktop_openxr {
         float m_overrideFloorHeight{0.f};
         float m_overrideVisibilityMaskScale{1.f};
         uint32_t m_visibilityMaskDirty{0};
+        bool m_enableVrs{false};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;

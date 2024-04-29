@@ -25,6 +25,7 @@
 // Standard library.
 #define _USE_MATH_DEFINES
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <chrono>
 #include <cmath>
@@ -69,7 +70,9 @@ using Microsoft::WRL::ComPtr;
 
 // Graphics APIs.
 #include <d3d11_4.h>
+#include <nvapi.h>
 #include <d3d12.h>
+#include <d3dx12.h>
 #include <dxgi1_2.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
