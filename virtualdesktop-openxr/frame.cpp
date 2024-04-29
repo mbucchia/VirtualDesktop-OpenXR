@@ -625,7 +625,8 @@ namespace virtualdesktop_openxr {
                           TLArg(proj.layerFlags, "Flags"),
                           TLXArg(proj.space, "Space"));
 
-        const uint32_t viewCount = !layerForFocusView ? xr::StereoView::Count : xr::QuadView::Count;
+        const bool isStereo = !layerForFocusView;
+        const uint32_t viewCount = isStereo ? xr::StereoView::Count : xr::QuadView::Count;
         if (proj.viewCount != viewCount) {
             return XR_ERROR_VALIDATION_FAILURE;
         }
@@ -692,8 +693,9 @@ namespace virtualdesktop_openxr {
             const uint32_t ovrViewIndex = viewIndex % xr::StereoView::Count;
 
             // We only upscale the bottom projection layer and only the focus view (when applicable).
-            const bool needUpscaling =
-                m_precompositor.isFirstProjectionLayer && (!layerForFocusView || isFocusView) && m_sharpenFactor > 0.f;
+            const bool canUpscale = isStereo && std::abs(m_upscalingMultiplier - 1.f) > FLT_EPSILON;
+            const bool canSharpen = (isStereo || isFocusView) && m_sharpenFactor > 0.f;
+            const bool needUpscaling = m_precompositor.isFirstProjectionLayer && (canUpscale || canSharpen);
 
             // Fill out color buffer information.
             resolveSwapchainImage(xrSwapchain,
@@ -811,7 +813,10 @@ namespace virtualdesktop_openxr {
 
         // Run the upscaler or sharpening if needed.
         if (swapchains[xr::StereoView::Right]) {
-            upscaler(swapchains, subImages, !layerForFocusView ? layer.EyeFov : layerForFocusView->EyeFov);
+            upscaler(swapchains,
+                     subImages,
+                     isStereo ? layer.EyeFov : layerForFocusView->EyeFov,
+                     !isStereo /* Do not upscale with quad views. */);
         }
 
         return XR_SUCCESS;
