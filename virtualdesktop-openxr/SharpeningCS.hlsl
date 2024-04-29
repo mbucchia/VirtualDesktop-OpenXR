@@ -18,7 +18,7 @@ RWTexture2D<float4> sharpenedTexture : register(u0);
 
 AF3 CasLoad(ASU2 p)
 {
-    p = p + topLeft.xy;
+    p += topLeft.xy;
     return sourceTexture.Load(int3(p, 0)).rgb;
 }
 

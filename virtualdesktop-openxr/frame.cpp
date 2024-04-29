@@ -655,10 +655,10 @@ namespace virtualdesktop_openxr {
                 m_precompositor.isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
             }
 
-            const uint32_t ovrViewIndex = viewIndex % xr::StereoView::Count;
-
-            // We only upscale the bottom projection layer.
-            const bool needUpscaling = m_precompositor.isFirstProjectionLayer && m_sharpenFactor > 0.f;
+            // We only upscale the bottom projection layer and only the focus view (when applicable).
+            const bool canUpscale = std::abs(m_upscalingMultiplier - 1.f) > FLT_EPSILON;
+            const bool canSharpen = m_sharpenFactor > 0.f;
+            const bool needUpscaling = m_precompositor.isFirstProjectionLayer && (canUpscale || canSharpen);
 
             // Fill out color buffer information.
             resolveSwapchainImage(xrSwapchain,
@@ -684,8 +684,8 @@ namespace virtualdesktop_openxr {
             layer.EyeFov.Viewport[viewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
 
             if (needUpscaling) {
-                swapchains[ovrViewIndex] = &xrSwapchain;
-                subImages[ovrViewIndex] = &proj.views[viewIndex].subImage;
+                swapchains[viewIndex] = &xrSwapchain;
+                subImages[viewIndex] = &proj.views[viewIndex].subImage;
             }
 
             // Fill out pose and FOV information.
