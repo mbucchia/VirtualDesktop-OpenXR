@@ -331,7 +331,8 @@ namespace virtualdesktop_openxr {
         m_alphaCorrectShader.Reset();
         m_alphaCorrectConstants.Reset();
         m_sharpenShader.Reset();
-        m_sharpenConstants.Reset();
+        m_upscaleShader.Reset();
+        m_upscalerConstants.Reset();
         m_linearClampSampler.Reset();
         m_pointClampSampler.Reset();
         m_noDepthReadState.Reset();
@@ -713,16 +714,33 @@ namespace virtualdesktop_openxr {
         }
     }
 
-    void OpenXrRuntime::ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const {
+    void OpenXrRuntime::ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain,
+                                                              const ovrSizei& resolution) const {
         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
-            if (!xrSwapchain.stereoProjection[eye].ovrSwapchain) {
+            ovrSizei currentResolution{};
+            if (xrSwapchain.stereoProjection[eye].ovrSwapchain) {
+                ovrTextureSwapChainDesc desc{};
+                CHECK_OVRCMD(
+                    ovr_GetTextureSwapChainDesc(m_ovrSession, xrSwapchain.stereoProjection[eye].ovrSwapchain, &desc));
+                currentResolution.w = desc.Width;
+                currentResolution.h = desc.Height;
+            }
+
+            if (!xrSwapchain.stereoProjection[eye].ovrSwapchain || currentResolution.w != resolution.w ||
+                currentResolution.h != resolution.h) {
+                if (xrSwapchain.stereoProjection[eye].ovrSwapchain) {
+                    xrSwapchain.stereoProjection[eye].rtvs.clear();
+                    xrSwapchain.stereoProjection[eye].uavs.clear();
+                    ovr_DestroyTextureSwapChain(m_ovrSession, xrSwapchain.stereoProjection[eye].ovrSwapchain);
+                }
+
                 DXGI_FORMAT format;
                 {
                     ovrTextureSwapChainDesc desc{};
                     desc.Type = ovrTexture_2D;
                     desc.ArraySize = 1;
-                    desc.Width = m_cachedProjectionResolution.w;
-                    desc.Height = m_cachedProjectionResolution.h;
+                    desc.Width = resolution.w;
+                    desc.Height = resolution.h;
                     desc.MipLevels = 1;
                     desc.SampleCount = 1;
                     if (isSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format)) {
@@ -780,6 +798,7 @@ namespace virtualdesktop_openxr {
         }
 
         // Query the textures for the swapchain.
+        slice.images.clear();
         for (int i = 0; i < count; i++) {
             ComPtr<ID3D11Texture2D> texture;
             CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(

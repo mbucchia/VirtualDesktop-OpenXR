@@ -310,6 +310,12 @@ namespace virtualdesktop_openxr {
             std::vector<ComPtr<ID3D11DepthStencilView>> dsvs;
         };
 
+        struct IntermediateTexture {
+            ComPtr<ID3D11Texture2D> image;
+            ComPtr<ID3D11ShaderResourceView> srv;
+            ComPtr<ID3D11UnorderedAccessView> uav;
+        };
+
         struct Swapchain {
             // The OVR swapchain objects and images we return to the application.
             SwapchainSlice appSwapchain;
@@ -327,6 +333,7 @@ namespace virtualdesktop_openxr {
 
             // For precompositor needs (drawing our own stereo projection).
             SwapchainSlice stereoProjection[xr::StereoView::Count];
+            IntermediateTexture intermediate[xr::StereoView::Count];
 
             // Whether a static image swapchain has been acquired at least once.
             bool frozen{false};
@@ -534,7 +541,7 @@ namespace virtualdesktop_openxr {
                                    std::set<std::pair<Swapchain*, uint32_t>>& resolved,
                                    bool skipCommit = false);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
-        void ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const;
+        void ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain, const ovrSizei& resolution) const;
         void populateSwapchainSlice(const Swapchain& xrSwapchain,
                                     const ovrTextureSwapChainDesc& desc,
                                     SwapchainSlice& slice,
@@ -575,7 +582,10 @@ namespace virtualdesktop_openxr {
         void serializeOpenGLFrame();
 
         // precompositor.cpp
-        void upscaler(Swapchain** swapchains, const XrSwapchainSubImage** subImages, ovrLayerEyeFov& layer);
+        void upscaler(Swapchain** swapchains,
+                      const XrSwapchainSubImage** subImages,
+                      ovrLayerEyeFov& layer,
+                      bool sharpenOnly);
         void initializePrecompositorResources();
 
         // visibility_mask.cpp
@@ -666,7 +676,8 @@ namespace virtualdesktop_openxr {
         ComPtr<ID3D11ComputeShader> m_alphaCorrectShader;
         ComPtr<ID3D11Buffer> m_alphaCorrectConstants;
         ComPtr<ID3D11ComputeShader> m_sharpenShader;
-        ComPtr<ID3D11Buffer> m_sharpenConstants;
+        ComPtr<ID3D11ComputeShader> m_upscaleShader;
+        ComPtr<ID3D11Buffer> m_upscalerConstants;
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
@@ -726,6 +737,8 @@ namespace virtualdesktop_openxr {
         ovrLayerEyeFov m_fullFovLayer{};
         ovrTextureSwapChain m_emptySwapchain{};
         bool m_debugFocusViews{false};
+        float m_supersamplingFactor{1.f};
+        float m_upscalingMultiplier{1.f};
         float m_sharpenFactor{0.f};
 
         // Swapchains and other graphics stuff.

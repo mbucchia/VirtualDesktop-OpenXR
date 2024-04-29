@@ -204,12 +204,15 @@ namespace virtualdesktop_openxr {
                 // When using quad views, we use 2 peripheral views with lower pixel densities, and 2 focus
                 // views with higher pixel densities.
                 uint32_t viewFovIndex = i;
-                float pixelDensity = m_focusPixelDensity;
+                float pixelDensity = m_supersamplingFactor * m_upscalingMultiplier;
                 if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO) {
                     if (i < xr::StereoView::Count) {
                         pixelDensity = m_peripheralPixelDensity;
-                    } else if (foveatedRenderingActive) {
-                        viewFovIndex = i + 2;
+                    } else {
+                        pixelDensity = m_focusPixelDensity;
+                        if (foveatedRenderingActive) {
+                            viewFovIndex = i + 2;
+                        }
                     }
                 }
 
@@ -226,6 +229,7 @@ namespace virtualdesktop_openxr {
                     viewportSize.w = (int)(viewportSize.w * m_fovTangentX);
                     viewportSize.h = (int)(viewportSize.h * m_fovTangentY);
                 }
+
                 views[i].recommendedImageRectWidth =
                     xr::math::AlignTo<4>(std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth));
                 views[i].recommendedImageRectHeight =
@@ -253,9 +257,11 @@ namespace virtualdesktop_openxr {
                         views[xr::QuadView::FocusLeft].recommendedImageRectHeight,
                         m_focusPixelDensity);
                 } else {
-                    Log("Recommended resolution: %ux%u (%.3f/%.3f tangents)\n",
+                    Log("Recommended resolution: %ux%u (%.3f supersampling, %.3f upscaling, %.3f/%.3f tangents)\n",
                         views[xr::StereoView::Left].recommendedImageRectWidth,
                         views[xr::StereoView::Left].recommendedImageRectHeight,
+                        m_supersamplingFactor,
+                        1 / m_upscalingMultiplier,
                         m_fovTangentX,
                         m_fovTangentY);
                 }

@@ -38,8 +38,11 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::utils;
     using namespace virtualdesktop_openxr::log;
 
-    const std::string RuntimePrettyName =
-        fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{} ({})", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch, RuntimeCommitHash);
+    const std::string RuntimePrettyName = fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{} ({})",
+                                                      RuntimeVersionMajor,
+                                                      RuntimeVersionMinor,
+                                                      RuntimeVersionPatch,
+                                                      RuntimeCommitHash);
 
     XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                           const XrBodyTrackingFidelityMETA fidelity);
@@ -284,6 +287,14 @@ namespace virtualdesktop_openxr {
         }
 
         m_forceSlowpathSwapchains = getSetting("quirk_force_slowpath_swapchains").value_or(false);
+
+        m_supersamplingFactor = getSetting("supersampling").value_or(100) / 100.f;
+        m_upscalingMultiplier = getSetting("upscaling").value_or(100) / 100.f;
+
+        TraceLoggingWrite(g_traceProvider,
+                          "VDXR_Config",
+                          TLArg(m_supersamplingFactor, "SupersamplingFactor"),
+                          TLArg(m_upscalingMultiplier, "UpscalingMultiplier"));
 
         // Do this late, since it might rely on extensions being registered.
         initializeRemappingTables();
