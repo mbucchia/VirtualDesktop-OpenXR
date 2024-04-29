@@ -692,6 +692,46 @@ namespace virtualdesktop_openxr::utils {
         return pos != std::string::npos && pos == str.size() - substr.size();
     }
 
+    #define DEFINE_DETOUR_FUNCTION(ReturnType, FunctionName, ...)                                                          \
+    ReturnType (*original_##FunctionName)(##__VA_ARGS__) = nullptr;                                                    \
+    ReturnType hooked_##FunctionName(##__VA_ARGS__)
+
+    template <typename TMethod>
+    void DetourDllAttach(const char* dll, const char* target, TMethod hooked, TMethod& original) {
+        if (original) {
+            // Already hooked.
+            return;
+        }
+
+        HMODULE handle;
+        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_PIN, dll, &handle);
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        original = (TMethod)GetProcAddress(handle, target);
+        DetourAttach((PVOID*)&original, hooked);
+
+        DetourTransactionCommit();
+    }
+
+    template <typename TMethod>
+    void DetourDllDetach(const char* dll, const char* target, TMethod hooked, TMethod& original) {
+        if (!original) {
+            // Not hooked.
+            return;
+        }
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+
+        DetourDetach((PVOID*)&original, hooked);
+
+        DetourTransactionCommit();
+
+        original = nullptr;
+    }
+
 } // namespace virtualdesktop_openxr::utils
 
 #include "gpu_timers.h"

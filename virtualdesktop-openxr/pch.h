@@ -123,3 +123,6 @@ static constexpr int ovrHmd_Quest3 = 23;
 // FMT formatter.
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
+
+// Detours (hook)
+#include <detours.h>
