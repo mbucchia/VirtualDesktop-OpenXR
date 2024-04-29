@@ -574,7 +574,8 @@ namespace virtualdesktop_openxr {
         }
 
         // We only upscale the bottom projection layer.
-        const bool needUpscaling = m_precompositor.isFirstProjectionLayer && m_sharpenFactor > 0.f;
+        const bool needUpscaling = m_precompositor.isFirstProjectionLayer &&
+                                   (std::abs(m_upscalingFactor - 1.f) > FLT_EPSILON || m_sharpenFactor > 0.f);
 
         // Make sure that we can use the EyeFov part of EyeFovDepth equivalently.
         static_assert(offsetof(decltype(layer.EyeFov), ColorTexture) ==

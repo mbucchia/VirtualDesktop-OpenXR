@@ -514,6 +514,10 @@ namespace virtualdesktop_openxr {
 
         m_jiggleViewRotations = getSetting("jiggle_view_rotations").value_or(false);
 
+#ifdef _DEBUG
+        // For some experimenting.
+        m_upscalingFactor = getSetting("upscaling").value_or(100) / 100.f;
+#endif
         m_sharpenFactor = getSetting("sharpen").value_or(0) / 100.f;
 
         TraceLoggingWrite(g_traceProvider,
@@ -522,6 +526,7 @@ namespace virtualdesktop_openxr {
                           TLArg(m_useRunningStart, "UseRunningStart"),
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"),
+                          TLArg(m_upscalingFactor, "UpscalingFactor"),
                           TLArg(m_sharpenFactor, "SharpenFactor"));
     }
 

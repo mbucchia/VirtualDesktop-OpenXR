@@ -173,7 +173,10 @@ namespace virtualdesktop_openxr {
                 fov.RightTan = tan(m_cachedEyeFov[i].angleRight);
 
                 const ovrSizei viewportSize =
-                    ovr_GetFovTextureSize(m_ovrSession, i == 0 ? ovrEye_Left : ovrEye_Right, fov, 1.f);
+                    ovr_GetFovTextureSize(m_ovrSession,
+                                          i == 0 ? ovrEye_Left : ovrEye_Right,
+                                          fov,
+                                          m_upscalingFactorForSwapchains >= 1.f ? 1.f : m_upscalingFactorForSwapchains);
                 views[i].recommendedImageRectWidth =
                     xr::math::AlignTo<4>(std::min((uint32_t)viewportSize.w, views[i].maxImageRectWidth));
                 views[i].recommendedImageRectHeight =

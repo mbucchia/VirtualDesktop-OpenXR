@@ -241,6 +241,10 @@ namespace virtualdesktop_openxr {
 
         m_forceSlowpathSwapchains = getSetting("quirk_force_slowpath_swapchains").value_or(false);
 
+        m_upscalingFactorForSwapchains = m_upscalingFactor = getSetting("upscaling").value_or(100) / 100.f;
+
+        TraceLoggingWrite(g_traceProvider, "VDXR_Config", TLArg(m_upscalingFactorForSwapchains, "UpscalingFactor"));
+
         // Do this late, since it might rely on extensions being registered.
         initializeRemappingTables();
 
