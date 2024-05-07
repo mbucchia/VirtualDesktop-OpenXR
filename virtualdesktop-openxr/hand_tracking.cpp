@@ -315,7 +315,7 @@ namespace virtualdesktop_openxr {
             }
 
             // Check the hand state.
-            bool needHeightAdjustment = true;
+            bool needHeightAdjustment = ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel;
             if (m_bodyState && xrHandTracker.useOpticalTracking &&
                 ((xrHandTracker.side == xr::Side::Left && m_cachedBodyState.LeftHandActive) ||
                  (xrHandTracker.side == xr::Side::Right && m_cachedBodyState.RightHandActive))) {
@@ -411,7 +411,6 @@ namespace virtualdesktop_openxr {
             if (needHeightAdjustment) {
                 // Virtual Desktop queries the joints in local or stage space depending on whether Stage Tracking is
                 // enabled. We need to offset to the virtual space.
-                assert(ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel);
                 const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
                 TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
                 jointsToVirtual =

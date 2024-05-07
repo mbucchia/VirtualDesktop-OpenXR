@@ -291,6 +291,7 @@ namespace virtualdesktop_openxr {
     }
 
     bool OpenXrRuntime::initializeOVR() {
+#ifndef LOAD_LOCAL_LIBOVR
 #ifndef STANDALONE_RUNTIME
         // The bundled runtime is meant to only work with Virtual Desktop.
         m_useOculusRuntime = false;
@@ -314,6 +315,12 @@ namespace virtualdesktop_openxr {
             overridePath = path.wstring();
         }
 
+#else
+        // Load the LibOVR local to our folder.
+        m_useOculusRuntime = true;
+        const std::wstring overridePath = dllHome.wstring() + L"\\";
+#endif
+
         // Initialize OVR.
         ovrInitParams initParams{};
         initParams.Flags = ovrInit_RequestVersion | (has_XR_MND_headless ? ovrInit_Invisible : ovrInit_FocusAware);
@@ -333,7 +340,7 @@ namespace virtualdesktop_openxr {
         }
         CHECK_OVRCMD(result);
 
-        Log("Using %s runtime\n", !m_useOculusRuntime ? "Virtual Desktop" : "Oculus");
+        Log("Using %s runtime\n", !m_useOculusRuntime ? "Virtual Desktop" : BACKEND_PRETTY_NAME);
 
         if (!m_useOculusRuntime) {
             identifyVirtualDesktop();
@@ -492,9 +499,7 @@ namespace virtualdesktop_openxr {
             Log("Device is: %s (%d)\n", m_cachedHmdInfo.ProductName, m_cachedHmdInfo.Type);
 
             // Try initializing the body and eye tracking data through Virtual Desktop.
-            if (!m_useOculusRuntime) {
-                initializeBodyTrackingMmf();
-            }
+            initializeBodyTrackingMmf();
 
             // We must latch the body tracking capabilities now, as they are not allowed to change later during the
             // lifetime of the system.

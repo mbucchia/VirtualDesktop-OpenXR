@@ -76,7 +76,7 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
     // This is the location for other Virtual Desktop logs.
     programData = std::filesystem::path(getenv("PROGRAMDATA")) / L"Virtual Desktop";
 #else
-    programData = std::filesystem::path(getenv("LOCALAPPDATA")) / L"VirtualDesktop-OpenXR";
+    programData = std::filesystem::path(getenv("LOCALAPPDATA")) / LOG_FOLDER;
 #endif
     CreateDirectoryW(programData.wstring().c_str(), nullptr);
 

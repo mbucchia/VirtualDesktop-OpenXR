@@ -40,7 +40,7 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::log;
 
     const std::string RuntimePrettyName =
-        fmt::format("VirtualDesktopXR - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
+        fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
 
     XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                           const XrBodyTrackingFidelityMETA fidelity);
@@ -318,9 +318,7 @@ namespace virtualdesktop_openxr {
 #ifndef STANDALONE_RUNTIME
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
 #else
-            sprintf_s(instanceProperties->runtimeName,
-                      sizeof(instanceProperties->runtimeName),
-                      "VirtualDesktopXR (Standalone)");
+            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), RUNTIME_PRETTY_NAME);
 #endif
         } else {
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
@@ -451,14 +449,6 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Depth buffer submission.
             {XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME, XR_KHR_composition_layer_depth_SPEC_VERSION});
 
-        m_extensionsTable.push_back( // Cylinder layers.
-            {XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME, XR_KHR_composition_layer_cylinder_SPEC_VERSION});
-
-#if 0 // TODO: Disabled until ready. Also disabled swapchain faceCount.
-        m_extensionsTable.push_back( // Cube layers.
-            {XR_KHR_COMPOSITION_LAYER_CUBE_EXTENSION_NAME, XR_KHR_composition_layer_cube_SPEC_VERSION});
-#endif
-
         m_extensionsTable.push_back( // Qpc timestamp conversion.
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
@@ -472,31 +462,49 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Mock display refresh rate.
             {XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME, XR_FB_display_refresh_rate_SPEC_VERSION});
 
-        m_extensionsTable.push_back( // Hand tracking.
-            {XR_EXT_HAND_TRACKING_EXTENSION_NAME, XR_EXT_hand_tracking_SPEC_VERSION});
-        m_extensionsTable.push_back( // Hand tracking.
-            {XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME, XR_EXT_hand_tracking_data_source_SPEC_VERSION});
-        m_extensionsTable.push_back( // Hand tracking.
-            {XR_FB_HAND_TRACKING_AIM_EXTENSION_NAME, XR_FB_hand_tracking_aim_SPEC_VERSION});
-
-        m_extensionsTable.push_back( // Eye tracking.
-            {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
+        m_extensionsTable.push_back( // Palm pose.
+            {XR_EXT_PALM_POSE_EXTENSION_NAME, XR_EXT_palm_pose_SPEC_VERSION});
 
         m_extensionsTable.push_back( // Audio GUID.
             {XR_OCULUS_AUDIO_DEVICE_GUID_EXTENSION_NAME, XR_OCULUS_audio_device_guid_SPEC_VERSION});
 
-        m_extensionsTable.push_back( // Palm pose.
-            {XR_EXT_PALM_POSE_EXTENSION_NAME, XR_EXT_palm_pose_SPEC_VERSION});
+#ifdef HAS_CYLINDER_LAYERS
+        m_extensionsTable.push_back( // Cylinder layers.
+            {XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME, XR_KHR_composition_layer_cylinder_SPEC_VERSION});
+#endif
 
-        m_extensionsTable.push_back( // Headless sessions.
-            {XR_MND_HEADLESS_EXTENSION_NAME, XR_MND_headless_SPEC_VERSION});
+#ifdef HAS_CUBE_LAYERS
+        m_extensionsTable.push_back( // Cube layers.
+            {XR_KHR_COMPOSITION_LAYER_CUBE_EXTENSION_NAME, XR_KHR_composition_layer_cube_SPEC_VERSION});
+#endif
 
+#ifdef HAS_HAND_JOINTS_TRACKING
+        m_extensionsTable.push_back( // Hand tracking.
+            {XR_EXT_HAND_TRACKING_EXTENSION_NAME, XR_EXT_hand_tracking_SPEC_VERSION});
+        m_extensionsTable.push_back( // Hand tracking.
+            {XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME, XR_EXT_hand_tracking_data_source_SPEC_VERSION});
+#endif
+#ifdef HAS_HAND_TRACKING_AIM
+        m_extensionsTable.push_back( // Hand tracking.
+            {XR_FB_HAND_TRACKING_AIM_EXTENSION_NAME, XR_FB_hand_tracking_aim_SPEC_VERSION});
+#endif
+
+#ifdef HAS_EYE_TRACKING
+        m_extensionsTable.push_back( // Eye tracking.
+            {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
+#endif
+
+#ifdef HAS_FACIAL_EYE_TRACKING
         m_extensionsTable.push_back( // Face, body & social eye tracking.
             {XR_FB_EYE_TRACKING_SOCIAL_EXTENSION_NAME, XR_FB_eye_tracking_social_SPEC_VERSION});
+#endif
+#ifdef HAS_FACIAL_EXPRESSION_TRACKING
         m_extensionsTable.push_back( // Face, body & & social eye tracking.
             {XR_FB_FACE_TRACKING_EXTENSION_NAME, XR_FB_face_tracking_SPEC_VERSION});
         m_extensionsTable.push_back( // Face, body & & social eye tracking.
             {XR_FB_FACE_TRACKING2_EXTENSION_NAME, XR_FB_face_tracking2_SPEC_VERSION});
+#endif
+#ifdef HAS_BODY_TRACKING
         m_extensionsTable.push_back( // Face, body & social eye tracking.
             {XR_FB_BODY_TRACKING_EXTENSION_NAME, XR_FB_body_tracking_SPEC_VERSION});
         m_extensionsTable.push_back( // Face, body & social eye tracking.
@@ -506,6 +514,12 @@ namespace virtualdesktop_openxr {
 
         m_extensionsTable.push_back( // Vive Tracker emulation.
             {XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, XR_HTCX_vive_tracker_interaction_SPEC_VERSION});
+#endif
+
+#ifdef HAS_INVISIBLE_MODE
+        m_extensionsTable.push_back( // Headless sessions.
+            {XR_MND_HEADLESS_EXTENSION_NAME, XR_MND_headless_SPEC_VERSION});
+#endif
 
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});

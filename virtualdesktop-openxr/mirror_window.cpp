@@ -51,7 +51,7 @@ namespace virtualdesktop_openxr {
             // We may let this fail if the class was already registered by a previous start up.
             RegisterClassExW(&wndClassEx);
 
-            const std::string title = "Virtual Desktop Mirror Window - " + m_applicationName;
+            const std::string title = RUNTIME_PRETTY_NAME " Mirror Window - " + m_applicationName;
             const auto defaultWidth = m_cachedEyeInfo[xr::StereoView::Left].DistortedViewport.Size.w / 2;
             const auto defaultHeight = m_cachedEyeInfo[xr::StereoView::Left].DistortedViewport.Size.h / 2;
             m_mirrorWindowHwnd = CreateWindowW(wndClassEx.lpszClassName,

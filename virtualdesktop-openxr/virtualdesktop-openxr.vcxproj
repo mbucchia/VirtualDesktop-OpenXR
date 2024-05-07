@@ -145,7 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -154,18 +154,18 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
-copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
-copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
+      <Command>..\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
+copy ..\scripts\Install-Runtime.ps1 $(OutDir)
+copy ..\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
     </PostBuildEvent>
@@ -183,13 +183,13 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
 :skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
@@ -210,7 +210,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -219,18 +219,18 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
-copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
-copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
+      <Command>..\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
+copy ..\scripts\Install-Runtime.ps1 $(OutDir)
+copy ..\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
     </PostBuildEvent>
@@ -248,13 +248,13 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
 :skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
@@ -277,7 +277,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -288,18 +288,18 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
-copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
-copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
+      <Command>..\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
+copy ..\scripts\Install-Runtime.ps1 $(OutDir)
+copy ..\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
     </PostBuildEvent>
@@ -317,13 +317,13 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
 :skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
@@ -346,7 +346,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -357,18 +357,18 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Bundled)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
-copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
-copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
+      <Command>..\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Bundled)/g" $(ProjectDir)\$(ProjectName).json &gt; $(OutDir)\$(ProjectName).json
+copy ..\scripts\Install-Runtime.ps1 $(OutDir)
+copy ..\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
     </PostBuildEvent>
@@ -386,13 +386,13 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
 :skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
@@ -415,7 +415,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -426,18 +426,18 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
-copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
-copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
+      <Command>..\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Standalone)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
+copy ..\scripts\Install-Runtime.ps1 $(OutDir)
+copy ..\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
     </PostBuildEvent>
@@ -455,13 +455,13 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
 :skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
@@ -484,7 +484,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(ProjectDir);$(SolutionDir)\external\OpenXR-SDK\include;$(SolutionDir)\external\OpenXR-SDK\src\common;$(SolutionDir)\external\OpenXR-MixedReality\Shared;$(SolutionDir)\external\OpenXR-MixedReality\Shared\XrUtility;$(SolutionDir)\external\OpenXR-MixedReality\Shared\SampleShared;$(SolutionDir)\external\LibOVR\include;$(SolutionDir)\external\LibOVR\include\Extras;$(SolutionDir)\external\LibOVR\Shim;$(SolutionDir)\external\Vulkan-SDK\include;$(SolutionDir)\external\OpenGL;$(SolutionDir)\external\fmt\include;$(SolutionDir)\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;$(SolutionDir)\external\openvr\headers;$(SolutionDir)\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -495,18 +495,18 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>dxgi.lib;dxguid.lib;d3d11.lib;vulkan-1.lib;opengl32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);$(SolutionDir)\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);..\external\Vulkan-SDK\lib32</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>virtualdesktop-openxr.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Bundled)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
-copy $(SolutionDir)\scripts\Install-Runtime.ps1 $(OutDir)
-copy $(SolutionDir)\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
+      <Command>..\scripts\sed.exe "s/VirtualDesktopXR/VirtualDesktopXR (Bundled)/g" $(ProjectDir)\$(ProjectName)-32.json &gt; $(OutDir)\$(ProjectName)-32.json
+copy ..\scripts\Install-Runtime.ps1 $(OutDir)
+copy ..\scripts\VirtualDesktopOpenXR.wprp $(OutDir)
 
 REM Sign the DLLs.
 if not defined PFX_PASSWORD goto skip_signing
 if not defined PFX_NAME set PFX_NAME=selfsigncert
-$(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
+$(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f $(SolutionDir)\installer\%PFX_NAME%.pfx /p "%PFX_PASSWORD%" /v $(TargetPath)
 :skip_signing
 </Command>
     </PostBuildEvent>
@@ -524,13 +524,13 @@ $(SolutionDir)\installer\signtool.exe sign /d "OpenXR for Virtual Desktop" /du "
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
-$(SolutionDir)\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
-$(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
+..\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"ProductVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
 :skip_version</Command>
     </PreBuildEvent>
     <PreBuildEvent>
@@ -553,6 +553,7 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
     <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h" />
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h" />
     <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h" />
+    <ClInclude Include="RuntimeConfiguration.h" />
     <ClInclude Include="trackers.h" />
     <ClInclude Include="BodyState.h" />
     <ClInclude Include="framework\dispatch.gen.h" />
@@ -666,14 +667,14 @@ $(SolutionDir)\scripts\sed.exe -i "s/VALUE \"ProductVersion\", \".*\"$/VALUE \"P
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
-    <Import Project="..\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" />
+    <Import Project="$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
-    <Error Condition="!Exists('..\packages\Detours.4.0.1\build\native\Detours.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Detours.4.0.1\build\native\Detours.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets'))" />
   </Target>
 </Project>

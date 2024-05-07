@@ -319,11 +319,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
-        if (createInfo->faceCount != 1
-#if 0 // TODO: Disabled until ready.
-            && createInfo->faceCount != 6
-#endif
-        ) {
+        if (createInfo->faceCount != 1 && (!has_XR_KHR_composition_layer_cube || createInfo->faceCount != 6)) {
             return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
         }
 

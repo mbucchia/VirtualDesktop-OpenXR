@@ -30,12 +30,14 @@
 #include <hand_simulation.h>
 #include "trackers.h"
 
+#include <RuntimeConfiguration.h>
+
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::utils;
 
     extern const std::string RuntimePrettyName;
-    const std::string StandaloneRegPrefix = "SOFTWARE\\VirtualDesktop-OpenXR";
+    const std::string StandaloneRegPrefix = "SOFTWARE\\" REG_PREFIX;
 #ifndef STANDALONE_RUNTIME
     // This shares the parent key with other Virtual Desktop values.
     const std::string RegPrefix = "SOFTWARE\\Virtual Desktop, Inc.\\OpenXR";
