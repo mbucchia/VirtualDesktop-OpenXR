@@ -219,8 +219,11 @@ namespace virtualdesktop_openxr {
                 // https://stackoverflow.com/questions/71108346/how-to-use-glimportmemorywin32handleext-to-share-an-id3d11texture2d-keyedmutex-s
                 const auto memorySize = xrSwapchain.xrDesc.arraySize * xrSwapchain.xrDesc.width *
                                         xrSwapchain.xrDesc.height * xrSwapchain.xrDesc.sampleCount * bytePerPixels * 2;
-                m_glDispatch.glImportMemoryWin32HandleEXT(
-                    memory, memorySize, GL_HANDLE_TYPE_D3D11_IMAGE_KMT_EXT, textureHandles[i]);
+                m_glDispatch.glImportMemoryWin32HandleEXT(memory,
+                                                          memorySize,
+                                                          !requireNTHandleSharing() ? GL_HANDLE_TYPE_D3D11_IMAGE_KMT_EXT
+                                                                                    : GL_HANDLE_TYPE_D3D11_IMAGE_EXT,
+                                                          textureHandles[i]);
 
                 // Create the texture that the app will use.
                 GLuint image;

@@ -205,45 +205,52 @@ namespace virtualdesktop_openxr {
                                                         uint32_t* formatCountOutput,
                                                         int64_t* formats) {
         // We match desirables formats from the ovrTextureFormat lists.
-        static const DXGI_FORMAT d3dFormats[] = {
-            // clang-format off
-                DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, // Prefer SRGB formats.
-                DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
-                DXGI_FORMAT_R8G8B8A8_UNORM,
-                DXGI_FORMAT_B8G8R8A8_UNORM,
-                DXGI_FORMAT_B8G8R8X8_UNORM_SRGB,
-                DXGI_FORMAT_B8G8R8X8_UNORM,
-                DXGI_FORMAT_R16G16B16A16_FLOAT,
-                DXGI_FORMAT_D32_FLOAT, // Prefer 32-bit depth.
-                DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
-                DXGI_FORMAT_D24_UNORM_S8_UINT,
-                DXGI_FORMAT_D16_UNORM,
-            // clang-format on
-        };
-        static const VkFormat vkFormats[] = {
-            // clang-format off
-                VK_FORMAT_R8G8B8A8_SRGB, // Prefer SRGB formats.
-                VK_FORMAT_B8G8R8A8_SRGB,
-                VK_FORMAT_R8G8B8A8_UNORM,
-                VK_FORMAT_B8G8R8A8_UNORM,
-                VK_FORMAT_R16G16B16A16_SFLOAT,
-                VK_FORMAT_D32_SFLOAT, // Prefer 32-bit depth.
-                VK_FORMAT_D32_SFLOAT_S8_UINT,
-                VK_FORMAT_D24_UNORM_S8_UINT,
-                VK_FORMAT_D16_UNORM,
-            // clang-format on
-        };
-        static const GLenum glFormats[] = {
-            // clang-format off
-                GL_RGBA16F, // Prefer higher bit counts.
-                GL_SRGB8_ALPHA8, // Prefer SRGB formats.
-                GL_RGBA8,
-                GL_DEPTH_COMPONENT32F, // Prefer 32-bit depth.
-                GL_DEPTH32F_STENCIL8,
-                GL_DEPTH24_STENCIL8,
-                GL_DEPTH_COMPONENT16,
-            // clang-format on
-        };
+        std::vector<DXGI_FORMAT> d3dFormats;
+        // Prefer SRGB formats.
+        d3dFormats.push_back(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+        d3dFormats.push_back(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
+        d3dFormats.push_back(DXGI_FORMAT_R8G8B8A8_UNORM);
+        d3dFormats.push_back(DXGI_FORMAT_B8G8R8A8_UNORM);
+        d3dFormats.push_back(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB);
+        d3dFormats.push_back(DXGI_FORMAT_B8G8R8X8_UNORM);
+        d3dFormats.push_back(DXGI_FORMAT_R16G16B16A16_FLOAT);
+        // Prefer 32-bit depth.
+        d3dFormats.push_back(DXGI_FORMAT_D32_FLOAT);
+        // Stencil formats are not shareable via NT HANDLE.
+        if (!requireNTHandleSharing()) {
+            d3dFormats.push_back(DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
+            d3dFormats.push_back(DXGI_FORMAT_D24_UNORM_S8_UINT);
+        }
+        d3dFormats.push_back(DXGI_FORMAT_D16_UNORM);
+
+        std::vector<VkFormat> vkFormats;
+        vkFormats.push_back(VK_FORMAT_R8G8B8A8_SRGB);
+        vkFormats.push_back(VK_FORMAT_B8G8R8A8_SRGB);
+        vkFormats.push_back(VK_FORMAT_R8G8B8A8_UNORM);
+        vkFormats.push_back(VK_FORMAT_B8G8R8A8_UNORM);
+        vkFormats.push_back(VK_FORMAT_R16G16B16A16_SFLOAT);
+        vkFormats.push_back(VK_FORMAT_D32_SFLOAT);
+        // Stencil formats are not shareable via NT HANDLE.
+        if (!requireNTHandleSharing()) {
+            vkFormats.push_back(VK_FORMAT_D32_SFLOAT_S8_UINT);
+            vkFormats.push_back(VK_FORMAT_D24_UNORM_S8_UINT);
+        }
+        vkFormats.push_back(VK_FORMAT_D16_UNORM);
+
+        std::vector<GLenum> glFormats;
+        // Prefer higher bit counts.
+        glFormats.push_back(GL_RGBA16F);
+        // Prefer SRGB formats.
+        glFormats.push_back(GL_SRGB8_ALPHA8);
+        glFormats.push_back(GL_RGBA8);
+        // Prefer 32-bit depth.
+        glFormats.push_back(GL_DEPTH_COMPONENT32F);
+        // Stencil formats are not shareable via NT HANDLE.
+        if (!requireNTHandleSharing()) {
+            glFormats.push_back(GL_DEPTH32F_STENCIL8);
+            glFormats.push_back(GL_DEPTH24_STENCIL8);
+        }
+        glFormats.push_back(GL_DEPTH_COMPONENT16);
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateSwapchainFormats",
@@ -254,10 +261,10 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
-        const uint32_t count = m_isHeadless        ? 0
-                               : isVulkanSession() ? ARRAYSIZE(vkFormats)
-                               : isOpenGLSession() ? ARRAYSIZE(glFormats)
-                                                   : ARRAYSIZE(d3dFormats);
+        const uint32_t count = m_isHeadless        ? 0u
+                               : isVulkanSession() ? (uint32_t)vkFormats.size()
+                               : isOpenGLSession() ? (uint32_t)glFormats.size()
+                                                   : (uint32_t)d3dFormats.size();
 
         if (formatCapacityInput && formatCapacityInput < count) {
             return XR_ERROR_SIZE_INSUFFICIENT;
@@ -370,7 +377,9 @@ namespace virtualdesktop_openxr {
         // will create images ourselves.
         // - Our pre-processing shader does not support cubemaps.
         // - Our pre-processing shader does not support MSAA.
-        if (desc.Type == ovrTexture_2D && desc.SampleCount == 1 && !m_forceSlowpathSwapchains) {
+        // Additionally, OVR only uses KMT HANDLE, so if NT HANDLE are required, we must use our own images.
+        if (desc.Type == ovrTexture_2D && desc.SampleCount == 1 && !m_forceSlowpathSwapchains &&
+            !requireNTHandleSharing()) {
             if (desc.ArraySize > 1) {
                 Log("Creating a swapchain with texture array\n");
             }

@@ -180,6 +180,9 @@ namespace virtualdesktop_openxr {
                                   TLArg(appGraphicsApi.c_str(), "Api"),
                                   TLArg(deviceName.c_str(), "AdapterName"));
                 Log("Using %s on adapter: %s\n", appGraphicsApi.c_str(), deviceName.c_str());
+
+                m_gpuVendor = desc.VendorId;
+
                 break;
             }
         }
@@ -385,6 +388,9 @@ namespace virtualdesktop_openxr {
             }
 
             textureDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+            if (requireNTHandleSharing()) {
+                textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+            }
             if (xrSwapchain.ovrDesc.Type == ovrTexture_Cube) {
                 textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
             }
@@ -439,7 +445,11 @@ namespace virtualdesktop_openxr {
             CHECK_HRCMD(texture->QueryInterface(IID_PPV_ARGS(dxgiResource.ReleaseAndGetAddressOf())));
 
             HANDLE textureHandle;
-            CHECK_HRCMD(dxgiResource->GetSharedHandle(&textureHandle));
+            if (!requireNTHandleSharing()) {
+                CHECK_HRCMD(dxgiResource->GetSharedHandle(&textureHandle));
+            } else {
+                CHECK_HRCMD(dxgiResource->CreateSharedHandle(nullptr, GENERIC_ALL, nullptr, &textureHandle));
+            }
 
             handles.push_back(textureHandle);
         }
@@ -471,8 +481,15 @@ namespace virtualdesktop_openxr {
                 ComPtr<ID3D11Texture2D> d3d11Texture;
                 if (!skipSharing) {
                     // Create an imported texture on the application device.
-                    CHECK_HRCMD(m_d3d11Device->OpenSharedResource(textureHandles[i],
-                                                                  IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                    if (!requireNTHandleSharing()) {
+                        CHECK_HRCMD(m_d3d11Device->OpenSharedResource(
+                            textureHandles[i], IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                    } else {
+                        CHECK_HRCMD(m_d3d11Device->OpenSharedResource1(
+                            textureHandles[i], IID_PPV_ARGS(d3d11Texture.ReleaseAndGetAddressOf())));
+                        // TODO: We do not CloseHandle() if an error occured.
+                        CloseHandle(textureHandles[i]);
+                    }
                 } else {
                     d3d11Texture = xrSwapchain.appSwapchain.images[i];
                 }
@@ -883,6 +900,11 @@ namespace virtualdesktop_openxr {
             WaitForSingleObject(m_eventForSubmissionFence.get(), INFINITE);
             ResetEvent(m_eventForSubmissionFence.get());
         }
+    }
+
+    bool OpenXrRuntime::requireNTHandleSharing() const {
+        // Intel ARC driver does not support sharing KMT HANDLE to Vulkan/OpenGL.
+        return m_gpuVendor == 0x8086 && (m_vkDevice || m_glContext.valid);
     }
 
 } // namespace virtualdesktop_openxr

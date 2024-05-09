@@ -530,6 +530,7 @@ namespace virtualdesktop_openxr {
         void flushSubmissionContext();
         void serializeD3D11Frame();
         void waitOnSubmissionDevice();
+        bool requireNTHandleSharing() const;
 
         // d3d12_interop.cpp
         XrResult initializeD3D12(const XrGraphicsBindingD3D12KHR& d3dBindings);
@@ -621,6 +622,7 @@ namespace virtualdesktop_openxr {
         ComPtr<ID3DDeviceContextState> m_ovrSubmissionContextState;
         ComPtr<ID3D11Fence> m_ovrSubmissionFence;
         wil::unique_handle m_eventForSubmissionFence;
+        UINT m_gpuVendor{0};
         bool m_syncGpuWorkInEndFrame{false};
         ComPtr<ID3D11SamplerState> m_linearClampSampler;
         ComPtr<ID3D11SamplerState> m_pointClampSampler;
