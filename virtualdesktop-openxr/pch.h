@@ -83,9 +83,7 @@ using Microsoft::WRL::ComPtr;
 #include <OVR_CAPI_D3D.h>
 #include <OVR_Math.h>
 
-// These values were added to LibOVR but never published by Meta.
-static constexpr int ovrHmd_QuestPro = 22;
-static constexpr int ovrHmd_Quest3 = 23;
+#include "OVR_Ext.h"
 
 // OpenXR + Windows-specific definitions.
 #define XR_NO_PROTOTYPES

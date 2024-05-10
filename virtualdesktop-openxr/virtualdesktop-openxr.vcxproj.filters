@@ -77,6 +77,12 @@
     <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RuntimeConfiguration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OVR_Ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

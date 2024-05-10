@@ -990,10 +990,12 @@ namespace virtualdesktop_openxr {
             }
 
             const auto lastControllerType = m_cachedControllerType[side];
-            const bool isControllerConnected = ovr_GetConnectedControllerTypes(m_ovrSession) &
-                                               (side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch);
+            const auto controllerTypes = ovr_GetConnectedControllerTypes(m_ovrSession);
+            const bool isControllerConnected =
+                controllerTypes & (side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch);
             if (isControllerConnected) {
-                m_cachedControllerType[side] = "touch_controller";
+                m_cachedControllerType[side] =
+                    !(controllerTypes & ovrControllerType_Index) ? "touch_controller" : "knuckles";
                 m_isControllerActive[side] = true;
 
                 TraceLoggingWrite(
@@ -1006,11 +1008,18 @@ namespace virtualdesktop_openxr {
                     TLArg(m_cachedInputState.Touches & (side == 0 ? ovrTouch_LButtonMask : ovrTouch_RButtonMask),
                           "Touches"),
                     TLArg(m_cachedInputState.IndexTrigger[side], "IndexTrigger"),
+                    TLArg(m_cachedInputState.IndexTriggerNoDeadzone[side], "IndexTriggerNoDeadzone"),
                     TLArg(m_cachedInputState.HandTrigger[side], "HandTrigger"),
+                    TLArg(m_cachedInputState.HandTriggerNoDeadzone[side], "HandTriggerNoDeadzone"),
                     TLArg(fmt::format(
                               "{}, {}", m_cachedInputState.Thumbstick[side].x, m_cachedInputState.Thumbstick[side].y)
                               .c_str(),
-                          "Joystick"));
+                          "Joystick"),
+                    TLArg(fmt::format("{}, {}",
+                                      m_cachedInputState.ThumbstickNoDeadzone[side].x,
+                                      m_cachedInputState.ThumbstickNoDeadzone[side].y)
+                              .c_str(),
+                          "JoystickNoDeadzone"));
 
                 processHandGestures(side);
             } else {
@@ -1430,6 +1439,7 @@ namespace virtualdesktop_openxr {
 
         if (!m_cachedControllerType[side].empty()) {
             // The physical controller type is always Oculus Touch.
+            // TODO: Add support for Index controller.
             preferredInteractionProfile = "/interaction_profiles/oculus/touch_controller";
             m_localizedControllerType[side] = "Touch Controller";
 

@@ -553,6 +553,7 @@ for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
     <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h" />
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h" />
     <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h" />
+    <ClInclude Include="OVR_Ext.h" />
     <ClInclude Include="RuntimeConfiguration.h" />
     <ClInclude Include="trackers.h" />
     <ClInclude Include="BodyState.h" />

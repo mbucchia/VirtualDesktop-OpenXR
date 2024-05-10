@@ -601,6 +601,10 @@ namespace {
 } // namespace
 #endif
 
+extern "C" __declspec(dllexport) const char* WINAPI getVersionString() {
+    return virtualdesktop_openxr::RuntimePrettyName.c_str();
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     using namespace virtualdesktop_openxr::utils;
 
