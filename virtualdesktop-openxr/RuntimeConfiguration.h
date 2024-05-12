@@ -13,3 +13,6 @@
 #define HAS_FACIAL_EYE_TRACKING
 #define HAS_FACIAL_EXPRESSION_TRACKING
 #define HAS_BODY_TRACKING
+
+// Virtual Desktop does not use the depth buffer for anything at this time.
+#define IGNORE_DEPTH_SUBMISSION

@@ -678,6 +678,7 @@ namespace virtualdesktop_openxr {
         bool m_hasEyeTrackerBindings{false};
         bool m_hasViveTrackerBindings{false};
         Haptic m_currentVibration[xr::Side::Count];
+        bool m_shouldUseDepth{true};
         bool m_useRunningStart{true};
         bool m_jiggleViewRotations{false};
         MyHandSimulation m_handSimulation[xr::Side::Count];

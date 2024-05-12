@@ -660,8 +660,6 @@ namespace virtualdesktop_openxr {
                         const XrCompositionLayerDepthInfoKHR* depth =
                             reinterpret_cast<const XrCompositionLayerDepthInfoKHR*>(entry);
 
-                        layer.Header.Type = ovrLayerType_EyeFovDepth;
-
                         TraceLoggingWrite(g_traceProvider,
                                           "xrEndFrame_View",
                                           TLArg("Depth", "Type"),
@@ -674,40 +672,48 @@ namespace virtualdesktop_openxr {
                                           TLArg(depth->minDepth, "MinDepth"),
                                           TLArg(depth->maxDepth, "MaxDepth"));
 
-                        if (!m_swapchains.count(depth->subImage.swapchain)) {
-                            return XR_ERROR_HANDLE_INVALID;
+                        // Some games (like WRC) will not properly submit depth. We bypass all the checks if the runtime
+                        // does not care about depth.
+                        if (m_shouldUseDepth || m_isConformanceTest) {
+                            layer.Header.Type = ovrLayerType_EyeFovDepth;
+
+                            if (!m_swapchains.count(depth->subImage.swapchain)) {
+                                return XR_ERROR_HANDLE_INVALID;
+                            }
+
+                            Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
+
+                            if (xrDepthSwapchain.lastReleasedIndex == -1) {
+                                return XR_ERROR_LAYER_INVALID;
+                            }
+
+                            if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
+                                xrSwapchain.xrDesc.faceCount != 1) {
+                                return XR_ERROR_VALIDATION_FAILURE;
+                            }
+
+                            // Fill out depth buffer information.
+                            preprocessSwapchainImage(
+                                xrDepthSwapchain,
+                                m_precompositor.layerIndex,
+                                depth->subImage.imageArrayIndex,
+                                XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
+                                m_precompositor.processedSwapchainImages);
+                            layer.EyeFovDepth.DepthTexture[viewIndex] =
+                                xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
+
+                            if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
+                                return XR_ERROR_SWAPCHAIN_RECT_INVALID;
+                            }
+
+                            // Fill out projection information.
+                            layer.EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
+                            layer.EyeFovDepth.ProjectionDesc.Projection23 =
+                                (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
+                            layer.EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
+                        } else {
+                            TraceLoggingWrite(g_traceProvider, "xrEndFrame_View_IgnoreDepth");
                         }
-
-                        Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
-
-                        if (xrDepthSwapchain.lastReleasedIndex == -1) {
-                            return XR_ERROR_LAYER_INVALID;
-                        }
-
-                        if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
-                            xrSwapchain.xrDesc.faceCount != 1) {
-                            return XR_ERROR_VALIDATION_FAILURE;
-                        }
-
-                        // Fill out depth buffer information.
-                        preprocessSwapchainImage(
-                            xrDepthSwapchain,
-                            m_precompositor.layerIndex,
-                            depth->subImage.imageArrayIndex,
-                            XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT, /* No-op for depth */
-                            m_precompositor.processedSwapchainImages);
-                        layer.EyeFovDepth.DepthTexture[viewIndex] =
-                            xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
-
-                        if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
-                            return XR_ERROR_SWAPCHAIN_RECT_INVALID;
-                        }
-
-                        // Fill out projection information.
-                        layer.EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
-                        layer.EyeFovDepth.ProjectionDesc.Projection23 =
-                            (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
-                        layer.EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
 
                         break;
                     }

@@ -508,6 +508,14 @@ namespace virtualdesktop_openxr {
 
         m_useRunningStart = !getSetting("quirk_disable_running_start").value_or(false);
 
+        const bool shouldUseDepth =
+#ifndef IGNORE_DEPTH_SUBMISSION
+            true;
+#else
+            false;
+#endif
+        m_shouldUseDepth = getSetting("quirk_use_depth").value_or(shouldUseDepth);
+
         m_syncGpuWorkInEndFrame = getSetting("quirk_sync_gpu_work_in_end_frame").value_or(false);
 
         m_jiggleViewRotations = getSetting("jiggle_view_rotations").value_or(false);
@@ -516,6 +524,7 @@ namespace virtualdesktop_openxr {
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
                           TLArg(m_useRunningStart, "UseRunningStart"),
+                          TLArg(m_shouldUseDepth, "ShouldUseDepth"),
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"));
     }
