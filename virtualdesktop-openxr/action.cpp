@@ -204,6 +204,18 @@ namespace virtualdesktop_openxr {
 
         ActionSet* xrActionSet = (ActionSet*)actionSet;
 
+        auto it = m_actions.begin();
+        while (it != m_actions.end()) {
+            const Action& xrAction = *(Action*)*it;
+
+            if (xrAction.actionSet == actionSet) {
+                // We do not delete the action as it might still be used internally (eg: referenced by action spaces).
+                it = m_actions.erase(it);
+            } else {
+                it++;
+            }
+        }
+
         delete xrActionSet;
         m_actionSets.erase(actionSet);
         m_activeActionSets.erase(actionSet);
