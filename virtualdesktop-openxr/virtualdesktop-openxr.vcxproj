@@ -182,10 +182,12 @@ $(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://gi
     </PreLinkEvent>
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse HEAD`) do set commit=%%F
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
 ..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
@@ -247,10 +249,12 @@ $(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://gi
     </PreLinkEvent>
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse HEAD`) do set commit=%%F
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
 ..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
@@ -316,10 +320,12 @@ $(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://gi
     </PreLinkEvent>
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse HEAD`) do set commit=%%F
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
 ..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
@@ -385,10 +391,12 @@ $(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://gi
     </PreLinkEvent>
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse HEAD`) do set commit=%%F
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
 ..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
@@ -454,10 +462,12 @@ $(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://gi
     </PreLinkEvent>
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse HEAD`) do set commit=%%F
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
 ..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc
@@ -523,10 +533,12 @@ $(SolutionDir)\installer\signtool.exe sign /d "VirtualDesktopXR" /du "https://gi
     </PreLinkEvent>
     <PreBuildEvent>
       <Command>if not exist $(SolutionDir)\version.info goto :skip_version
+for /f "tokens=* USEBACKQ" %%F in (`git rev-parse HEAD`) do set commit=%%F
 for /f "delims== tokens=1,2" %%G in ($(SolutionDir)\version.info) do set %%G=%%H
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMajor = .*;$/const unsigned int RuntimeVersionMajor = %major%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionMinor = .*;$/const unsigned int RuntimeVersionMinor = %minor%;/g" $(ProjectDir)\version.h
 ..\scripts\sed.exe -i "s/const unsigned int RuntimeVersionPatch = .*;$/const unsigned int RuntimeVersionPatch = %patch%;/g" $(ProjectDir)\version.h
+echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
 ..\scripts\sed.exe -i "s/FILEVERSION .*$/FILEVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/PRODUCTVERSION .*$/PRODUCTVERSION %major%,%minor%,%patch%,0/g" $(ProjectDir)\resource.rc
 ..\scripts\sed.exe -i "s/VALUE \"FileVersion\", \".*\"$/VALUE \"FileVersion\", \"%major%.%minor%.%patch%.0\"/g" $(ProjectDir)\resource.rc

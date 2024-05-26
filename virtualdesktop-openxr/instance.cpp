@@ -27,6 +27,7 @@
 #include "trackers.h"
 #include "utils.h"
 #include "version.h"
+#include "commit.h"
 
 namespace {
     wil::unique_handle g_fakeHmdConnectedEvent;
@@ -38,7 +39,7 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::log;
 
     const std::string RuntimePrettyName =
-        fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{}", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch);
+        fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{} ({})", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch, RuntimeCommitHash);
 
     XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                           const XrBodyTrackingFidelityMETA fidelity);
