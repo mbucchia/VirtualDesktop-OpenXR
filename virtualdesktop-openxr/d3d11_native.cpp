@@ -26,7 +26,6 @@
 #include "runtime.h"
 #include "utils.h"
 
-#include "AlphaBlendingCS.h"
 #include "FullScreenQuadVS.h"
 #include "ResolveMultisampledDepthPS.h"
 
@@ -41,11 +40,6 @@ namespace virtualdesktop_openxr {
 
     struct ResolveMultisampledDepthPSConstants {
         alignas(4) uint32_t slice;
-    };
-
-    struct AlphaBlendingCSConstants {
-        alignas(4) bool ignoreAlpha;
-        alignas(4) bool isUnpremultipliedAlpha;
     };
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrGetD3D11GraphicsRequirementsKHR
@@ -220,9 +214,6 @@ namespace virtualdesktop_openxr {
         m_fenceValue = 0;
 
         // Create the resources for pre-processing.
-        CHECK_HRCMD(m_ovrSubmissionDevice->CreateComputeShader(
-            g_AlphaBlendingCS, sizeof(g_AlphaBlendingCS), nullptr, m_alphaCorrectShader.ReleaseAndGetAddressOf()));
-        setDebugName(m_alphaCorrectShader.Get(), "AlphaBlending CS");
         CHECK_HRCMD(m_ovrSubmissionDevice->CreateVertexShader(
             g_FullScreenQuadVS, sizeof(g_FullScreenQuadVS), nullptr, m_fullQuadVS.ReleaseAndGetAddressOf()));
         setDebugName(m_fullQuadVS.Get(), "FullQuad VS");
@@ -278,18 +269,6 @@ namespace virtualdesktop_openxr {
                 &desc, nullptr, m_resolveMultisampledDepthConstants.ReleaseAndGetAddressOf()));
             setDebugName(m_resolveMultisampledDepthConstants.Get(), "Resolve MSAA Depth Constants");
         }
-        {
-            D3D11_BUFFER_DESC desc{};
-            desc.ByteWidth = ((sizeof(AlphaBlendingCSConstants) + 15) / 16) * 16;
-            desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-            desc.Usage = D3D11_USAGE_DYNAMIC;
-            desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-            CHECK_HRCMD(
-                m_ovrSubmissionDevice->CreateBuffer(&desc, nullptr, m_alphaCorrectConstants.ReleaseAndGetAddressOf()));
-            setDebugName(m_alphaCorrectConstants.Get(), "AlphaBlending Constants");
-        }
-
         for (uint32_t i = 0; i < k_numGpuTimers; i++) {
             m_gpuTimerPrecomposition[i] =
                 std::make_unique<D3D11GpuTimer>(m_ovrSubmissionDevice.Get(), m_ovrSubmissionContext.Get());
@@ -529,38 +508,26 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
-    // Prepare an OVR swapchain to be used by OVR.
-    void OpenXrRuntime::preprocessSwapchainImage(Swapchain& xrSwapchain,
-                                                 uint32_t layerIndex,
-                                                 uint32_t slice,
-                                                 XrCompositionLayerFlags compositionFlags,
-                                                 std::set<std::pair<Swapchain*, uint32_t>>& processed) {
+    // Prepare a swapchain to be used by OVR.
+    void OpenXrRuntime::resolveSwapchainImage(Swapchain& xrSwapchain,
+                                              uint32_t slice,
+                                              std::set<std::pair<Swapchain*, uint32_t>>& resolved) {
         ensureSwapchainSliceResources(xrSwapchain, slice);
 
         // If the texture was never used or already committed, do nothing.
-        // TODO: If the same swapchain is used with different bits in several layers, the bits are not honored. This is
-        // a very uncommon case.
         const auto tuple = std::make_pair(&xrSwapchain, slice);
-        if (xrSwapchain.appSwapchain.images.empty() || processed.count(tuple)) {
+        if (xrSwapchain.appSwapchain.images.empty() || resolved.count(tuple)) {
             return;
         }
 
-        const bool needClearAlpha =
-            layerIndex > 0 && !(compositionFlags & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT);
-        // Workaround: this is questionable, but an app should always submit layer 0 without alpha-blending (ie: alpha =
-        // 1). This avoids needing to run the premultiply alpha shader only do multiply all values by 1...
-        const bool needPremultiplyAlpha =
-            layerIndex > 0 && (compositionFlags & XR_COMPOSITION_LAYER_UNPREMULTIPLIED_ALPHA_BIT);
         const bool needCopy = (slice > 0 || !xrSwapchain.appSwapchain.ovrSwapchain);
 
         const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
 
         TraceLoggingWrite(g_traceProvider,
-                          "PreprocessSwapchainImage",
+                          "ResolveSwapchainImage",
                           TLArg(lastReleasedIndex, "LastReleasedIndex"),
                           TLArg(slice, "Slice"),
-                          TLArg(needClearAlpha, "NeedClearAlpha"),
-                          TLArg(needPremultiplyAlpha, "NeedPremultiplyAlpha"),
                           TLArg(needCopy, "NeedCopy"));
 
         int ovrDestIndex = -1;
@@ -575,12 +542,18 @@ namespace virtualdesktop_openxr {
                 ovrCommittedIndex = xrSwapchain.ovrSwapchainLength - 1;
             }
             if (needCopy) {
-                TraceLoggingWrite(g_traceProvider, "PreprocessSwapchainImage", TLArg(ovrDestIndex, "DestIndex"));
+                TraceLoggingWrite(g_traceProvider, "ResolveSwapchainImage", TLArg(ovrDestIndex, "DestIndex"));
                 break;
             }
             TraceLoggingWrite(
-                g_traceProvider, "PreprocessSwapchainImage_SyncImage", TLArg(ovrCommittedIndex, "CommittedIndex"));
+                g_traceProvider, "ResolveSwapchainImage_SyncImage", TLArg(ovrCommittedIndex, "CommittedIndex"));
             if (ovrCommittedIndex == lastReleasedIndex) {
+                // We still need to commit a static swapchain once!
+                if (xrSwapchain.ovrSwapchainLength == 1 && xrSwapchain.dirty) {
+                    CHECK_OVRCMD(
+                        ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
+                }
+                xrSwapchain.resolvedSlices[slice].lastCommittedIndex = ovrCommittedIndex;
                 break;
             }
             CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
@@ -590,7 +563,7 @@ namespace virtualdesktop_openxr {
             const bool isDepthBuffer =
                 (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
             TraceLoggingWrite(g_traceProvider,
-                              "PreprocessSwapchainImage_Copy",
+                              "ResolveSwapchainImage_Copy",
                               TLArg(xrSwapchain.ovrDesc.SampleCount == 1 ? "None"
                                     : !isDepthBuffer                     ? "Color"
                                                                          : "Depth",
@@ -708,69 +681,11 @@ namespace virtualdesktop_openxr {
                     }
                 }
             }
-        }
 
-        if (needClearAlpha || needPremultiplyAlpha) {
-            // Circumvent some of OVR's limitations:
-            // - For alpha-blended layers, we must pre-process the alpha channel.
-
-            // We are about to do something destructive to the application context. Save the context. It will be
-            // restored at the end of xrEndFrame().
-            if (m_d3d11Device == m_ovrSubmissionDevice && !m_d3d11ContextState) {
-                m_ovrSubmissionContext->SwapDeviceContextState(m_ovrSubmissionContextState.Get(),
-                                                               m_d3d11ContextState.ReleaseAndGetAddressOf());
-            }
-
-            m_ovrSubmissionContext->CSSetShader(m_alphaCorrectShader.Get(), nullptr, 0);
-            {
-                AlphaBlendingCSConstants constants{};
-                constants.ignoreAlpha = needClearAlpha;
-                constants.isUnpremultipliedAlpha = needPremultiplyAlpha;
-
-                D3D11_MAPPED_SUBRESOURCE mappedResources;
-                CHECK_HRCMD(m_ovrSubmissionContext->Map(
-                    m_alphaCorrectConstants.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResources));
-                memcpy(mappedResources.pData, &constants, sizeof(constants));
-                m_ovrSubmissionContext->Unmap(m_alphaCorrectConstants.Get(), 0);
-                m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, m_alphaCorrectConstants.GetAddressOf());
-            }
-
-            if (xrSwapchain.resolvedSlices[slice].uavs.size() <= ovrDestIndex) {
-                xrSwapchain.resolvedSlices[slice].uavs.resize(ovrDestIndex + 1);
-            }
-            if (!xrSwapchain.resolvedSlices[slice].uavs[ovrDestIndex]) {
-                D3D11_UNORDERED_ACCESS_VIEW_DESC desc{};
-                desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-                desc.Format = getUnorderedAccessViewFormat(xrSwapchain.dxgiFormatForSubmission);
-                CHECK_HRCMD(m_ovrSubmissionDevice->CreateUnorderedAccessView(
-                    xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
-                    &desc,
-                    xrSwapchain.resolvedSlices[slice].uavs[ovrDestIndex].ReleaseAndGetAddressOf()));
-                setDebugName(xrSwapchain.resolvedSlices[slice].uavs[ovrDestIndex].Get(),
-                             fmt::format("Runtime Slice UAV[{}, {}, {}]", slice, ovrDestIndex, (void*)&xrSwapchain));
-            }
-            m_ovrSubmissionContext->CSSetUnorderedAccessViews(
-                0, 1, xrSwapchain.resolvedSlices[slice].uavs[ovrDestIndex].GetAddressOf(), nullptr);
-
-            m_ovrSubmissionContext->Dispatch((unsigned int)std::ceil(xrSwapchain.xrDesc.width / 32),
-                                             (unsigned int)std::ceil(xrSwapchain.xrDesc.height / 32),
-                                             1);
-
-            // Unbind all resources to avoid D3D validation errors.
-            {
-                m_ovrSubmissionContext->CSSetShader(nullptr, nullptr, 0);
-                ID3D11Buffer* nullCBV[] = {nullptr};
-                m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, nullCBV);
-                ID3D11UnorderedAccessView* nullUAV[] = {nullptr};
-                m_ovrSubmissionContext->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
-            }
-        }
-
-        if (needCopy) {
-            // Commit the texture to OVR if using a different swapchain.
             CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
+            xrSwapchain.resolvedSlices[slice].lastCommittedIndex = ovrDestIndex;
         }
-        processed.insert(tuple);
+        resolved.insert(tuple);
     }
 
     // Ensure necessary resources for submission: lazily create a second swapchain for this slice of the array or
