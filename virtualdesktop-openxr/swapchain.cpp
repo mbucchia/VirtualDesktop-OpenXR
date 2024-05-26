@@ -670,6 +670,7 @@ namespace virtualdesktop_openxr {
         // OpenXR. We will perform swapchain commits in preprocessSwapchainImage().
         xrSwapchain.lastReleasedIndex = xrSwapchain.lastWaitedIndex;
         xrSwapchain.lastWaitedIndex = -1;
+        xrSwapchain.dirty = true;
         xrSwapchain.acquiredIndices.pop_front();
 
         return XR_SUCCESS;

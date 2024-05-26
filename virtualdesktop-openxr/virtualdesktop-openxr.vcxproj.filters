@@ -183,9 +183,6 @@
     </None>
     <None Include="packages.config" />
     <None Include="virtualdesktop-openxr-32.json" />
-    <None Include="AlphaBlending.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="virtualdesktop-openxr.def" />
   </ItemGroup>
   <ItemGroup>
