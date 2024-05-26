@@ -398,6 +398,7 @@ namespace virtualdesktop_openxr {
 
             // Construct the list of layers.
             std::vector<ovrLayer_Union> layersAllocator;
+            ovrLayerEyeFov* proj0 = nullptr;
             layersAllocator.reserve((frameEndInfo->layerCount * (usesQuadViews ? 2 : 1)) + 1);
             for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
                 if (!frameEndInfo->layers[i]) {
@@ -442,6 +443,9 @@ namespace virtualdesktop_openxr {
                         layer.Header.Type = ovrLayerType_Disabled;
                     }
 
+                    if (!proj0) {
+                        proj0 = &layer.EyeFov;
+                    }
                     m_precompositor.isFirstProjectionLayer = false;
 
                 } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD ||
@@ -470,6 +474,22 @@ namespace virtualdesktop_openxr {
                 } else {
                     return XR_ERROR_LAYER_INVALID;
                 }
+            }
+
+            // On quad views sessions, if there is at least one projection layer, we must submit (last) a dummy eyeFov
+            // layer to enforce the real FOV of the projection.
+            if (m_needFullFovLayer && m_primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO &&
+                proj0 && !m_debugFocusViews) {
+                ensureQuadViewsResources();
+                layersAllocator.push_back({});
+                layersAllocator.back().EyeFov = m_fullFovLayer;
+
+                // Patch the few things that change frame to frame.
+                auto& layer = layersAllocator.back().EyeFov;
+                for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+                    layer.RenderPose[eye] = proj0->RenderPose[eye];
+                }
+                layer.SensorSampleTime = proj0->SensorSampleTime;
             }
 
             // Add a dummy layer so we can still call ovr_endFrame() for timing purposes.
@@ -736,7 +756,8 @@ namespace virtualdesktop_openxr {
                             }
 
                             // Fill out projection information.
-                            target->EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
+                            target->EyeFovDepth.ProjectionDesc.Projection22 =
+                                depth->farZ / (depth->nearZ - depth->farZ);
                             target->EyeFovDepth.ProjectionDesc.Projection23 =
                                 (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
                             target->EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
@@ -932,6 +953,50 @@ namespace virtualdesktop_openxr {
         }
 
         return XR_SUCCESS;
+    }
+
+    void OpenXrRuntime::ensureQuadViewsResources() {
+        if (m_emptySwapchain) {
+            return;
+        }
+
+        {
+            ovrTextureSwapChainDesc desc{};
+            desc.Type = ovrTexture_2D;
+            desc.StaticImage = true;
+            desc.ArraySize = 1;
+            desc.Width = desc.Height = 128;
+            desc.MipLevels = 1;
+            desc.SampleCount = 1;
+            desc.Format = OVR_FORMAT_B8G8R8A8_UNORM;
+            desc.BindFlags = ovrTextureBind_DX_RenderTarget;
+
+            CHECK_OVRCMD(
+                ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_emptySwapchain));
+        }
+
+        ComPtr<ID3D11Texture2D> swapchainTexture;
+        CHECK_OVRCMD(ovr_GetTextureSwapChainBufferDX(
+            m_ovrSession, m_emptySwapchain, 0, IID_PPV_ARGS(swapchainTexture.ReleaseAndGetAddressOf())));
+        ComPtr<ID3D11RenderTargetView> rtv;
+        {
+            D3D11_RENDER_TARGET_VIEW_DESC desc{};
+            desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+            desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
+                swapchainTexture.Get(), &desc, rtv.ReleaseAndGetAddressOf()));
+        }
+        const float allZeros[] = {0, 0, 0, 0};
+        m_ovrSubmissionContext->ClearRenderTargetView(rtv.Get(), allZeros);
+        CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, m_emptySwapchain));
+
+        m_fullFovLayer.Header.Type = ovrLayerType_EyeFov;
+        for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+            m_fullFovLayer.ColorTexture[eye] = m_emptySwapchain;
+            m_fullFovLayer.Fov[eye] = m_cachedHmdInfo.DefaultEyeFov[eye];
+            m_fullFovLayer.Viewport[eye].Size = {128, 128};
+            // Rest is to be patched just-in-time.
+        }
     }
 
     void OpenXrRuntime::asyncSubmissionThread() {

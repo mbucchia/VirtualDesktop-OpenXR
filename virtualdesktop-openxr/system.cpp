@@ -444,6 +444,7 @@ namespace virtualdesktop_openxr {
         if (!m_useOculusRuntime) {
             ovr_SetBool(m_ovrSession, "IsVDXR", true);
             ovr_SetBool(m_ovrSession, "IsOpenComposite", m_isOpenComposite);
+            m_needFullFovLayer = !ovr_SetBool(m_ovrSession, "UseBottomLayerFov", true);
         }
 
         // Calibrate the timestamp conversion.

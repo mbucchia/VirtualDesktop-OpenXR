@@ -509,6 +509,7 @@ namespace virtualdesktop_openxr {
                                          const XrCompositionLayerCylinderKHR& cylinder,
                                          ovrLayer_Union& layer);
         XrResult handleCubeLayer(const XrCompositionLayerCubeKHR& cube, ovrLayer_Union& layer);
+        void ensureQuadViewsResources();
         void asyncSubmissionThread();
         void waitForAsyncSubmissionIdle(bool doRunningStart = false);
 
@@ -620,6 +621,7 @@ namespace virtualdesktop_openxr {
         bool m_isConformanceTest{false};
         bool m_isOpenComposite{false};
         bool m_isLowVideoMemorySystem{false};
+        bool m_needFullFovLayer{false};
         ovrTextureSwapChain m_headlessSwapchain{nullptr};
         bool m_forceSlowpathSwapchains{false};
         float m_focusPixelDensity{1.f};
@@ -708,6 +710,8 @@ namespace virtualdesktop_openxr {
         PrecompositorState m_precompositor;
         XrVector2f m_centerOfFov[xr::StereoView::Count]{};
         XrVector2f m_projectedEyeGaze[xr::StereoView::Count]{};
+        ovrLayerEyeFov m_fullFovLayer{};
+        ovrTextureSwapChain m_emptySwapchain{};
         bool m_debugFocusViews{false};
 
         // Swapchains and other graphics stuff.
