@@ -301,6 +301,7 @@ namespace virtualdesktop_openxr {
         struct SwapchainSlice {
             ovrTextureSwapChain ovrSwapchain;
             std::vector<ComPtr<ID3D11Texture2D>> images;
+            int lastCommittedIndex{-1};
 
             // Resources for copy/resolve/pre-processing.
             std::vector<ComPtr<ID3D11ShaderResourceView>> srvs;
@@ -346,7 +347,7 @@ namespace virtualdesktop_openxr {
 
         struct PrecompositorState {
             // State for the current frame.
-            std::set<std::pair<Swapchain*, uint32_t>> processedSwapchainImages;
+            std::set<std::pair<Swapchain*, uint32_t>> resolvedSwapchainImages;
             XrTime displayTime{0};
             bool isProj0SRGB{false};
             bool isFirstProjectionLayer{true};
@@ -509,6 +510,13 @@ namespace virtualdesktop_openxr {
                                          const XrCompositionLayerCylinderKHR& cylinder,
                                          ovrLayer_Union& layer);
         XrResult handleCubeLayer(const XrCompositionLayerCubeKHR& cube, ovrLayer_Union& layer);
+        void preprocessSwapchainImage(Swapchain& xrSwapchain,
+                                      uint32_t layerIndex,
+                                      uint32_t slice,
+                                      XrCompositionLayerFlags compositionFlags,
+                                      XrRect2Di viewport,
+                                      bool isFocusView = false);
+        void ensurePreprocessResources();
         void ensureQuadViewsResources();
         void asyncSubmissionThread();
         void waitForAsyncSubmissionIdle(bool doRunningStart = false);
@@ -521,11 +529,9 @@ namespace virtualdesktop_openxr {
         void cleanupSubmissionDevice();
         std::vector<HANDLE> getSwapchainImages(Swapchain& xrSwapchain);
         XrResult getSwapchainImagesD3D11(Swapchain& xrSwapchain, XrSwapchainImageD3D11KHR* d3d11Images, uint32_t count);
-        void preprocessSwapchainImage(Swapchain& xrSwapchain,
-                                      uint32_t layerIndex,
-                                      uint32_t slice,
-                                      XrCompositionLayerFlags compositionFlags,
-                                      std::set<std::pair<Swapchain*, uint32_t>>& processed);
+        void resolveSwapchainImage(Swapchain& xrSwapchain,
+                                   uint32_t slice,
+                                   std::set<std::pair<Swapchain*, uint32_t>>& resolved);
         void ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const;
         void ensureSwapchainPrecompositorResources(Swapchain& xrSwapchain) const;
         void populateSwapchainSlice(const Swapchain& xrSwapchain,
