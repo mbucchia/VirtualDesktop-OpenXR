@@ -28,9 +28,11 @@
 #include "utils.h"
 #include "version.h"
 
+#ifdef STANDALONE_RUNTIME
 namespace {
     wil::unique_handle g_fakeHmdConnectedEvent;
 } // namespace
+#endif
 
 namespace virtualdesktop_openxr {
 
@@ -234,10 +236,27 @@ namespace virtualdesktop_openxr {
             GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, "OVRPlugin.dll", &ovrPlugin);
         if (m_isOculusXrPlugin) {
             // For some reason, certain applications built with the Oculus plugin will attempt to initialize LibOVR.
+#ifndef STANDALONE_RUNTIME
+            // We make sure that ovr_Detect() succeeds by injecting Virtual Desktop.
+            std::filesystem::path path(
+                RegGetString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Virtual Desktop, Inc.\\Virtual Desktop Streamer", "Path")
+                    .value_or(L""));
+            if (!path.empty()) {
+                path = path /
+#ifdef _WIN64
+                       L"VirtualDesktop.Injector64.dll";
+#else
+                       L"VirtualDesktop.Injector32.dll";
+#endif
+
+                LoadLibraryW(path.c_str());
+            }
+#else
             // We create a fake event to make ovr_Detect() succeed.
             if (!g_fakeHmdConnectedEvent) {
                 *g_fakeHmdConnectedEvent.put() = CreateEventW(nullptr, true, true, nullptr);
             }
+#endif
         }
 
         m_isConformanceTest = m_applicationName == "conformance test";
@@ -560,6 +579,7 @@ namespace virtualdesktop_openxr {
 
 } // namespace virtualdesktop_openxr
 
+#ifdef STANDALONE_RUNTIME
 namespace {
 
     // This hook will cause the LibOVR loader's ovr_Detect() to succeed.
@@ -579,6 +599,7 @@ namespace {
     }
 
 } // namespace
+#endif
 
 extern "C" __declspec(dllexport) const char* WINAPI getVersionString() {
     return virtualdesktop_openxr::RuntimePrettyName.c_str();
@@ -591,11 +612,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     case DLL_PROCESS_ATTACH:
         TraceLoggingRegister(virtualdesktop_openxr::log::g_traceProvider);
         virtualdesktop_openxr::utils::InitializeHighPrecisionTimer();
+#ifdef STANDALONE_RUNTIME
         DetourDllAttach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+#endif
         break;
 
     case DLL_PROCESS_DETACH:
+#ifdef STANDALONE_RUNTIME
         DetourDllDetach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+#endif
         TraceLoggingUnregister(virtualdesktop_openxr::log::g_traceProvider);
         break;
 
