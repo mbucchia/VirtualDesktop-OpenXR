@@ -346,6 +346,16 @@ namespace virtualdesktop_openxr {
                                       TLArg(xr::ToString(views[i].pose).c_str(), "Pose"),
                                       TLArg(xr::ToString(views[i].fov).c_str(), "Fov"));
                 }
+
+                if (std::abs(m_overrideWorldScale - 1.f) > FLT_EPSILON) {
+                    // Patch the views with our IPD before returning to the application.
+                    // Store the actual IPD as reported by the runtime so we can restore it later in xrEndFrame().
+                    m_lastSeenIpd = overrideIpd(
+                        views[xr::StereoView::Left].pose, views[xr::StereoView::Right].pose, m_overrideWorldScale);
+                } else {
+                    m_lastSeenIpd.reset();
+                }
+
             } else {
                 // All or nothing.
                 viewState->viewStateFlags = 0;
@@ -675,6 +685,28 @@ namespace virtualdesktop_openxr {
 
         return XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+    }
+
+    // Override the IPD of poses we returned (XrPosef) with the given world scale factor.
+    float OpenXrRuntime::overrideIpd(XrPosef& leftEye, XrPosef& rightEye, float worldScale) const {
+        const XrVector3f vec = rightEye.position - leftEye.position;
+        const XrVector3f center = leftEye.position + (vec * 0.5f);
+        const float oldIpd = Length(vec);
+        const float newIpd = oldIpd / worldScale;
+        const XrVector3f offset = Normalize(vec) * (newIpd * 0.5f);
+        leftEye.position = center - offset;
+        rightEye.position = center + offset;
+
+        return oldIpd;
+    }
+
+    // Override the IPD of poses we pass to LibOVR with the given IPD (distance).
+    void OpenXrRuntime::overrideIpd(ovrPosef& leftEye, ovrPosef& rightEye, float ipd) const {
+        const OVR::Vector3f vec = OVR::Vector3f(rightEye.Position) - OVR::Vector3f(leftEye.Position);
+        const OVR::Vector3f center = OVR::Vector3f(leftEye.Position) + (vec * 0.5f);
+        const OVR::Vector3f offset = vec.Normalized() * (ipd * 0.5f);
+        leftEye.Position = center - offset;
+        rightEye.Position = center + offset;
     }
 
 } // namespace virtualdesktop_openxr

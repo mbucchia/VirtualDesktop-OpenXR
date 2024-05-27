@@ -773,6 +773,13 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        // Restore the original IPD, otherwise the compositor will reproject the altered IPD
+        // into the real IPD.
+        if (m_lastSeenIpd) {
+            overrideIpd(
+                layer.EyeFov.RenderPose[ovrEye_Left], layer.EyeFov.RenderPose[ovrEye_Right], m_lastSeenIpd.value());
+        }
+
         // Run the upscaler or sharpening if needed.
         if (swapchains[xr::StereoView::Right]) {
             upscaler(swapchains, subImages, layer.EyeFov);
