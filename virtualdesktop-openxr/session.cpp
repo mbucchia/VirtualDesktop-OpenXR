@@ -527,6 +527,14 @@ namespace virtualdesktop_openxr {
 
         m_overrideWorldScale = getSetting("world_scale").value_or(100) / 100.f;
 
+        {
+            const auto oldVisibilityMaskScale = m_overrideVisibilityMaskScale;
+            m_overrideVisibilityMaskScale = getSetting("visibility_mask_scale").value_or(100) / 100.f;
+            if (oldVisibilityMaskScale != m_overrideVisibilityMaskScale) {
+                m_visibilityMaskDirty = xr::StereoView::Count;
+            }
+        }
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
@@ -536,7 +544,8 @@ namespace virtualdesktop_openxr {
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"),
                           TLArg(m_sharpenFactor, "SharpenFactor"),
-                          TLArg(m_overrideWorldScale, "OverrideWorldScale"));
+                          TLArg(m_overrideWorldScale, "OverrideWorldScale"),
+                          TLArg(m_overrideVisibilityMaskScale, "OverrideVisibilityMaskScale"));
     }
 
 } // namespace virtualdesktop_openxr

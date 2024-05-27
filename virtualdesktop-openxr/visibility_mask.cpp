@@ -70,6 +70,13 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        // Ignore ridiculously big masks.
+        if (m_overrideVisibilityMaskScale > 10.f) {
+            visibilityMask->vertexCountOutput = 0;
+            visibilityMask->indexCountOutput = 0;
+            return XR_SUCCESS;
+        }
+
         uint32_t indicesStride = 1;
         ovrFovStencilDesc stencilDesc{};
         switch (visibilityMaskType) {
@@ -119,6 +126,29 @@ namespace virtualdesktop_openxr {
 
             for (uint32_t i = 0; i < buffer.UsedIndexCount / indicesStride; i++) {
                 visibilityMask->indices[i] = buffer.IndexBuffer[i * indicesStride];
+            }
+
+            if (std::abs(m_overrideVisibilityMaskScale - 1.f) > FLT_EPSILON) {
+                // Compute bounding box.
+                XrVector2f minBounds{+INFINITY, +INFINITY};
+                XrVector2f maxBounds{-INFINITY, -INFINITY};
+                for (int i = 0; i < buffer.UsedVertexCount; i++) {
+                    minBounds.x = std::min(minBounds.x, visibilityMask->vertices[i].x);
+                    minBounds.y = std::min(minBounds.y, visibilityMask->vertices[i].y);
+                    maxBounds.x = std::max(maxBounds.x, visibilityMask->vertices[i].x);
+                    maxBounds.y = std::max(maxBounds.y, visibilityMask->vertices[i].y);
+                }
+
+                // Scale all points except the ones at the edges.
+                for (int i = 0; i < buffer.UsedVertexCount; i++) {
+                    if (std::abs(visibilityMask->vertices[i].x - minBounds.x) > FLT_EPSILON &&
+                        std::abs(visibilityMask->vertices[i].y - minBounds.y) > FLT_EPSILON &&
+                        std::abs(visibilityMask->vertices[i].x - maxBounds.x) > FLT_EPSILON &&
+                        std::abs(visibilityMask->vertices[i].y - maxBounds.y) > FLT_EPSILON) {
+                        visibilityMask->vertices[i].x *= m_overrideVisibilityMaskScale;
+                        visibilityMask->vertices[i].y *= m_overrideVisibilityMaskScale;
+                    }
+                }
             }
 
             visibilityMask->vertexCountOutput = buffer.UsedVertexCount;
