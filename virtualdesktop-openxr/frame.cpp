@@ -170,7 +170,9 @@ namespace virtualdesktop_openxr {
                 lock.lock();
                 TraceLoggingWriteStop(waitToBeginFrame, "OVR_WaitToBeginFrame");
             } else {
-                waitForAsyncSubmissionIdle(m_useRunningStart);
+                if (!m_useDeferredFrameWait) {
+                    waitForAsyncSubmissionIdle(m_useRunningStart);
+                }
                 TraceLoggingWrite(g_traceProvider, "AcquiredFrame", TLArg(ovrFrameId, "FrameId"));
             }
 
