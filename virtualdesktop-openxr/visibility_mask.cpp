@@ -79,7 +79,7 @@ namespace virtualdesktop_openxr {
             (std::abs(m_fovTangentX - 1.f) > FLT_EPSILON || std::abs(m_fovTangentY - 1.f) > FLT_EPSILON);
         if ((viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_QUAD_VARJO &&
              viewIndex >= xr::StereoView::Count) ||
-            useFovTangents) {
+            useFovTangents || m_overrideVisibilityMaskScale > 10.f) {
             visibilityMask->vertexCountOutput = 0;
             visibilityMask->indexCountOutput = 0;
             return XR_SUCCESS;
@@ -134,6 +134,29 @@ namespace virtualdesktop_openxr {
 
             for (uint32_t i = 0; i < buffer.UsedIndexCount / indicesStride; i++) {
                 visibilityMask->indices[i] = buffer.IndexBuffer[i * indicesStride];
+            }
+
+            if (std::abs(m_overrideVisibilityMaskScale - 1.f) > FLT_EPSILON) {
+                // Compute bounding box.
+                XrVector2f minBounds{+INFINITY, +INFINITY};
+                XrVector2f maxBounds{-INFINITY, -INFINITY};
+                for (uint32_t i = 0; i < buffer.UsedVertexCount; i++) {
+                    minBounds.x = std::min(minBounds.x, visibilityMask->vertices[i].x);
+                    minBounds.y = std::min(minBounds.y, visibilityMask->vertices[i].y);
+                    maxBounds.x = std::max(maxBounds.x, visibilityMask->vertices[i].x);
+                    maxBounds.y = std::max(maxBounds.y, visibilityMask->vertices[i].y);
+                }
+
+                // Scale all points except the ones at the edges.
+                for (uint32_t i = 0; i < buffer.UsedVertexCount; i++) {
+                    if (std::abs(visibilityMask->vertices[i].x - minBounds.x) > FLT_EPSILON &&
+                        std::abs(visibilityMask->vertices[i].y - minBounds.y) > FLT_EPSILON &&
+                        std::abs(visibilityMask->vertices[i].x - maxBounds.x) > FLT_EPSILON &&
+                        std::abs(visibilityMask->vertices[i].y - maxBounds.y) > FLT_EPSILON) {
+                        visibilityMask->vertices[i].x *= m_overrideVisibilityMaskScale;
+                        visibilityMask->vertices[i].y *= m_overrideVisibilityMaskScale;
+                    }
+                }
             }
 
             visibilityMask->vertexCountOutput = buffer.UsedVertexCount;
