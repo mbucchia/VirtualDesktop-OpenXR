@@ -539,6 +539,9 @@ namespace virtualdesktop_openxr {
 
         m_overrideWorldScale = getSetting("world_scale").value_or(100) / 100.f;
 
+        // In cm
+        m_overrideFloorHeight = getSetting("floor_height").value_or(100) / 100.f;
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
@@ -548,7 +551,8 @@ namespace virtualdesktop_openxr {
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"),
                           TLArg(m_sharpenFactor, "SharpenFactor"),
-                          TLArg(m_overrideWorldScale, "OverrideWorldScale"));
+                          TLArg(m_overrideWorldScale, "OverrideWorldScale"),
+                          TLArg(m_overrideFloorHeight, "OverrideFloorHeight"));
 
         m_debugFocusViews = getSetting("debug_focus_view").value_or(false);
     }
