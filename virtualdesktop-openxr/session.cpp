@@ -509,6 +509,7 @@ namespace virtualdesktop_openxr {
         m_useMirrorWindow = getSetting("mirror_window").value_or(false);
 
         m_useRunningStart = !getSetting("quirk_disable_running_start").value_or(false);
+        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(false);
 
         const bool shouldUseDepth =
 #ifndef IGNORE_DEPTH_SUBMISSION
@@ -528,6 +529,7 @@ namespace virtualdesktop_openxr {
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
                           TLArg(m_useRunningStart, "UseRunningStart"),
+                          TLArg(m_useDeferredFrameWait, "UseDeferredFrameWait"),
                           TLArg(m_shouldUseDepth, "ShouldUseDepth"),
                           TLArg(m_syncGpuWorkInEndFrame, "SyncGpuWorkInEndFrame"),
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"),

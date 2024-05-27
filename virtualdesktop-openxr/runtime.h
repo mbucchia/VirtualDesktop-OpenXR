@@ -703,6 +703,7 @@ namespace virtualdesktop_openxr {
         Haptic m_currentVibration[xr::Side::Count];
         bool m_shouldUseDepth{true};
         bool m_useRunningStart{true};
+        bool m_useDeferredFrameWait{false};
         bool m_jiggleViewRotations{false};
         MyHandSimulation m_handSimulation[xr::Side::Count];
         PrecompositorState m_precompositor;
