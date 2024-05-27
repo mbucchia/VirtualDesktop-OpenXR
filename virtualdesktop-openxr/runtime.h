@@ -495,6 +495,8 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags getHmdPose(XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
         XrSpaceLocationFlags getControllerPose(int side, XrTime time, XrPosef& pose, XrSpaceVelocity* velocity) const;
         XrSpaceLocationFlags getEyeTrackerPose(XrTime time, XrPosef& pose, XrEyeGazeSampleTimeEXT* sampleTime);
+        float overrideIpd(XrPosef& leftEye, XrPosef& rightEye, float worldScale) const;
+        void overrideIpd(ovrPosef& leftEye, ovrPosef& rightEye, float ipd) const;
 
         // eye_tracking.cpp
         bool getEyeGaze(XrTime time, bool getStateOnly, XrVector3f& unitVector, XrTime& sampleTime);
@@ -742,6 +744,7 @@ namespace virtualdesktop_openxr {
         float m_supersamplingFactor{1.f};
         float m_upscalingMultiplier{1.f};
         float m_sharpenFactor{0.f};
+        float m_overrideWorldScale{1.f};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;
@@ -823,6 +826,7 @@ namespace virtualdesktop_openxr {
         BodyTracking::BodyStateV2 m_cachedBodyState{};
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
+        std::optional<float> m_lastSeenIpd{};
 
         // Statistics.
         double m_sessionStartTime{0.0};
