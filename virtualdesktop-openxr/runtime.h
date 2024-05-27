@@ -746,6 +746,8 @@ namespace virtualdesktop_openxr {
         float m_sharpenFactor{0.f};
         float m_overrideWorldScale{1.f};
         float m_overrideFloorHeight{0.f};
+        float m_overrideVisibilityMaskScale{1.f};
+        uint32_t m_visibilityMaskDirty{0};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;

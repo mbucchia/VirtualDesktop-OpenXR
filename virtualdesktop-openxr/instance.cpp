@@ -445,6 +445,27 @@ namespace virtualdesktop_openxr {
             return XR_SUCCESS;
         }
 
+        if (m_visibilityMaskDirty) {
+            XrEventDataVisibilityMaskChangedKHR* const buffer =
+                reinterpret_cast<XrEventDataVisibilityMaskChangedKHR*>(eventData);
+            buffer->type = XR_TYPE_EVENT_DATA_VISIBILITY_MASK_CHANGED_KHR;
+            buffer->next = nullptr;
+            buffer->session = (XrSession)1;
+            buffer->viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+            buffer->viewIndex =
+                m_visibilityMaskDirty == xr::StereoView::Count ? xr::StereoView::Left : xr::StereoView::Right;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "VisibilityMaskChanged",
+                              TLPArg(buffer->session, "Session"),
+                              TLArg(xr::ToCString(buffer->viewConfigurationType), "ViewConfigurationType"),
+                              TLArg(buffer->viewIndex, "ViewIndex"));
+
+            m_visibilityMaskDirty--;
+
+            return XR_SUCCESS;
+        }
+
         if (has_XR_FB_display_refresh_rate && m_displayRefreshRateChanged != m_displayRefreshRate) {
             XrEventDataDisplayRefreshRateChangedFB* const buffer =
                 reinterpret_cast<XrEventDataDisplayRefreshRateChangedFB*>(eventData);
