@@ -600,10 +600,19 @@ namespace virtualdesktop_openxr {
         } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
             // STAGE space is the origin at floor level.
             if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel || ignoreFloorHeight) {
-                pose = Pose::Identity();
+                if (m_overrideFloorHeight <= 0) {
+                    pose = Pose::Identity();
+                } else {
+                    const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+                    TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+                    pose = Pose::Translation({0, floorHeight - m_overrideFloorHeight, 0});
+                }
             } else {
-                const float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
+                float floorHeight = ovr_GetFloat(m_ovrSession, OVR_KEY_EYE_HEIGHT, OVR_DEFAULT_EYE_HEIGHT);
                 TraceLoggingWrite(g_traceProvider, "OVR_GetConfig", TLArg(floorHeight, "EyeHeight"));
+                if (m_overrideFloorHeight > 0.f) {
+                    floorHeight = m_overrideFloorHeight;
+                }
                 pose = Pose::Translation({0, -floorHeight, 0});
             }
             result = (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
