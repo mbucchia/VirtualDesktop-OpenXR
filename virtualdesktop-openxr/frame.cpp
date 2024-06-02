@@ -39,7 +39,7 @@ namespace virtualdesktop_openxr {
         alignas(8) XrOffset2Di offset;
         alignas(8) XrExtent2Di dimension;
         alignas(4) bool ignoreAlpha;
-        alignas(4) bool isUnpremultipliedAlpha;
+        alignas(4) bool isPremultipliedAlpha;
         alignas(4) bool isSRGB;
         alignas(4) float smoothingArea;
     };
@@ -1071,7 +1071,7 @@ namespace virtualdesktop_openxr {
                 constants.offset = viewport.offset;
                 constants.dimension = viewport.extent;
                 constants.ignoreAlpha = needClearAlpha;
-                constants.isUnpremultipliedAlpha = needPremultiplyAlpha;
+                constants.isPremultipliedAlpha = !needPremultiplyAlpha;
                 constants.isSRGB = isSRGBFormat((DXGI_FORMAT)xrSwapchain.xrDesc.format);
                 constants.smoothingArea = isFocusView ? 0.2f : 0;
 

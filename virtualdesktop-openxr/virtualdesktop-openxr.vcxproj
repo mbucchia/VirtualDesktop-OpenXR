@@ -659,6 +659,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClCompile Include="vulkan_interop.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Common.hlsli" />
     <None Include="framework\dispatch_generator.py" />
     <None Include="packages.config" />
     <None Include="virtualdesktop-openxr-32.json" />
