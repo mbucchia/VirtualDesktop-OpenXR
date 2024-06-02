@@ -537,7 +537,8 @@ namespace virtualdesktop_openxr {
             static constexpr float Threshold = 0.9f;
 
             // Pinch.
-            m_cachedInputState.IndexTrigger[side] = aimState.PinchStrengthIndex;
+            m_cachedInputState.IndexTrigger[side] =
+                std::max(m_cachedInputState.IndexTrigger[side], aimState.PinchStrengthIndex);
 
             if (otherJointsValid) {
                 // Y.
