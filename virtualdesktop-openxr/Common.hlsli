@@ -20,9 +20,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// A simple full screen quad.
+float4 UnpremultiplyAlpha(float4 color)
+{
+    if (color.a)
+    {
+        return float4(color.rgb / color.a, color.a);
+    }
+    else
+    {
+        return 0;
+    }
+}
 
-void main(in uint id : SV_VertexID, out float4 position : SV_POSITION, out float2 texcoord : TEXCOORD0) {
-    texcoord = float2((id == 1) ? 2.0 : 0.0, (id == 2) ? 2.0 : 0.0);
-    position = float4(texcoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
+float4 PremultiplyAlpha(float4 color)
+{
+    return float4(color.rgb * color.a, color.a);
+}
+
+float3 FromSRGB(float3 color)
+{
+    // From https://github.com/Microsoft/DirectX-Graphics-Samples/blob/master/MiniEngine/Core/Shaders/ColorSpaceUtility.hlsli
+    return color < 0.04045 ? color / 12.92 : -7.43605 * color - 31.24297 * sqrt(-0.53792 * color + 1.279924) + 35.34864;
+}
+
+float3 ToSRGB(float3 color)
+{
+    // From https://github.com/Microsoft/DirectX-Graphics-Samples/blob/master/MiniEngine/Core/Shaders/ColorSpaceUtility.hlsli
+    return color < 0.0031308 ? 12.92 * color : 1.13005 * sqrt(color - 0.00228) - 0.13448 * color + 0.005719;
 }

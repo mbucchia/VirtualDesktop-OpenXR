@@ -187,6 +187,9 @@
     <None Include="packages.config" />
     <None Include="virtualdesktop-openxr-32.json" />
     <None Include="virtualdesktop-openxr.def" />
+    <None Include="Common.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

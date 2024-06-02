@@ -1,11 +1,35 @@
+// MIT License
+//
+// Copyright(c) 2022-2024 Matthieu Bucchianeri
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this softwareand associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 // Clear or set the alpha channel and/or premultiply each component.
+
+#include "Common.hlsli"
 
 cbuffer config : register(b0)
 {
     uint2 offset;
     uint2 dimension;
     bool ignoreAlpha;
-    bool isUnpremultipliedAlpha;
+    bool isPremultipliedAlpha;
     bool isSRGB;
 };
 
@@ -23,25 +47,31 @@ void main(uint2 pos : SV_DispatchThreadID)
 
     float4 output = inoutTexture[surfacePos];
 
-    // Apply transforms requested by OpenXR.
+    // Apply transforms requested by OpenXR (part 1).
     if (ignoreAlpha)
     {
         output.a = 1;
     }
-    if (isUnpremultipliedAlpha)
+
+    if (!isPremultipliedAlpha)
     {
-        float3 c = output.rgb;
         if (isSRGB)
         {
-            // From https://github.com/Microsoft/DirectX-Graphics-Samples/blob/master/MiniEngine/Core/Shaders/ColorSpaceUtility.hlsli
-            c = c < 0.04045 ? c / 12.92 : -7.43605 * c - 31.24297 * sqrt(-0.53792 * c + 1.279924) + 35.34864;
+            output.rgb = FromSRGB(output.rgb);
         }
-        c *= output.a;
+
+        if (isPremultipliedAlpha)
+        {
+            output = UnpremultiplyAlpha(output);
+        }
+
+        // OVR always expects premultiplied alpha.
+        output = PremultiplyAlpha(output);
+
         if (isSRGB)
         {
-            c = c < 0.0031308 ? 12.92 * c : 1.13005 * sqrt(c - 0.00228) - 0.13448 * c + 0.005719;
+            output.rgb = ToSRGB(output.rgb);
         }
-        output.rgb = c;
     }
 
     inoutTexture[surfacePos] = output;
