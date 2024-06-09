@@ -29,17 +29,22 @@
 #include "version.h"
 #include "commit.h"
 
+#ifdef _WIN64
 namespace {
     wil::unique_handle g_fakeHmdConnectedEvent;
 } // namespace
+#endif
 
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::utils;
     using namespace virtualdesktop_openxr::log;
 
-    const std::string RuntimePrettyName =
-        fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{} ({})", RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch, RuntimeCommitHash);
+    const std::string RuntimePrettyName = fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{} ({})",
+                                                      RuntimeVersionMajor,
+                                                      RuntimeVersionMinor,
+                                                      RuntimeVersionPatch,
+                                                      RuntimeCommitHash);
 
     XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                           const XrBodyTrackingFidelityMETA fidelity);
@@ -263,12 +268,17 @@ namespace virtualdesktop_openxr {
                     LoadLibraryW(path.c_str());
                 }
             } else {
+#ifdef _WIN64
                 Log("Using VDXR ovr_Detect() injection path\n");
 
                 // We create a fake event to make ovr_Detect() succeed.
                 if (!g_fakeHmdConnectedEvent) {
                     *g_fakeHmdConnectedEvent.put() = CreateEventW(nullptr, true, true, nullptr);
                 }
+#else
+                // There is no OVRPlugin 32-bit as far as I know. So this should never happen.
+                Log("No ovr_Detect() injection available\n");
+#endif
             }
         }
 
@@ -592,6 +602,7 @@ namespace virtualdesktop_openxr {
 
 } // namespace virtualdesktop_openxr
 
+#ifdef _WIN64
 namespace {
 
     // This hook will cause the LibOVR loader's ovr_Detect() to succeed.
@@ -611,6 +622,7 @@ namespace {
     }
 
 } // namespace
+#endif
 
 extern "C" __declspec(dllexport) const char* WINAPI getVersionString() {
     return virtualdesktop_openxr::RuntimePrettyName.c_str();
@@ -621,13 +633,20 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
+#ifdef _WIN64
+        DetourRestoreAfterWith();
+#endif
         TraceLoggingRegister(virtualdesktop_openxr::log::g_traceProvider);
         virtualdesktop_openxr::utils::InitializeHighPrecisionTimer();
+#ifdef _WIN64
         DetourDllAttach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+#endif
         break;
 
     case DLL_PROCESS_DETACH:
+#ifdef _WIN64
         DetourDllDetach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+#endif
         TraceLoggingUnregister(virtualdesktop_openxr::log::g_traceProvider);
         break;
 
