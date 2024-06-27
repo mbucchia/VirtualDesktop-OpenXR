@@ -60,9 +60,17 @@ namespace virtualdesktop_openxr {
                           TLArg(!!m_hmdStatus.HmdMounted, "HmdMounted"),
                           TLArg(!!m_hmdStatus.IsVisible, "IsVisible"),
                           TLArg(!!m_hmdStatus.DisplayLost, "DisplayLost"),
+                          TLArg(!!m_hmdStatus.ShouldRecenter, "ShouldRecenter"),
                           TLArg(!!m_hmdStatus.ShouldQuit, "ShouldQuit"));
         if (!m_sessionLossPending) {
             m_sessionLossPending = !m_hmdStatus.HmdPresent || m_hmdStatus.DisplayLost || m_hmdStatus.ShouldQuit;
+        }
+        if (!m_shouldRecenter && m_hmdStatus.ShouldRecenter) {
+            // We will send 2 events, one for LOCAL and one for STAGE.
+            m_shouldRecenter = 2;
+            m_recenterTime = ovrTimeToXrTime(ovr_GetTimeInSeconds());
+
+            ovr_ClearShouldRecenterFlag(m_ovrSession);
         }
         updateSessionState();
 

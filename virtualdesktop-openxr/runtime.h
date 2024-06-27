@@ -683,6 +683,8 @@ namespace virtualdesktop_openxr {
         bool m_jiggleViewRotations{false};
         MyHandSimulation m_handSimulation[xr::Side::Count];
         PrecompositorState m_precompositor;
+        uint32_t m_shouldRecenter{false};
+        XrTime m_recenterTime{0};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;

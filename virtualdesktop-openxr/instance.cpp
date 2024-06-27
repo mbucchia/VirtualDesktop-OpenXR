@@ -408,6 +408,30 @@ namespace virtualdesktop_openxr {
             return XR_SUCCESS;
         }
 
+        if (m_shouldRecenter) {
+            XrEventDataReferenceSpaceChangePending* const buffer =
+                reinterpret_cast<XrEventDataReferenceSpaceChangePending*>(eventData);
+            buffer->type = XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING;
+            buffer->next = nullptr;
+            buffer->session = (XrSession)1;
+            buffer->referenceSpaceType =
+                m_shouldRecenter == 2 ? XR_REFERENCE_SPACE_TYPE_LOCAL : XR_REFERENCE_SPACE_TYPE_STAGE;
+            buffer->changeTime = m_recenterTime;
+            buffer->poseValid = XR_FALSE;
+            buffer->poseInPreviousSpace = xr::math::Pose::Identity();
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrPollEvent",
+                              TLArg("ReferenceSpaceChangePending", "Type"),
+                              TLXArg(buffer->session, "Session"),
+                              TLArg(xr::ToCString(buffer->referenceSpaceType), "ReferenceSpaceType"),
+                              TLArg(buffer->changeTime, "ChangeTime"));
+
+            m_shouldRecenter--;
+
+            return XR_SUCCESS;
+        }
+
         return XR_EVENT_UNAVAILABLE;
     }
 
