@@ -74,6 +74,15 @@ namespace virtualdesktop_openxr {
         }
         updateSessionState();
 
+        // Check for changes in display refresh rate.
+        const ovrHmdDesc hmdInfo = ovr_GetHmdDesc(m_ovrSession);
+        TraceLoggingWrite(g_traceProvider, "OVR_HmdDesc", TLArg(hmdInfo.DisplayRefreshRate, "DisplayRefreshRate"));
+        if (hmdInfo.DisplayRefreshRate != m_displayRefreshRate) {
+            m_displayRefreshRateChanged = m_displayRefreshRate;
+            m_displayRefreshRate = hmdInfo.DisplayRefreshRate;
+            m_idealFrameDuration = m_predictedFrameDuration = 1.0 / hmdInfo.DisplayRefreshRate;
+        }
+
         frameState->shouldRender =
             (!m_isHeadless && !m_sessionStopping && !m_sessionExiting && !m_sessionLossPending && m_hmdStatus.IsVisible)
                 ? XR_TRUE

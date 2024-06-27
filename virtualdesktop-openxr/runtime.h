@@ -582,6 +582,7 @@ namespace virtualdesktop_openxr {
         bool m_graphicsRequirementQueried{false};
         LUID m_adapterLuid{};
         float m_displayRefreshRate{0};
+        float m_displayRefreshRateChanged{0};
         double m_idealFrameDuration{0};
         double m_predictedFrameDuration{0};
         ovrHmdDesc m_cachedHmdInfo{};

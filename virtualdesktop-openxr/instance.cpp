@@ -432,6 +432,25 @@ namespace virtualdesktop_openxr {
             return XR_SUCCESS;
         }
 
+        if (has_XR_FB_display_refresh_rate && m_displayRefreshRateChanged != m_displayRefreshRate) {
+            XrEventDataDisplayRefreshRateChangedFB* const buffer =
+                reinterpret_cast<XrEventDataDisplayRefreshRateChangedFB*>(eventData);
+            buffer->type = XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB;
+            buffer->next = nullptr;
+            buffer->fromDisplayRefreshRate = m_displayRefreshRateChanged;
+            buffer->toDisplayRefreshRate = m_displayRefreshRate;
+
+            TraceLoggingWrite(g_traceProvider,
+                              "xrPollEvent",
+                              TLArg("DisplayRefreshRateChangedFB", "Type"),
+                              TLArg(buffer->fromDisplayRefreshRate, "fromDisplayRefreshRate"),
+                              TLArg(buffer->toDisplayRefreshRate, "toDisplayRefreshRate"));
+
+            m_displayRefreshRateChanged = m_displayRefreshRate;
+
+            return XR_SUCCESS;
+        }
+
         return XR_EVENT_UNAVAILABLE;
     }
 

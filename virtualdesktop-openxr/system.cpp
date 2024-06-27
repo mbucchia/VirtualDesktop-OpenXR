@@ -536,7 +536,7 @@ namespace virtualdesktop_openxr {
                               TLArg(m_emulateIndexControllers, "EmulateIndexControllers"));
 
             // Cache common information.
-            m_displayRefreshRate = hmdInfo.DisplayRefreshRate;
+            m_displayRefreshRate = m_displayRefreshRateChanged = hmdInfo.DisplayRefreshRate;
             m_idealFrameDuration = m_predictedFrameDuration = 1.0 / hmdInfo.DisplayRefreshRate;
             m_cachedEyeInfo[xr::StereoView::Left] =
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Left, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Left]);
