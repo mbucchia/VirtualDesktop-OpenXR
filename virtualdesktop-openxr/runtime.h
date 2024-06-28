@@ -616,6 +616,7 @@ namespace virtualdesktop_openxr {
         bool m_isOpenComposite{false};
         bool m_isLowVideoMemorySystem{false};
         ovrTextureSwapChain m_headlessSwapchain{nullptr};
+        bool m_allowStaticSwapchainsReuse{false};
         bool m_forceSlowpathSwapchains{false};
 
         // Session state.

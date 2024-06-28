@@ -524,7 +524,8 @@ namespace virtualdesktop_openxr {
         Swapchain& xrSwapchain = *(Swapchain*)swapchain;
 
         // Check that we can acquire an image.
-        if (xrSwapchain.frozen || xrSwapchain.acquiredIndices.size() == xrSwapchain.ovrSwapchainLength) {
+        if ((xrSwapchain.frozen && !m_allowStaticSwapchainsReuse) ||
+            xrSwapchain.acquiredIndices.size() == xrSwapchain.ovrSwapchainLength) {
             return XR_ERROR_CALL_ORDER_INVALID;
         }
 

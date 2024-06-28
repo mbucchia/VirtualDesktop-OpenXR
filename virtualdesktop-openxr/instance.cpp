@@ -293,6 +293,11 @@ namespace virtualdesktop_openxr {
             m_quirkedControllerPoses = true;
         }
 
+        // A bug in Ghosts of Tabor makes a static swapchain being acquired >1 time.
+        m_allowStaticSwapchainsReuse = startsWith(m_exeName, "GhostsOfTabor") ||
+                                       startsWith(m_applicationName, "GhostsOfTabor") ||
+                                       getSetting("quirk_allow_static_swapchains_reuse").value_or(false);
+
         m_forceSlowpathSwapchains = getSetting("quirk_force_slowpath_swapchains").value_or(false);
 
         // Do this late, since it might rely on extensions being registered.
