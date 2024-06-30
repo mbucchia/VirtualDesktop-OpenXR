@@ -224,7 +224,7 @@ namespace OffsetsTool
             this.palmPosX.Name = "palmPosX";
             this.palmPosX.Size = new System.Drawing.Size(104, 45);
             this.palmPosX.TabIndex = 1;
-            this.palmPosX.Tag = "palm_pose_offset_x";
+            this.palmPosX.Tag = "PalmPoseOffsetX";
             this.palmPosX.TickFrequency = 10;
             this.palmPosX.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -248,7 +248,7 @@ namespace OffsetsTool
             this.palmPosY.Name = "palmPosY";
             this.palmPosY.Size = new System.Drawing.Size(104, 45);
             this.palmPosY.TabIndex = 3;
-            this.palmPosY.Tag = "palm_pose_offset_y";
+            this.palmPosY.Tag = "PalmPoseOffsetY";
             this.palmPosY.TickFrequency = 10;
             this.palmPosY.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -273,7 +273,7 @@ namespace OffsetsTool
             this.palmPosZ.Name = "palmPosZ";
             this.palmPosZ.Size = new System.Drawing.Size(104, 45);
             this.palmPosZ.TabIndex = 5;
-            this.palmPosZ.Tag = "palm_pose_offset_z";
+            this.palmPosZ.Tag = "PalmPoseOffsetZ";
             this.palmPosZ.TickFrequency = 10;
             this.palmPosZ.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -305,7 +305,7 @@ namespace OffsetsTool
             this.palmRotX.Name = "palmRotX";
             this.palmRotX.Size = new System.Drawing.Size(104, 45);
             this.palmRotX.TabIndex = 8;
-            this.palmRotX.Tag = "palm_pose_rot_x";
+            this.palmRotX.Tag = "PalmPoseRotX";
             this.palmRotX.TickFrequency = 10;
             this.palmRotX.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -328,7 +328,7 @@ namespace OffsetsTool
             this.palmRotY.Name = "palmRotY";
             this.palmRotY.Size = new System.Drawing.Size(104, 45);
             this.palmRotY.TabIndex = 10;
-            this.palmRotY.Tag = "palm_pose_rot_y";
+            this.palmRotY.Tag = "PalmPoseRotY";
             this.palmRotY.TickFrequency = 10;
             this.palmRotY.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -352,7 +352,7 @@ namespace OffsetsTool
             this.palmRotZ.Name = "palmRotZ";
             this.palmRotZ.Size = new System.Drawing.Size(104, 45);
             this.palmRotZ.TabIndex = 12;
-            this.palmRotZ.Tag = "palm_pose_rot_z";
+            this.palmRotZ.Tag = "PalmPoseRotZ";
             this.palmRotZ.TickFrequency = 10;
             this.palmRotZ.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -418,7 +418,7 @@ namespace OffsetsTool
             this.gripPosX.Name = "gripPosX";
             this.gripPosX.Size = new System.Drawing.Size(104, 45);
             this.gripPosX.TabIndex = 1;
-            this.gripPosX.Tag = "grip_pose_offset_x";
+            this.gripPosX.Tag = "GripPoseOffsetX";
             this.gripPosX.TickFrequency = 10;
             this.gripPosX.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -442,7 +442,7 @@ namespace OffsetsTool
             this.gripPosY.Name = "gripPosY";
             this.gripPosY.Size = new System.Drawing.Size(104, 45);
             this.gripPosY.TabIndex = 3;
-            this.gripPosY.Tag = "grip_pose_offset_y";
+            this.gripPosY.Tag = "GripPoseOffsetY";
             this.gripPosY.TickFrequency = 10;
             this.gripPosY.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -467,7 +467,7 @@ namespace OffsetsTool
             this.gripPosZ.Name = "gripPosZ";
             this.gripPosZ.Size = new System.Drawing.Size(104, 45);
             this.gripPosZ.TabIndex = 5;
-            this.gripPosZ.Tag = "grip_pose_offset_z";
+            this.gripPosZ.Tag = "GripPoseOffsetZ";
             this.gripPosZ.TickFrequency = 10;
             this.gripPosZ.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -499,7 +499,7 @@ namespace OffsetsTool
             this.gripRotX.Name = "gripRotX";
             this.gripRotX.Size = new System.Drawing.Size(104, 45);
             this.gripRotX.TabIndex = 8;
-            this.gripRotX.Tag = "grip_pose_rot_x";
+            this.gripRotX.Tag = "GripPoseRotX";
             this.gripRotX.TickFrequency = 10;
             this.gripRotX.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -522,7 +522,7 @@ namespace OffsetsTool
             this.gripRotY.Name = "gripRotY";
             this.gripRotY.Size = new System.Drawing.Size(104, 45);
             this.gripRotY.TabIndex = 10;
-            this.gripRotY.Tag = "grip_pose_rot_y";
+            this.gripRotY.Tag = "GripPoseRotY";
             this.gripRotY.TickFrequency = 10;
             this.gripRotY.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -546,7 +546,7 @@ namespace OffsetsTool
             this.gripRotZ.Name = "gripRotZ";
             this.gripRotZ.Size = new System.Drawing.Size(104, 45);
             this.gripRotZ.TabIndex = 12;
-            this.gripRotZ.Tag = "grip_pose_rot_z";
+            this.gripRotZ.Tag = "GripPoseRotZ";
             this.gripRotZ.TickFrequency = 10;
             this.gripRotZ.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -612,7 +612,7 @@ namespace OffsetsTool
             this.aimPosX.Name = "aimPosX";
             this.aimPosX.Size = new System.Drawing.Size(104, 45);
             this.aimPosX.TabIndex = 1;
-            this.aimPosX.Tag = "aim_pose_offset_x";
+            this.aimPosX.Tag = "AimPoseOffsetX";
             this.aimPosX.TickFrequency = 10;
             this.aimPosX.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -636,7 +636,7 @@ namespace OffsetsTool
             this.aimPosY.Name = "aimPosY";
             this.aimPosY.Size = new System.Drawing.Size(104, 45);
             this.aimPosY.TabIndex = 3;
-            this.aimPosY.Tag = "aim_pose_offset_y";
+            this.aimPosY.Tag = "AimPoseOffsetY";
             this.aimPosY.TickFrequency = 10;
             this.aimPosY.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -661,7 +661,7 @@ namespace OffsetsTool
             this.aimPosZ.Name = "aimPosZ";
             this.aimPosZ.Size = new System.Drawing.Size(104, 45);
             this.aimPosZ.TabIndex = 5;
-            this.aimPosZ.Tag = "aim_pose_offset_z";
+            this.aimPosZ.Tag = "AimPoseOffsetZ";
             this.aimPosZ.TickFrequency = 10;
             this.aimPosZ.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -693,7 +693,7 @@ namespace OffsetsTool
             this.aimRotX.Name = "aimRotX";
             this.aimRotX.Size = new System.Drawing.Size(104, 45);
             this.aimRotX.TabIndex = 8;
-            this.aimRotX.Tag = "aim_pose_rot_x";
+            this.aimRotX.Tag = "AimPoseRotX";
             this.aimRotX.TickFrequency = 10;
             this.aimRotX.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -716,7 +716,7 @@ namespace OffsetsTool
             this.aimRotY.Name = "aimRotY";
             this.aimRotY.Size = new System.Drawing.Size(104, 45);
             this.aimRotY.TabIndex = 10;
-            this.aimRotY.Tag = "aim_pose_rot_y";
+            this.aimRotY.Tag = "AimPoseRotY";
             this.aimRotY.TickFrequency = 10;
             this.aimRotY.Scroll += new System.EventHandler(this.ScrollEvent);
             // 
@@ -740,7 +740,7 @@ namespace OffsetsTool
             this.aimRotZ.Name = "aimRotZ";
             this.aimRotZ.Size = new System.Drawing.Size(104, 45);
             this.aimRotZ.TabIndex = 12;
-            this.aimRotZ.Tag = "aim_pose_rot_z";
+            this.aimRotZ.Tag = "AimPoseRotZ";
             this.aimRotZ.TickFrequency = 10;
             this.aimRotZ.Scroll += new System.EventHandler(this.ScrollEvent);
             // 

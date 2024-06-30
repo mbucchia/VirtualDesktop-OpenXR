@@ -37,24 +37,24 @@ namespace OffsetsTool
             try
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
-                aimPosX.Value = (int)key.GetValue("aim_pose_offset_x", 0);
-                aimPosY.Value = (int)key.GetValue("aim_pose_offset_y", 0);
-                aimPosZ.Value = (int)key.GetValue("aim_pose_offset_z", 0);
-                aimRotX.Value = (int)key.GetValue("aim_pose_rot_x", 0);
-                aimRotY.Value = (int)key.GetValue("aim_pose_rot_y", 0);
-                aimRotZ.Value = (int)key.GetValue("aim_pose_rot_z", 0);
-                gripPosX.Value = (int)key.GetValue("grip_pose_offset_x", 0);
-                gripPosY.Value = (int)key.GetValue("grip_pose_offset_y", 0);
-                gripPosZ.Value = (int)key.GetValue("grip_pose_offset_z", 0);
-                gripRotX.Value = (int)key.GetValue("grip_pose_rot_x", 0);
-                gripRotY.Value = (int)key.GetValue("grip_pose_rot_y", 0);
-                gripRotZ.Value = (int)key.GetValue("grip_pose_rot_z", 0);
-                palmPosX.Value = (int)key.GetValue("palm_pose_offset_x", 0);
-                palmPosY.Value = (int)key.GetValue("palm_pose_offset_y", 0);
-                palmPosZ.Value = (int)key.GetValue("palm_pose_offset_z", 0);
-                palmRotX.Value = (int)key.GetValue("palm_pose_rot_x", 0);
-                palmRotY.Value = (int)key.GetValue("palm_pose_rot_y", 0);
-                palmRotZ.Value = (int)key.GetValue("palm_pose_rot_z", 0);
+                aimPosX.Value = (int)key.GetValue("AimPoseOffsetX", 0);
+                aimPosY.Value = (int)key.GetValue("AimPoseOffsetY", 0);
+                aimPosZ.Value = (int)key.GetValue("AimPoseOffsetZ", 0);
+                aimRotX.Value = (int)key.GetValue("AimPoseRotX", 0);
+                aimRotY.Value = (int)key.GetValue("AimPoseRotY", 0);
+                aimRotZ.Value = (int)key.GetValue("AimPoseRotZ", 0);
+                gripPosX.Value = (int)key.GetValue("GripPoseOffsetX", 0);
+                gripPosY.Value = (int)key.GetValue("GripPoseOffsetY", 0);
+                gripPosZ.Value = (int)key.GetValue("GripPoseOffsetZ", 0);
+                gripRotX.Value = (int)key.GetValue("GripPoseRotX", 0);
+                gripRotY.Value = (int)key.GetValue("GripPoseRotY", 0);
+                gripRotZ.Value = (int)key.GetValue("GripPoseRotZ", 0);
+                palmPosX.Value = (int)key.GetValue("PalmPoseOffsetX", 0);
+                palmPosY.Value = (int)key.GetValue("PalmPoseOffsetY", 0);
+                palmPosZ.Value = (int)key.GetValue("PalmPoseOffsetZ", 0);
+                palmRotX.Value = (int)key.GetValue("PalmPoseRotX", 0);
+                palmRotY.Value = (int)key.GetValue("PalmPoseRotY", 0);
+                palmRotZ.Value = (int)key.GetValue("PalmPoseRotZ", 0);
             }
             catch (Exception)
             {
@@ -128,12 +128,12 @@ namespace OffsetsTool
             try
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
-                key.DeleteValue("aim_pose_offset_x", false);
-                key.DeleteValue("aim_pose_offset_y", false);
-                key.DeleteValue("aim_pose_offset_z", false);
-                key.DeleteValue("aim_pose_rot_x", false);
-                key.DeleteValue("aim_pose_rot_y", false);
-                key.DeleteValue("aim_pose_rot_z", false);
+                key.DeleteValue("AimPoseOffsetX", false);
+                key.DeleteValue("AimPoseOffsetY", false);
+                key.DeleteValue("AimPoseOffsetZ", false);
+                key.DeleteValue("AimPoseRotX", false);
+                key.DeleteValue("AimPoseRotY", false);
+                key.DeleteValue("AimPoseRotZ", false);
             }
             catch (Exception)
             {
@@ -155,12 +155,12 @@ namespace OffsetsTool
             try
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
-                key.DeleteValue("grip_pose_offset_x", false);
-                key.DeleteValue("grip_pose_offset_y", false);
-                key.DeleteValue("grip_pose_offset_z", false);
-                key.DeleteValue("grip_pose_rot_x", false);
-                key.DeleteValue("grip_pose_rot_y", false);
-                key.DeleteValue("grip_pose_rot_z", false);
+                key.DeleteValue("GripPoseOffsetX", false);
+                key.DeleteValue("GripPoseOffsetY", false);
+                key.DeleteValue("GripPoseOffsetZ", false);
+                key.DeleteValue("GripPoseRotX", false);
+                key.DeleteValue("GripPoseRotY", false);
+                key.DeleteValue("GripPoseRotZ", false);
             }
             catch (Exception)
             {
@@ -182,12 +182,12 @@ namespace OffsetsTool
             try
             {
                 key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(RegPrefix);
-                key.DeleteValue("palm_pose_offset_x", false);
-                key.DeleteValue("palm_pose_offset_y", false);
-                key.DeleteValue("palm_pose_offset_z", false);
-                key.DeleteValue("palm_pose_rot_x", false);
-                key.DeleteValue("palm_pose_rot_y", false);
-                key.DeleteValue("palm_pose_rot_z", false);
+                key.DeleteValue("PalmPoseOffsetX", false);
+                key.DeleteValue("PalmPoseOffsetY", false);
+                key.DeleteValue("PalmPoseOffsetZ", false);
+                key.DeleteValue("PalmPoseRotX", false);
+                key.DeleteValue("PalmPoseRotY", false);
+                key.DeleteValue("PalmPoseRotZ", false);
             }
             catch (Exception)
             {

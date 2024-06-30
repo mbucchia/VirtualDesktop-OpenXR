@@ -334,7 +334,7 @@ namespace virtualdesktop_openxr {
         }
 
         m_useAsyncSubmission = !m_isHeadless && !m_useApplicationDeviceForSubmission &&
-                               !getSetting("quirk_disable_async_submission").value_or(false);
+                               !getSetting("DebugDisableAsyncSubmission").value_or(false);
         m_needStartAsyncSubmissionThread = m_useAsyncSubmission;
         // Creation of the submission threads is deferred to the first xrWaitFrame() to accomodate OpenComposite quirks.
 
@@ -468,45 +468,44 @@ namespace virtualdesktop_openxr {
 
     // Read dynamic settings from the registry.
     void OpenXrRuntime::refreshSettings() {
-        if (!m_quirkedControllerPoses || getSetting("quirk_disable_quirked_controller_poses").value_or(false)) {
+        m_refreshSettings.store(false);
+
+        if (!m_quirkedControllerPoses || getSetting("DebugDisableQuirkedControllerPoses").value_or(false)) {
             const auto oldControllerAimOffset = m_controllerAimOffset;
             m_controllerAimOffset = Pose::MakePose(
-                Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("aim_pose_rot_x").value_or(0.f)),
-                                                  OVR::DegreeToRad((float)getSetting("aim_pose_rot_y").value_or(0.f)),
-                                                  OVR::DegreeToRad((float)getSetting("aim_pose_rot_z").value_or(0.f))}),
-                XrVector3f{getSetting("aim_pose_offset_x").value_or(0.f) / 1000.f,
-                           getSetting("aim_pose_offset_y").value_or(0.f) / 1000.f,
-                           getSetting("aim_pose_offset_z").value_or(0.f) / 1000.f});
+                Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("AimPoseRotX").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("AimPoseRotY").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("AimPoseRotZ").value_or(0.f))}),
+                XrVector3f{getSetting("AimPoseOffsetX").value_or(0.f) / 1000.f,
+                           getSetting("AimPoseOffsetY").value_or(0.f) / 1000.f,
+                           getSetting("AimPoseOffsetZ").value_or(0.f) / 1000.f});
 
             const auto oldControllerGripOffset = m_controllerGripOffset;
-            m_controllerGripOffset =
-                Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                   {OVR::DegreeToRad((float)getSetting("grip_pose_rot_x").value_or(0.f)),
-                                    OVR::DegreeToRad((float)getSetting("grip_pose_rot_y").value_or(0.f)),
-                                    OVR::DegreeToRad((float)getSetting("grip_pose_rot_z").value_or(0.f))}),
-                               XrVector3f{getSetting("grip_pose_offset_x").value_or(0) / 1000.f,
-                                          getSetting("grip_pose_offset_y").value_or(0) / 1000.f,
-                                          getSetting("grip_pose_offset_z").value_or(0) / 1000.f});
+            m_controllerGripOffset = Pose::MakePose(
+                Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("GripPoseRotX").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("GripPoseRotY").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("GripPoseRotZ").value_or(0.f))}),
+                XrVector3f{getSetting("GripPoseOffsetX").value_or(0) / 1000.f,
+                           getSetting("GripPoseOffsetY").value_or(0) / 1000.f,
+                           getSetting("GripPoseOffsetZ").value_or(0) / 1000.f});
 
             const auto oldControllerPalmOffset = m_controllerPalmOffset;
-            m_controllerPalmOffset =
-                Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                   {OVR::DegreeToRad((float)getSetting("palm_pose_rot_x").value_or(0.f)),
-                                    OVR::DegreeToRad((float)getSetting("palm_pose_rot_y").value_or(0.f)),
-                                    OVR::DegreeToRad((float)getSetting("palm_pose_rot_z").value_or(0.f))}),
-                               XrVector3f{getSetting("palm_pose_offset_x").value_or(0) / 1000.f,
-                                          getSetting("palm_pose_offset_y").value_or(0) / 1000.f,
-                                          getSetting("palm_pose_offset_z").value_or(0) / 1000.f});
+            m_controllerPalmOffset = Pose::MakePose(
+                Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("PalmPoseRotX").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("PalmPoseRotY").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("PalmPoseRotZ").value_or(0.f))}),
+                XrVector3f{getSetting("PalmPoseOffsetX").value_or(0) / 1000.f,
+                           getSetting("PalmPoseOffsetY").value_or(0) / 1000.f,
+                           getSetting("PalmPoseOffsetZ").value_or(0) / 1000.f});
 
             const auto oldControllerHandOffset = m_controllerHandOffset;
-            m_controllerHandOffset =
-                Pose::MakePose(Quaternion::RotationRollPitchYaw(
-                                   {OVR::DegreeToRad((float)getSetting("hand_pose_rot_x").value_or(0.f)),
-                                    OVR::DegreeToRad((float)getSetting("hand_pose_rot_y").value_or(0.f)),
-                                    OVR::DegreeToRad((float)getSetting("hand_pose_rot_z").value_or(0.f))}),
-                               XrVector3f{getSetting("hand_pose_offset_x").value_or(0) / 1000.f,
-                                          getSetting("hand_pose_offset_y").value_or(0) / 1000.f,
-                                          getSetting("hand_pose_offset_z").value_or(0) / 1000.f});
+            m_controllerHandOffset = Pose::MakePose(
+                Quaternion::RotationRollPitchYaw({OVR::DegreeToRad((float)getSetting("HandPoseRotX").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("HandPoseRotY").value_or(0.f)),
+                                                  OVR::DegreeToRad((float)getSetting("HandPoseRotZ").value_or(0.f))}),
+                XrVector3f{getSetting("HandPoseOffsetX").value_or(0) / 1000.f,
+                           getSetting("HandPoseOffsetY").value_or(0) / 1000.f,
+                           getSetting("HandPoseOffsetZ").value_or(0) / 1000.f});
 
             // Force re-evaluating poses.
             if (!Pose::Equals(oldControllerAimOffset, m_controllerAimOffset) ||
@@ -518,10 +517,10 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        m_useMirrorWindow = getSetting("mirror_window").value_or(false);
+        m_useMirrorWindow = getSetting("UseMirrorWindow").value_or(false);
 
-        m_useRunningStart = !getSetting("quirk_disable_running_start").value_or(false);
-        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(false);
+        m_useRunningStart = !getSetting("DebugDisableRunningStart").value_or(false);
+        m_useDeferredFrameWait = getSetting("DeferFrameWait").value_or(false);
 
         const bool shouldUseDepth =
 #ifndef IGNORE_DEPTH_SUBMISSION
@@ -529,22 +528,22 @@ namespace virtualdesktop_openxr {
 #else
             false;
 #endif
-        m_shouldUseDepth = getSetting("quirk_use_depth").value_or(shouldUseDepth);
+        m_shouldUseDepth = getSetting("DebugUseDepth").value_or(shouldUseDepth);
 
-        m_syncGpuWorkInEndFrame = getSetting("quirk_sync_gpu_work_in_end_frame").value_or(false);
+        m_syncGpuWorkInEndFrame = getSetting("DebugSyncGpuWorkInEndFrame").value_or(false);
 
-        m_jiggleViewRotations = getSetting("jiggle_view_rotations").value_or(false);
+        m_jiggleViewRotations = getSetting("DebugJiggleViewRotations").value_or(false);
 
-        m_sharpenFactor = getSetting("sharpen").value_or(0) / 100.f;
+        m_sharpenFactor = getSetting("Sharpen").value_or(0) / 100.f;
 
-        m_overrideWorldScale = getSetting("world_scale").value_or(100) / 100.f;
+        m_overrideWorldScale = getSetting("OverrideWorldScale").value_or(100) / 100.f;
 
         // In cm
-        m_overrideFloorHeight = getSetting("floor_height").value_or(0) / 100.f;
+        m_overrideFloorHeight = getSetting("OverrideFloorHeight").value_or(0) / 100.f;
 
         {
             const auto oldVisibilityMaskScale = m_overrideVisibilityMaskScale;
-            m_overrideVisibilityMaskScale = getSetting("visibility_mask_scale").value_or(100) / 100.f;
+            m_overrideVisibilityMaskScale = getSetting("OverrideVisibilityMaskScale").value_or(100) / 100.f;
             if (oldVisibilityMaskScale != m_overrideVisibilityMaskScale) {
                 m_visibilityMaskDirty = xr::StereoView::Count;
             }
@@ -563,7 +562,7 @@ namespace virtualdesktop_openxr {
                           TLArg(m_overrideFloorHeight, "OverrideFloorHeight"),
                           TLArg(m_overrideVisibilityMaskScale, "OverrideVisibilityMaskScale"));
 
-        m_debugFocusViews = getSetting("debug_focus_view").value_or(false);
+        m_debugFocusViews = getSetting("DebugFocusView").value_or(false);
     }
 
 } // namespace virtualdesktop_openxr

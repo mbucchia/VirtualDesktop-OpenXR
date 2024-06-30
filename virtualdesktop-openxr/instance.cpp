@@ -54,11 +54,11 @@ namespace virtualdesktop_openxr {
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
         TraceLoggingWrite(g_traceProvider, "VirtualDesktopOpenXR", TLArg(runtimeVersion.c_str(), "Version"));
 
-        m_useApplicationDeviceForSubmission = getSetting("quirk_use_application_device_for_submission").value_or(false);
+        m_useApplicationDeviceForSubmission = getSetting("DebugUseApplicationDeviceForSubmission").value_or(false);
 
         // Latch the disabled trackers now.
         for (uint32_t i = 0; i < std::size(TrackerRoles); i++) {
-            m_isTrackerDisabled[i] = getSetting(TrackerRoles[i].role + "_tracker_disabled").value_or(false);
+            m_isTrackerDisabled[i] = getSetting("DisableTracker_" + TrackerRoles[i].role).value_or(false);
         }
 
         // Watch for changes in the registry.
@@ -69,8 +69,10 @@ namespace virtualdesktop_openxr {
                               0,
                               KEY_WOW64_64KEY | KEY_READ,
                               keyToWatch.put()) == ERROR_SUCCESS) {
-                m_registryWatcher = wil::make_registry_watcher(
-                    std::move(keyToWatch), true, [&](wil::RegistryChangeKind changeType) { refreshSettings(); });
+                m_registryWatcher =
+                    wil::make_registry_watcher(std::move(keyToWatch), true, [&](wil::RegistryChangeKind changeType) {
+                        m_refreshSettings.store(true);
+                    });
             }
         } catch (std::exception&) {
             // Ignore errors that can happen with UWP applications not able to write to the registry.
@@ -245,7 +247,7 @@ namespace virtualdesktop_openxr {
             const bool useOwnInjectionMethod =
 #ifndef STANDALONE_RUNTIME
                 startsWith(m_exeName, "GhostsOfTabor") || startsWith(m_applicationName, "GhostsOfTabor") ||
-                getSetting("quirk_force_own_injection").value_or(false);
+                getSetting("DebugForceOwnOvrInjection").value_or(false);
 #else
                 true;
 #endif
@@ -296,12 +298,12 @@ namespace virtualdesktop_openxr {
         // A bug in Ghosts of Tabor makes a static swapchain being acquired >1 time.
         m_allowStaticSwapchainsReuse = startsWith(m_exeName, "GhostsOfTabor") ||
                                        startsWith(m_applicationName, "GhostsOfTabor") ||
-                                       getSetting("quirk_allow_static_swapchains_reuse").value_or(false);
+                                       getSetting("DebugAllowStaticSwapchainsReuse").value_or(false);
 
-        m_forceSlowpathSwapchains = getSetting("quirk_force_slowpath_swapchains").value_or(false);
+        m_forceSlowpathSwapchains = getSetting("DebugForceSlowpathSwapchains").value_or(false);
 
-        m_supersamplingFactor = getSetting("supersampling").value_or(100) / 100.f;
-        m_upscalingMultiplier = getSetting("upscaling").value_or(100) / 100.f;
+        m_supersamplingFactor = getSetting("Supersampling").value_or(100) / 100.f;
+        m_upscalingMultiplier = getSetting("Upscaling").value_or(100) / 100.f;
 
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
@@ -621,7 +623,7 @@ namespace virtualdesktop_openxr {
             {XR_MND_HEADLESS_EXTENSION_NAME, XR_MND_headless_SPEC_VERSION});
 #endif
 
-        if (getSetting("enable_quad_views").value_or(false)) {
+        if (getSetting("AllowQuadViews").value_or(false)) {
             m_extensionsTable.push_back( // Quad views.
                 {XR_VARJO_QUAD_VIEWS_EXTENSION_NAME, XR_VARJO_quad_views_SPEC_VERSION});
             m_extensionsTable.push_back( // Foveated rendering with quad views.

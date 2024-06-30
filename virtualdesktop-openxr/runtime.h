@@ -830,6 +830,7 @@ namespace virtualdesktop_openxr {
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
         std::optional<float> m_lastSeenIpd{};
+        std::atomic<bool> m_refreshSettings;
 
         // Statistics.
         double m_sessionStartTime{0.0};

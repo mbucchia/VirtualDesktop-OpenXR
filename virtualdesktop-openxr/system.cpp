@@ -313,7 +313,7 @@ namespace virtualdesktop_openxr {
 #else
         m_useOculusRuntime = !IsServiceRunning(L"VirtualDesktop.Server.exe");
 #endif
-        if (m_useOculusRuntime && !getSetting("allow_oculus_runtime").value_or(true)) {
+        if (m_useOculusRuntime && !getSetting("AllowOculusRuntime").value_or(true)) {
             // Indicate that Virtual Desktop is required by the current configuration.
             OnceLog("Virtual Desktop Server is not running\n");
             return false;
@@ -521,7 +521,7 @@ namespace virtualdesktop_openxr {
             // We must latch the body tracking capabilities now, as they are not allowed to change later during the
             // lifetime of the system.
             m_eyeTrackingType = EyeTracking::None;
-            if (!getSetting("simulate_eye_tracking").value_or(false)) {
+            if (!getSetting("DebugSimulateEyeTracking").value_or(false)) {
                 if (m_bodyState && ovr_GetBool(m_ovrSession, "SupportsEyeTracking", false)) {
                     m_eyeTrackingType = EyeTracking::Mmf;
                 }
@@ -563,16 +563,16 @@ namespace virtualdesktop_openxr {
                 ovr_GetFovTextureSize(m_ovrSession, ovrEye_Left, m_cachedEyeInfo[xr::StereoView::Left].Fov, 1.f);
 
             // Read quad views settings.
-            m_focusPixelDensity = getSetting("focus_density").value_or(100) / 100.f;
-            m_peripheralPixelDensity = getSetting("peripheral_density").value_or(50) / 100.f;
-            m_horizontalFocusOffset = getSetting("qv_horizontal_focus_offset").value_or(0) / 100.f;
-            m_verticalFocusOffset = getSetting("qv_vertical_fixed_focus").value_or(0) / 100.f;
-            m_horizontalFovSection[0] = getSetting("qv_horizontal_focus_section_fixed").value_or(50) / 100.f;
-            m_verticalFovSection[0] = getSetting("qv_vertical_focus_section_fixed").value_or(50) / 100.f;
-            m_horizontalFovSection[1] = getSetting("qv_horizontal_focus_section").value_or(35) / 100.f;
-            m_verticalFovSection[1] = getSetting("qv_vertical_focus_section").value_or(35) / 100.f;
+            m_focusPixelDensity = getSetting("QVFocusViewDensity").value_or(100) / 100.f;
+            m_peripheralPixelDensity = getSetting("QVPeripheralViewDensity").value_or(50) / 100.f;
+            m_horizontalFocusOffset = getSetting("QVHorizontalFocusOffset").value_or(0) / 100.f;
+            m_verticalFocusOffset = getSetting("QVVerticalFocusOffset").value_or(0) / 100.f;
+            m_horizontalFovSection[0] = getSetting("QVHorizontalFocusSectionFixed").value_or(50) / 100.f;
+            m_verticalFovSection[0] = getSetting("QVVerticalFocusSectionFixed").value_or(50) / 100.f;
+            m_horizontalFovSection[1] = getSetting("QVHorizontalFocusSection").value_or(35) / 100.f;
+            m_verticalFovSection[1] = getSetting("QVVerticalFocusSection").value_or(35) / 100.f;
             m_preferFoveatedRendering =
-                m_supportsFaceTracking && getSetting("prefer_foveated_rendering").value_or(true);
+                m_supportsFaceTracking && getSetting("QVPreferFoveatedRendering").value_or(true);
             TraceLoggingWrite(g_traceProvider,
                               "QuadViews",
                               TLArg(m_focusPixelDensity, "FocusDensity"),
@@ -585,8 +585,8 @@ namespace virtualdesktop_openxr {
                               TLArg(m_verticalFovSection[1], "VerticalFovSection"),
                               TLArg(m_preferFoveatedRendering, "PreferFoveatedRendering"));
 
-            m_fovTangentX = getSetting("fov_tangent_x").value_or(100) / 100.f;
-            m_fovTangentY = getSetting("fov_tangent_y").value_or(100) / 100.f;
+            m_fovTangentX = getSetting("HorizontalFovTangent").value_or(100) / 100.f;
+            m_fovTangentY = getSetting("VerticalFovTangent").value_or(100) / 100.f;
             TraceLoggingWrite(
                 g_traceProvider, "FovTangents", TLArg(m_fovTangentX, "TangentX"), TLArg(m_fovTangentY, "TangentY"));
 
@@ -681,7 +681,7 @@ namespace virtualdesktop_openxr {
         TraceLoggingWriteStart(local, "BodyStateWatcherThread");
 
         SetThreadPriority(GetCurrentThread(),
-                          getSetting("body_state_watcher_priority").value_or(THREAD_PRIORITY_TIME_CRITICAL));
+                          getSetting("DebugBodyStateWatcherThreadPriority").value_or(THREAD_PRIORITY_TIME_CRITICAL));
 
         while (true) {
             // Wait for the next update.

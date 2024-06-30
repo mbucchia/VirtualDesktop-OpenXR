@@ -85,6 +85,10 @@ namespace virtualdesktop_openxr {
         }
         updateSessionState();
 
+        if (m_refreshSettings.load()) {
+            refreshSettings();
+        }
+
         // Check for changes in display refresh rate.
         const ovrHmdDesc hmdInfo = ovr_GetHmdDesc(m_ovrSession);
         TraceLoggingWrite(g_traceProvider, "OVR_HmdDesc", TLArg(hmdInfo.DisplayRefreshRate, "DisplayRefreshRate"));
@@ -1135,7 +1139,7 @@ namespace virtualdesktop_openxr {
         TraceLoggingWriteStart(local, "AsyncSubmissionThread");
 
         SetThreadPriority(GetCurrentThread(),
-                          getSetting("async_submission_priority").value_or(THREAD_PRIORITY_TIME_CRITICAL));
+                          getSetting("DebugSubmissionThreadPriority").value_or(THREAD_PRIORITY_TIME_CRITICAL));
 
         std::optional<long long> lastWaitedFrameId;
         while (true) {
