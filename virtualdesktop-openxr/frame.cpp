@@ -149,13 +149,6 @@ namespace virtualdesktop_openxr {
 
                 CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(
                     m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &m_headlessSwapchain));
-
-                if (!m_useOculusRuntime) {
-                    // This is a workaround needed to allow multiple EyeFov layers with different FOVs, and force
-                    // Virtual Desktop to use the FOV of the bottom layer as the carrier layer.
-                    // This must be done after the compositor is instanciated, which is at the latest right above.
-                    CHECK_MSG(ovr_SetBool(m_ovrSession, "UseBottomLayerFov", true), "");
-                }
             }
 
             if (m_needStartAsyncSubmissionThread) {
