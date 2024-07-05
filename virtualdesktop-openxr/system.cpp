@@ -571,6 +571,7 @@ namespace virtualdesktop_openxr {
             m_verticalFovSection[0] = getSetting("QVVerticalFocusSectionFixed").value_or(50) / 100.f;
             m_horizontalFovSection[1] = getSetting("QVHorizontalFocusSection").value_or(35) / 100.f;
             m_verticalFovSection[1] = getSetting("QVVerticalFocusSection").value_or(35) / 100.f;
+            m_focusFovScale = getSetting("QVFocusScale").value_or(100) / 100.f;
             m_preferFoveatedRendering =
                 m_supportsFaceTracking && getSetting("QVPreferFoveatedRendering").value_or(true);
             TraceLoggingWrite(g_traceProvider,
@@ -583,6 +584,7 @@ namespace virtualdesktop_openxr {
                               TLArg(m_verticalFovSection[0], "VerticalFovSectionFixed"),
                               TLArg(m_horizontalFovSection[1], "HorizontalFovSection"),
                               TLArg(m_verticalFovSection[1], "VerticalFovSection"),
+                              TLArg(m_focusFovScale, "FocusFovScale"),
                               TLArg(m_preferFoveatedRendering, "PreferFoveatedRendering"));
 
             m_fovTangentX = getSetting("HorizontalFovTangent").value_or(100) / 100.f;
@@ -623,10 +625,14 @@ namespace virtualdesktop_openxr {
 
                 {
                     // Populate the FOV for the focus view when no eye tracking is used.
-                    const XrVector2f min{std::clamp(m_projectedEyeGaze[eye].x - m_horizontalFovSection[0], -1.f, 1.f),
-                                         std::clamp(m_projectedEyeGaze[eye].y - m_verticalFovSection[0], -1.f, 1.f)};
-                    const XrVector2f max{std::clamp(m_projectedEyeGaze[eye].x + m_horizontalFovSection[0], -1.f, 1.f),
-                                         std::clamp(m_projectedEyeGaze[eye].y + m_verticalFovSection[0], -1.f, 1.f)};
+                    const XrVector2f min{
+                        std::clamp(
+                            m_projectedEyeGaze[eye].x - (m_horizontalFovSection[0] * m_focusFovScale), -1.f, 1.f),
+                        std::clamp(m_projectedEyeGaze[eye].y - (m_verticalFovSection[0] * m_focusFovScale), -1.f, 1.f)};
+                    const XrVector2f max{
+                        std::clamp(
+                            m_projectedEyeGaze[eye].x + (m_horizontalFovSection[0] * m_focusFovScale), -1.f, 1.f),
+                        std::clamp(m_projectedEyeGaze[eye].y + (m_verticalFovSection[0] * m_focusFovScale), -1.f, 1.f)};
                     m_cachedEyeFov[xr::StereoView::Count + eye] =
                         xr::math::ComputeBoundingFov(m_cachedEyeFov[eye], min, max);
                 }

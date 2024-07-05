@@ -534,7 +534,7 @@ namespace virtualdesktop_openxr {
 
         m_jiggleViewRotations = getSetting("DebugJiggleViewRotations").value_or(false);
 
-        m_sharpenFactor = getSetting("Sharpen").value_or(0) / 100.f;
+        m_sharpenFactor = getSetting("Sharpening").value_or(0) / 100.f;
 
         m_overrideWorldScale = getSetting("OverrideWorldScale").value_or(100) / 100.f;
 

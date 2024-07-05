@@ -400,12 +400,13 @@ namespace virtualdesktop_openxr {
                                                                              m_verticalFocusOffset};
                         const XrVector2f v = m_projectedEyeGaze[stereoViewIndex] - m_centerOfFov[stereoViewIndex];
                         const float horizontalFovSection =
-                            m_horizontalFovSection[1] *
+                            m_horizontalFovSection[1] * m_focusFovScale *
                             (1.f + (std::clamp(abs(v.x) - m_focusWideningDeadzone, 0.f, 1.f) *
                                     m_horizontalFocusWideningMultiplier));
                         const float verticalFovSection =
-                            m_verticalFovSection[1] * (1.f + (std::clamp(abs(v.y) - m_focusWideningDeadzone, 0.f, 1.f) *
-                                                              m_verticalFocusWideningMultiplier));
+                            m_verticalFovSection[1] * m_focusFovScale *
+                            (1.f + (std::clamp(abs(v.y) - m_focusWideningDeadzone, 0.f, 1.f) *
+                                    m_verticalFocusWideningMultiplier));
                         const XrVector2f min{
                             std::clamp(m_projectedEyeGaze[stereoViewIndex].x - horizontalFovSection, -1.f, 1.f),
                             std::clamp(m_projectedEyeGaze[stereoViewIndex].y - verticalFovSection, -1.f, 1.f)};

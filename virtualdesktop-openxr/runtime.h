@@ -654,6 +654,7 @@ namespace virtualdesktop_openxr {
         float m_verticalFocusOffset{0.f};
         float m_horizontalFovSection[2]{0.5f, 0.35f};
         float m_verticalFovSection[2]{0.5f, 0.35f};
+        float m_focusFovScale{1.f};
         float m_horizontalFocusWideningMultiplier{0.5f};
         float m_verticalFocusWideningMultiplier{0.2f};
         float m_focusWideningDeadzone{0.15f};

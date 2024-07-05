@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CustomSetup")]
+[assembly: AssemblyTitle("VDXR Advanced Settings")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("CustomSetup")]
-[assembly: AssemblyCopyright("Copyright ©  2023-2024")]
+[assembly: AssemblyProduct("VDXR")]
+[assembly: AssemblyCopyright("Copyright 2024 Matthieu Bucchianeri")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b6c07936-a1d2-4a80-b559-b55e3f15cc97")]
+[assembly: Guid("04fcc022-381f-4400-afdc-79a539ec67e4")]
 
 // Version information for an assembly consists of the following four values:
 //
