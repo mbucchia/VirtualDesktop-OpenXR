@@ -386,8 +386,8 @@ namespace virtualdesktop_openxr {
         XrSpaceVelocity baseSpaceToVirtualVelocity{};
         XrSpaceLocationFlags flags1, flags2, locationFlags;
         if (xrSpace.referenceType != xrBaseSpace.referenceType ||
-            (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_MAX_ENUM && xrSpace.action != xrBaseSpace.action &&
-             xrSpace.subActionPath != xrBaseSpace.subActionPath)) {
+            (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_MAX_ENUM &&
+             (xrSpace.action != xrBaseSpace.action || xrSpace.subActionPath != xrBaseSpace.subActionPath))) {
             flags1 = locateSpaceToOrigin(
                 xrSpace, time, spaceToVirtual, velocity ? &spaceToVirtualVelocity : nullptr, gazeSampleTime);
             flags2 = locateSpaceToOrigin(xrBaseSpace,
