@@ -75,8 +75,20 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_C0B2718E9C484C4292BC28A3CFF381FE"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_CFD2063A9588D4E85037FA0DACAF5F69"
         "OwnerKey" = "8:_92C992A2E5CE4F0D9497E766301ABF06"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_CFD2063A9588D4E85037FA0DACAF5F69"
+        "OwnerKey" = "8:_C0B2718E9C484C4292BC28A3CFF381FE"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -101,6 +113,12 @@
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_92C992A2E5CE4F0D9497E766301ABF06"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_C0B2718E9C484C4292BC28A3CFF381FE"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -765,6 +783,20 @@
         }
         "Shortcut"
         {
+            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_CABF938CAEF84B83B3764BACA3376F81"
+            {
+            "Name" = "8:VDXR Advanced Settings"
+            "Arguments" = "8:/standalone"
+            "Description" = "8:"
+            "ShowCmd" = "3:1"
+            "IconIndex" = "3:32512"
+            "Transitive" = "11:FALSE"
+            "Target" = "8:_C0B2718E9C484C4292BC28A3CFF381FE"
+            "Folder" = "8:_2CC9FDAF8B094F10B85AF798E82803E5"
+            "WorkingFolder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Icon" = "8:_C0B2718E9C484C4292BC28A3CFF381FE"
+            "Feature" = "8:"
+            }
         }
         "UserInterface"
         {
@@ -1318,6 +1350,34 @@
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:Built"
             "OutputProjectGuid" = "8:{B6C07936-A1D2-4A80-B559-B55E3F15CC97}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_C0B2718E9C484C4292BC28A3CFF381FE"
+            {
+            "SourcePath" = "8:..\\AdvancedSettings\\obj\\Release\\AdvancedSettings.exe"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_FAFEF1A1283E4B448EB32163831E71D2"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{04FCC022-381F-4400-AFDC-79A539EC67E4}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {

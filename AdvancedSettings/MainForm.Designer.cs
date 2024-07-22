@@ -50,6 +50,7 @@ namespace AdvancedSettings
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.label1 = new System.Windows.Forms.Label();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
@@ -146,7 +147,7 @@ namespace AdvancedSettings
             this.flowLayoutPanel1.Controls.Add(this.restoreDefaults);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(455, 663);
             this.flowLayoutPanel1.TabIndex = 0;
@@ -184,9 +185,9 @@ namespace AdvancedSettings
             this.groupBox1.Controls.Add(this.flowLayoutPanel2);
             this.flowLayoutPanel1.SetFlowBreak(this.groupBox1, true);
             this.groupBox1.Location = new System.Drawing.Point(2, 78);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox1.Size = new System.Drawing.Size(451, 146);
             this.groupBox1.TabIndex = 10;
             this.groupBox1.TabStop = false;
@@ -208,7 +209,7 @@ namespace AdvancedSettings
             this.flowLayoutPanel2.Controls.Add(this.label7);
             this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 15);
-            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(447, 129);
             this.flowLayoutPanel2.TabIndex = 0;
@@ -347,9 +348,9 @@ namespace AdvancedSettings
             this.groupBox2.Controls.Add(this.flowLayoutPanel3);
             this.flowLayoutPanel1.SetFlowBreak(this.groupBox2, true);
             this.groupBox2.Location = new System.Drawing.Point(2, 228);
-            this.groupBox2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox2.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox2.Size = new System.Drawing.Size(449, 101);
             this.groupBox2.TabIndex = 20;
             this.groupBox2.TabStop = false;
@@ -371,7 +372,7 @@ namespace AdvancedSettings
             this.flowLayoutPanel3.Controls.Add(this.label13);
             this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel3.Location = new System.Drawing.Point(2, 15);
-            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel3.Name = "flowLayoutPanel3";
             this.flowLayoutPanel3.Size = new System.Drawing.Size(445, 84);
             this.flowLayoutPanel3.TabIndex = 0;
@@ -512,9 +513,9 @@ namespace AdvancedSettings
             this.groupBox3.Controls.Add(this.flowLayoutPanel4);
             this.flowLayoutPanel1.SetFlowBreak(this.groupBox3, true);
             this.groupBox3.Location = new System.Drawing.Point(2, 333);
-            this.groupBox3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox3.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox3.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox3.Size = new System.Drawing.Size(449, 102);
             this.groupBox3.TabIndex = 30;
             this.groupBox3.TabStop = false;
@@ -535,7 +536,7 @@ namespace AdvancedSettings
             this.flowLayoutPanel4.Controls.Add(this.label23);
             this.flowLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel4.Location = new System.Drawing.Point(2, 15);
-            this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel4.Name = "flowLayoutPanel4";
             this.flowLayoutPanel4.Size = new System.Drawing.Size(445, 85);
             this.flowLayoutPanel4.TabIndex = 0;
@@ -664,9 +665,9 @@ namespace AdvancedSettings
             this.groupBox4.Controls.Add(this.flowLayoutPanel5);
             this.flowLayoutPanel1.SetFlowBreak(this.groupBox4, true);
             this.groupBox4.Location = new System.Drawing.Point(2, 439);
-            this.groupBox4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox4.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox4.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox4.Size = new System.Drawing.Size(449, 132);
             this.groupBox4.TabIndex = 40;
             this.groupBox4.TabStop = false;
@@ -686,7 +687,7 @@ namespace AdvancedSettings
             this.flowLayoutPanel5.Controls.Add(this.label22);
             this.flowLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel5.Location = new System.Drawing.Point(2, 15);
-            this.flowLayoutPanel5.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel5.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel5.Name = "flowLayoutPanel5";
             this.flowLayoutPanel5.Size = new System.Drawing.Size(445, 115);
             this.flowLayoutPanel5.TabIndex = 0;
@@ -807,9 +808,9 @@ namespace AdvancedSettings
             this.groupBox5.Controls.Add(this.flowLayoutPanel6);
             this.flowLayoutPanel1.SetFlowBreak(this.groupBox5, true);
             this.groupBox5.Location = new System.Drawing.Point(2, 575);
-            this.groupBox5.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox5.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox5.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox5.Size = new System.Drawing.Size(449, 45);
             this.groupBox5.TabIndex = 50;
             this.groupBox5.TabStop = false;
@@ -821,7 +822,7 @@ namespace AdvancedSettings
             this.flowLayoutPanel6.Controls.Add(this.label24);
             this.flowLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel6.Location = new System.Drawing.Point(2, 15);
-            this.flowLayoutPanel6.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel6.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel6.Name = "flowLayoutPanel6";
             this.flowLayoutPanel6.Size = new System.Drawing.Size(445, 28);
             this.flowLayoutPanel6.TabIndex = 0;
@@ -868,7 +869,8 @@ namespace AdvancedSettings
             this.ClientSize = new System.Drawing.Size(455, 663);
             this.Controls.Add(this.flowLayoutPanel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.Text = "Advanced Settings [EXPERIMENTAL]";

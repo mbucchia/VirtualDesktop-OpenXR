@@ -71,7 +71,7 @@ namespace AdvancedSettings
                 playerHeight_Scroll(playerHeight, null);
                 quadviewsEnable_CheckedChanged(quadviewsEnable, null);
             }
-            catch (Exception exc)
+            catch (Exception)
             {
                 MessageBox.Show(this, "Failed to write to registry. Please make sure the app is running elevated.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
