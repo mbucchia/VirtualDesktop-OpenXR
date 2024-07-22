@@ -209,7 +209,7 @@ namespace virtualdesktop_openxr {
                     if (i < xr::StereoView::Count) {
                         pixelDensity = m_peripheralPixelDensity;
                     } else {
-                        pixelDensity = m_focusPixelDensity;
+                        pixelDensity = m_supersamplingFactor;
                         if (foveatedRenderingActive) {
                             viewFovIndex = i + 2;
                         }
@@ -255,7 +255,7 @@ namespace virtualdesktop_openxr {
                     Log("Recommended focus resolution: %ux%u (%.3fx density)\n",
                         views[xr::QuadView::FocusLeft].recommendedImageRectWidth,
                         views[xr::QuadView::FocusLeft].recommendedImageRectHeight,
-                        m_focusPixelDensity);
+                        m_supersamplingFactor);
                 } else {
                     Log("Recommended resolution: %ux%u (%.3f supersampling, %.3f upscaling, %.3f/%.3f tangents)\n",
                         views[xr::StereoView::Left].recommendedImageRectWidth,

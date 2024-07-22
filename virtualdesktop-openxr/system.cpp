@@ -563,7 +563,6 @@ namespace virtualdesktop_openxr {
                 ovr_GetFovTextureSize(m_ovrSession, ovrEye_Left, m_cachedEyeInfo[xr::StereoView::Left].Fov, 1.f);
 
             // Read quad views settings.
-            m_focusPixelDensity = getSetting("QVFocusViewDensity").value_or(100) / 100.f;
             m_peripheralPixelDensity = getSetting("QVPeripheralViewDensity").value_or(50) / 100.f;
             m_horizontalFocusOffset = getSetting("QVHorizontalFocusOffset").value_or(0) / 100.f;
             m_verticalFocusOffset = getSetting("QVVerticalFocusOffset").value_or(0) / 100.f;
@@ -576,7 +575,6 @@ namespace virtualdesktop_openxr {
                 m_supportsFaceTracking && getSetting("QVPreferFoveatedRendering").value_or(true);
             TraceLoggingWrite(g_traceProvider,
                               "QuadViews",
-                              TLArg(m_focusPixelDensity, "FocusDensity"),
                               TLArg(m_peripheralPixelDensity, "PeripheralDensity"),
                               TLArg(m_horizontalFocusOffset, "HorizontalFocusOffset"),
                               TLArg(m_verticalFocusOffset, "VerticalFocusOffset"),

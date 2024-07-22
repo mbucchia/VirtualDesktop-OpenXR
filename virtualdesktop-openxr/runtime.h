@@ -648,7 +648,6 @@ namespace virtualdesktop_openxr {
         ovrTextureSwapChain m_headlessSwapchain{nullptr};
         bool m_allowStaticSwapchainsReuse{false};
         bool m_forceSlowpathSwapchains{false};
-        float m_focusPixelDensity{1.f};
         float m_peripheralPixelDensity{0.5f};
         float m_horizontalFocusOffset{0.f};
         float m_verticalFocusOffset{0.f};
