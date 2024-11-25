@@ -10,7 +10,9 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 
 ## Contributors
 
+- Matthieu Bucchianeri
 - Mathias Peter Nordskog | Roughy
+- Guy Godin | Virtual Desktop
 
 ## Donate
 
