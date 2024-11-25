@@ -77,14 +77,14 @@ jobs:
     #    installer/signtool.exe sign /d "VirtualDesktop-OpenXR" /du "https://github.com/mbucchia/VirtualDesktop-OpenXR" /f installer/$pfxName.pfx /p "$env:PFX_PASSWORD" /v installer/output/VirtualDesktopXR.msi
 
     - name: Publish
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Setup
         path: |
           installer/output/VirtualDesktopXR.msi
 
     - name: Publish
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Bundle
         path: |
@@ -98,7 +98,7 @@ jobs:
           bin/x64/ReleaseBundle/THIRD_PARTY
 
     - name: Publish Symbols
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Symbols
         path: |
