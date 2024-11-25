@@ -155,7 +155,7 @@ namespace virtualdesktop_openxr {
 
         for (uint32_t i = 0; i < count; i++) {
             // Screen to NDC.
-            XrVector2f ndc{(vertices[i].x - 0.5f) * 2.f, (vertices[i].y - 0.5f) * 2.f};
+            XrVector2f ndc{(vertices[i].x - 0.5f) * 2.f, -((vertices[i].y - 0.5f) * 2.f)};
 
             // Project the vertex.
             XMStoreFloat2(reinterpret_cast<XMFLOAT2*>(&vertices[i]),
