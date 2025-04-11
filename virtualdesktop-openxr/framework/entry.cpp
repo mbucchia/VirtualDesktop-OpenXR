@@ -57,6 +57,9 @@ XrVersion __declspec(dllexport) XRAPI_CALL getVersion() {
 // Entry point for the loader.
 XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo* loaderInfo,
                                                                             XrNegotiateRuntimeRequest* runtimeRequest) {
+    TraceLocalActivity(local);
+    TraceLoggingWriteStart(local, "xrNegotiateLoaderRuntimeInterface");
+
     // Retrieve the path of the DLL.
     if (dllHome.empty()) {
         HMODULE module;
@@ -74,9 +77,17 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
 
 #ifndef STANDALONE_RUNTIME
     // This is the location for other Virtual Desktop logs.
-    programData = std::filesystem::path(getenv("PROGRAMDATA")) / L"Virtual Desktop";
+    {
+        WCHAR* path = nullptr;
+        SHGetKnownFolderPath(FOLDERID_ProgramData, 0, nullptr, &path);
+        programData = std::filesystem::path(path ? path : L"") / L"Virtual Desktop";
+    }
 #else
-    programData = std::filesystem::path(getenv("LOCALAPPDATA")) / LOG_FOLDER;
+    {
+        WCHAR* path = nullptr;
+        SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path);
+        programData = std::filesystem::path(path ? path : L"") / LOG_FOLDER;
+    }
 #endif
     CreateDirectoryW(programData.wstring().c_str(), nullptr);
 
@@ -130,6 +141,8 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
     runtimeRequest->getInstanceProcAddr = xrGetInstanceProcAddr;
     runtimeRequest->runtimeInterfaceVersion = XR_CURRENT_LOADER_API_LAYER_VERSION;
     runtimeRequest->runtimeApiVersion = XR_CURRENT_API_VERSION;
+
+    TraceLoggingWriteStop(local, "xrNegotiateLoaderRuntimeInterface");
 
     return XR_SUCCESS;
 }

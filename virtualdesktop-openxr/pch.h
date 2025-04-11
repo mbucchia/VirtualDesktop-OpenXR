@@ -64,6 +64,7 @@ using namespace std::chrono_literals;
 #include <traceloggingactivity.h>
 #include <traceloggingprovider.h>
 #include <TlHelp32.h>
+#include <shlobj_core.h>
 
 using Microsoft::WRL::ComPtr;
 
