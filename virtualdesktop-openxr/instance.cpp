@@ -40,11 +40,17 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::utils;
     using namespace virtualdesktop_openxr::log;
 
-    const std::string RuntimePrettyName = fmt::format(RUNTIME_PRETTY_NAME " - v{}.{}.{} ({})",
-                                                      RuntimeVersionMajor,
-                                                      RuntimeVersionMinor,
-                                                      RuntimeVersionPatch,
-                                                      RuntimeCommitHash);
+    const std::string RuntimePrettyName = fmt::format(
+#ifndef STANDALONE_RUNTIME
+        "VirtualDesktopOpenXR"
+#else
+        RUNTIME_PRETTY_NAME
+#endif
+        " - v{}.{}.{} ({})",
+        RuntimeVersionMajor,
+        RuntimeVersionMinor,
+        RuntimeVersionPatch,
+        RuntimeCommitHash);
 
     XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                           const XrBodyTrackingFidelityMETA fidelity);
