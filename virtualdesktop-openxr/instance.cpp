@@ -193,10 +193,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
-        if (XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != XR_VERSION_1_0) {
-            return XR_ERROR_API_VERSION_UNSUPPORTED;
-        }
-
         {
             char path[_MAX_PATH];
             GetModuleFileNameA(nullptr, path, sizeof(path));
@@ -209,6 +205,15 @@ namespace virtualdesktop_openxr {
             m_applicationName.c_str(),
             m_exeName.c_str(),
             createInfo->applicationInfo.engineName);
+
+        Log("Application request API version %d.%d.%d\n",
+            XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion),
+            XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion),
+            XR_VERSION_PATCH(createInfo->applicationInfo.apiVersion));
+        if (XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != 1 ||
+            XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion) != 0) {
+            return XR_ERROR_API_VERSION_UNSUPPORTED;
+        }
 
         for (uint32_t i = 0; i < createInfo->enabledApiLayerCount; i++) {
             TraceLoggingWrite(
