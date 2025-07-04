@@ -517,6 +517,13 @@ namespace virtualdesktop_openxr {
     }
 
     void OpenXrRuntime::initializeExtensionsTable() {
+        {
+            char path[_MAX_PATH];
+            GetModuleFileNameA(nullptr, path, sizeof(path));
+            std::filesystem::path fullPath(path);
+            m_exeName = fullPath.filename().string();
+        }
+
         m_extensionsTable.push_back( // Direct3D 11 support.
             {XR_KHR_D3D11_ENABLE_EXTENSION_NAME, XR_KHR_D3D11_enable_SPEC_VERSION});
         m_extensionsTable.push_back( // Direct3D 12 support.
@@ -572,8 +579,12 @@ namespace virtualdesktop_openxr {
 #endif
 
 #ifdef HAS_EYE_TRACKING
-        m_extensionsTable.push_back( // Eye tracking.
-            {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
+        // Bonelab from Rift store has had this bug forever, where for some reason the gaze extension interferes with
+        // controller tracking.
+        if (m_exeName != "BONELAB_Oculus_Windows64.exe") {
+            m_extensionsTable.push_back( // Eye tracking.
+                {XR_EXT_EYE_GAZE_INTERACTION_EXTENSION_NAME, XR_EXT_eye_gaze_interaction_SPEC_VERSION});
+        }
 #endif
 
 #ifdef HAS_FACIAL_EYE_TRACKING
