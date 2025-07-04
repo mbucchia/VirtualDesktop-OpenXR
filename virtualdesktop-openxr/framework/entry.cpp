@@ -81,12 +81,14 @@ XrResult __declspec(dllexport) XRAPI_CALL xrNegotiateLoaderRuntimeInterface(cons
         WCHAR* path = nullptr;
         SHGetKnownFolderPath(FOLDERID_ProgramData, 0, nullptr, &path);
         programData = std::filesystem::path(path ? path : L"") / L"Virtual Desktop";
+        CoTaskMemFree(path);
     }
 #else
     {
         WCHAR* path = nullptr;
         SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path);
         programData = std::filesystem::path(path ? path : L"") / LOG_FOLDER;
+        CoTaskMemFree(path);
     }
 #endif
     CreateDirectoryW(programData.wstring().c_str(), nullptr);
