@@ -131,7 +131,7 @@ namespace virtualdesktop_openxr {
         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
             // Prepare swapchain input.
             auto& slice = swapchains[eye]->resolvedSlices[subImages[eye]->imageArrayIndex];
-            if (slice.srvs.size() <= slice.lastCommittedIndex) {
+            if ((int)slice.srvs.size() <= slice.lastCommittedIndex) {
                 slice.srvs.resize(slice.lastCommittedIndex + 1);
             }
             if (!slice.srvs[slice.lastCommittedIndex]) {

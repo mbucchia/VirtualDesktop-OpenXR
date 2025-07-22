@@ -460,7 +460,7 @@ namespace virtualdesktop_openxr {
 
             TraceLoggingWrite(g_traceProvider,
                               "VisibilityMaskChanged",
-                              TLPArg(buffer->session, "Session"),
+                              TLXArg(buffer->session, "Session"),
                               TLArg(xr::ToCString(buffer->viewConfigurationType), "ViewConfigurationType"),
                               TLArg(buffer->viewIndex, "ViewIndex"));
 

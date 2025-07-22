@@ -605,7 +605,7 @@ namespace virtualdesktop_openxr {
                                                                        m_d3d11ContextState.ReleaseAndGetAddressOf());
                     }
 
-                    if (xrSwapchain.appSwapchain.srvs.size() <= lastReleasedIndex) {
+                    if ((int)xrSwapchain.appSwapchain.srvs.size() <= lastReleasedIndex) {
                         xrSwapchain.appSwapchain.srvs.resize(lastReleasedIndex + 1);
                     }
                     if (!xrSwapchain.appSwapchain.srvs[lastReleasedIndex]) {
@@ -622,7 +622,7 @@ namespace virtualdesktop_openxr {
                             fmt::format(
                                 "Runtime Slice SRV[{}, {}, {}]", slice, lastReleasedIndex, (void*)&xrSwapchain));
                     }
-                    if (xrSwapchain.resolvedSlices[slice].dsvs.size() <= ovrDestIndex) {
+                    if ((int)xrSwapchain.resolvedSlices[slice].dsvs.size() <= ovrDestIndex) {
                         xrSwapchain.resolvedSlices[slice].dsvs.resize(ovrDestIndex + 1);
                     }
                     if (!xrSwapchain.resolvedSlices[slice].dsvs[ovrDestIndex]) {

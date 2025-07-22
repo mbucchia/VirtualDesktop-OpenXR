@@ -1032,7 +1032,7 @@ namespace virtualdesktop_openxr {
                 m_ovrSubmissionContext->CSSetConstantBuffers(0, 1, m_alphaCorrectConstants.GetAddressOf());
             }
 
-            if (xrSwapchain.resolvedSlices[slice].uavs.size() <= ovrDestIndex) {
+            if ((int)xrSwapchain.resolvedSlices[slice].uavs.size() <= ovrDestIndex) {
                 xrSwapchain.resolvedSlices[slice].uavs.resize(ovrDestIndex + 1);
             }
             if (!xrSwapchain.resolvedSlices[slice].uavs[ovrDestIndex]) {
