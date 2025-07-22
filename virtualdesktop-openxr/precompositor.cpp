@@ -269,7 +269,7 @@ namespace virtualdesktop_openxr {
         setDebugName(m_sharpenShader.Get(), "Sharpen CS");
         CHECK_HRCMD(m_ovrSubmissionDevice->CreateComputeShader(
             g_UpscalingCS, sizeof(g_UpscalingCS), nullptr, m_upscaleShader.ReleaseAndGetAddressOf()));
-        setDebugName(m_sharpenShader.Get(), "Sharpen CS");
+        setDebugName(m_sharpenShader.Get(), "Upscale CS");
         {
             D3D11_BUFFER_DESC desc{};
             desc.ByteWidth = (UINT)((std::max(sizeof(SharpenCSConstants), sizeof(UpscaleCSConstants)) + 15) / 16) * 16;

@@ -607,7 +607,6 @@ namespace virtualdesktop_openxr {
         double m_predictedFrameDuration{0};
         ovrHmdDesc m_cachedHmdInfo{};
         ovrEyeRenderDesc m_cachedEyeInfo[xr::StereoView::Count]{};
-        ovrSizei m_cachedProjectionResolution{};
         mutable std::optional<float> m_lastKnownFloorHeight;
         LARGE_INTEGER m_qpcFrequency{};
         double m_ovrTimeFromQpcTimeOffset{0};

@@ -542,8 +542,6 @@ namespace virtualdesktop_openxr {
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Left, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Left]);
             m_cachedEyeInfo[xr::StereoView::Right] =
                 ovr_GetRenderDesc(m_ovrSession, ovrEye_Right, m_cachedHmdInfo.DefaultEyeFov[ovrEye_Right]);
-            m_cachedProjectionResolution =
-                ovr_GetFovTextureSize(m_ovrSession, ovrEye_Left, m_cachedEyeInfo[xr::StereoView::Left].Fov, 1.f);
 
             for (uint32_t i = 0; i < xr::StereoView::Count; i++) {
                 m_cachedEyeFov[i].angleDown = -atan(m_cachedEyeInfo[i].Fov.DownTan);
@@ -558,6 +556,14 @@ namespace virtualdesktop_openxr {
                                   TLArg(xr::ToString(m_cachedEyeFov[i]).c_str(), "Fov"));
             }
         }
+
+        m_supersamplingFactor = ovr_GetFloat(m_ovrSession, "RenderResolution", 1.f);
+        m_upscalingMultiplier = getSetting("upscaling").value_or(100) / 100.f;
+
+        TraceLoggingWrite(g_traceProvider,
+                          "VDXR_Config",
+                          TLArg(m_supersamplingFactor, "SupersamplingFactor"),
+                          TLArg(m_upscalingMultiplier, "UpscalingMultiplier"));
 
         // Setup common parameters.
         // Virtual Desktop has a mode called "Stage Tracking" which requires us to use floor as the origin. For Oculus,
