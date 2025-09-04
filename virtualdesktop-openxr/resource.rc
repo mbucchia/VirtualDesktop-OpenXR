@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,7,0
- PRODUCTVERSION 1,0,7,0
+ FILEVERSION 1,0,8,0
+ PRODUCTVERSION 1,0,8,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -67,12 +67,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileVersion", "1.0.7.0"
+            VALUE "FileVersion", "1.0.8.0"
             VALUE "InternalName", "virtualdesktop-openxr.dll"
             VALUE "LegalCopyright", "Copyright (c) 2023-2024 Matthieu Bucchianeri"
             VALUE "OriginalFilename", "virtualdesktop-openxr.dll"
             VALUE "ProductName", "VirtualDesktopXR"
-            VALUE "ProductVersion", "1.0.7.0"
+            VALUE "ProductVersion", "1.0.8.0"
         END
     END
     BLOCK "VarFileInfo"

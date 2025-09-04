@@ -287,6 +287,9 @@ namespace virtualdesktop_openxr {
         XrResult xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) override;
         XrResult xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                    const XrBodyTrackingFidelityMETA fidelity);
+        XrResult xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker,
+                                                              const XrBodyTrackingCalibrationInfoMETA calibrationInfo);
+        XrResult xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker);
         XrResult xrEnumerateViveTrackerPathsHTCX(XrInstance instance,
                                                  uint32_t pathCapacityInput,
                                                  uint32_t* pathCountOutput,
