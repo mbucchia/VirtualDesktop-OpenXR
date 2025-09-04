@@ -55,6 +55,11 @@ namespace virtualdesktop_openxr {
     XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
                                                           const XrBodyTrackingFidelityMETA fidelity);
 
+    XrResult XRAPI_CALL xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker,
+                                                                     const XrBodyTrackingCalibrationInfoMETA calibrationInfo);
+    
+    XrResult XRAPI_CALL xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker);
+
     OpenXrRuntime::OpenXrRuntime() {
         const auto runtimeVersion =
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
@@ -124,11 +129,17 @@ namespace virtualdesktop_openxr {
 
         XrResult result = XR_ERROR_FUNCTION_UNSUPPORTED;
 
-        // XR_META_body_tracking_fidelity is not in the SDK yet and requires special handling.
+        // XR_META_body_tracking_fidelity and XR_META_body_tracking_calibration is not in the SDK yet and requires special handling.
         const std::string_view apiName(name);
         if (has_XR_META_body_tracking_fidelity && apiName == "xrRequestBodyTrackingFidelityMETA") {
             *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrRequestBodyTrackingFidelityMETA);
             result = XR_SUCCESS;
+        } else if (has_XR_META_body_tracking_calibration && apiName == "xrSuggestBodyTrackingCalibrationOverrideMETA") {
+            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrSuggestBodyTrackingCalibrationOverrideMETA);
+            result = XR_SUCCESS;            
+        } else if (has_XR_META_body_tracking_calibration && apiName == "xrResetBodyTrackingCalibrationMETA") {
+            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrResetBodyTrackingCalibrationMETA);
+            result = XR_SUCCESS;            
         } else {
             result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
         }
@@ -625,7 +636,9 @@ namespace virtualdesktop_openxr {
             {XR_META_BODY_TRACKING_FULL_BODY_EXTENSION_NAME, XR_META_body_tracking_full_body_SPEC_VERSION});
         m_extensionsTable.push_back( // Face, body & social eye tracking.
             {XR_META_BODY_TRACKING_FIDELITY_EXTENSION_NAME, XR_META_body_tracking_fidelity_SPEC_VERSION});
-
+        m_extensionsTable.push_back( // Face, body & social eye tracking.
+            {XR_META_BODY_TRACKING_CALIBRATION_EXTENSION_NAME, XR_META_body_tracking_calibration_SPEC_VERSION});
+        
         m_extensionsTable.push_back( // Vive Tracker emulation.
             {XR_HTCX_VIVE_TRACKER_INTERACTION_EXTENSION_NAME, XR_HTCX_vive_tracker_interaction_SPEC_VERSION});
 #endif
@@ -677,6 +690,51 @@ namespace virtualdesktop_openxr {
         return result;
     }
 
+    XrResult XRAPI_CALL xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker,
+                                                          const XrBodyTrackingCalibrationInfoMETA calibrationInfo) {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "xrSuggestBodyTrackingCalibrationOverrideMETA");
+
+        XrResult result;
+        try {
+            result =
+                dynamic_cast<OpenXrRuntime*>(GetInstance())->xrSuggestBodyTrackingCalibrationOverrideMETA(bodyTracker, calibrationInfo);
+        } catch (std::exception& exc) {
+            TraceLoggingWriteTagged(local, "xrSuggestBodyTrackingCalibrationOverrideMETA_Error", TLArg(exc.what(), "Error"));
+            ErrorLog("xrSuggestBodyTrackingCalibrationOverrideMETA: %s\n", exc.what());
+            result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWriteStop(local, "xrSuggestBodyTrackingCalibrationOverrideMETA", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrSuggestBodyTrackingCalibrationOverrideMETA failed with %s\n", xr::ToCString(result));
+        }
+
+        return result;
+    }
+
+    XrResult XRAPI_CALL xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker) {
+        TraceLocalActivity(local);
+        TraceLoggingWriteStart(local, "xrResetBodyTrackingCalibrationMETA");
+
+        XrResult result;
+        try {
+            result =
+                dynamic_cast<OpenXrRuntime*>(GetInstance())->xrResetBodyTrackingCalibrationMETA(bodyTracker);
+        } catch (std::exception& exc) {
+            TraceLoggingWriteTagged(local, "xrResetBodyTrackingCalibrationMETA_Error", TLArg(exc.what(), "Error"));
+            ErrorLog("xrResetBodyTrackingCalibrationMETA: %s\n", exc.what());
+            result = XR_ERROR_RUNTIME_FAILURE;
+        }
+
+        TraceLoggingWriteStop(local, "xrResetBodyTrackingCalibrationMETA", TLArg(xr::ToCString(result), "Result"));
+        if (XR_FAILED(result)) {
+            ErrorLog("xrResetBodyTrackingCalibrationMETA failed with %s\n", xr::ToCString(result));
+        }
+
+        return result;
+    }
+    
     // Singleton class instance.
     std::unique_ptr<OpenXrRuntime> g_instance = nullptr;
 

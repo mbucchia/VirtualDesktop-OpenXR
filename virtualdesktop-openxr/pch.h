@@ -100,6 +100,7 @@ using Microsoft::WRL::ComPtr;
 // Oculus extra headers.
 #include "meta_body_tracking_full_body.h"
 #include "meta_body_tracking_fidelity.h"
+#include "meta_body_tracking_calibration.h"
 
 // OpenXR loader interfaces.
 #include <openxr/openxr_loader_negotiation.h>

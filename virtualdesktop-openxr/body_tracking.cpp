@@ -35,6 +35,9 @@
 // Implement emulation for XR_HTCX_vive_tracker_interaction using the body tracking data.
 // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_HTCX_vive_tracker_interaction
 
+// Implement Stub for XR_META_body_tracking_calibration to resolve MetaXR SDK crash
+// https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#XR_META_body_tracking_calibration
+
 namespace virtualdesktop_openxr {
 
     using namespace virtualdesktop_openxr::log;
@@ -345,6 +348,17 @@ namespace virtualdesktop_openxr {
         xrBodyTracker.maxFidelity = fidelity;
 
         return XR_SUCCESS;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrSuggestBodyTrackingCalibrationOverrideMETA
+    XrResult OpenXrRuntime::xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker,
+                                                                         const XrBodyTrackingCalibrationInfoMETA calibrationInfo) {
+        return XR_ERROR_FEATURE_UNSUPPORTED;
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrResetBodyTrackingCalibrationMETA
+    XrResult OpenXrRuntime::xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker){
+        return XR_ERROR_FEATURE_UNSUPPORTED;
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrEnumerateViveTrackerPathsHTCX
