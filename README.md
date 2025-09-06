@@ -13,6 +13,7 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 - Matthieu Bucchianeri
 - Mathias Peter Nordskog | Roughy
 - Guy Godin | Virtual Desktop
+- Kyle Hendry | 3NIGMA
 
 ## Donate
 
