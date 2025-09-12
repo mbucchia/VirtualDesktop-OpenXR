@@ -88,7 +88,8 @@ namespace virtualdesktop_openxr {
             break;
         case XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR:
             stencilDesc.StencilType = ovrFovStencil_BorderLine;
-            indicesStride = 2;
+            // TODO: Not so sure why Virtual Desktop & Oculus OVR differ here.
+            indicesStride = m_useOculusRuntime ? 1 : 2;
             break;
         default:
             return XR_ERROR_VALIDATION_FAILURE;
