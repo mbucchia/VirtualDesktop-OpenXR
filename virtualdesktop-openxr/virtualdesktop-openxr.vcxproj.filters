@@ -178,6 +178,9 @@
     <ClCompile Include="precompositor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\external\cJSON\cJSON.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="virtualdesktop-openxr.json" />
