@@ -28,3 +28,6 @@
 [submodule "external/FidelityFX-CAS"]
 	path = external/FidelityFX-CAS
 	url = https://github.com/GPUOpen-Effects/FidelityFX-CAS.git
+[submodule "external/cJSON"]
+	path = external/cJSON
+	url = https://github.com/DaveGamble/cJSON.git

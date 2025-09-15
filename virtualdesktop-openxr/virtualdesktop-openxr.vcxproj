@@ -145,7 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\cJSON</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -213,7 +213,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\cJSON</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -283,7 +283,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\cJSON</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -355,7 +355,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\cJSON</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -427,7 +427,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\cJSON</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -499,7 +499,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(SolutionDir)\RuntimeConfiguration;$(ProjectDir);..\external\OpenXR-SDK\include;..\external\OpenXR-SDK\src\common;..\external\OpenXR-MixedReality\Shared;..\external\OpenXR-MixedReality\Shared\XrUtility;..\external\OpenXR-MixedReality\Shared\SampleShared;..\external\LibOVR\include;..\external\LibOVR\include\Extras;..\external\LibOVR\Shim;..\external\Vulkan-SDK\include;..\external\OpenGL;..\external\fmt\include;..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src;..\external\openvr\headers;..\external\openvr\samples\drivers\utils\vrmath;..\external\FidelityFX-FSR\ffx-fsr;..\external\FidelityFX-CAS\ffx-cas;..\external\cJSON</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -585,6 +585,14 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\external\cJSON\cJSON.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPI_Util.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
