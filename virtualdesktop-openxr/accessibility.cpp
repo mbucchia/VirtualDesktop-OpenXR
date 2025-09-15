@@ -38,14 +38,21 @@ namespace {
     struct EmulatedControllerState {
         mutable std::shared_mutex mutex;
 
+        // Whether we will emulate this controller.
         bool enabled = false;
+
+        // Whether the controller is "active" or at rest.
         bool active = false;
+
+        // Latest pose reported to the runtime.
+        std::optional<XrPosef> latestReportedPose;
     };
 
     class AccessibilityHelperImpl : public AccessibilityHelper {
       public:
         AccessibilityHelperImpl(ovrSession ovrSession) : m_ovrSession(ovrSession) {
-            // TODO: For testing, until we have a config file.
+            // TODO: For testing, until we have a config file
+            // DEMO CODE: Enable both to be emulated, and mark right one as initially active.
             m_controllerState[0].enabled = m_controllerState[1].enabled = true;
             m_controllerState[1].active = true;
 
@@ -67,27 +74,44 @@ namespace {
         }
 
         bool IsControllerEmulated(xr::side_t side) const override {
-            if (side >= xr::Side::Count) {
-                return false;
-            }
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
 
             {
                 std::shared_lock lock(m_controllerState[side].mutex);
+
+                // Returning false here tells the runtime to use the physical controller (if available).
                 return m_controllerState[side].enabled;
             }
         }
 
         bool GetEmulatedDevicePose(xr::side_t side, double absTime, ovrPoseStatef* outDevicePose) override {
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+            outDevicePose->TimeInSeconds = absTime;
+
             {
                 std::shared_lock lock(m_controllerState[side].mutex);
-                if (side >= xr::Side::Count || !m_controllerState[side].enabled || !m_controllerState[side].active) {
+
+                if (!m_controllerState[side].enabled) {
+                    // Returning false here tells the runtime to mark the controller as not tracked and not valid.
+                    // NOTE: This doesn't mean that the controller will "disappear", some applications might retain the
+                    // most recent pose and continue to use it.
                     return false;
+                }
+
+                if (!m_controllerState[side].active) {
+                    if (!m_controllerState[side].latestReportedPose) {
+                        return false;
+                    } else {
+                        // TODO: Return last good pose? Or a "parking" pose out of the screen?
+                        outDevicePose->ThePose = xrPoseToOvrPose(m_controllerState[side].latestReportedPose.value());
+                        return true;
+                    }
                 }
             }
 
             ZeroMemory(outDevicePose, sizeof(ovrPoseStatef));
 
-            // TODO: Nothing here yet, just a quick demo of how to put the virtual controllers in front of the user.
+            // DEMO CODE: Move the emulated controllers in front of the user.
 
             // Get the head pose.
             ovrPoseStatef headPoseState{};
@@ -107,27 +131,37 @@ namespace {
             outDevicePose->ThePose = xrPoseToOvrPose(transformedPose);
             outDevicePose->TimeInSeconds = absTime;
 
+            // Store the last reported pose. We can use it as a starting point for pre-recorded sequences.
+            {
+                std::unique_lock lock(m_controllerState[side].mutex);
+
+                m_controllerState[side].latestReportedPose = transformedPose;
+            }
+
             return true;
         }
 
         bool GetEmulatedInputState(xr::side_t side, ovrInputState* outInputState) override {
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+
             {
                 std::shared_lock lock(m_controllerState[side].mutex);
-                if (side >= xr::Side::Count || !m_controllerState[side].enabled || !m_controllerState[side].active) {
+
+                if (!m_controllerState[side].enabled || !m_controllerState[side].active) {
+                    // Returning false here tells the runtime to set all inputs as inactive.
                     return false;
                 }
             }
 
             // This structure holds the state for both controller buttons, but the caller will recombine the state
-            // correctly.
+            // correctly based on which controller is real or emulated.
             ZeroMemory(outInputState, sizeof(ovrInputState));
-
-            // TODO: Nothing here yet, for now, passthrough a single button so we can nagivate menus.
 
             // TODO: Until GameInput is here, we use the actual Touch controller buttons.
             ovrInputState inputState{};
             ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
 
+            // DEMO CODE: Passthrough the trigger (so we can click in menus).
             outInputState->IndexTrigger[side] = inputState.IndexTrigger[side];
             outInputState->IndexTriggerNoDeadzone[side] = inputState.IndexTriggerNoDeadzone[side];
             outInputState->IndexTriggerRaw[side] = inputState.IndexTriggerRaw[side];
@@ -136,13 +170,13 @@ namespace {
         }
 
         void SendEmulatedHapticPulse(xr::side_t side, float frequency, float amplitude) override {
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+
             // Do nothing.
         }
 
         void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) override {
-            if (side >= xr::Side::Count) {
-                return;
-            }
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
 
             m_toGripPose[side] = rawToGrip;
             m_toAimPose[side] = rawToAim;
@@ -152,15 +186,21 @@ namespace {
         void InputThread() {
             SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
+            double lastOvrTime = ovr_GetTimeInSeconds();
             while (m_isRunning.load()) {
                 // TODO: Until GameInput is here, we use the actual Touch controller buttons.
                 ovrInputState inputState{};
                 ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
 
+                // We will use this time to latch the start time of an animation, so we can replay data timely. This is
+                // the same clock that is passed to GetEmulatedDevicePose()'s absTime.
+                const double ovrNow = ovr_GetTimeInSeconds();
+                const double deltaTime = ovrNow - lastOvrTime;
+
                 {
                     std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
 
-                    // We use the grip button to switch between left/right (or both) being active.
+                    // DEMO CODE: Use the grip button to switch between left/right (or both) being active.
                     const bool wasLeftActive = m_controllerState[0].active;
                     const bool wasRightActive = m_controllerState[1].active;
                     m_controllerState[0].active = inputState.HandTrigger[0] > 0.25f;
@@ -171,7 +211,22 @@ namespace {
                         m_controllerState[0].active = wasLeftActive;
                         m_controllerState[1].active = wasRightActive;
                     }
+
+                    // DEMO CODE: Use the joystick input to "move" the inactive controller.
+                    if (!(m_controllerState[0].active && m_controllerState[1].active)) {
+                        const xr::side_t inactiveSide = !m_controllerState[0].active ? xr::Side::Left : xr::Side::Right;
+                        if (m_controllerState[inactiveSide].latestReportedPose) {
+                            // TODO: We want this customizable.
+                            static constexpr float k_Sensitivity = 0.1f; // m/s at full joystick swing.
+
+                            m_controllerState[inactiveSide].latestReportedPose.value().position.x +=
+                                (float)(inputState.Thumbstick[0].x * k_Sensitivity * deltaTime);
+                        }
+                    }
                 }
+
+                // Record the last time the inputs were polled, so we can scale inputs with time.
+                lastOvrTime = ovrNow;
 
                 // TODO: Once we use a better API, we should not make this thread free-running.
                 std::this_thread::yield();
@@ -183,6 +238,7 @@ namespace {
         std::thread m_inputThread;
         std::atomic<bool> m_isRunning;
 
+        // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
         XrPosef m_toGripPose[xr::Side::Count];
         XrPosef m_toAimPose[xr::Side::Count];
     };
@@ -190,7 +246,6 @@ namespace {
 } // namespace
 
 namespace virtualdesktop_openxr {
-
     std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession) {
         return std::make_unique<AccessibilityHelperImpl>(ovrSession);
     }
