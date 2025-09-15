@@ -571,6 +571,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h" />
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h" />
     <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h" />
+    <ClInclude Include="accessibility.h" />
     <ClInclude Include="OVR_Ext.h" />
     <ClInclude Include="RuntimeConfiguration.h" />
     <ClInclude Include="trackers.h" />
@@ -615,6 +616,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">4244;4305</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4244;4305</DisableSpecificWarnings>
     </ClCompile>
+    <ClCompile Include="accessibility.cpp" />
     <ClCompile Include="action.cpp" />
     <ClCompile Include="audio.cpp" />
     <ClCompile Include="body_tracking.cpp" />

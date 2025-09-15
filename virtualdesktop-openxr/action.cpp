@@ -1002,10 +1002,54 @@ namespace virtualdesktop_openxr {
             }
 
             const auto lastControllerType = m_cachedControllerType[side];
+
+            // Check for a controller.
             const auto controllerTypes = ovr_GetConnectedControllerTypes(m_ovrSession);
-            const bool isControllerConnected =
+            const bool isPhysicalControllerConnected =
                 controllerTypes & (side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch);
-            if (isControllerConnected) {
+            const bool isEmulatedControllerConnected =
+                m_accessibilityHelper ? m_accessibilityHelper->IsControllerEmulated(side) : false;
+
+            if (isEmulatedControllerConnected) {
+                // When using accessibility mode, override the controller input state.
+                ovrInputState accessibilityInputState{};
+
+                const auto buttonsMask = side == 0 ? ovrButton_LMask : ovrButton_RMask;
+                const auto touchesMask = side == 0 ? ovrTouch_LButtonMask : ovrTouch_RButtonMask;
+
+                if (m_accessibilityHelper->GetEmulatedInputState(side, &accessibilityInputState)) {
+                    m_cachedInputState.Buttons =
+                        (m_cachedInputState.Buttons & ~buttonsMask) | (accessibilityInputState.Buttons & buttonsMask);
+                    m_cachedInputState.Touches =
+                        (m_cachedInputState.Touches & ~touchesMask) | (accessibilityInputState.Touches & touchesMask);
+
+                    m_cachedInputState.IndexTrigger[side] = accessibilityInputState.IndexTrigger[side];
+                    m_cachedInputState.IndexTriggerNoDeadzone[side] =
+                        accessibilityInputState.IndexTriggerNoDeadzone[side];
+                    m_cachedInputState.IndexTriggerRaw[side] = accessibilityInputState.IndexTriggerRaw[side];
+                    m_cachedInputState.HandTrigger[side] = accessibilityInputState.HandTrigger[side];
+                    m_cachedInputState.HandTriggerNoDeadzone[side] =
+                        accessibilityInputState.HandTriggerNoDeadzone[side];
+                    m_cachedInputState.HandTriggerRaw[side] = accessibilityInputState.HandTriggerRaw[side];
+
+                    m_cachedInputState.Thumbstick[side] = accessibilityInputState.Thumbstick[side];
+                    m_cachedInputState.ThumbstickNoDeadzone[side] = accessibilityInputState.ThumbstickNoDeadzone[side];
+                    m_cachedInputState.ThumbstickRaw[side] = accessibilityInputState.ThumbstickRaw[side];
+                } else {
+                    m_cachedInputState.Buttons = (m_cachedInputState.Buttons & ~buttonsMask);
+                    m_cachedInputState.Touches = (m_cachedInputState.Touches & ~touchesMask);
+
+                    m_cachedInputState.IndexTrigger[side] = m_cachedInputState.IndexTriggerNoDeadzone[side] =
+                        m_cachedInputState.IndexTriggerRaw[side] = 0.f;
+                    m_cachedInputState.HandTrigger[side] = m_cachedInputState.HandTriggerNoDeadzone[side] =
+                        m_cachedInputState.HandTriggerRaw[side] = 0.f;
+
+                    m_cachedInputState.Thumbstick[side] = m_cachedInputState.ThumbstickNoDeadzone[side] =
+                        m_cachedInputState.ThumbstickRaw[side] = {0.f, 0.f};
+                }
+            }
+
+            if (isPhysicalControllerConnected || isEmulatedControllerConnected) {
                 m_cachedControllerType[side] =
                     !(controllerTypes & ovrControllerType_Index) ? "touch_controller" : "knuckles";
                 m_isControllerActive[side] = true;
