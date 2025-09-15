@@ -36,7 +36,10 @@ namespace {
     using namespace xr::math;
 
     struct EmulatedControllerState {
+        mutable std::shared_mutex mutex;
+
         bool enabled = false;
+        bool active = false;
     };
 
     class AccessibilityHelperImpl : public AccessibilityHelper {
@@ -44,9 +47,22 @@ namespace {
         AccessibilityHelperImpl(ovrSession ovrSession) : m_ovrSession(ovrSession) {
             // TODO: For testing, until we have a config file.
             m_controllerState[0].enabled = m_controllerState[1].enabled = true;
+            m_controllerState[1].active = true;
 
             for (xr::side_t side = 0; side < xr::Side::Count; side++) {
                 m_toGripPose[side] = m_toAimPose[side] = Pose::Identity();
+            }
+
+            if (m_controllerState[0].enabled || m_controllerState[1].enabled) {
+                m_isRunning = true;
+                m_inputThread = std::thread([this] { InputThread(); });
+            }
+        }
+
+        ~AccessibilityHelperImpl() {
+            m_isRunning = false;
+            if (m_inputThread.joinable()) {
+                m_inputThread.join();
             }
         }
 
@@ -55,12 +71,18 @@ namespace {
                 return false;
             }
 
-            return m_controllerState[side].enabled;
+            {
+                std::shared_lock lock(m_controllerState[side].mutex);
+                return m_controllerState[side].enabled;
+            }
         }
 
         bool GetEmulatedDevicePose(xr::side_t side, double absTime, ovrPoseStatef* outDevicePose) override {
-            if (side >= xr::Side::Count) {
-                return false;
+            {
+                std::shared_lock lock(m_controllerState[side].mutex);
+                if (side >= xr::Side::Count || !m_controllerState[side].enabled || !m_controllerState[side].active) {
+                    return false;
+                }
             }
 
             ZeroMemory(outDevicePose, sizeof(ovrPoseStatef));
@@ -68,11 +90,11 @@ namespace {
             // TODO: Nothing here yet, just a quick demo of how to put the virtual controllers in front of the user.
 
             // Get the head pose.
-            ovrPoseStatef state{};
+            ovrPoseStatef headPoseState{};
             ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
-            const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, absTime, &state);
+            const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, absTime, &headPoseState);
 
-            const auto headPose = ovrPoseToXrPose(state.ThePose);
+            const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
 
             // Left or right 15cm, below 10cm, in front 35cm.
             const auto inFront =
@@ -89,22 +111,26 @@ namespace {
         }
 
         bool GetEmulatedInputState(xr::side_t side, ovrInputState* outInputState) override {
-            if (side >= xr::Side::Count) {
-                return false;
+            {
+                std::shared_lock lock(m_controllerState[side].mutex);
+                if (side >= xr::Side::Count || !m_controllerState[side].enabled || !m_controllerState[side].active) {
+                    return false;
+                }
             }
 
             // This structure holds the state for both controller buttons, but the caller will recombine the state
             // correctly.
             ZeroMemory(outInputState, sizeof(ovrInputState));
 
-            // TODO: Nothing here yet, for now, passthrough the trigger so we can nagivate menus.
+            // TODO: Nothing here yet, for now, passthrough a single button so we can nagivate menus.
 
-            ovrInputState state{};
-            ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &state);
+            // TODO: Until GameInput is here, we use the actual Touch controller buttons.
+            ovrInputState inputState{};
+            ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
 
-            outInputState->IndexTrigger[side] = state.IndexTrigger[side];
-            outInputState->IndexTriggerNoDeadzone[side] = state.IndexTriggerNoDeadzone[side];
-            outInputState->IndexTriggerRaw[side] = state.IndexTriggerRaw[side];
+            outInputState->IndexTrigger[side] = inputState.IndexTrigger[side];
+            outInputState->IndexTriggerNoDeadzone[side] = inputState.IndexTriggerNoDeadzone[side];
+            outInputState->IndexTriggerRaw[side] = inputState.IndexTriggerRaw[side];
 
             return true;
         }
@@ -123,8 +149,39 @@ namespace {
         }
 
       private:
+        void InputThread() {
+            SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+            while (m_isRunning.load()) {
+                // TODO: Until GameInput is here, we use the actual Touch controller buttons.
+                ovrInputState inputState{};
+                ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
+
+                {
+                    std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
+
+                    // We use the grip button to switch between left/right (or both) being active.
+                    const bool wasLeftActive = m_controllerState[0].active;
+                    const bool wasRightActive = m_controllerState[1].active;
+                    m_controllerState[0].active = inputState.HandTrigger[0] > 0.25f;
+                    m_controllerState[1].active = inputState.HandTrigger[1] > 0.25f;
+
+                    // Always leave one controller active.
+                    if (!m_controllerState[0].active && !m_controllerState[1].active) {
+                        m_controllerState[0].active = wasLeftActive;
+                        m_controllerState[1].active = wasRightActive;
+                    }
+                }
+
+                // TODO: Once we use a better API, we should not make this thread free-running.
+                std::this_thread::yield();
+            }
+        }
+
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
+        std::thread m_inputThread;
+        std::atomic<bool> m_isRunning;
 
         XrPosef m_toGripPose[xr::Side::Count];
         XrPosef m_toAimPose[xr::Side::Count];
