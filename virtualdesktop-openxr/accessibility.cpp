@@ -109,6 +109,10 @@ namespace {
             return true;
         }
 
+        void SendEmulatedHapticPulse(xr::side_t side, float frequency, float amplitude) override {
+            // Do nothing.
+        }
+
         void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) override {
             if (side >= xr::Side::Count) {
                 return;

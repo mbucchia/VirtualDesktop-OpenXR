@@ -1121,10 +1121,19 @@ namespace virtualdesktop_openxr {
                     m_currentVibration[side].duration = 0;
                 }
 
-                CHECK_OVRCMD(ovr_SetControllerVibration(m_ovrSession,
-                                                        side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch,
-                                                        m_currentVibration[side].frequency,
-                                                        m_currentVibration[side].amplitude));
+                const bool isEmulatedControllerConnected =
+                    m_accessibilityHelper ? m_accessibilityHelper->IsControllerEmulated(side) : false;
+
+                if (!isEmulatedControllerConnected) {
+                    CHECK_OVRCMD(
+                        ovr_SetControllerVibration(m_ovrSession,
+                                                   side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch,
+                                                   m_currentVibration[side].frequency,
+                                                   m_currentVibration[side].amplitude));
+                } else {
+                    m_accessibilityHelper->SendEmulatedHapticPulse(
+                        side, m_currentVibration[side].frequency, m_currentVibration[side].amplitude);
+                }
             }
         }
 
@@ -1385,11 +1394,19 @@ namespace virtualdesktop_openxr {
                             m_currentVibration[side].duration = 0;
                         }
 
-                        CHECK_OVRCMD(
-                            ovr_SetControllerVibration(m_ovrSession,
-                                                       side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch,
-                                                       m_currentVibration[side].frequency,
-                                                       vibration->amplitude));
+                        const bool isEmulatedControllerConnected =
+                            m_accessibilityHelper ? m_accessibilityHelper->IsControllerEmulated(side) : false;
+
+                        if (!isEmulatedControllerConnected) {
+                            CHECK_OVRCMD(ovr_SetControllerVibration(m_ovrSession,
+                                                                    side == 0 ? ovrControllerType_LTouch
+                                                                              : ovrControllerType_RTouch,
+                                                                    m_currentVibration[side].frequency,
+                                                                    vibration->amplitude));
+                        } else {
+                            m_accessibilityHelper->SendEmulatedHapticPulse(
+                                side, m_currentVibration[side].frequency, vibration->amplitude);
+                        }
                         break;
                     }
 
@@ -1458,8 +1475,15 @@ namespace virtualdesktop_openxr {
                 m_currentVibration[side].amplitude = m_currentVibration[side].frequency = 0.f;
                 m_currentVibration[side].duration = 0;
 
-                CHECK_OVRCMD(ovr_SetControllerVibration(
-                    m_ovrSession, side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch, 0.f, 0.f));
+                const bool isEmulatedControllerConnected =
+                    m_accessibilityHelper ? m_accessibilityHelper->IsControllerEmulated(side) : false;
+
+                if (!isEmulatedControllerConnected) {
+                    CHECK_OVRCMD(ovr_SetControllerVibration(
+                        m_ovrSession, side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch, 0.f, 0.f));
+                } else {
+                    m_accessibilityHelper->SendEmulatedHapticPulse(side, 0.f, 0.f);
+                }
             }
         }
 
