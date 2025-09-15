@@ -1674,6 +1674,10 @@ namespace virtualdesktop_openxr {
             m_controllerAimPose[side] = adjustedAimPose;
             m_controllerPalmPose[side] = adjustedPalmPose;
             m_controllerHandPose[side] = adjustedHandPose;
+
+            if (m_accessibilityHelper) {
+                m_accessibilityHelper->SetOpenXrPoses(side, m_controllerGripPose[side], m_controllerAimPose[side]);
+            }
         } else {
             m_currentInteractionProfile[side] = XR_NULL_PATH;
             m_controllerGripPose[side] = m_controllerAimPose[side] = m_controllerPalmPose[side] =

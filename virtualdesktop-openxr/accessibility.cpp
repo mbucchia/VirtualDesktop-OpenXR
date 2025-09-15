@@ -44,6 +44,10 @@ namespace {
         AccessibilityHelperImpl(ovrSession ovrSession) : m_ovrSession(ovrSession) {
             // TODO: For testing, until we have a config file.
             m_controllerState[0].enabled = m_controllerState[1].enabled = true;
+
+            for (xr::side_t side = 0; side < xr::Side::Count; side++) {
+                m_toGripPose[side] = m_toAimPose[side] = Pose::Identity();
+            }
         }
 
         bool IsControllerEmulated(xr::side_t side) const override {
@@ -74,7 +78,9 @@ namespace {
             const auto inFront =
                 Pose::MakePose(XrVector3f{side == xr::Side::Left ? -0.15f : 0.15f, -0.1f, -0.35f}, XrVector3f{0, 0, 0});
 
-            const auto transformedPose = inFront * headPose;
+            // By applying the inverse of the raw->grip pose, we are effectively aligning the pose with the forward
+            // vector (head pose), which gives an "en garde" pose for our sword.
+            const auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
 
             outDevicePose->ThePose = xrPoseToOvrPose(transformedPose);
             outDevicePose->TimeInSeconds = absTime;
@@ -91,14 +97,33 @@ namespace {
             // correctly.
             ZeroMemory(outInputState, sizeof(ovrInputState));
 
-            // TODO: Nothing here yet.
+            // TODO: Nothing here yet, for now, passthrough the trigger so we can nagivate menus.
+
+            ovrInputState state{};
+            ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &state);
+
+            outInputState->IndexTrigger[side] = state.IndexTrigger[side];
+            outInputState->IndexTriggerNoDeadzone[side] = state.IndexTriggerNoDeadzone[side];
+            outInputState->IndexTriggerRaw[side] = state.IndexTriggerRaw[side];
 
             return true;
+        }
+
+        void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) override {
+            if (side >= xr::Side::Count) {
+                return;
+            }
+
+            m_toGripPose[side] = rawToGrip;
+            m_toAimPose[side] = rawToAim;
         }
 
       private:
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
+
+        XrPosef m_toGripPose[xr::Side::Count];
+        XrPosef m_toAimPose[xr::Side::Count];
     };
 
 } // namespace
