@@ -52,6 +52,9 @@ namespace {
 
         // Latest pose reported to the runtime.
         std::optional<XrPosef> latestReportedPose;
+
+        // An offset to apply to the running animation.
+        XrPosef poseAnimationOffset = Pose::Identity();
     };
 
     class AccessibilityHelperImpl : public AccessibilityHelper {
@@ -146,7 +149,8 @@ namespace {
                     if (!m_controllerState[side].latestReportedPose) {
                         return false;
                     } else {
-                        // TODO: Return last good pose? Or a "parking" pose out of the screen? Do we also need to apply the animation here?
+                        // TODO: Return last good pose? Or a "parking" pose out of the screen? Do we also need to apply
+                        // the animation here?
                         outDevicePose->ThePose = xrPoseToOvrPose(m_controllerState[side].latestReportedPose.value());
                         return true;
                     }
@@ -182,7 +186,7 @@ namespace {
                     auto currentTimeStamp = currentFrame.first;
                     auto currentPose = currentFrame.second;
 
-                    transformedPose = Pose::Multiply(transformedPose, currentPose);
+                    transformedPose = currentPose * m_controllerState[side].poseAnimationOffset * transformedPose;
 
                     m_animationFrame++;
 
@@ -281,10 +285,22 @@ namespace {
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
                             : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
                         // Sample the joystick on the dominant hand to apply an additional transform to the replay.
-                       const auto direction = m_controllerInputState.Thumbstick[m_dominantHand];
+                        const auto direction = XrVector2f{m_controllerInputState.Thumbstick[m_dominantHand].x,
+                                                          m_controllerInputState.Thumbstick[m_dominantHand].y};
+
+                        // Normalize the direction. If the joystick is untouched, assume direction is Down.
+                        const auto lengthDirection = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+                        const auto normalizedDirection =
+                            (lengthDirection > FLT_EPSILON) ? direction / lengthDirection : XrVector2f{0.f, -1.f};
+
                         m_animationSide = m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
                         m_animationFrame = 0;
                         // TODO: support animating both sides
+
+                        m_controllerState[m_animationSide].poseAnimationOffset = Pose::MakePose(
+                            {},
+                            XrVector3f{
+                                0.f, 0.f, (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)});
 
                         Log("Starting replay\n");
                     }
@@ -403,6 +419,7 @@ namespace {
         // TODO: We will want to support >1 of these.
         std::vector<std::pair<double, XrPosef>> m_recordedAction;
 
+        // TODO: Move this into m_controllerState[side].
         size_t m_animationFrame = -1;
         int m_animationSide = -1;
 
