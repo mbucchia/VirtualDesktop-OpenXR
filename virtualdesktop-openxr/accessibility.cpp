@@ -297,6 +297,42 @@ namespace {
             if (joystickHorizontalSensitivity) {
                 m_joystickHorizontalSensitivity = (float)joystickHorizontalSensitivity->valuedouble;
             }
+
+            const auto recordedAction = cJSON_GetObjectItemCaseSensitive(top, "recorded_action");
+            if (recordedAction) {
+                const auto name = cJSON_GetObjectItemCaseSensitive(recordedAction, "name");
+                const auto poses = cJSON_GetObjectItemCaseSensitive(recordedAction, "poses");
+                if (!poses) {
+                    throw std::runtime_error("Malformatted recorded action: no poses");
+                }
+
+                const auto numSamples = cJSON_GetArraySize(poses);
+                m_recordedAction.reserve(numSamples);
+
+                for (int i = 0; i < numSamples; i++) {
+                    const auto item = cJSON_GetArrayItem(poses, i);
+                    const auto timestamp = item ? cJSON_GetObjectItemCaseSensitive(item, "timestamp") : nullptr;
+                    const auto x = item ? cJSON_GetObjectItemCaseSensitive(item, "x") : nullptr;
+                    const auto y = item ? cJSON_GetObjectItemCaseSensitive(item, "y") : nullptr;
+                    const auto z = item ? cJSON_GetObjectItemCaseSensitive(item, "z") : nullptr;
+                    const auto rx = item ? cJSON_GetObjectItemCaseSensitive(item, "rx") : nullptr;
+                    const auto ry = item ? cJSON_GetObjectItemCaseSensitive(item, "ry") : nullptr;
+                    const auto rz = item ? cJSON_GetObjectItemCaseSensitive(item, "rz") : nullptr;
+                    const auto rw = item ? cJSON_GetObjectItemCaseSensitive(item, "rw") : nullptr;
+
+                    if (!(timestamp && x && y && z && rw && rx && ry && rz)) {
+                        throw std::runtime_error("Malformatted recorded action: bad entry");
+                    }
+
+                    XrPosef pose =
+                        Pose::MakePose(XrVector4f{(float)rx->valuedouble,
+                                                  (float)ry->valuedouble,
+                                                  (float)rz->valuedouble,
+                                                  (float)rw->valuedouble},
+                                       XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
+                    m_recordedAction.push_back(std::make_pair(timestamp->valuedouble, pose));
+                }
+            }
         }
 
         const ovrSession m_ovrSession;
@@ -307,6 +343,9 @@ namespace {
         ovrInputState m_controllerInputState{};
         xr::side_t m_dominantHand = xr::Side::Right;
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
+
+        // TODO: We will want to support >1 of these.
+        std::vector<std::pair<double, XrPosef>> m_recordedAction;
 
         // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
         XrPosef m_toGripPose[xr::Side::Count];

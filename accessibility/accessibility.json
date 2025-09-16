@@ -1,9 +1,33 @@
 {
-    "default":
-    {
-        "emulate_left": true,
-        "emulate_right": true,
-        "dominant_hand": 1,
-        "joystick_horizontal_sensitivity": 0.1
+  "default": {
+    "emulate_left": true,
+    "emulate_right": true,
+    "dominant_hand": 1,
+    "joystick_horizontal_sensitivity": 0.1,
+    "recorded_action": {
+      "name": "Swing Left",
+      "poses": [
+        {
+          "timestamp": 0,
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "rw": 1,
+          "rx": 0,
+          "ry": 0,
+          "rz": 0
+        },
+        {
+          "timestamp": 0.1,
+          "x": 0,
+          "y": 0,
+          "z": 1,
+          "rw": 1,
+          "rx": 0,
+          "ry": 0,
+          "rz": 0
+        }
+      ]
     }
+  }
 }

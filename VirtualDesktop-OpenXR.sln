@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Files", "Solution 
 		.clang-format = .clang-format
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		accessibility\accessibility.json = accessibility\accessibility.json
 		LICENSE = LICENSE
 		README.md = README.md
 		version.info = version.info
