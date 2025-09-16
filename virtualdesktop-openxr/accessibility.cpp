@@ -257,14 +257,34 @@ namespace {
                         m_controllerState[1].followGaze = wasRightFollowingGaze;
                     }
 
-                    // DEMO CODE: Use the joystick input to "move" the other controller (the one not following gaze).
+                    // DEMO CODE: Use the should button to start replay.
+                    if (!m_useTouchControllerButtons
+                            ? (m_controllerInputState.Buttons &
+                               ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
+                            : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
+                        // Sample the joystick on the dominant hand to apply an additional transform to the replay.
+                        const auto direction = m_controllerInputState.Thumbstick[m_dominantHand];
+
+                        // TODO: Insert code here.
+                    }
+
+                    // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the one
+                    // not following gaze).
                     if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
                         const xr::side_t otherSide =
                             !m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
                         if (m_controllerState[otherSide].latestReportedPose) {
-                            m_controllerState[otherSide].latestReportedPose.value().position.x +=
-                                (float)(m_controllerInputState.Thumbstick[m_dominantHand].x *
-                                        m_joystickHorizontalSensitivity * deltaTime);
+                            // TODO: This math is not correct. We want to apply the translation on the plan orthogonal
+                            // to the controller forward pose.
+                            const auto translation = Pose::MakePose(
+                                XrVector3f{(float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].x *
+                                                   m_joystickHorizontalSensitivity * deltaTime),
+                                           (float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].y *
+                                                   m_joystickVerticalSensitivity * deltaTime),
+                                           0.f},
+                                XrVector3f{0, 0, 0});
+                            m_controllerState[otherSide].latestReportedPose =
+                                translation * m_controllerState[otherSide].latestReportedPose.value();
                         }
                     }
                 }
@@ -304,6 +324,11 @@ namespace {
                 cJSON_GetObjectItemCaseSensitive(top, "joystick_horizontal_sensitivity");
             if (joystickHorizontalSensitivity) {
                 m_joystickHorizontalSensitivity = (float)joystickHorizontalSensitivity->valuedouble;
+            }
+            const auto joystickVerticalSensitivity =
+                cJSON_GetObjectItemCaseSensitive(top, "joystick_vertical_sensitivity");
+            if (joystickVerticalSensitivity) {
+                m_joystickVerticalSensitivity = (float)joystickVerticalSensitivity->valuedouble;
             }
 
             const auto recordedAction = cJSON_GetObjectItemCaseSensitive(top, "recorded_action");
@@ -352,6 +377,7 @@ namespace {
         bool m_useTouchControllerButtons = false;
         xr::side_t m_dominantHand = xr::Side::Right;
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
+        float m_joystickVerticalSensitivity = 0.1f;   // m/s at full joystick swing.
 
         // TODO: We will want to support >1 of these.
         std::vector<std::pair<double, XrPosef>> m_recordedAction;
