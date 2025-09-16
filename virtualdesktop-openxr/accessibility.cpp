@@ -146,7 +146,7 @@ namespace {
                     if (!m_controllerState[side].latestReportedPose) {
                         return false;
                     } else {
-                        // TODO: Return last good pose? Or a "parking" pose out of the screen?
+                        // TODO: Return last good pose? Or a "parking" pose out of the screen? Do we also need to apply the animation here?
                         outDevicePose->ThePose = xrPoseToOvrPose(m_controllerState[side].latestReportedPose.value());
                         return true;
                     }
@@ -170,7 +170,25 @@ namespace {
 
             // By applying the inverse of the raw->grip pose, we are effectively aligning the pose with the forward
             // vector (head pose), which gives an "en garde" pose for our sword.
-            const auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
+            auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
+
+            if (m_animationFrame != -1 && side == m_animationSide) {
+                if (m_recordedAction.size() <= m_animationFrame) {
+                    Log("Resetting animation\n");
+                    m_animationSide = -1;
+                    m_animationFrame = -1;
+                } else {
+                    auto currentFrame = m_recordedAction[m_animationFrame];
+                    auto currentTimeStamp = currentFrame.first;
+                    auto currentPose = currentFrame.second;
+
+                    transformedPose = Pose::Multiply(transformedPose, currentPose);
+
+                    m_animationFrame++;
+
+                    // TODO: integrate time stamp / interpolation for smoother animation
+                }
+            }
 
             outDevicePose->ThePose = xrPoseToOvrPose(transformedPose);
             outDevicePose->TimeInSeconds = absTime;
@@ -257,15 +275,18 @@ namespace {
                         m_controllerState[1].followGaze = wasRightFollowingGaze;
                     }
 
-                    // DEMO CODE: Use the should button to start replay.
-                    if (!m_useTouchControllerButtons
+                    // DEMO CODE: Use the shoulder button to start replay.
+                    if (m_animationFrame == -1 && !m_useTouchControllerButtons
                             ? (m_controllerInputState.Buttons &
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
                             : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
                         // Sample the joystick on the dominant hand to apply an additional transform to the replay.
-                        const auto direction = m_controllerInputState.Thumbstick[m_dominantHand];
+                       const auto direction = m_controllerInputState.Thumbstick[m_dominantHand];
+                        m_animationSide = m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
+                        m_animationFrame = 0;
+                        // TODO: support animating both sides
 
-                        // TODO: Insert code here.
+                        Log("Starting replay\n");
                     }
 
                     // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the one
@@ -381,6 +402,9 @@ namespace {
 
         // TODO: We will want to support >1 of these.
         std::vector<std::pair<double, XrPosef>> m_recordedAction;
+
+        size_t m_animationFrame = -1;
+        int m_animationSide = -1;
 
         // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
         XrPosef m_toGripPose[xr::Side::Count];
