@@ -664,6 +664,10 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        if (m_useAccessibilityRecording) {
+            // TODO: Heather's recording code here.
+        }
+
         return locationFlags;
     }
 

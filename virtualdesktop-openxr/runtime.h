@@ -721,6 +721,7 @@ namespace virtualdesktop_openxr {
         float m_overrideVisibilityMaskScale{1.f};
         uint32_t m_visibilityMaskDirty{0};
         std::unique_ptr<AccessibilityHelper> m_accessibilityHelper;
+        bool m_useAccessibilityRecording = false;
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;

@@ -539,6 +539,8 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        m_useAccessibilityRecording = getSetting("accessibility_recording").value_or(false);
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
