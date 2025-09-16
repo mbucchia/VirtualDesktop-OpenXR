@@ -229,8 +229,11 @@ namespace {
             while (m_isRunning.load()) {
                 const auto nextInterval = std::chrono::high_resolution_clock::now() + k_PollingInterval;
 
-                // TODO: Until GameInput is here, we use the actual Touch controller buttons.
-                ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &m_controllerInputState);
+                // TODO: Until GameInput is here, we use the LibOVR API to query Xbox. This only works with Quest Link,
+                // not Virtual Desktop.
+                ovr_GetInputState(m_ovrSession,
+                                  !m_useTouchControllerButtons ? ovrControllerType_XBox : ovrControllerType_Touch,
+                                  &m_controllerInputState);
 
                 // We will use this time to latch the start time of an animation, so we can replay data timely. This is
                 // the same clock that is passed to GetEmulatedDevicePose()'s absTime.
@@ -288,6 +291,11 @@ namespace {
             m_controllerState[0].enabled = emulateLeft && emulateLeft->valueint;
             const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
             m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
+
+            const auto useTouchControllerButtons =
+                cJSON_GetObjectItemCaseSensitive(top, "debug_use_touch_controller_buttons");
+            m_useTouchControllerButtons = useTouchControllerButtons && useTouchControllerButtons->valueint;
+
             const auto dominantHand = cJSON_GetObjectItemCaseSensitive(top, "dominant_hand");
             if (dominantHand) {
                 m_dominantHand = std::min(1, dominantHand->valueint);
@@ -341,6 +349,7 @@ namespace {
         std::atomic<bool> m_isRunning;
 
         ovrInputState m_controllerInputState{};
+        bool m_useTouchControllerButtons = false;
         xr::side_t m_dominantHand = xr::Side::Right;
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
 
