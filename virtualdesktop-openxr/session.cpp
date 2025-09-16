@@ -194,7 +194,8 @@ namespace virtualdesktop_openxr {
             throw exc;
         }
 
-        m_accessibilityHelper = CreateAccessibilityHelper(m_ovrSession);
+        m_accessibilityHelper =
+            CreateAccessibilityHelper(m_ovrSession, (programData / "accessibility.json").wstring(), m_applicationName);
 
         *session = (XrSession)1;
 
@@ -537,6 +538,8 @@ namespace virtualdesktop_openxr {
                 m_visibilityMaskDirty = xr::StereoView::Count;
             }
         }
+
+        m_useAccessibilityRecording = getSetting("accessibility_recording").value_or(false);
 
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",

@@ -32,81 +32,278 @@
 namespace {
 
     using namespace virtualdesktop_openxr;
+    using namespace virtualdesktop_openxr::log;
     using namespace virtualdesktop_openxr::utils;
     using namespace xr::math;
 
+    using namespace std::chrono_literals;
+
+    // The interval we will poll for inputs from GameInput.
+    static constexpr auto k_PollingInterval = 2ms;
+
     struct EmulatedControllerState {
+        mutable std::shared_mutex mutex;
+
+        // Whether we will emulate this controller.
         bool enabled = false;
+
+        // Whether the controller is "active" or at rest.
+        bool active = false;
+
+        // Latest pose reported to the runtime.
+        std::optional<XrPosef> latestReportedPose;
     };
 
     class AccessibilityHelperImpl : public AccessibilityHelper {
       public:
-        AccessibilityHelperImpl(ovrSession ovrSession) : m_ovrSession(ovrSession) {
-            // TODO: For testing, until we have a config file.
-            m_controllerState[0].enabled = m_controllerState[1].enabled = true;
+        AccessibilityHelperImpl(ovrSession ovrSession,
+                                const std::wstring& configPath,
+                                const std::string& applicationName)
+            : m_ovrSession(ovrSession) {
+            // Parse our configuration.
+            {
+                std::ifstream inputFile(configPath.c_str(), std::ios::in);
+                std::string config;
+                if (inputFile.is_open()) {
+                    std::ostringstream sstr;
+                    sstr << inputFile.rdbuf();
+                    config = sstr.str();
+                }
+
+                cJSON* json = nullptr;
+                try {
+                    json = cJSON_ParseWithLength(config.c_str(), config.size());
+                    if (!json) {
+                        throw std::runtime_error("Failed to parse JSON");
+                    }
+
+                    ParseConfiguration(json, applicationName);
+
+                } catch (std::runtime_error& exc) {
+                    Log("Error parsing configuration file %ws: %s", configPath.c_str(), exc.what());
+                }
+                cJSON_Delete(json);
+            }
+
+            // Always start with one controller active (if possible).
+            if (m_controllerState[1].enabled) {
+                m_controllerState[1].active = true;
+            } else if (m_controllerState[0].enabled) {
+                m_controllerState[0].active = true;
+            }
+
+            for (xr::side_t side = 0; side < xr::Side::Count; side++) {
+                m_toGripPose[side] = m_toAimPose[side] = Pose::Identity();
+            }
+
+            if (m_controllerState[0].enabled || m_controllerState[1].enabled) {
+                m_isRunning = true;
+                m_inputThread = std::thread([this] { InputThread(); });
+            }
+        }
+
+        ~AccessibilityHelperImpl() {
+            m_isRunning = false;
+            if (m_inputThread.joinable()) {
+                m_inputThread.join();
+            }
         }
 
         bool IsControllerEmulated(xr::side_t side) const override {
-            if (side >= xr::Side::Count) {
-                return false;
-            }
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
 
-            return m_controllerState[side].enabled;
+            {
+                std::shared_lock lock(m_controllerState[side].mutex);
+
+                // Returning false here tells the runtime to use the physical controller (if available).
+                return m_controllerState[side].enabled;
+            }
         }
 
         bool GetEmulatedDevicePose(xr::side_t side, double absTime, ovrPoseStatef* outDevicePose) override {
-            if (side >= xr::Side::Count) {
-                return false;
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+            outDevicePose->TimeInSeconds = absTime;
+
+            {
+                std::shared_lock lock(m_controllerState[side].mutex);
+
+                if (!m_controllerState[side].enabled) {
+                    // Returning false here tells the runtime to mark the controller as not tracked and not valid.
+                    // NOTE: This doesn't mean that the controller will "disappear", some applications might retain the
+                    // most recent pose and continue to use it.
+                    return false;
+                }
+
+                if (!m_controllerState[side].active) {
+                    if (!m_controllerState[side].latestReportedPose) {
+                        return false;
+                    } else {
+                        // TODO: Return last good pose? Or a "parking" pose out of the screen?
+                        outDevicePose->ThePose = xrPoseToOvrPose(m_controllerState[side].latestReportedPose.value());
+                        return true;
+                    }
+                }
             }
 
             ZeroMemory(outDevicePose, sizeof(ovrPoseStatef));
 
-            // TODO: Nothing here yet, just a quick demo of how to put the virtual controllers in front of the user.
+            // DEMO CODE: Move the emulated controllers in front of the user.
 
             // Get the head pose.
-            ovrPoseStatef state{};
+            ovrPoseStatef headPoseState{};
             ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
-            const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, absTime, &state);
+            const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, absTime, &headPoseState);
 
-            const auto headPose = ovrPoseToXrPose(state.ThePose);
+            const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
 
             // Left or right 15cm, below 10cm, in front 35cm.
             const auto inFront =
                 Pose::MakePose(XrVector3f{side == xr::Side::Left ? -0.15f : 0.15f, -0.1f, -0.35f}, XrVector3f{0, 0, 0});
 
-            const auto transformedPose = inFront * headPose;
+            // By applying the inverse of the raw->grip pose, we are effectively aligning the pose with the forward
+            // vector (head pose), which gives an "en garde" pose for our sword.
+            const auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
 
             outDevicePose->ThePose = xrPoseToOvrPose(transformedPose);
             outDevicePose->TimeInSeconds = absTime;
+
+            // Store the last reported pose. We can use it as a starting point for pre-recorded sequences.
+            {
+                std::unique_lock lock(m_controllerState[side].mutex);
+
+                m_controllerState[side].latestReportedPose = transformedPose;
+            }
 
             return true;
         }
 
         bool GetEmulatedInputState(xr::side_t side, ovrInputState* outInputState) override {
-            if (side >= xr::Side::Count) {
-                return false;
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+
+            {
+                std::shared_lock lock(m_controllerState[side].mutex);
+
+                if (!m_controllerState[side].enabled || !m_controllerState[side].active) {
+                    // Returning false here tells the runtime to set all inputs as inactive.
+                    return false;
+                }
             }
 
             // This structure holds the state for both controller buttons, but the caller will recombine the state
-            // correctly.
+            // correctly based on which controller is real or emulated.
             ZeroMemory(outInputState, sizeof(ovrInputState));
 
-            // TODO: Nothing here yet.
+            // TODO: Until GameInput is here, we use the actual Touch controller buttons.
+            ovrInputState inputState{};
+            ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
+
+            // DEMO CODE: Passthrough the trigger (so we can click in menus).
+            outInputState->IndexTrigger[side] = inputState.IndexTrigger[side];
+            outInputState->IndexTriggerNoDeadzone[side] = inputState.IndexTriggerNoDeadzone[side];
+            outInputState->IndexTriggerRaw[side] = inputState.IndexTriggerRaw[side];
 
             return true;
         }
 
+        void SendEmulatedHapticPulse(xr::side_t side, float frequency, float amplitude) override {
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+
+            // Do nothing.
+        }
+
+        void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) override {
+            CHECK_MSG(side < xr::Side::Count, "Invalid controller");
+
+            m_toGripPose[side] = rawToGrip;
+            m_toAimPose[side] = rawToAim;
+        }
+
       private:
+        void InputThread() {
+            SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+            double lastOvrTime = ovr_GetTimeInSeconds();
+            while (m_isRunning.load()) {
+                const auto nextInterval = std::chrono::high_resolution_clock::now() + k_PollingInterval;
+
+                // TODO: Until GameInput is here, we use the actual Touch controller buttons.
+                ovrInputState inputState{};
+                ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
+
+                // We will use this time to latch the start time of an animation, so we can replay data timely. This is
+                // the same clock that is passed to GetEmulatedDevicePose()'s absTime.
+                const double ovrNow = ovr_GetTimeInSeconds();
+                const double deltaTime = ovrNow - lastOvrTime;
+
+                {
+                    std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
+
+                    // DEMO CODE: Use the grip button to switch between left/right (or both) being active.
+                    const bool wasLeftActive = m_controllerState[0].active;
+                    const bool wasRightActive = m_controllerState[1].active;
+                    m_controllerState[0].active = inputState.HandTrigger[0] > 0.25f;
+                    m_controllerState[1].active = inputState.HandTrigger[1] > 0.25f;
+
+                    // Always leave one controller active.
+                    if (!m_controllerState[0].active && !m_controllerState[1].active) {
+                        m_controllerState[0].active = wasLeftActive;
+                        m_controllerState[1].active = wasRightActive;
+                    }
+
+                    // DEMO CODE: Use the joystick input to "move" the inactive controller.
+                    if (!(m_controllerState[0].active && m_controllerState[1].active)) {
+                        const xr::side_t inactiveSide = !m_controllerState[0].active ? xr::Side::Left : xr::Side::Right;
+                        if (m_controllerState[inactiveSide].latestReportedPose) {
+                            // TODO: We want this customizable.
+                            static constexpr float k_Sensitivity = 0.1f; // m/s at full joystick swing.
+
+                            m_controllerState[inactiveSide].latestReportedPose.value().position.x +=
+                                (float)(inputState.Thumbstick[0].x * k_Sensitivity * deltaTime);
+                        }
+                    }
+                }
+
+                // Record the last time the inputs were polled, so we can scale inputs with time.
+                lastOvrTime = ovrNow;
+
+                std::this_thread::sleep_until(nextInterval);
+            }
+        }
+
+        void ParseConfiguration(cJSON* json, const std::string& applicationName) {
+            // Try to use game-specific config first, otherwise fallback to default.
+            const cJSON* top = cJSON_GetObjectItemCaseSensitive(json, applicationName.c_str());
+            if (!top) {
+                top = cJSON_GetObjectItemCaseSensitive(json, "default");
+            }
+
+            if (!top) {
+                throw std::runtime_error("Failed to get top-level configuration item");
+            }
+
+            const auto emulateLeft = cJSON_GetObjectItemCaseSensitive(top, "emulate_left");
+            m_controllerState[0].enabled = emulateLeft && emulateLeft->valueint;
+            const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
+            m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
+        }
+
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
+        std::thread m_inputThread;
+        std::atomic<bool> m_isRunning;
+
+        // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
+        XrPosef m_toGripPose[xr::Side::Count];
+        XrPosef m_toAimPose[xr::Side::Count];
     };
 
 } // namespace
 
 namespace virtualdesktop_openxr {
-
-    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession) {
-        return std::make_unique<AccessibilityHelperImpl>(ovrSession);
+    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
+                                                                   const std::wstring& configPath,
+                                                                   const std::string& applicationName) {
+        return std::make_unique<AccessibilityHelperImpl>(ovrSession, configPath, applicationName);
     }
 
 } // namespace virtualdesktop_openxr

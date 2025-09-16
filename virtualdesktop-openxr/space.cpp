@@ -665,91 +665,100 @@ namespace virtualdesktop_openxr {
             }
         }
 
-        // Guestimate we'd need no more 200 samples for a gesture.
-        static float position_numbers[200][6] = {};
-        static size_t index = 0;
-        static XrPosef initialPose = {};
+        if (m_useAccessibilityRecording) {
+            static size_t sampleCounter = 0;
+            static XrPosef initialPose = {};
+            static int recordingSide = -1;
+            static double initialTime = 0.0;
+            static cJSON* monitor;
+            static cJSON* poses;
 
-        if (m_cachedInputState.IndexTrigger[side] > 0) {
-            auto xrPose = ovrPoseToXrPose(state.ThePose);
-            if (index == 0) {
-                Log("Started recording \n");
-                // TODO: we should have the equivilant of this invert for ovr? Does it matter?                
-                initialPose = xr::math::Pose::Invert(xrPose);
-            }
-            xrPose = xrPose * initialPose;
-            position_numbers[index][0] = xrPose.position.x;
-            position_numbers[index][1] = xrPose.position.y;
-            position_numbers[index][2] = xrPose.position.z;
-            position_numbers[index][3] = xrPose.orientation.x;
-            position_numbers[index][4] = xrPose.orientation.y;
-            position_numbers[index][5] = xrPose.orientation.z;
+            if (recordingSide == -1 || recordingSide == side) {
+                if (m_cachedInputState.IndexTrigger[side] > 0) {
+                    XrPosef xrPose = ovrPoseToXrPose(state.ThePose);
+                    if (sampleCounter == 0) {
+                        Log("Started recording \n");
+                        recordingSide = side;
+                        initialPose = xr::math::Pose::Invert(xrPose);
+                        initialTime = ovr_GetTimeInSeconds();
 
-            index++;
-        } else {
-            if (index != 0) {
-                Log("Stopped recording \n");
-                Log("Recorded %d samples\n", index);
+                        monitor = cJSON_CreateObject();
+                        cJSON* name =
+                            cJSON_CreateString(side == 0 ? "Left Controller Swing" : "Right Controller Swing");
+                        cJSON_AddItemToObject(monitor, "name", name);
+                        poses = cJSON_CreateArray();
+                        cJSON_AddItemToObject(monitor, "poses", poses);
+                    }
 
-                // Given we probably didn't return _exactly_ to 0, we enforce a 0 at this time.
-                index++;
-                position_numbers[index][0] = 0;
-                position_numbers[index][1] = 0;
-                position_numbers[index][2] = 0;
-                position_numbers[index][3] = 0;
-                position_numbers[index][4] = 0;
-                position_numbers[index][5] = 0;
+                    xrPose = xrPose * initialPose;
 
-                cJSON* monitor = cJSON_CreateObject();
-                cJSON* name = cJSON_CreateString("Swing Left");
-                cJSON_AddItemToObject(monitor, "name", name);
-                cJSON* poses = cJSON_CreateArray();
-                cJSON_AddItemToObject(monitor, "poses", poses);
-
-                cJSON* pose = NULL;
-                cJSON* poseX = NULL;
-                cJSON* poseY = NULL;
-                cJSON* poseZ = NULL;
-                cJSON* rotationX = NULL;
-                cJSON* rotationY = NULL;
-                cJSON* rotationZ = NULL;
-
-                size_t jsonIndex = 0;
-                for (jsonIndex = 0; jsonIndex < index; ++jsonIndex) {
-                    pose = cJSON_CreateObject();
-
+                    cJSON* pose = cJSON_CreateObject();
                     cJSON_AddItemToArray(poses, pose);
 
-                    poseX = cJSON_CreateNumber(position_numbers[jsonIndex][0]);
+                    cJSON* timestamp = cJSON_CreateNumber(ovr_GetTimeInSeconds() - initialTime);
+                    cJSON_AddItemToObject(pose, "timestamp", timestamp);
+                    cJSON* poseX = cJSON_CreateNumber(xrPose.position.x);
                     cJSON_AddItemToObject(pose, "x", poseX);
-
-                    poseY = cJSON_CreateNumber(position_numbers[jsonIndex][1]);
+                    cJSON* poseY = cJSON_CreateNumber(xrPose.position.y);
                     cJSON_AddItemToObject(pose, "y", poseY);
-
-                    poseZ = cJSON_CreateNumber(position_numbers[jsonIndex][2]);
+                    cJSON* poseZ = cJSON_CreateNumber(xrPose.position.z);
                     cJSON_AddItemToObject(pose, "z", poseZ);
-
-                    rotationX = cJSON_CreateNumber(position_numbers[jsonIndex][3]);
+                    cJSON* rotationW = cJSON_CreateNumber(xrPose.orientation.w);
+                    cJSON_AddItemToObject(pose, "rw", rotationW);
+                    cJSON* rotationX = cJSON_CreateNumber(xrPose.orientation.x);
                     cJSON_AddItemToObject(pose, "rx", rotationX);
-
-                    rotationY = cJSON_CreateNumber(position_numbers[jsonIndex][4]);
+                    cJSON* rotationY = cJSON_CreateNumber(xrPose.orientation.y);
                     cJSON_AddItemToObject(pose, "ry", rotationY);
-
-                    rotationZ = cJSON_CreateNumber(position_numbers[jsonIndex][5]);
+                    cJSON* rotationZ = cJSON_CreateNumber(xrPose.orientation.z);
                     cJSON_AddItemToObject(pose, "rz", rotationZ);
+
+                    sampleCounter++;
+                } else {
+                    if (sampleCounter != 0) {
+                        Log("Stopping recording with %d samples\n", sampleCounter);
+
+                        // Given we probably didn't return _exactly_ to 0, we enforce a 0 at this time.
+                        // This might be jittery, so we should evaluate if it helps or some interpolation is needed
+
+                        cJSON* pose = cJSON_CreateObject();
+                        cJSON_AddItemToArray(poses, pose);
+
+                        cJSON* timestamp = cJSON_CreateNumber(ovr_GetTimeInSeconds() - initialTime);
+                        cJSON_AddItemToObject(pose, "timestamp", timestamp);
+                        cJSON* poseX = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "x", poseX);
+                        cJSON* poseY = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "y", poseY);
+                        cJSON* poseZ = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "z", poseZ);
+                        cJSON* rotationW = cJSON_CreateNumber(1);
+                        cJSON_AddItemToObject(pose, "rw", rotationW);
+                        cJSON* rotationX = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "rx", rotationX);
+                        cJSON* rotationY = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "ry", rotationY);
+                        cJSON* rotationZ = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "rz", rotationZ);
+
+                        char* string = cJSON_Print(monitor);
+                        cJSON_Delete(monitor);
+
+                        auto now = std::chrono::system_clock::now();
+                        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+                        auto local_time = *std::localtime(&time_t_now);
+
+                        std::ostringstream oss;
+                        oss << std::put_time(&local_time, "%Y-%m-%d_%H-%M-%S");
+                        std::string fileName = oss.str() + ".json";
+
+                        Log("Writing recording to %s\n", fileName.c_str());
+                        std::ofstream outFile(fileName);
+                        outFile << string;
+
+                        sampleCounter = 0;
+                        recordingSide = -1;
+                    }
                 }
-
-                char* string = cJSON_Print(monitor);
-                cJSON_Delete(monitor);
-
-                std::ofstream outFile("presetAnimations.json");
-                outFile << string;
-                Log(string);
-
-                for (int i = 0; i < index; ++i) {
-                    std::fill(position_numbers[i], position_numbers[i] + 6, 0.0f);
-                }
-                index = 0;
             }
         }
 

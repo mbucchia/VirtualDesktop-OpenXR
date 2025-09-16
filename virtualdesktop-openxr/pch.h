@@ -126,3 +126,6 @@ using Microsoft::WRL::ComPtr;
 
 // Detours (hook)
 #include <detours.h>
+
+// cJSON formatter and parser.
+#include <cJSON.h>

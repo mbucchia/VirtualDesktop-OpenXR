@@ -1,0 +1,7 @@
+{
+    "default":
+    {
+        "emulate_left": true,
+        "emulate_right": false
+    }
+}

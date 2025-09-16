@@ -30,8 +30,13 @@ namespace virtualdesktop_openxr {
         virtual bool IsControllerEmulated(xr::side_t side) const = 0;
         virtual bool GetEmulatedDevicePose(xr::side_t side, double absTime, ovrPoseStatef* outDevicePose) = 0;
         virtual bool GetEmulatedInputState(xr::side_t side, ovrInputState* outInputState) = 0;
+        virtual void SendEmulatedHapticPulse(xr::side_t side, float frequency, float amplitude) = 0;
+
+        virtual void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) = 0;
     };
 
-    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession);
+    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
+                                                                   const std::wstring& configPath,
+                                                                   const std::string& applicationName);
 
 } // namespace virtualdesktop_openxr
