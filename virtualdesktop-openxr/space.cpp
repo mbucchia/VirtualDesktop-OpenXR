@@ -26,6 +26,7 @@
 #include "runtime.h"
 #include "trackers.h"
 #include "utils.h"
+#include "cJSON.h"
 
 namespace virtualdesktop_openxr {
 
@@ -661,6 +662,94 @@ namespace virtualdesktop_openxr {
                 velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
                 velocity->angularVelocity = ovrVector3fToXrVector3f(state.AngularVelocity);
                 velocity->linearVelocity = ovrVector3fToXrVector3f(state.LinearVelocity);
+            }
+        }
+
+        // Guestimate we'd need no more 200 samples for a gesture.
+        static float position_numbers[200][6] = {};
+        static size_t index = 0;
+        static XrPosef initialPose = {};
+
+        if (m_cachedInputState.IndexTrigger[side] > 0) {
+            auto xrPose = ovrPoseToXrPose(state.ThePose);
+            if (index == 0) {
+                Log("Started recording \n");
+                // TODO: we should have the equivilant of this invert for ovr? Does it matter?                
+                initialPose = xr::math::Pose::Invert(xrPose);
+            }
+            xrPose = xrPose * initialPose;
+            position_numbers[index][0] = xrPose.position.x;
+            position_numbers[index][1] = xrPose.position.y;
+            position_numbers[index][2] = xrPose.position.z;
+            position_numbers[index][3] = xrPose.orientation.x;
+            position_numbers[index][4] = xrPose.orientation.y;
+            position_numbers[index][5] = xrPose.orientation.z;
+
+            index++;
+        } else {
+            if (index != 0) {
+                Log("Stopped recording \n");
+                Log("Recorded %d samples\n", index);
+
+                // Given we probably didn't return _exactly_ to 0, we enforce a 0 at this time.
+                index++;
+                position_numbers[index][0] = 0;
+                position_numbers[index][1] = 0;
+                position_numbers[index][2] = 0;
+                position_numbers[index][3] = 0;
+                position_numbers[index][4] = 0;
+                position_numbers[index][5] = 0;
+
+                cJSON* monitor = cJSON_CreateObject();
+                cJSON* name = cJSON_CreateString("Swing Left");
+                cJSON_AddItemToObject(monitor, "name", name);
+                cJSON* poses = cJSON_CreateArray();
+                cJSON_AddItemToObject(monitor, "poses", poses);
+
+                cJSON* pose = NULL;
+                cJSON* poseX = NULL;
+                cJSON* poseY = NULL;
+                cJSON* poseZ = NULL;
+                cJSON* rotationX = NULL;
+                cJSON* rotationY = NULL;
+                cJSON* rotationZ = NULL;
+
+                size_t jsonIndex = 0;
+                for (jsonIndex = 0; jsonIndex < index; ++jsonIndex) {
+                    pose = cJSON_CreateObject();
+
+                    cJSON_AddItemToArray(poses, pose);
+
+                    poseX = cJSON_CreateNumber(position_numbers[jsonIndex][0]);
+                    cJSON_AddItemToObject(pose, "x", poseX);
+
+                    poseY = cJSON_CreateNumber(position_numbers[jsonIndex][1]);
+                    cJSON_AddItemToObject(pose, "y", poseY);
+
+                    poseZ = cJSON_CreateNumber(position_numbers[jsonIndex][2]);
+                    cJSON_AddItemToObject(pose, "z", poseZ);
+
+                    rotationX = cJSON_CreateNumber(position_numbers[jsonIndex][3]);
+                    cJSON_AddItemToObject(pose, "rx", rotationX);
+
+                    rotationY = cJSON_CreateNumber(position_numbers[jsonIndex][4]);
+                    cJSON_AddItemToObject(pose, "ry", rotationY);
+
+                    rotationZ = cJSON_CreateNumber(position_numbers[jsonIndex][5]);
+                    cJSON_AddItemToObject(pose, "rz", rotationZ);
+                }
+
+                char* string = cJSON_Print(monitor);
+                cJSON_Delete(monitor);
+
+                std::ofstream outFile("presetAnimations.json");
+                outFile << string;
+                Log(string);
+
+                for (int i = 0; i < index; ++i) {
+                    std::fill(position_numbers[i], position_numbers[i] + 6, 0.0f);
+                }
+                index = 0;
             }
         }
 
