@@ -2,6 +2,8 @@
     "default":
     {
         "emulate_left": true,
-        "emulate_right": false
+        "emulate_right": true,
+        "dominant_hand": 1,
+        "joystick_horizontal_sensitivity": 0.1
     }
 }

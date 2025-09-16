@@ -47,8 +47,8 @@ namespace {
         // Whether we will emulate this controller.
         bool enabled = false;
 
-        // Whether the controller is "active" or at rest.
-        bool active = false;
+        // Whether the controller is following gaze or now.
+        bool followGaze = false;
 
         // Latest pose reported to the runtime.
         std::optional<XrPosef> latestReportedPose;
@@ -85,12 +85,16 @@ namespace {
                 cJSON_Delete(json);
             }
 
-            // Always start with one controller active (if possible).
+            // Always start with one controller following gaze (if possible).
+            // TODO: We disable this for now because it complicates re-centering. We will show hands at the time of
+            // first A/B input.
+#if 0
             if (m_controllerState[1].enabled) {
-                m_controllerState[1].active = true;
+                m_controllerState[1].followGaze = true;
             } else if (m_controllerState[0].enabled) {
-                m_controllerState[0].active = true;
+                m_controllerState[0].followGaze = true;
             }
+#endif
 
             for (xr::side_t side = 0; side < xr::Side::Count; side++) {
                 m_toGripPose[side] = m_toAimPose[side] = Pose::Identity();
@@ -134,7 +138,11 @@ namespace {
                     return false;
                 }
 
-                if (!m_controllerState[side].active) {
+                // If the other controller is visible but not this one, let's make sure we spawn it anyway.
+                const bool shouldSpawn =
+                    m_controllerState[side ^ 1].latestReportedPose && !m_controllerState[side].latestReportedPose;
+
+                if (!m_controllerState[side].followGaze && !shouldSpawn) {
                     if (!m_controllerState[side].latestReportedPose) {
                         return false;
                     } else {
@@ -183,7 +191,7 @@ namespace {
             {
                 std::shared_lock lock(m_controllerState[side].mutex);
 
-                if (!m_controllerState[side].enabled || !m_controllerState[side].active) {
+                if (!m_controllerState[side].enabled || !m_controllerState[side].followGaze) {
                     // Returning false here tells the runtime to set all inputs as inactive.
                     return false;
                 }
@@ -193,14 +201,9 @@ namespace {
             // correctly based on which controller is real or emulated.
             ZeroMemory(outInputState, sizeof(ovrInputState));
 
-            // TODO: Until GameInput is here, we use the actual Touch controller buttons.
-            ovrInputState inputState{};
-            ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
-
             // DEMO CODE: Passthrough the trigger (so we can click in menus).
-            outInputState->IndexTrigger[side] = inputState.IndexTrigger[side];
-            outInputState->IndexTriggerNoDeadzone[side] = inputState.IndexTriggerNoDeadzone[side];
-            outInputState->IndexTriggerRaw[side] = inputState.IndexTriggerRaw[side];
+            outInputState->IndexTrigger[side] = outInputState->IndexTriggerNoDeadzone[side] =
+                outInputState->IndexTriggerRaw[side] = m_controllerInputState.IndexTrigger[m_dominantHand];
 
             return true;
         }
@@ -227,8 +230,7 @@ namespace {
                 const auto nextInterval = std::chrono::high_resolution_clock::now() + k_PollingInterval;
 
                 // TODO: Until GameInput is here, we use the actual Touch controller buttons.
-                ovrInputState inputState{};
-                ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
+                ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &m_controllerInputState);
 
                 // We will use this time to latch the start time of an animation, so we can replay data timely. This is
                 // the same clock that is passed to GetEmulatedDevicePose()'s absTime.
@@ -238,27 +240,28 @@ namespace {
                 {
                     std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
 
-                    // DEMO CODE: Use the grip button to switch between left/right (or both) being active.
-                    const bool wasLeftActive = m_controllerState[0].active;
-                    const bool wasRightActive = m_controllerState[1].active;
-                    m_controllerState[0].active = inputState.HandTrigger[0] > 0.25f;
-                    m_controllerState[1].active = inputState.HandTrigger[1] > 0.25f;
+                    // DEMO CODE: Use the A/B button to switch between left/right (or both) being followGaze.
+                    const bool wasLeftFollowingGaze = m_controllerState[0].followGaze;
+                    const bool wasRightFollowingGaze = m_controllerState[1].followGaze;
+                    m_controllerState[0].followGaze =
+                        m_controllerInputState.Buttons & ((m_dominantHand == 0) ? ovrButton_X : ovrButton_A);
+                    m_controllerState[1].followGaze =
+                        m_controllerInputState.Buttons & ((m_dominantHand == 0) ? ovrButton_Y : ovrButton_B);
 
-                    // Always leave one controller active.
-                    if (!m_controllerState[0].active && !m_controllerState[1].active) {
-                        m_controllerState[0].active = wasLeftActive;
-                        m_controllerState[1].active = wasRightActive;
+                    // Always leave at least one controller following gaze.
+                    if (!m_controllerState[0].followGaze && !m_controllerState[1].followGaze) {
+                        m_controllerState[0].followGaze = wasLeftFollowingGaze;
+                        m_controllerState[1].followGaze = wasRightFollowingGaze;
                     }
 
-                    // DEMO CODE: Use the joystick input to "move" the inactive controller.
-                    if (!(m_controllerState[0].active && m_controllerState[1].active)) {
-                        const xr::side_t inactiveSide = !m_controllerState[0].active ? xr::Side::Left : xr::Side::Right;
-                        if (m_controllerState[inactiveSide].latestReportedPose) {
-                            // TODO: We want this customizable.
-                            static constexpr float k_Sensitivity = 0.1f; // m/s at full joystick swing.
-
-                            m_controllerState[inactiveSide].latestReportedPose.value().position.x +=
-                                (float)(inputState.Thumbstick[0].x * k_Sensitivity * deltaTime);
+                    // DEMO CODE: Use the joystick input to "move" the other controller (the one not following gaze).
+                    if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
+                        const xr::side_t otherSide =
+                            !m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
+                        if (m_controllerState[otherSide].latestReportedPose) {
+                            m_controllerState[otherSide].latestReportedPose.value().position.x +=
+                                (float)(m_controllerInputState.Thumbstick[m_dominantHand].x *
+                                        m_joystickHorizontalSensitivity * deltaTime);
                         }
                     }
                 }
@@ -285,12 +288,25 @@ namespace {
             m_controllerState[0].enabled = emulateLeft && emulateLeft->valueint;
             const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
             m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
+            const auto dominantHand = cJSON_GetObjectItemCaseSensitive(top, "dominant_hand");
+            if (dominantHand) {
+                m_dominantHand = std::min(1, dominantHand->valueint);
+            }
+            const auto joystickHorizontalSensitivity =
+                cJSON_GetObjectItemCaseSensitive(top, "joystick_horizontal_sensitivity");
+            if (joystickHorizontalSensitivity) {
+                m_joystickHorizontalSensitivity = (float)joystickHorizontalSensitivity->valuedouble;
+            }
         }
 
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
         std::thread m_inputThread;
         std::atomic<bool> m_isRunning;
+
+        ovrInputState m_controllerInputState{};
+        xr::side_t m_dominantHand = xr::Side::Right;
+        float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
 
         // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
         XrPosef m_toGripPose[xr::Side::Count];
