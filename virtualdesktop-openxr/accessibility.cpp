@@ -32,6 +32,7 @@
 namespace {
 
     using namespace virtualdesktop_openxr;
+    using namespace virtualdesktop_openxr::log;
     using namespace virtualdesktop_openxr::utils;
     using namespace xr::math;
 
@@ -50,11 +51,41 @@ namespace {
 
     class AccessibilityHelperImpl : public AccessibilityHelper {
       public:
-        AccessibilityHelperImpl(ovrSession ovrSession) : m_ovrSession(ovrSession) {
-            // TODO: For testing, until we have a config file
-            // DEMO CODE: Enable both to be emulated, and mark right one as initially active.
-            m_controllerState[0].enabled = m_controllerState[1].enabled = true;
-            m_controllerState[1].active = true;
+        AccessibilityHelperImpl(ovrSession ovrSession,
+                                const std::wstring& configPath,
+                                const std::string& applicationName)
+            : m_ovrSession(ovrSession) {
+            // Parse our configuration.
+            {
+                std::ifstream inputFile(configPath.c_str(), std::ios::in);
+                std::string config;
+                if (inputFile.is_open()) {
+                    std::ostringstream sstr;
+                    sstr << inputFile.rdbuf();
+                    config = sstr.str();
+                }
+
+                cJSON* json = nullptr;
+                try {
+                    json = cJSON_ParseWithLength(config.c_str(), config.size());
+                    if (!json) {
+                        throw std::runtime_error("Failed to parse JSON");
+                    }
+
+                    ParseConfiguration(json, applicationName);
+
+                } catch (std::runtime_error& exc) {
+                    Log("Error parsing configuration file %ws: %s", configPath.c_str(), exc.what());
+                }
+                cJSON_Delete(json);
+            }
+
+            // Always start with one controller active (if possible).
+            if (m_controllerState[1].enabled) {
+                m_controllerState[1].active = true;
+            } else if (m_controllerState[0].enabled) {
+                m_controllerState[0].active = true;
+            }
 
             for (xr::side_t side = 0; side < xr::Side::Count; side++) {
                 m_toGripPose[side] = m_toAimPose[side] = Pose::Identity();
@@ -233,6 +264,23 @@ namespace {
             }
         }
 
+        void ParseConfiguration(cJSON* json, const std::string& applicationName) {
+            // Try to use game-specific config first, otherwise fallback to default.
+            const cJSON* top = cJSON_GetObjectItemCaseSensitive(json, applicationName.c_str());
+            if (!top) {
+                top = cJSON_GetObjectItemCaseSensitive(json, "default");
+            }
+
+            if (!top) {
+                throw std::runtime_error("Failed to get top-level configuration item");
+            }
+
+            const auto emulateLeft = cJSON_GetObjectItemCaseSensitive(top, "emulate_left");
+            m_controllerState[0].enabled = emulateLeft && emulateLeft->valueint;
+            const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
+            m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
+        }
+
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
         std::thread m_inputThread;
@@ -246,8 +294,10 @@ namespace {
 } // namespace
 
 namespace virtualdesktop_openxr {
-    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession) {
-        return std::make_unique<AccessibilityHelperImpl>(ovrSession);
+    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
+                                                                   const std::wstring& configPath,
+                                                                   const std::string& applicationName) {
+        return std::make_unique<AccessibilityHelperImpl>(ovrSession, configPath, applicationName);
     }
 
 } // namespace virtualdesktop_openxr

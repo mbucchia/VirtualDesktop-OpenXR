@@ -194,7 +194,8 @@ namespace virtualdesktop_openxr {
             throw exc;
         }
 
-        m_accessibilityHelper = CreateAccessibilityHelper(m_ovrSession);
+        m_accessibilityHelper =
+            CreateAccessibilityHelper(m_ovrSession, (programData / "accessibility.json").wstring(), m_applicationName);
 
         *session = (XrSession)1;
 

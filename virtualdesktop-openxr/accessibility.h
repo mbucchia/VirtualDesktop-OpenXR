@@ -35,6 +35,8 @@ namespace virtualdesktop_openxr {
         virtual void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) = 0;
     };
 
-    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession);
+    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
+                                                                   const std::wstring& configPath,
+                                                                   const std::string& applicationName);
 
 } // namespace virtualdesktop_openxr
