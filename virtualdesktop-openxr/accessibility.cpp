@@ -36,6 +36,11 @@ namespace {
     using namespace virtualdesktop_openxr::utils;
     using namespace xr::math;
 
+    using namespace std::chrono_literals;
+
+    // The interval we will poll for inputs from GameInput.
+    static constexpr auto k_PollingInterval = 2ms;
+
     struct EmulatedControllerState {
         mutable std::shared_mutex mutex;
 
@@ -219,6 +224,8 @@ namespace {
 
             double lastOvrTime = ovr_GetTimeInSeconds();
             while (m_isRunning.load()) {
+                const auto nextInterval = std::chrono::high_resolution_clock::now() + k_PollingInterval;
+
                 // TODO: Until GameInput is here, we use the actual Touch controller buttons.
                 ovrInputState inputState{};
                 ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &inputState);
@@ -259,8 +266,7 @@ namespace {
                 // Record the last time the inputs were polled, so we can scale inputs with time.
                 lastOvrTime = ovrNow;
 
-                // TODO: Once we use a better API, we should not make this thread free-running.
-                std::this_thread::yield();
+                std::this_thread::sleep_until(nextInterval);
             }
         }
 
