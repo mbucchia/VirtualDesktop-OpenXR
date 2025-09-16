@@ -26,6 +26,7 @@
 #include "runtime.h"
 #include "trackers.h"
 #include "utils.h"
+#include "cJSON.h"
 
 namespace virtualdesktop_openxr {
 
@@ -665,7 +666,100 @@ namespace virtualdesktop_openxr {
         }
 
         if (m_useAccessibilityRecording) {
-            // TODO: Heather's recording code here.
+            static size_t sampleCounter = 0;
+            static XrPosef initialPose = {};
+            static int recordingSide = -1;
+            static double initialTime = 0.0;
+            static cJSON* monitor;
+            static cJSON* poses;
+
+            if (recordingSide == -1 || recordingSide == side) {
+                if (m_cachedInputState.IndexTrigger[side] > 0) {
+                    XrPosef xrPose = ovrPoseToXrPose(state.ThePose);
+                    if (sampleCounter == 0) {
+                        Log("Started recording \n");
+                        recordingSide = side;
+                        initialPose = xr::math::Pose::Invert(xrPose);
+                        initialTime = ovr_GetTimeInSeconds();
+
+                        monitor = cJSON_CreateObject();
+                        cJSON* name =
+                            cJSON_CreateString(side == 0 ? "Left Controller Swing" : "Right Controller Swing");
+                        cJSON_AddItemToObject(monitor, "name", name);
+                        poses = cJSON_CreateArray();
+                        cJSON_AddItemToObject(monitor, "poses", poses);
+                    }
+
+                    xrPose = xrPose * initialPose;
+
+                    cJSON* pose = cJSON_CreateObject();
+                    cJSON_AddItemToArray(poses, pose);
+
+                    cJSON* timestamp = cJSON_CreateNumber(ovr_GetTimeInSeconds() - initialTime);
+                    cJSON_AddItemToObject(pose, "timestamp", timestamp);
+                    cJSON* poseX = cJSON_CreateNumber(xrPose.position.x);
+                    cJSON_AddItemToObject(pose, "x", poseX);
+                    cJSON* poseY = cJSON_CreateNumber(xrPose.position.y);
+                    cJSON_AddItemToObject(pose, "y", poseY);
+                    cJSON* poseZ = cJSON_CreateNumber(xrPose.position.z);
+                    cJSON_AddItemToObject(pose, "z", poseZ);
+                    cJSON* rotationW = cJSON_CreateNumber(xrPose.orientation.w);
+                    cJSON_AddItemToObject(pose, "rw", rotationW);
+                    cJSON* rotationX = cJSON_CreateNumber(xrPose.orientation.x);
+                    cJSON_AddItemToObject(pose, "rx", rotationX);
+                    cJSON* rotationY = cJSON_CreateNumber(xrPose.orientation.y);
+                    cJSON_AddItemToObject(pose, "ry", rotationY);
+                    cJSON* rotationZ = cJSON_CreateNumber(xrPose.orientation.z);
+                    cJSON_AddItemToObject(pose, "rz", rotationZ);
+
+                    sampleCounter++;
+                } else {
+                    if (sampleCounter != 0) {
+                        Log("Stopping recording with %d samples\n", sampleCounter);
+
+                        // Given we probably didn't return _exactly_ to 0, we enforce a 0 at this time.
+                        // This might be jittery, so we should evaluate if it helps or some interpolation is needed
+
+                        cJSON* pose = cJSON_CreateObject();
+                        cJSON_AddItemToArray(poses, pose);
+
+                        cJSON* timestamp = cJSON_CreateNumber(ovr_GetTimeInSeconds() - initialTime);
+                        cJSON_AddItemToObject(pose, "timestamp", timestamp);
+                        cJSON* poseX = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "x", poseX);
+                        cJSON* poseY = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "y", poseY);
+                        cJSON* poseZ = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "z", poseZ);
+                        cJSON* rotationW = cJSON_CreateNumber(1);
+                        cJSON_AddItemToObject(pose, "rw", rotationW);
+                        cJSON* rotationX = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "rx", rotationX);
+                        cJSON* rotationY = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "ry", rotationY);
+                        cJSON* rotationZ = cJSON_CreateNumber(0);
+                        cJSON_AddItemToObject(pose, "rz", rotationZ);
+
+                        char* string = cJSON_Print(monitor);
+                        cJSON_Delete(monitor);
+
+                        auto now = std::chrono::system_clock::now();
+                        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+                        auto local_time = *std::localtime(&time_t_now);
+
+                        std::ostringstream oss;
+                        oss << std::put_time(&local_time, "%Y-%m-%d_%H-%M-%S");
+                        std::string fileName = oss.str() + ".json";
+
+                        Log("Writing recording to %s\n", fileName.c_str());
+                        std::ofstream outFile(fileName);
+                        outFile << string;
+
+                        sampleCounter = 0;
+                        recordingSide = -1;
+                    }
+                }
+            }
         }
 
         return locationFlags;
