@@ -176,10 +176,8 @@ namespace {
 
             if (m_animationFrame != -1 && side == m_animationSide) {
                 
-                // TODO: why is currentPlaybacktime huge
                 while (m_recordedAction.size() > m_animationFrame && m_recordedAction[m_animationFrame].first <
                     currentPlaybackTime) {
-                    Log("We're behind, frame is %d while currentTime is %d", m_recordedAction[m_animationFrame].first, currentPlaybackTime);
                     m_animationFrame++;
                 }
 
@@ -195,14 +193,15 @@ namespace {
                     auto currentPose = currentFrame.second;
 
                      if (m_recordedAction.size() <= m_animationFrame + 1) {
-                        // If we have nothing to interpolate between, just apply
+                        // If we have nothing to interpolate between, just apply to not lose the last frame (it's probably a reset anyway)
                         transformedPose = Pose::Multiply(currentPose, transformedPose);
                     } else {
-                        // Interpolate away
+                        // Interpolate between this frame and the next
                         auto nextFrame = m_recordedAction[m_animationFrame + 1];
-                        // TODO: this makes a warning for data loss
+
+                        // TODO: this makes a warning for data loss, but it should be fine
                         const float alpha =
-                            (currentPlaybackTime - currentTimeStamp) / (currentTimeStamp - nextFrame.first);
+                            (currentPlaybackTime - currentTimeStamp) / (nextFrame.first - currentTimeStamp);
                         transformedPose = Pose::Multiply(xr::math::Pose::Slerp(currentPose, nextFrame.second, alpha),
                                                          transformedPose);
                     }         
