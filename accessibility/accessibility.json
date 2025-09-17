@@ -4,6 +4,7 @@
     "emulate_right": true,
     "dominant_hand": 1,
     "joystick_horizontal_sensitivity": 0.1,
+    "joystick_vertical_sensitivity": 0.1,
     "recorded_action": {
       "name": "Swing Left",
       "poses": [

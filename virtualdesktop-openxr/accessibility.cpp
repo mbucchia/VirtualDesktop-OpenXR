@@ -52,6 +52,9 @@ namespace {
 
         // Latest pose reported to the runtime.
         std::optional<XrPosef> latestReportedPose;
+
+        // An offset to apply to the running animation.
+        XrPosef poseAnimationOffset = Pose::Identity();
     };
 
     class AccessibilityHelperImpl : public AccessibilityHelper {
@@ -146,7 +149,8 @@ namespace {
                     if (!m_controllerState[side].latestReportedPose) {
                         return false;
                     } else {
-                        // TODO: Return last good pose? Or a "parking" pose out of the screen? Do we also need to apply the animation here?
+                        // TODO: Return last good pose? Or a "parking" pose out of the screen? Do we also need to apply
+                        // the animation here?
                         outDevicePose->ThePose = xrPoseToOvrPose(m_controllerState[side].latestReportedPose.value());
                         return true;
                     }
@@ -194,7 +198,7 @@ namespace {
 
                      if (m_recordedAction.size() <= m_animationFrame + 1) {
                         // If we have nothing to interpolate between, just apply to not lose the last frame (it's probably a reset anyway)
-                        transformedPose = Pose::Multiply(currentPose, transformedPose);
+                        transformedPose = currentPose * m_controllerState[side].poseAnimationOffset * transformedPose;
                     } else {
                         // Interpolate between this frame and the next
                         auto nextFrame = m_recordedAction[m_animationFrame + 1];
@@ -202,8 +206,7 @@ namespace {
                         // TODO: this makes a warning for data loss, but it should be fine
                         const float alpha =
                             (currentPlaybackTime - currentTimeStamp) / (nextFrame.first - currentTimeStamp);
-                        transformedPose = Pose::Multiply(xr::math::Pose::Slerp(currentPose, nextFrame.second, alpha),
-                                                         transformedPose);
+                        transformedPose = xr::math::Pose::Slerp(currentPose, nextFrame.second, alpha) * m_controllerState[side].poseAnimationOffset * transformedPose;
                     }         
                 }         
                 
@@ -281,8 +284,7 @@ namespace {
                     std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
 
                     // DEMO CODE: Use the A/B button to switch between left/right (or both) being followGaze.
-                    const bool wasLeftFollowingGaze = m_controllerState[0].followGaze;
-                    const bool wasRightFollowingGaze = m_controllerState[1].followGaze;
+                    const bool wasFollowingGaze[2] = {m_controllerState[0].followGaze, m_controllerState[1].followGaze};
                     m_controllerState[0].followGaze =
                         m_controllerInputState.Buttons & ((m_dominantHand == 0) ? ovrButton_X : ovrButton_A);
                     m_controllerState[1].followGaze =
@@ -290,8 +292,9 @@ namespace {
 
                     // Always leave at least one controller following gaze.
                     if (!m_controllerState[0].followGaze && !m_controllerState[1].followGaze) {
-                        m_controllerState[0].followGaze = wasLeftFollowingGaze;
-                        m_controllerState[1].followGaze = wasRightFollowingGaze;
+                        m_controllerState[m_dominantHand].followGaze = wasFollowingGaze[m_dominantHand];
+                        m_controllerState[m_dominantHand ^ 1].followGaze =
+                            !m_controllerState[m_dominantHand].followGaze && wasFollowingGaze[m_dominantHand ^ 1];
                     }
 
                     // DEMO CODE: Use the shoulder button to start replay.
@@ -300,11 +303,26 @@ namespace {
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
                             : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
                         // Sample the joystick on the dominant hand to apply an additional transform to the replay.
-                       const auto direction = m_controllerInputState.Thumbstick[m_dominantHand];
+                        const auto direction = XrVector2f{m_controllerInputState.Thumbstick[m_dominantHand].x,
+                                                          m_controllerInputState.Thumbstick[m_dominantHand].y};
+
+                        // Normalize the direction. If the joystick is untouched, assume direction is Down.
+                        const auto lengthDirection = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+                        const auto normalizedDirection =
+                            (lengthDirection > FLT_EPSILON) ? direction / lengthDirection : XrVector2f{0.f, -1.f};
+
                         m_animationSide = m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
                         m_animationFrame = 0;
                         m_animationStart = lastOvrTime;
                         // TODO: support animating both sides
+
+                        m_controllerState[m_animationSide].poseAnimationOffset =
+                            Pose::MakePose(
+                                {},
+                                XrVector3f{0.f,
+                                           0.f,
+                                           (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)}) *
+                            m_toGripPose[m_animationSide];
 
                         Log("Starting replay\n");
                     }
@@ -423,6 +441,7 @@ namespace {
         // TODO: We will want to support >1 of these.
         std::vector<std::pair<double, XrPosef>> m_recordedAction;
 
+        // TODO: Move this into m_controllerState[side].
         size_t m_animationFrame = -1;
         int m_animationSide = -1;
         double m_animationStart = -1;

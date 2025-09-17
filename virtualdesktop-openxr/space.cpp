@@ -674,7 +674,7 @@ namespace virtualdesktop_openxr {
             static cJSON* poses;
 
             if (recordingSide == -1 || recordingSide == side) {
-                if (m_cachedInputState.IndexTrigger[side] > 0) {
+                if (m_cachedInputState.HandTrigger[side] > 0) {
                     XrPosef xrPose = ovrPoseToXrPose(state.ThePose);
                     if (sampleCounter == 0) {
                         Log("Started recording \n");
