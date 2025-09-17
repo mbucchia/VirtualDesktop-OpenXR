@@ -129,3 +129,9 @@ using Microsoft::WRL::ComPtr;
 
 // cJSON formatter and parser.
 #include <cJSON.h>
+
+// GameInput API
+#include <GameInput.h>
+#ifndef GAMEINPUT_API_VERSION
+#define GAMEINPUT_API_VERSION 0
+#endif
