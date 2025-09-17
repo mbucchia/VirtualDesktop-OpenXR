@@ -38,6 +38,14 @@ namespace {
 
     using namespace std::chrono_literals;
 
+#if GAMEINPUT_API_VERSION == 1
+    using namespace GameInput::v1;
+#elif GAMEINPUT_API_VERSION == 2
+    using namespace GameInput::v2;
+#endif
+
+    using Microsoft::WRL::ComPtr;
+
     // The interval we will poll for inputs from GameInput.
     static constexpr auto k_PollingInterval = 2ms;
 
@@ -280,15 +288,26 @@ namespace {
         void InputThread() {
             SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
+            // GameInput types
+            ComPtr<IGameInput> gameInput;
+
+            if (!m_useTouchControllerButtons)
+            {
+                // Initialize GameInput.
+                if (!SUCCEEDED(GameInputCreate(gameInput.GetAddressOf()))) {
+                    throw std::runtime_error("Failed to initialize GameInput API");
+                }
+            }
+
             double lastOvrTime = ovr_GetTimeInSeconds();
             while (m_isRunning.load()) {
                 const auto nextInterval = std::chrono::high_resolution_clock::now() + k_PollingInterval;
 
-                // TODO: Until GameInput is here, we use the LibOVR API to query Xbox. This only works with Quest Link,
-                // not Virtual Desktop.
-                ovr_GetInputState(m_ovrSession,
-                                  !m_useTouchControllerButtons ? ovrControllerType_XBox : ovrControllerType_Touch,
-                                  &m_controllerInputState);
+                if (m_useTouchControllerButtons) {
+                    ovr_GetInputState(m_ovrSession, ovrControllerType_Touch, &m_controllerInputState);
+                } else {
+                    GetCurrentGamepadState(gameInput, &m_controllerInputState);
+                }
 
                 // We will use this time to latch the start time of an animation, so we can replay data timely. This is
                 // the same clock that is passed to GetEmulatedDevicePose()'s absTime.
@@ -481,6 +500,92 @@ namespace {
 
                 m_playback.insert_or_assign(name->valuestring, std::move(playback));
             }
+        }
+
+        // Helper function to convert GameInputGamepadState to ovrInputState using the mapping logic from the input thread.
+        void ConvertGamepadStateToOvrInputState(const GameInputGamepadState& gamepadState, ovrInputState* ovrState) {
+            ZeroMemory(ovrState, sizeof(ovrInputState));
+
+            ovrState->ControllerType = ovrControllerType_XBox;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadA)
+                ovrState->Buttons |= ovrButton_A;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadB)
+                ovrState->Buttons |= ovrButton_B;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadX)
+                ovrState->Buttons |= ovrButton_X;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadY)
+                ovrState->Buttons |= ovrButton_Y;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadMenu)
+                ovrState->Buttons |= ovrButton_Enter;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadView)
+                ovrState->Buttons |= ovrButton_Back;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadDPadUp)
+                ovrState->Buttons |= ovrButton_Up;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadDPadDown)
+                ovrState->Buttons |= ovrButton_Down;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadDPadLeft)
+                ovrState->Buttons |= ovrButton_Left;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadDPadRight)
+                ovrState->Buttons |= ovrButton_Right;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadRightShoulder)
+                ovrState->Buttons |= ovrButton_RShoulder;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadLeftShoulder)
+                ovrState->Buttons |= ovrButton_LShoulder;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadRightThumbstick)
+                ovrState->Buttons |= ovrButton_RThumb;
+
+            if (gamepadState.buttons & GameInputGamepadButtons::GameInputGamepadLeftThumbstick)
+                ovrState->Buttons |= ovrButton_LThumb;
+
+            // Map thumbsticks
+            ovrState->Thumbstick[ovrHand_Left].x = gamepadState.leftThumbstickX;
+            ovrState->Thumbstick[ovrHand_Left].y = gamepadState.leftThumbstickY;
+            ovrState->Thumbstick[ovrHand_Right].x = gamepadState.rightThumbstickX;
+            ovrState->Thumbstick[ovrHand_Right].y = gamepadState.rightThumbstickY;
+
+            // Raw values (same as above if no filtering)
+            ovrState->ThumbstickRaw[ovrHand_Left] = ovrState->Thumbstick[ovrHand_Left];
+            ovrState->ThumbstickRaw[ovrHand_Right] = ovrState->Thumbstick[ovrHand_Right];
+
+            // Map triggers to IndexTrigger (finger trigger)
+            ovrState->IndexTrigger[ovrHand_Left] = gamepadState.leftTrigger;
+            ovrState->IndexTrigger[ovrHand_Right] = gamepadState.rightTrigger;
+
+            // Raw triggers
+            ovrState->IndexTriggerRaw[ovrHand_Left] = gamepadState.leftTrigger;
+            ovrState->IndexTriggerRaw[ovrHand_Right] = gamepadState.rightTrigger;
+
+            // NoDeadzone versions
+            ovrState->ThumbstickNoDeadzone[ovrHand_Left] = ovrState->Thumbstick[ovrHand_Left];
+            ovrState->ThumbstickNoDeadzone[ovrHand_Right] = ovrState->Thumbstick[ovrHand_Right];
+            ovrState->IndexTriggerNoDeadzone[ovrHand_Left] = gamepadState.leftTrigger;
+            ovrState->IndexTriggerNoDeadzone[ovrHand_Right] = gamepadState.rightTrigger;
+        }
+
+        // Helper function to get the current gamepad state using GameInput API.
+        bool GetCurrentGamepadState(const ComPtr<IGameInput>& gameInput, ovrInputState* outState) {
+            ComPtr<IGameInputReading> gamepadReading;
+            if (SUCCEEDED(gameInput->GetCurrentReading(GameInputKindGamepad, nullptr, gamepadReading.GetAddressOf()))) {
+                GameInputGamepadState gamepadState = {};
+                if (gamepadReading->GetGamepadState(&gamepadState)) {
+                    ConvertGamepadStateToOvrInputState(gamepadState, outState);
+                    return true;
+                }
+            }
+            return false;
         }
 
         const ovrSession m_ovrSession;

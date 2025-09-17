@@ -700,6 +700,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets')" />
+    <Import Project="$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets" Condition="Exists('$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -707,5 +708,6 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
     <Error Condition="!Exists('$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets'))" />
   </Target>
 </Project>
