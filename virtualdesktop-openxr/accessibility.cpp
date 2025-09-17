@@ -291,8 +291,7 @@ namespace {
             // GameInput types
             ComPtr<IGameInput> gameInput;
 
-            if (!m_useTouchControllerButtons)
-            {
+            if (!m_useTouchControllerButtons) {
                 // Initialize GameInput.
                 if (!SUCCEEDED(GameInputCreate(gameInput.GetAddressOf()))) {
                     throw std::runtime_error("Failed to initialize GameInput API");
@@ -372,25 +371,25 @@ namespace {
                             m_controllerState[side].animationStartTime = ovrNow;
                             m_controllerState[side].animationFrame = 0;
                         }
+                    }
 
-                        // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the
-                        // one not following gaze).
-                        if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
-                            const xr::side_t otherSide =
-                                !m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
-                            if (m_controllerState[otherSide].latestReportedPose) {
-                                // TODO: This math is not correct. We want to apply the translation on the plan
-                                // orthogonal to the controller forward pose.
-                                const auto translation = Pose::MakePose(
-                                    XrVector3f{(float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].x *
-                                                       m_joystickHorizontalSensitivity * deltaTime),
-                                               (float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].y *
-                                                       m_joystickVerticalSensitivity * deltaTime),
-                                               0.f},
-                                    XrVector3f{0, 0, 0});
-                                m_controllerState[otherSide].latestReportedPose =
-                                    translation * m_controllerState[otherSide].latestReportedPose.value();
-                            }
+                    // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the
+                    // one not following gaze).
+                    if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
+                        const xr::side_t otherSide =
+                            !m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
+                        if (m_controllerState[otherSide].latestReportedPose) {
+                            // TODO: This math is not correct. We want to apply the translation on the plan
+                            // orthogonal to the controller forward pose.
+                            const auto translation = Pose::MakePose(
+                                XrVector3f{(float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].x *
+                                                   m_joystickHorizontalSensitivity * deltaTime),
+                                           (float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].y *
+                                                   m_joystickVerticalSensitivity * deltaTime),
+                                           0.f},
+                                XrVector3f{0, 0, 0});
+                            m_controllerState[otherSide].latestReportedPose =
+                                translation * m_controllerState[otherSide].latestReportedPose.value();
                         }
                     }
                 }
@@ -502,7 +501,8 @@ namespace {
             }
         }
 
-        // Helper function to convert GameInputGamepadState to ovrInputState using the mapping logic from the input thread.
+        // Helper function to convert GameInputGamepadState to ovrInputState using the mapping logic from the input
+        // thread.
         void ConvertGamepadStateToOvrInputState(const GameInputGamepadState& gamepadState, ovrInputState* ovrState) {
             ZeroMemory(ovrState, sizeof(ovrInputState));
 
