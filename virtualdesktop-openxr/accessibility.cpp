@@ -268,6 +268,9 @@ namespace {
             outInputState->IndexTrigger[side] = outInputState->IndexTriggerNoDeadzone[side] =
                 outInputState->IndexTriggerRaw[side] = m_controllerInputState.IndexTrigger[m_dominantHand];
 
+            // DEMO CODE: Passthrough the menu button (so we can open menus).
+            outInputState->Buttons |= (m_controllerInputState.Buttons & ovrButton_Enter);
+
             return true;
         }
 
