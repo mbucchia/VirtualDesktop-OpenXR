@@ -172,16 +172,16 @@ namespace {
             // vector (head pose), which gives an "en garde" pose for our sword.
             auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
 
-            const auto currentPlaybackTime = absTime - m_animationStart;
+            auto currentPlaybackTime = absTime - m_animationStart;
 
             if (m_animationFrame != -1 && side == m_animationSide) {
                 
                 // TODO: why is currentPlaybacktime huge
-                //while (m_recordedAction.size() > m_animationFrame && m_recordedAction[m_animationFrame].first <
-                //    currentPlaybackTime) {
-                //    Log("We're behind, frame is %d while currentTime is %d", m_recordedAction[m_animationFrame].first, currentPlaybackTime);
-                    //m_animationFrame++;
-                //}
+                while (m_recordedAction.size() > m_animationFrame && m_recordedAction[m_animationFrame].first <
+                    currentPlaybackTime) {
+                    Log("We're behind, frame is %d while currentTime is %d", m_recordedAction[m_animationFrame].first, currentPlaybackTime);
+                    m_animationFrame++;
+                }
 
                 if (m_recordedAction.size() <= m_animationFrame) {
                     Log("Resetting animation\n");
@@ -197,18 +197,14 @@ namespace {
                      if (m_recordedAction.size() <= m_animationFrame + 1) {
                         // If we have nothing to interpolate between, just apply
                         transformedPose = Pose::Multiply(currentPose, transformedPose);
-                        // TODO: remove
-                        m_animationFrame++;
                     } else {
                         // Interpolate away
                         auto nextFrame = m_recordedAction[m_animationFrame + 1];
-                        // TODO: this makes an angry warning for data loss
+                        // TODO: this makes a warning for data loss
                         const float alpha =
                             (currentPlaybackTime - currentTimeStamp) / (currentTimeStamp - nextFrame.first);
                         transformedPose = Pose::Multiply(xr::math::Pose::Slerp(currentPose, nextFrame.second, alpha),
                                                          transformedPose);
-                        // TODO: remove
-                        m_animationFrame++;
                     }         
                 }         
                 
