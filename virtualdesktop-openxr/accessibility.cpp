@@ -266,8 +266,7 @@ namespace {
                     std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
 
                     // DEMO CODE: Use the A/B button to switch between left/right (or both) being followGaze.
-                    const bool wasLeftFollowingGaze = m_controllerState[0].followGaze;
-                    const bool wasRightFollowingGaze = m_controllerState[1].followGaze;
+                    const bool wasFollowingGaze[2] = {m_controllerState[0].followGaze, m_controllerState[1].followGaze};
                     m_controllerState[0].followGaze =
                         m_controllerInputState.Buttons & ((m_dominantHand == 0) ? ovrButton_X : ovrButton_A);
                     m_controllerState[1].followGaze =
@@ -275,8 +274,9 @@ namespace {
 
                     // Always leave at least one controller following gaze.
                     if (!m_controllerState[0].followGaze && !m_controllerState[1].followGaze) {
-                        m_controllerState[0].followGaze = wasLeftFollowingGaze;
-                        m_controllerState[1].followGaze = wasRightFollowingGaze;
+                        m_controllerState[m_dominantHand].followGaze = wasFollowingGaze[m_dominantHand];
+                        m_controllerState[m_dominantHand ^ 1].followGaze =
+                            !m_controllerState[m_dominantHand].followGaze && wasFollowingGaze[m_dominantHand ^ 1];
                     }
 
                     // DEMO CODE: Use the shoulder button to start replay.
@@ -297,10 +297,13 @@ namespace {
                         m_animationFrame = 0;
                         // TODO: support animating both sides
 
-                        m_controllerState[m_animationSide].poseAnimationOffset = Pose::MakePose(
-                            {},
-                            XrVector3f{
-                                0.f, 0.f, (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)});
+                        m_controllerState[m_animationSide].poseAnimationOffset =
+                            Pose::MakePose(
+                                {},
+                                XrVector3f{0.f,
+                                           0.f,
+                                           (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)}) *
+                            m_toGripPose[m_animationSide];
 
                         Log("Starting replay\n");
                     }
