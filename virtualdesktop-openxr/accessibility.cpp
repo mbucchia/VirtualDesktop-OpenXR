@@ -45,6 +45,8 @@ namespace {
         // Whether to reset to grip pose prior to starting the animation. Useful when a controller is in gripAsAim mode.
         bool startFromGrip = false;
 
+        double playbackSpeed = 1.0;
+
         // A time-series of relative poses.
         std::vector<std::pair<double, XrPosef>> poses;
     };
@@ -194,7 +196,8 @@ namespace {
                     const auto currentPlaybackTime = absTime - m_controllerState[side].animationStartTime;
 
                     while (m_controllerState[side].animationFrame < m_controllerState[side].animation->poses.size() &&
-                           m_controllerState[side].animation->poses[m_controllerState[side].animationFrame].first <
+                           m_controllerState[side].animation->poses[m_controllerState[side].animationFrame].first /
+                                   m_controllerState[side].animation->playbackSpeed <
                                currentPlaybackTime) {
                         m_controllerState[side].animationFrame++;
                     }
@@ -206,12 +209,14 @@ namespace {
                         m_controllerState[side].animation = nullptr;
                     } else {
                         const auto currentFrame = m_controllerState[side].animation->poses[currentFrameIndex];
-                        const auto currentTimeStamp = currentFrame.first;
+                        const auto currentTimeStamp =
+                            currentFrame.first / m_controllerState[side].animation->playbackSpeed;
                         const auto currentPose = currentFrame.second;
 
                         // Interpolate between this frame and the next
                         const auto nextFrame = m_controllerState[side].animation->poses[nextFrameIndex];
-                        const auto nextFrameTimeStamp = nextFrame.first;
+                        const auto nextFrameTimeStamp =
+                            nextFrame.first / m_controllerState[side].animation->playbackSpeed;
                         const auto nextFramePose = nextFrame.second;
 
                         const float alpha =
@@ -443,6 +448,9 @@ namespace {
                 if (startFromGrip) {
                     playback.startFromGrip = startFromGrip->valueint;
                 }
+
+                const auto playbackSpeedJson = cJSON_GetObjectItemCaseSensitive(recordedAction, "playbackSpeed");
+                playback.playbackSpeed = playbackSpeedJson ? (double)playbackSpeedJson->valuedouble : 1.0;
 
                 const auto numSamples = cJSON_GetArraySize(poses);
                 playback.poses.reserve(numSamples);
