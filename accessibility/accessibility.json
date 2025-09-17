@@ -3,10 +3,13 @@
     "emulate_left": true,
     "emulate_right": true,
     "dominant_hand": 1,
+    "left_grip_as_aim": true,
+    "right_grip_as_aim": true,
     "joystick_horizontal_sensitivity": 0.1,
     "joystick_vertical_sensitivity": 0.1,
     "recorded_action": {
       "name": "Swing Left",
+      "start_from_grip": true,
       "poses": [
         {
           "timestamp": 0,

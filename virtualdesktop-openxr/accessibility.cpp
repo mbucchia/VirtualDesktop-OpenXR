@@ -41,17 +41,38 @@ namespace {
     // The interval we will poll for inputs from GameInput.
     static constexpr auto k_PollingInterval = 2ms;
 
+    struct PosePlayback {
+        // Whether to reset to grip pose prior to starting the animation. Useful when a controller is in gripAsAim mode.
+        bool startFromGrip = false;
+
+        // A time-series of relative poses.
+        std::vector<std::pair<double, XrPosef>> poses;
+    };
+
     struct EmulatedControllerState {
         mutable std::shared_mutex mutex;
 
         // Whether we will emulate this controller.
         bool enabled = false;
 
+        // Whether to make the grip pose akin to an aim pose. For example, if holding a sword, gripAsAim will make the
+        // virtual controller hold the sword pointing forward ("en garde").
+        bool gripAsAim = false;
+
         // Whether the controller is following gaze or now.
         bool followGaze = false;
 
         // Latest pose reported to the runtime.
         std::optional<XrPosef> latestReportedPose;
+
+        // The current animation.
+        const PosePlayback* animation = nullptr;
+
+        // The start time for the playback.
+        double animationStartTime = -1;
+
+        // The current base frame for the playback.
+        size_t animationFrame = -1;
 
         // An offset to apply to the running animation.
         XrPosef poseAnimationOffset = Pose::Identity();
@@ -88,17 +109,6 @@ namespace {
                 cJSON_Delete(json);
             }
 
-            // Always start with one controller following gaze (if possible).
-            // TODO: We disable this for now because it complicates re-centering. We will show hands at the time of
-            // first A/B input.
-#if 0
-            if (m_controllerState[1].enabled) {
-                m_controllerState[1].followGaze = true;
-            } else if (m_controllerState[0].enabled) {
-                m_controllerState[0].followGaze = true;
-            }
-#endif
-
             for (xr::side_t side = 0; side < xr::Side::Count; side++) {
                 m_toGripPose[side] = m_toAimPose[side] = Pose::Identity();
             }
@@ -131,6 +141,7 @@ namespace {
             CHECK_MSG(side < xr::Side::Count, "Invalid controller");
             outDevicePose->TimeInSeconds = absTime;
 
+            XrPosef finalPose = Pose::Identity();
             {
                 std::shared_lock lock(m_controllerState[side].mutex);
 
@@ -155,71 +166,70 @@ namespace {
                         return true;
                     }
                 }
-            }
 
-            ZeroMemory(outDevicePose, sizeof(ovrPoseStatef));
+                ZeroMemory(outDevicePose, sizeof(ovrPoseStatef));
 
-            // DEMO CODE: Move the emulated controllers in front of the user.
+                // DEMO CODE: Move the emulated controllers in front of the user.
 
-            // Get the head pose.
-            ovrPoseStatef headPoseState{};
-            ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
-            const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, absTime, &headPoseState);
+                // Get the head pose.
+                ovrPoseStatef headPoseState{};
+                ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
+                const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, absTime, &headPoseState);
 
-            const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
+                const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
 
-            // Left or right 15cm, below 10cm, in front 35cm.
-            const auto inFront =
-                Pose::MakePose(XrVector3f{side == xr::Side::Left ? -0.15f : 0.15f, -0.1f, -0.35f}, XrVector3f{0, 0, 0});
+                // Left or right 15cm, below 10cm, in front 35cm.
+                const auto inFront = Pose::MakePose(XrVector3f{side == xr::Side::Left ? -0.15f : 0.15f, -0.1f, -0.35f},
+                                                    XrVector3f{0, 0, 0});
 
-            // By applying the inverse of the raw->grip pose, we are effectively aligning the pose with the forward
-            // vector (head pose), which gives an "en garde" pose for our sword.
-            auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
-
-            auto currentPlaybackTime = absTime - m_animationStart;
-
-            if (m_animationFrame != -1 && side == m_animationSide) {
-                
-                while (m_recordedAction.size() > m_animationFrame && m_recordedAction[m_animationFrame].first <
-                    currentPlaybackTime) {
-                    m_animationFrame++;
+                // Either leave as grip, or apply transform into aim.
+                finalPose = inFront * headPose;
+                if (m_controllerState[side].gripAsAim) {
+                    finalPose = Pose::Invert(m_toGripPose[side]) * finalPose;
                 }
 
-                if (m_recordedAction.size() <= m_animationFrame) {
-                    Log("Resetting animation\n");
-                    m_animationSide = -1;
-                    m_animationFrame = -1;
-                    m_animationStart = -1;
-                } 
-                else {
-                    auto currentFrame = m_recordedAction[m_animationFrame];
-                    auto currentTimeStamp = currentFrame.first;
-                    auto currentPose = currentFrame.second;
+                // DEMO CODE: Replay a pre-recorded sequence (animation).
 
-                     if (m_recordedAction.size() <= m_animationFrame + 1) {
-                        // If we have nothing to interpolate between, just apply to not lose the last frame (it's probably a reset anyway)
-                        transformedPose = currentPose * m_controllerState[side].poseAnimationOffset * transformedPose;
+                if (m_controllerState[side].animation) {
+                    const auto currentPlaybackTime = absTime - m_controllerState[side].animationStartTime;
+
+                    while (m_controllerState[side].animationFrame < m_controllerState[side].animation->poses.size() &&
+                           m_controllerState[side].animation->poses[m_controllerState[side].animationFrame].first <
+                               currentPlaybackTime) {
+                        m_controllerState[side].animationFrame++;
+                    }
+
+                    const auto currentFrameIndex = m_controllerState[side].animationFrame;
+                    const auto nextFrameIndex = m_controllerState[side].animationFrame + 1;
+                    if (nextFrameIndex >= m_controllerState[side].animation->poses.size()) {
+                        Log("Reached end of animation %s side\n", side == xr::Side::Left ? "left" : "right");
+                        m_controllerState[side].animation = nullptr;
                     } else {
-                        // Interpolate between this frame and the next
-                        auto nextFrame = m_recordedAction[m_animationFrame + 1];
+                        const auto currentFrame = m_controllerState[side].animation->poses[currentFrameIndex];
+                        const auto currentTimeStamp = currentFrame.first;
+                        const auto currentPose = currentFrame.second;
 
-                        // TODO: this makes a warning for data loss, but it should be fine
+                        // Interpolate between this frame and the next
+                        const auto nextFrame = m_controllerState[side].animation->poses[nextFrameIndex];
+                        const auto nextFrameTimeStamp = nextFrame.first;
+                        const auto nextFramePose = nextFrame.second;
+
                         const float alpha =
-                            (currentPlaybackTime - currentTimeStamp) / (nextFrame.first - currentTimeStamp);
-                        transformedPose = xr::math::Pose::Slerp(currentPose, nextFrame.second, alpha) * m_controllerState[side].poseAnimationOffset * transformedPose;
-                    }         
-                }         
-                
+                            (float)((currentPlaybackTime - currentTimeStamp) / (nextFrameTimeStamp - currentTimeStamp));
+                        finalPose = xr::math::Pose::Slerp(currentPose, nextFramePose, alpha) *
+                                    m_controllerState[side].poseAnimationOffset * finalPose;
+                    }
+                }
             }
 
-            outDevicePose->ThePose = xrPoseToOvrPose(transformedPose);
+            outDevicePose->ThePose = xrPoseToOvrPose(finalPose);
             outDevicePose->TimeInSeconds = absTime;
 
             // Store the last reported pose. We can use it as a starting point for pre-recorded sequences.
             {
                 std::unique_lock lock(m_controllerState[side].mutex);
 
-                m_controllerState[side].latestReportedPose = transformedPose;
+                m_controllerState[side].latestReportedPose = finalPose;
             }
 
             return true;
@@ -298,7 +308,7 @@ namespace {
                     }
 
                     // DEMO CODE: Use the shoulder button to start replay.
-                    if (m_animationFrame == -1 && !m_useTouchControllerButtons
+                    if (!m_useTouchControllerButtons
                             ? (m_controllerInputState.Buttons &
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
                             : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
@@ -311,39 +321,52 @@ namespace {
                         const auto normalizedDirection =
                             (lengthDirection > FLT_EPSILON) ? direction / lengthDirection : XrVector2f{0.f, -1.f};
 
-                        m_animationSide = m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
-                        m_animationFrame = 0;
-                        m_animationStart = lastOvrTime;
-                        // TODO: support animating both sides
+                        for (xr::side_t side = 0; side < xr::Side::Count; side++) {
+                            if (!m_controllerState[side].followGaze) {
+                                continue;
+                            }
 
-                        m_controllerState[m_animationSide].poseAnimationOffset =
-                            Pose::MakePose(
+                            // TODO: We want to make this configurable.
+                            const auto cit = m_playback.cbegin();
+                            m_controllerState[side].animation = &cit->second;
+
+                            Log("Starting replay of %s on %s side\n",
+                                cit->first.c_str(),
+                                side == xr::Side::Left ? "left" : "right");
+
+                            m_controllerState[side].poseAnimationOffset = Pose::MakePose(
                                 {},
                                 XrVector3f{0.f,
                                            0.f,
-                                           (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)}) *
-                            m_toGripPose[m_animationSide];
+                                           (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)});
 
-                        Log("Starting replay\n");
-                    }
+                            if (m_controllerState[side].animation->startFromGrip && m_controllerState[side].gripAsAim) {
+                                m_controllerState[side].poseAnimationOffset =
+                                    m_controllerState[side].poseAnimationOffset * m_toGripPose[side];
+                            }
 
-                    // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the one
-                    // not following gaze).
-                    if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
-                        const xr::side_t otherSide =
-                            !m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
-                        if (m_controllerState[otherSide].latestReportedPose) {
-                            // TODO: This math is not correct. We want to apply the translation on the plan orthogonal
-                            // to the controller forward pose.
-                            const auto translation = Pose::MakePose(
-                                XrVector3f{(float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].x *
-                                                   m_joystickHorizontalSensitivity * deltaTime),
-                                           (float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].y *
-                                                   m_joystickVerticalSensitivity * deltaTime),
-                                           0.f},
-                                XrVector3f{0, 0, 0});
-                            m_controllerState[otherSide].latestReportedPose =
-                                translation * m_controllerState[otherSide].latestReportedPose.value();
+                            m_controllerState[side].animationStartTime = ovrNow;
+                            m_controllerState[side].animationFrame = 0;
+                        }
+
+                        // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the
+                        // one not following gaze).
+                        if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
+                            const xr::side_t otherSide =
+                                !m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
+                            if (m_controllerState[otherSide].latestReportedPose) {
+                                // TODO: This math is not correct. We want to apply the translation on the plan
+                                // orthogonal to the controller forward pose.
+                                const auto translation = Pose::MakePose(
+                                    XrVector3f{(float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].x *
+                                                       m_joystickHorizontalSensitivity * deltaTime),
+                                               (float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].y *
+                                                       m_joystickVerticalSensitivity * deltaTime),
+                                               0.f},
+                                    XrVector3f{0, 0, 0});
+                                m_controllerState[otherSide].latestReportedPose =
+                                    translation * m_controllerState[otherSide].latestReportedPose.value();
+                            }
                         }
                     }
                 }
@@ -375,10 +398,22 @@ namespace {
                 cJSON_GetObjectItemCaseSensitive(top, "debug_use_touch_controller_buttons");
             m_useTouchControllerButtons = useTouchControllerButtons && useTouchControllerButtons->valueint;
 
+            // TODO: It's be nice to properly detect and report certain parsing errors, instead of silently ignoring
+            // values.
             const auto dominantHand = cJSON_GetObjectItemCaseSensitive(top, "dominant_hand");
             if (dominantHand) {
                 m_dominantHand = std::min(1, dominantHand->valueint);
             }
+
+            const auto leftGripAsAim = cJSON_GetObjectItemCaseSensitive(top, "left_grip_as_aim");
+            if (leftGripAsAim) {
+                m_controllerState[0].gripAsAim = leftGripAsAim->valueint;
+            }
+            const auto rightGripAsAim = cJSON_GetObjectItemCaseSensitive(top, "right_grip_as_aim");
+            if (rightGripAsAim) {
+                m_controllerState[1].gripAsAim = rightGripAsAim->valueint;
+            }
+
             const auto joystickHorizontalSensitivity =
                 cJSON_GetObjectItemCaseSensitive(top, "joystick_horizontal_sensitivity");
             if (joystickHorizontalSensitivity) {
@@ -393,13 +428,24 @@ namespace {
             const auto recordedAction = cJSON_GetObjectItemCaseSensitive(top, "recorded_action");
             if (recordedAction) {
                 const auto name = cJSON_GetObjectItemCaseSensitive(recordedAction, "name");
+                if (!name) {
+                    throw std::runtime_error("Malformatted recorded action: no name");
+                }
+
                 const auto poses = cJSON_GetObjectItemCaseSensitive(recordedAction, "poses");
                 if (!poses) {
                     throw std::runtime_error("Malformatted recorded action: no poses");
                 }
 
+                PosePlayback playback;
+
+                const auto startFromGrip = cJSON_GetObjectItemCaseSensitive(recordedAction, "start_from_grip");
+                if (startFromGrip) {
+                    playback.startFromGrip = startFromGrip->valueint;
+                }
+
                 const auto numSamples = cJSON_GetArraySize(poses);
-                m_recordedAction.reserve(numSamples);
+                playback.poses.reserve(numSamples);
 
                 for (int i = 0; i < numSamples; i++) {
                     const auto item = cJSON_GetArrayItem(poses, i);
@@ -422,8 +468,10 @@ namespace {
                                                   (float)rz->valuedouble,
                                                   (float)rw->valuedouble},
                                        XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
-                    m_recordedAction.push_back(std::make_pair(timestamp->valuedouble, pose));
+                    playback.poses.push_back(std::make_pair(timestamp->valuedouble, pose));
                 }
+
+                m_playback.insert_or_assign(name->valuestring, std::move(playback));
             }
         }
 
@@ -438,13 +486,7 @@ namespace {
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
         float m_joystickVerticalSensitivity = 0.1f;   // m/s at full joystick swing.
 
-        // TODO: We will want to support >1 of these.
-        std::vector<std::pair<double, XrPosef>> m_recordedAction;
-
-        // TODO: Move this into m_controllerState[side].
-        size_t m_animationFrame = -1;
-        int m_animationSide = -1;
-        double m_animationStart = -1;
+        std::map<std::string, PosePlayback> m_playback;
 
         // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
         XrPosef m_toGripPose[xr::Side::Count];
