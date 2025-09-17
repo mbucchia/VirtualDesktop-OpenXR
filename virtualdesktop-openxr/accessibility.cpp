@@ -172,22 +172,46 @@ namespace {
             // vector (head pose), which gives an "en garde" pose for our sword.
             auto transformedPose = Pose::Invert(m_toGripPose[side]) * inFront * headPose;
 
+            const auto currentPlaybackTime = absTime - m_animationStart;
+
             if (m_animationFrame != -1 && side == m_animationSide) {
+                
+                // TODO: why is currentPlaybacktime huge
+                //while (m_recordedAction.size() > m_animationFrame && m_recordedAction[m_animationFrame].first <
+                //    currentPlaybackTime) {
+                //    Log("We're behind, frame is %d while currentTime is %d", m_recordedAction[m_animationFrame].first, currentPlaybackTime);
+                    //m_animationFrame++;
+                //}
+
                 if (m_recordedAction.size() <= m_animationFrame) {
                     Log("Resetting animation\n");
                     m_animationSide = -1;
                     m_animationFrame = -1;
-                } else {
+                    m_animationStart = -1;
+                } 
+                else {
                     auto currentFrame = m_recordedAction[m_animationFrame];
                     auto currentTimeStamp = currentFrame.first;
                     auto currentPose = currentFrame.second;
 
-                    transformedPose = Pose::Multiply(transformedPose, currentPose);
-
-                    m_animationFrame++;
-
-                    // TODO: integrate time stamp / interpolation for smoother animation
-                }
+                     if (m_recordedAction.size() <= m_animationFrame + 1) {
+                        // If we have nothing to interpolate between, just apply
+                        transformedPose = Pose::Multiply(currentPose, transformedPose);
+                        // TODO: remove
+                        m_animationFrame++;
+                    } else {
+                        // Interpolate away
+                        auto nextFrame = m_recordedAction[m_animationFrame + 1];
+                        // TODO: this makes an angry warning for data loss
+                        const float alpha =
+                            (currentPlaybackTime - currentTimeStamp) / (currentTimeStamp - nextFrame.first);
+                        transformedPose = Pose::Multiply(xr::math::Pose::Slerp(currentPose, nextFrame.second, alpha),
+                                                         transformedPose);
+                        // TODO: remove
+                        m_animationFrame++;
+                    }         
+                }         
+                
             }
 
             outDevicePose->ThePose = xrPoseToOvrPose(transformedPose);
@@ -284,6 +308,7 @@ namespace {
                        const auto direction = m_controllerInputState.Thumbstick[m_dominantHand];
                         m_animationSide = m_controllerState[0].followGaze ? xr::Side::Left : xr::Side::Right;
                         m_animationFrame = 0;
+                        m_animationStart = lastOvrTime;
                         // TODO: support animating both sides
 
                         Log("Starting replay\n");
@@ -405,6 +430,7 @@ namespace {
 
         size_t m_animationFrame = -1;
         int m_animationSide = -1;
+        double m_animationStart = -1;
 
         // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
         XrPosef m_toGripPose[xr::Side::Count];
