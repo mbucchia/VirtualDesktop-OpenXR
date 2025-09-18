@@ -51,12 +51,13 @@ namespace {
 
     // Default controller position relative to head (in meters)
     // Left or right 15cm, below 10cm, in front 35cm.
-    static constexpr XrVector3f k_DefaultPositionRelativeToHead = { 0.15f, -0.1f, -0.35f };
+    static constexpr XrVector3f k_DefaultPositionRelativeToHead = {0.15f, -0.1f, -0.35f};
 
     struct PosePlayback {
         // Whether to reset to grip pose prior to starting the animation. Useful when a controller is in gripAsAim mode.
         bool startFromGrip = false;
 
+        // Playback speed for the animation.
         double playbackSpeed = 1.0;
 
         // A time-series of relative poses.
@@ -88,6 +89,7 @@ namespace {
         // The current base frame for the playback.
         size_t animationFrame = -1;
 
+        // The pose to use when placing the controller in from of the user and following gaze.
         XrVector3f initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
 
         // An offset to apply to the running animation.
@@ -194,9 +196,8 @@ namespace {
 
                 const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
 
-                const auto controllerRelativeToHeadPose = Pose::MakePose(
-                    m_controllerState[side].initialPositionRelativeToHead,
-                    XrVector3f{ 0, 0, 0 });
+                const auto controllerRelativeToHeadPose =
+                    Pose::MakePose(m_controllerState[side].initialPositionRelativeToHead, XrVector3f{0, 0, 0});
 
                 // Either leave as grip, or apply transform into aim.
                 finalPose = controllerRelativeToHeadPose * headPose;
@@ -299,7 +300,7 @@ namespace {
 
             // GameInput types
             ComPtr<IGameInput> gameInput;
-            
+
             if (!m_useTouchControllerButtons) {
                 // Initialize GameInput.
                 if (!SUCCEEDED(GameInputCreate(gameInput.GetAddressOf()))) {
@@ -345,17 +346,17 @@ namespace {
                         m_playbackIndex = 0;
                     }
 
-                   if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Right) : false) {
+                    if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Right) : false) {
                         m_playbackIndex = 1 % m_playback.size();
-                   }
+                    }
 
-                   if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Down) : false) {
-                       m_playbackIndex = 2 % m_playback.size();
-                   }
+                    if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Down) : false) {
+                        m_playbackIndex = 2 % m_playback.size();
+                    }
 
-                   if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Left) : false) {
-                       m_playbackIndex = 3 % m_playback.size();
-                   }
+                    if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Left) : false) {
+                        m_playbackIndex = 3 % m_playback.size();
+                    }
 
                     // DEMO CODE: Use the shoulder button to start replay.
                     if (!m_useTouchControllerButtons
@@ -429,7 +430,6 @@ namespace {
         }
 
         void ParseConfiguration(cJSON* json, const std::string& applicationName) {
-
             auto parsePosition = [](const cJSON* parent, const char* key, XrVector3f* outPosition) {
                 if (parent && outPosition) {
                     const cJSON* poseObj = key ? cJSON_GetObjectItemCaseSensitive(parent, key) : parent;
@@ -438,7 +438,8 @@ namespace {
                         const auto y = cJSON_GetObjectItemCaseSensitive(poseObj, "y");
                         const auto z = cJSON_GetObjectItemCaseSensitive(poseObj, "z");
                         if (x && y && z) {
-                            *outPosition = XrVector3f{ (float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble };
+                            *outPosition =
+                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble};
                             return true;
                         }
                     }
@@ -459,8 +460,11 @@ namespace {
                         const auto rw = cJSON_GetObjectItemCaseSensitive(poseObj, "rw");
                         if (x && y && z && rx && ry && rz && rw) {
                             *outPose = Pose::MakePose(
-                                XrVector4f{ (float)rx->valuedouble, (float)ry->valuedouble, (float)rz->valuedouble, (float)rw->valuedouble },
-                                XrVector3f{ (float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble });
+                                XrVector4f{(float)rx->valuedouble,
+                                           (float)ry->valuedouble,
+                                           (float)rz->valuedouble,
+                                           (float)rw->valuedouble},
+                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
                             return true;
                         }
                     }
@@ -484,17 +488,19 @@ namespace {
             m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
 
             if (!parsePosition(top, "position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
-                if (!parsePosition(top, "left_position_relative_to_head", &m_controllerState[0].initialPositionRelativeToHead)) {
+                if (!parsePosition(
+                        top, "left_position_relative_to_head", &m_controllerState[0].initialPositionRelativeToHead)) {
                     m_controllerState[0].initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
-                    m_controllerState[0].initialPositionRelativeToHead.x = -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
+                    m_controllerState[0].initialPositionRelativeToHead.x =
+                        -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
                 }
-                if (!parsePosition(top, "right_position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
+                if (!parsePosition(
+                        top, "right_position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
                     m_controllerState[1].initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
-                    m_controllerState[1].initialPositionRelativeToHead.x = std::abs(m_controllerState[1].initialPositionRelativeToHead.x);
+                    m_controllerState[1].initialPositionRelativeToHead.x =
+                        std::abs(m_controllerState[1].initialPositionRelativeToHead.x);
                 }
-            }
-            else
-            {
+            } else {
                 m_controllerState[0].initialPositionRelativeToHead = m_controllerState[1].initialPositionRelativeToHead;
                 m_controllerState[0].initialPositionRelativeToHead.x =
                     -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
@@ -533,81 +539,35 @@ namespace {
                 m_joystickVerticalSensitivity = (float)joystickVerticalSensitivity->valuedouble;
             }
 
-            const auto recordedAction = cJSON_GetObjectItemCaseSensitive(top, "recorded_action");
-            if (recordedAction) {
-                const auto name = cJSON_GetObjectItemCaseSensitive(recordedAction, "name");
-                if (!name) {
-                    throw std::runtime_error("Malformatted recorded action: no name");
-                }
-
-                const auto poses = cJSON_GetObjectItemCaseSensitive(recordedAction, "poses");
-                if (!poses) {
-                    throw std::runtime_error("Malformatted recorded action: no poses");
-                }
-
-                PosePlayback playback;
-
-                const auto startFromGrip = cJSON_GetObjectItemCaseSensitive(recordedAction, "start_from_grip");
-                if (startFromGrip) {
-                    playback.startFromGrip = startFromGrip->valueint;
-                }
-
-                const auto playbackSpeedJson = cJSON_GetObjectItemCaseSensitive(recordedAction, "playbackSpeed");
-                playback.playbackSpeed = playbackSpeedJson ? (double)playbackSpeedJson->valuedouble : 1.0;
-
-                const auto numSamples = cJSON_GetArraySize(poses);
-                playback.poses.reserve(numSamples);
-
-                for (int i = 0; i < numSamples; i++) {
-                    const auto item = cJSON_GetArrayItem(poses, i);
-                    if (!item) {
-                        throw std::runtime_error("Malformatted recorded action: missing array item");
-                    }
-
-                    const auto timestamp = cJSON_GetObjectItemCaseSensitive(item, "timestamp");
-                    if (!timestamp) {
-                        throw std::runtime_error("Malformatted recorded action: missing timestamp");
-                    }
-
-                    XrPosef pose{};
-                    if (!parsePose(item, nullptr, &pose)) {
-                        throw std::runtime_error("Malformatted recorded action: bad pose entry");
-                    }
-
-                    playback.poses.emplace_back(timestamp->valuedouble, pose);
-                }
-
-                m_playback.insert_or_assign(name->valuestring, std::move(playback));
-            }
-
             // todo: make default, but it would break folks during demo
             const auto recordedActions = cJSON_GetObjectItemCaseSensitive(top, "recorded_actions");
             if (recordedActions) {
                 const auto numActions = cJSON_GetArraySize(recordedActions);
                 for (int j = 0; j < numActions; j++) {
-                    auto action = cJSON_GetArrayItem(recordedActions, j);
-
-                    auto name = cJSON_GetObjectItemCaseSensitive(action, "name");
+                    const auto recordedAction = cJSON_GetArrayItem(recordedActions, j);
+                    const auto name = cJSON_GetObjectItemCaseSensitive(recordedAction, "name");
                     if (!name) {
                         throw std::runtime_error("Malformatted recorded action: no name");
                     }
 
-                    auto poses = cJSON_GetObjectItemCaseSensitive(action, "poses");
+                    const auto poses = cJSON_GetObjectItemCaseSensitive(recordedAction, "poses");
                     if (!poses) {
                         throw std::runtime_error("Malformatted recorded action: no poses");
                     }
 
                     PosePlayback playback;
 
-                    auto startFromGrip = cJSON_GetObjectItemCaseSensitive(action, "start_from_grip");
+                    const auto startFromGrip = cJSON_GetObjectItemCaseSensitive(recordedAction, "start_from_grip");
                     if (startFromGrip) {
                         playback.startFromGrip = startFromGrip->valueint;
                     }
 
-                    auto playbackSpeedJson = cJSON_GetObjectItemCaseSensitive(action, "playbackSpeed");
-                    playback.playbackSpeed = playbackSpeedJson ? (double)playbackSpeedJson->valuedouble : 1.0;
+                    const auto playbackSpeedJson = cJSON_GetObjectItemCaseSensitive(recordedAction, "playbackSpeed");
+                    if (playbackSpeedJson) {
+                        playback.playbackSpeed = playbackSpeedJson->valuedouble;
+                    }
 
-                    auto numSamples = cJSON_GetArraySize(poses);
+                    const auto numSamples = cJSON_GetArraySize(poses);
                     playback.poses.reserve(numSamples);
 
                     for (int i = 0; i < numSamples; i++) {
