@@ -49,6 +49,10 @@ namespace {
     // The interval we will poll for inputs from GameInput.
     static constexpr auto k_PollingInterval = 2ms;
 
+    // Default controller position relative to head (in meters)
+    // Left or right 15cm, below 10cm, in front 35cm.
+    static constexpr XrVector3f k_DefaultPositionRelativeToHead = { 0.15f, -0.1f, -0.35f };
+
     struct PosePlayback {
         // Whether to reset to grip pose prior to starting the animation. Useful when a controller is in gripAsAim mode.
         bool startFromGrip = false;
@@ -83,6 +87,8 @@ namespace {
 
         // The current base frame for the playback.
         size_t animationFrame = -1;
+
+        XrVector3f initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
 
         // An offset to apply to the running animation.
         XrPosef poseAnimationOffset = Pose::Identity();
@@ -188,12 +194,12 @@ namespace {
 
                 const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
 
-                // Left or right 15cm, below 10cm, in front 35cm.
-                const auto inFront = Pose::MakePose(XrVector3f{side == xr::Side::Left ? -0.15f : 0.15f, -0.1f, -0.35f},
-                                                    XrVector3f{0, 0, 0});
+                const auto controllerRelativeToHeadPose = Pose::MakePose(
+                    m_controllerState[side].initialPositionRelativeToHead,
+                    XrVector3f{ 0, 0, 0 });
 
                 // Either leave as grip, or apply transform into aim.
-                finalPose = inFront * headPose;
+                finalPose = controllerRelativeToHeadPose * headPose;
                 if (m_controllerState[side].gripAsAim) {
                     finalPose = Pose::Invert(m_toGripPose[side]) * finalPose;
                 }
@@ -423,6 +429,45 @@ namespace {
         }
 
         void ParseConfiguration(cJSON* json, const std::string& applicationName) {
+
+            auto parsePosition = [](const cJSON* parent, const char* key, XrVector3f* outPosition) {
+                if (parent && outPosition) {
+                    const cJSON* poseObj = key ? cJSON_GetObjectItemCaseSensitive(parent, key) : parent;
+                    if (poseObj) {
+                        const auto x = cJSON_GetObjectItemCaseSensitive(poseObj, "x");
+                        const auto y = cJSON_GetObjectItemCaseSensitive(poseObj, "y");
+                        const auto z = cJSON_GetObjectItemCaseSensitive(poseObj, "z");
+                        if (x && y && z) {
+                            *outPosition = XrVector3f{ (float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble };
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
+            auto parsePose = [](const cJSON* parent, const char* key, XrPosef* outPose) {
+                if (parent && outPose) {
+                    const cJSON* poseObj = key ? cJSON_GetObjectItemCaseSensitive(parent, key) : parent;
+                    if (poseObj && outPose) {
+                        const auto x = cJSON_GetObjectItemCaseSensitive(poseObj, "x");
+                        const auto y = cJSON_GetObjectItemCaseSensitive(poseObj, "y");
+                        const auto z = cJSON_GetObjectItemCaseSensitive(poseObj, "z");
+                        const auto rx = cJSON_GetObjectItemCaseSensitive(poseObj, "rx");
+                        const auto ry = cJSON_GetObjectItemCaseSensitive(poseObj, "ry");
+                        const auto rz = cJSON_GetObjectItemCaseSensitive(poseObj, "rz");
+                        const auto rw = cJSON_GetObjectItemCaseSensitive(poseObj, "rw");
+                        if (x && y && z && rx && ry && rz && rw) {
+                            *outPose = Pose::MakePose(
+                                XrVector4f{ (float)rx->valuedouble, (float)ry->valuedouble, (float)rz->valuedouble, (float)rw->valuedouble },
+                                XrVector3f{ (float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble });
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
             // Try to use game-specific config first, otherwise fallback to default.
             const cJSON* top = cJSON_GetObjectItemCaseSensitive(json, applicationName.c_str());
             if (!top) {
@@ -437,6 +482,25 @@ namespace {
             m_controllerState[0].enabled = emulateLeft && emulateLeft->valueint;
             const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
             m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
+
+            if (!parsePosition(top, "position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
+                if (!parsePosition(top, "left_position_relative_to_head", &m_controllerState[0].initialPositionRelativeToHead)) {
+                    m_controllerState[0].initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
+                    m_controllerState[0].initialPositionRelativeToHead.x = -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
+                }
+                if (!parsePosition(top, "right_position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
+                    m_controllerState[1].initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
+                    m_controllerState[1].initialPositionRelativeToHead.x = std::abs(m_controllerState[1].initialPositionRelativeToHead.x);
+                }
+            }
+            else
+            {
+                m_controllerState[0].initialPositionRelativeToHead = m_controllerState[1].initialPositionRelativeToHead;
+                m_controllerState[0].initialPositionRelativeToHead.x =
+                    -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
+                m_controllerState[1].initialPositionRelativeToHead.x =
+                    std::abs(m_controllerState[1].initialPositionRelativeToHead.x);
+            }
 
             const auto useTouchControllerButtons =
                 cJSON_GetObjectItemCaseSensitive(top, "debug_use_touch_controller_buttons");
@@ -496,26 +560,21 @@ namespace {
 
                 for (int i = 0; i < numSamples; i++) {
                     const auto item = cJSON_GetArrayItem(poses, i);
-                    const auto timestamp = item ? cJSON_GetObjectItemCaseSensitive(item, "timestamp") : nullptr;
-                    const auto x = item ? cJSON_GetObjectItemCaseSensitive(item, "x") : nullptr;
-                    const auto y = item ? cJSON_GetObjectItemCaseSensitive(item, "y") : nullptr;
-                    const auto z = item ? cJSON_GetObjectItemCaseSensitive(item, "z") : nullptr;
-                    const auto rx = item ? cJSON_GetObjectItemCaseSensitive(item, "rx") : nullptr;
-                    const auto ry = item ? cJSON_GetObjectItemCaseSensitive(item, "ry") : nullptr;
-                    const auto rz = item ? cJSON_GetObjectItemCaseSensitive(item, "rz") : nullptr;
-                    const auto rw = item ? cJSON_GetObjectItemCaseSensitive(item, "rw") : nullptr;
-
-                    if (!(timestamp && x && y && z && rw && rx && ry && rz)) {
-                        throw std::runtime_error("Malformatted recorded action: bad entry");
+                    if (!item) {
+                        throw std::runtime_error("Malformatted recorded action: missing array item");
                     }
 
-                    XrPosef pose =
-                        Pose::MakePose(XrVector4f{(float)rx->valuedouble,
-                                                  (float)ry->valuedouble,
-                                                  (float)rz->valuedouble,
-                                                  (float)rw->valuedouble},
-                                       XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
-                    playback.poses.push_back(std::make_pair(timestamp->valuedouble, pose));
+                    const auto timestamp = cJSON_GetObjectItemCaseSensitive(item, "timestamp");
+                    if (!timestamp) {
+                        throw std::runtime_error("Malformatted recorded action: missing timestamp");
+                    }
+
+                    XrPosef pose{};
+                    if (!parsePose(item, nullptr, &pose)) {
+                        throw std::runtime_error("Malformatted recorded action: bad pose entry");
+                    }
+
+                    playback.poses.emplace_back(timestamp->valuedouble, pose);
                 }
 
                 m_playback.insert_or_assign(name->valuestring, std::move(playback));
