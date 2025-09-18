@@ -612,26 +612,21 @@ namespace {
 
                     for (int i = 0; i < numSamples; i++) {
                         const auto item = cJSON_GetArrayItem(poses, i);
-                        const auto timestamp = item ? cJSON_GetObjectItemCaseSensitive(item, "timestamp") : nullptr;
-                        const auto x = item ? cJSON_GetObjectItemCaseSensitive(item, "x") : nullptr;
-                        const auto y = item ? cJSON_GetObjectItemCaseSensitive(item, "y") : nullptr;
-                        const auto z = item ? cJSON_GetObjectItemCaseSensitive(item, "z") : nullptr;
-                        const auto rx = item ? cJSON_GetObjectItemCaseSensitive(item, "rx") : nullptr;
-                        const auto ry = item ? cJSON_GetObjectItemCaseSensitive(item, "ry") : nullptr;
-                        const auto rz = item ? cJSON_GetObjectItemCaseSensitive(item, "rz") : nullptr;
-                        const auto rw = item ? cJSON_GetObjectItemCaseSensitive(item, "rw") : nullptr;
-
-                        if (!(timestamp && x && y && z && rw && rx && ry && rz)) {
-                            throw std::runtime_error("Malformatted recorded action: bad entry");
+                        if (!item) {
+                            throw std::runtime_error("Malformatted recorded action: missing array item");
                         }
 
-                        XrPosef pose = Pose::MakePose(
-                            XrVector4f{(float)rx->valuedouble,
-                                       (float)ry->valuedouble,
-                                       (float)rz->valuedouble,
-                                       (float)rw->valuedouble},
-                            XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
-                        playback.poses.push_back(std::make_pair(timestamp->valuedouble, pose));
+                        const auto timestamp = cJSON_GetObjectItemCaseSensitive(item, "timestamp");
+                        if (!timestamp) {
+                            throw std::runtime_error("Malformatted recorded action: missing timestamp");
+                        }
+
+                        XrPosef pose{};
+                        if (!parsePose(item, nullptr, &pose)) {
+                            throw std::runtime_error("Malformatted recorded action: bad pose entry");
+                        }
+
+                        playback.poses.emplace_back(timestamp->valuedouble, pose);
                     }
 
                     m_playback.insert_or_assign(name->valuestring, std::move(playback));
