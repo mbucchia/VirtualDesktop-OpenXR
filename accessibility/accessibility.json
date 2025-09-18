@@ -7,6 +7,7 @@
     "right_grip_as_aim": true,
     "joystick_horizontal_sensitivity": 0.1,
     "joystick_vertical_sensitivity": 0.1,
+    "joystick_deadzone": 0.2,
     "position_relative_to_head": {
       "x": 0.15,
       "y": -0.1,

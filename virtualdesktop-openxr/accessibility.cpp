@@ -364,13 +364,15 @@ namespace {
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
                             : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
                         // Sample the joystick on the dominant hand to apply an additional transform to the replay.
-                        const auto direction = XrVector2f{m_controllerInputState.Thumbstick[m_dominantHand].x,
-                                                          m_controllerInputState.Thumbstick[m_dominantHand].y};
+                        const auto direction =
+                            HandleJoystickDeadzone({m_controllerInputState.Thumbstick[m_dominantHand].x,
+                                                    m_controllerInputState.Thumbstick[m_dominantHand].y});
 
                         // Normalize the direction. If the joystick is untouched, assume direction is Down.
                         const auto lengthDirection = std::sqrt(direction.x * direction.x + direction.y * direction.y);
                         const auto normalizedDirection =
                             (lengthDirection > FLT_EPSILON) ? direction / lengthDirection : XrVector2f{0.f, -1.f};
+                        const auto normalizedDirectionWithDeadzone = (normalizedDirection);
 
                         for (xr::side_t side = 0; side < xr::Side::Count; side++) {
                             if (!m_controllerState[side].followGaze) {
@@ -389,7 +391,8 @@ namespace {
                                 {},
                                 XrVector3f{0.f,
                                            0.f,
-                                           (float)M_PI_2 + std::atan2(normalizedDirection.y, normalizedDirection.x)});
+                                           (float)M_PI_2 + std::atan2(normalizedDirectionWithDeadzone.y,
+                                                                      normalizedDirectionWithDeadzone.x)});
 
                             if (m_controllerState[side].animation->startFromGrip && m_controllerState[side].gripAsAim) {
                                 m_controllerState[side].poseAnimationOffset =
@@ -538,6 +541,10 @@ namespace {
             if (joystickVerticalSensitivity) {
                 m_joystickVerticalSensitivity = (float)joystickVerticalSensitivity->valuedouble;
             }
+            const auto joystickDeadzone = cJSON_GetObjectItemCaseSensitive(top, "joystick_deadzone");
+            if (joystickDeadzone) {
+                m_joystickDeadzone = (float)joystickDeadzone->valuedouble;
+            }
 
             // todo: make default, but it would break folks during demo
             const auto recordedActions = cJSON_GetObjectItemCaseSensitive(top, "recorded_actions");
@@ -681,6 +688,16 @@ namespace {
             return false;
         }
 
+        XrVector2f HandleJoystickDeadzone(const XrVector2f& rawInput) const {
+            const float length = std::sqrt(rawInput.x * rawInput.x + rawInput.y * rawInput.y);
+            if (length < m_joystickDeadzone) {
+                return {0, 0};
+            }
+            XrVector2f normalizedInput{rawInput.x / length, rawInput.y / length};
+            const float scaling = (length - m_joystickDeadzone) / (1 - m_joystickDeadzone);
+            return {normalizedInput.x * scaling, normalizedInput.y * scaling};
+        }
+
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
         std::thread m_inputThread;
@@ -691,6 +708,7 @@ namespace {
         xr::side_t m_dominantHand = xr::Side::Right;
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
         float m_joystickVerticalSensitivity = 0.1f;   // m/s at full joystick swing.
+        float m_joystickDeadzone = 0.2f;
 
         size_t m_playbackIndex = 0;
         std::map<std::string, PosePlayback> m_playback;
