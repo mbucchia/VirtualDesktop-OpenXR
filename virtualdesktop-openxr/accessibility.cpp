@@ -200,9 +200,48 @@ namespace {
                     if (!m_controllerState[side].latestReportedPose) {
                         return false;
                     } else {
-                        // TODO: Return last good pose? Or a "parking" pose out of the screen? Do we also need to apply
-                        // the animation here?
-                        outDevicePose->ThePose = xrPoseToOvrPose(m_controllerState[side].latestReportedPose.value());
+                        // TODO: Return last good pose? Or a "parking" pose out of the screen?
+
+                        auto transform = m_controllerState[side].latestReportedPose.value();
+
+                        // DEMO CODE: Even if we stopped tracking it, we should still finish any queued up animation.
+
+                        if (m_controllerState[side].animation) {
+                            const auto currentPlaybackTime = absTime - m_controllerState[side].animationStartTime;
+
+                            while (
+                                m_controllerState[side].animationFrame <
+                                    m_controllerState[side].animation->poses.size() &&
+                                m_controllerState[side].animation->poses[m_controllerState[side].animationFrame].first /
+                                        m_controllerState[side].animation->playbackSpeed <
+                                    currentPlaybackTime) {
+                                m_controllerState[side].animationFrame++;
+                            }
+
+                            const auto currentFrameIndex = m_controllerState[side].animationFrame;
+                            const auto nextFrameIndex = m_controllerState[side].animationFrame + 1;
+                            if (nextFrameIndex >= m_controllerState[side].animation->poses.size()) {
+                                Log("Reached end of animation %s side\n", side == xr::Side::Left ? "left" : "right");
+                                m_controllerState[side].animation = nullptr;
+                            } else {
+                                const auto currentFrame = m_controllerState[side].animation->poses[currentFrameIndex];
+                                const auto currentTimeStamp =
+                                    currentFrame.first / m_controllerState[side].animation->playbackSpeed;
+                                const auto currentPose = currentFrame.second;
+
+                                // Interpolate between this frame and the next
+                                const auto nextFrame = m_controllerState[side].animation->poses[nextFrameIndex];
+                                const auto nextFrameTimeStamp =
+                                    nextFrame.first / m_controllerState[side].animation->playbackSpeed;
+                                const auto nextFramePose = nextFrame.second;
+
+                                const float alpha = (float)((currentPlaybackTime - currentTimeStamp) /
+                                                            (nextFrameTimeStamp - currentTimeStamp));
+                                transform = xr::math::Pose::Slerp(currentPose, nextFramePose, alpha) *
+                                            m_controllerState[side].poseAnimationOffset * transform;
+                            }
+                        }
+                        outDevicePose->ThePose = xrPoseToOvrPose(transform);
                         return true;
                     }
                 }
@@ -357,6 +396,16 @@ namespace {
                         m_controllerState[m_dominantHand].followGaze = wasFollowingGaze[m_dominantHand];
                         m_controllerState[m_dominantHand ^ 1].followGaze =
                             !m_controllerState[m_dominantHand].followGaze && wasFollowingGaze[m_dominantHand ^ 1];
+                    }
+
+                    // If we _were_ following the gaze and now we're not, update the rotation of that last reported pose
+                    for (xr::side_t side = 0; side < xr::Side::Count; side++) {
+                        if (!m_controllerState[side].followGaze && wasFollowingGaze[side]) {
+                            Log("Resetting animation pose offset due to switching gaze mid-animation: %s side\n",
+                                side == xr::Side::Left ? "left" : "right");
+
+                            m_controllerState[side].poseAnimationOffset = Pose::Identity();
+                        }
                     }
 
                     // DEMO CODE: use directions to cycle through pre-recorded sequences.
