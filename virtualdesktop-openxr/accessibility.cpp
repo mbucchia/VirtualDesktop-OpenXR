@@ -103,7 +103,8 @@ namespace {
       public:
         AccessibilityHelperImpl(ovrSession ovrSession,
                                 const std::wstring& configPath,
-                                const std::string& applicationName)
+                                const std::string& applicationName,
+                                const std::string& exeName)
             : m_ovrSession(ovrSession) {
             // Adjust default config for right controller.
             FlipHandedness(m_controllerState[1].initialPoseRelativeToHead);
@@ -125,8 +126,23 @@ namespace {
                         throw std::runtime_error("Failed to parse JSON");
                     }
 
-                    ParseConfiguration(json, applicationName);
+                    // Always load defaults first.
+                    const cJSON* defaults = cJSON_GetObjectItemCaseSensitive(json, "default");
+                    if (!defaults) {
+                        throw std::runtime_error("Failed to get default configuration item");
+                    }
+                    ParseConfiguration(defaults);
 
+                    // Next, try to amend with game-specific.
+                    // Some engines (Unity with OVRPlugin) will not properly populate the OpenXR applicationName, so we
+                    // try using the .exe name as well.
+                    cJSON* appByName = cJSON_GetObjectItemCaseSensitive(json, applicationName.c_str());
+                    cJSON* appByExe = cJSON_GetObjectItemCaseSensitive(json, exeName.c_str());
+                    if (appByExe) {
+                        ParseConfiguration(appByExe);
+                    } else {
+                        ParseConfiguration(appByName);
+                    }
                 } catch (std::runtime_error& exc) {
                     Log("Error parsing configuration file %ws: %s", configPath.c_str(), exc.what());
                 }
@@ -435,7 +451,7 @@ namespace {
             }
         }
 
-        void ParseConfiguration(cJSON* json, const std::string& applicationName) {
+        void ParseConfiguration(const cJSON* top) {
             auto parsePoseSimple = [](const cJSON* parent, const char* key, XrPosef* outPose) {
                 if (parent && outPose) {
                     const cJSON* poseObj = key ? cJSON_GetObjectItemCaseSensitive(parent, key) : parent;
@@ -487,20 +503,12 @@ namespace {
                 return false;
             };
 
-            // Try to use game-specific config first, otherwise fallback to default.
-            const cJSON* top = cJSON_GetObjectItemCaseSensitive(json, applicationName.c_str());
-            if (!top) {
-                top = cJSON_GetObjectItemCaseSensitive(json, "default");
+            if (const auto emulateLeft = cJSON_GetObjectItemCaseSensitive(top, "emulate_left")) {
+                m_controllerState[0].enabled = emulateLeft->valueint;
             }
-
-            if (!top) {
-                throw std::runtime_error("Failed to get top-level configuration item");
+            if (const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right")) {
+                m_controllerState[1].enabled = emulateRight->valueint;
             }
-
-            const auto emulateLeft = cJSON_GetObjectItemCaseSensitive(top, "emulate_left");
-            m_controllerState[0].enabled = emulateLeft && emulateLeft->valueint;
-            const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
-            m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
 
             if (parsePoseSimple(top, "pose_relative_to_head", &m_controllerState[0].initialPoseRelativeToHead)) {
                 // Replicate to right side and flip.
@@ -511,44 +519,38 @@ namespace {
                 parsePoseSimple(top, "right_pose_relative_to_head", &m_controllerState[1].initialPoseRelativeToHead);
             }
 
-            const auto useTouchControllerButtons =
-                cJSON_GetObjectItemCaseSensitive(top, "debug_use_touch_controller_buttons");
-            m_useTouchControllerButtons = useTouchControllerButtons && useTouchControllerButtons->valueint;
+            if (const auto useTouchControllerButtons =
+                    cJSON_GetObjectItemCaseSensitive(top, "debug_use_touch_controller_buttons")) {
+                m_useTouchControllerButtons = useTouchControllerButtons->valueint;
+            }
 
             // TODO: It's be nice to properly detect and report certain parsing errors, instead of silently ignoring
             // values.
-            const auto dominantHand = cJSON_GetObjectItemCaseSensitive(top, "dominant_hand");
-            if (dominantHand) {
+            if (const auto dominantHand = cJSON_GetObjectItemCaseSensitive(top, "dominant_hand")) {
                 m_dominantHand = std::min(1, dominantHand->valueint);
             }
 
-            const auto leftGripAsAim = cJSON_GetObjectItemCaseSensitive(top, "left_grip_as_aim");
-            if (leftGripAsAim) {
+            if (const auto leftGripAsAim = cJSON_GetObjectItemCaseSensitive(top, "left_grip_as_aim")) {
                 m_controllerState[0].gripAsAim = leftGripAsAim->valueint;
             }
-            const auto rightGripAsAim = cJSON_GetObjectItemCaseSensitive(top, "right_grip_as_aim");
-            if (rightGripAsAim) {
+            if (const auto rightGripAsAim = cJSON_GetObjectItemCaseSensitive(top, "right_grip_as_aim")) {
                 m_controllerState[1].gripAsAim = rightGripAsAim->valueint;
             }
 
-            const auto joystickHorizontalSensitivity =
-                cJSON_GetObjectItemCaseSensitive(top, "joystick_horizontal_sensitivity");
-            if (joystickHorizontalSensitivity) {
+            if (const auto joystickHorizontalSensitivity =
+                    cJSON_GetObjectItemCaseSensitive(top, "joystick_horizontal_sensitivity")) {
                 m_joystickHorizontalSensitivity = (float)joystickHorizontalSensitivity->valuedouble;
             }
-            const auto joystickVerticalSensitivity =
-                cJSON_GetObjectItemCaseSensitive(top, "joystick_vertical_sensitivity");
-            if (joystickVerticalSensitivity) {
+            if (const auto joystickVerticalSensitivity =
+                    cJSON_GetObjectItemCaseSensitive(top, "joystick_vertical_sensitivity")) {
                 m_joystickVerticalSensitivity = (float)joystickVerticalSensitivity->valuedouble;
             }
-            const auto joystickDeadzone = cJSON_GetObjectItemCaseSensitive(top, "joystick_deadzone");
-            if (joystickDeadzone) {
+            if (const auto joystickDeadzone = cJSON_GetObjectItemCaseSensitive(top, "joystick_deadzone")) {
                 m_joystickDeadzone = (float)joystickDeadzone->valuedouble;
             }
 
-            // todo: make default, but it would break folks during demo
-            const auto recordedActions = cJSON_GetObjectItemCaseSensitive(top, "recorded_actions");
-            if (recordedActions) {
+            if (const auto recordedActions = cJSON_GetObjectItemCaseSensitive(top, "recorded_actions")) {
+                m_playback.clear();
                 const auto numActions = cJSON_GetArraySize(recordedActions);
                 for (int j = 0; j < numActions; j++) {
                     const auto recordedAction = cJSON_GetArrayItem(recordedActions, j);
@@ -564,13 +566,13 @@ namespace {
 
                     PosePlayback playback;
 
-                    const auto startFromGrip = cJSON_GetObjectItemCaseSensitive(recordedAction, "start_from_grip");
-                    if (startFromGrip) {
+                    if (const auto startFromGrip =
+                            cJSON_GetObjectItemCaseSensitive(recordedAction, "start_from_grip")) {
                         playback.startFromGrip = startFromGrip->valueint;
                     }
 
-                    const auto playbackSpeedJson = cJSON_GetObjectItemCaseSensitive(recordedAction, "playbackSpeed");
-                    if (playbackSpeedJson) {
+                    if (const auto playbackSpeedJson =
+                            cJSON_GetObjectItemCaseSensitive(recordedAction, "playbackSpeed")) {
                         playback.playbackSpeed = playbackSpeedJson->valuedouble;
                     }
 
@@ -731,8 +733,9 @@ namespace {
 namespace virtualdesktop_openxr {
     std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
                                                                    const std::wstring& configPath,
-                                                                   const std::string& applicationName) {
-        return std::make_unique<AccessibilityHelperImpl>(ovrSession, configPath, applicationName);
+                                                                   const std::string& applicationName,
+                                                                   const std::string& exeName) {
+        return std::make_unique<AccessibilityHelperImpl>(ovrSession, configPath, applicationName, exeName);
     }
 
 } // namespace virtualdesktop_openxr

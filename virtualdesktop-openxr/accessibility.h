@@ -37,6 +37,7 @@ namespace virtualdesktop_openxr {
 
     std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
                                                                    const std::wstring& configPath,
-                                                                   const std::string& applicationName);
+                                                                   const std::string& applicationName,
+                                                                   const std::string& exeName);
 
 } // namespace virtualdesktop_openxr
