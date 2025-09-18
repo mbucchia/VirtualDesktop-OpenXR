@@ -293,7 +293,7 @@ namespace {
 
             // GameInput types
             ComPtr<IGameInput> gameInput;
-
+            
             if (!m_useTouchControllerButtons) {
                 // Initialize GameInput.
                 if (!SUCCEEDED(GameInputCreate(gameInput.GetAddressOf()))) {
@@ -333,6 +333,24 @@ namespace {
                             !m_controllerState[m_dominantHand].followGaze && wasFollowingGaze[m_dominantHand ^ 1];
                     }
 
+                    // DEMO CODE: use directions to cycle through pre-recorded sequences.
+                    // TODO: this should be way more controlled/customizable, but for demo purposes
+                    if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Up) : false) {
+                        m_playbackIndex = 0;
+                    }
+
+                   if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Right) : false) {
+                        m_playbackIndex = 1 % m_playback.size();
+                   }
+
+                   if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Down) : false) {
+                       m_playbackIndex = 2 % m_playback.size();
+                   }
+
+                   if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Left) : false) {
+                       m_playbackIndex = 3 % m_playback.size();
+                   }
+
                     // DEMO CODE: Use the shoulder button to start replay.
                     if (!m_useTouchControllerButtons
                             ? (m_controllerInputState.Buttons &
@@ -352,8 +370,8 @@ namespace {
                                 continue;
                             }
 
-                            // TODO: We want to make this configurable.
-                            const auto cit = m_playback.cbegin();
+                            auto cit = m_playback.cbegin();
+                            std::advance(cit, m_playbackIndex);
                             m_controllerState[side].animation = &cit->second;
 
                             Log("Starting replay of %s on %s side\n",
@@ -502,6 +520,64 @@ namespace {
 
                 m_playback.insert_or_assign(name->valuestring, std::move(playback));
             }
+
+            // todo: make default, but it would break folks during demo
+            const auto recordedActions = cJSON_GetObjectItemCaseSensitive(top, "recorded_actions");
+            if (recordedActions) {
+                const auto numActions = cJSON_GetArraySize(recordedActions);
+                for (int j = 0; j < numActions; j++) {
+                    auto action = cJSON_GetArrayItem(recordedActions, j);
+
+                    auto name = cJSON_GetObjectItemCaseSensitive(action, "name");
+                    if (!name) {
+                        throw std::runtime_error("Malformatted recorded action: no name");
+                    }
+
+                    auto poses = cJSON_GetObjectItemCaseSensitive(action, "poses");
+                    if (!poses) {
+                        throw std::runtime_error("Malformatted recorded action: no poses");
+                    }
+
+                    PosePlayback playback;
+
+                    auto startFromGrip = cJSON_GetObjectItemCaseSensitive(action, "start_from_grip");
+                    if (startFromGrip) {
+                        playback.startFromGrip = startFromGrip->valueint;
+                    }
+
+                    auto playbackSpeedJson = cJSON_GetObjectItemCaseSensitive(action, "playbackSpeed");
+                    playback.playbackSpeed = playbackSpeedJson ? (double)playbackSpeedJson->valuedouble : 1.0;
+
+                    auto numSamples = cJSON_GetArraySize(poses);
+                    playback.poses.reserve(numSamples);
+
+                    for (int i = 0; i < numSamples; i++) {
+                        const auto item = cJSON_GetArrayItem(poses, i);
+                        const auto timestamp = item ? cJSON_GetObjectItemCaseSensitive(item, "timestamp") : nullptr;
+                        const auto x = item ? cJSON_GetObjectItemCaseSensitive(item, "x") : nullptr;
+                        const auto y = item ? cJSON_GetObjectItemCaseSensitive(item, "y") : nullptr;
+                        const auto z = item ? cJSON_GetObjectItemCaseSensitive(item, "z") : nullptr;
+                        const auto rx = item ? cJSON_GetObjectItemCaseSensitive(item, "rx") : nullptr;
+                        const auto ry = item ? cJSON_GetObjectItemCaseSensitive(item, "ry") : nullptr;
+                        const auto rz = item ? cJSON_GetObjectItemCaseSensitive(item, "rz") : nullptr;
+                        const auto rw = item ? cJSON_GetObjectItemCaseSensitive(item, "rw") : nullptr;
+
+                        if (!(timestamp && x && y && z && rw && rx && ry && rz)) {
+                            throw std::runtime_error("Malformatted recorded action: bad entry");
+                        }
+
+                        XrPosef pose = Pose::MakePose(
+                            XrVector4f{(float)rx->valuedouble,
+                                       (float)ry->valuedouble,
+                                       (float)rz->valuedouble,
+                                       (float)rw->valuedouble},
+                            XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
+                        playback.poses.push_back(std::make_pair(timestamp->valuedouble, pose));
+                    }
+
+                    m_playback.insert_or_assign(name->valuestring, std::move(playback));
+                }
+            }
         }
 
         // Helper function to convert GameInputGamepadState to ovrInputState using the mapping logic from the input
@@ -602,6 +678,7 @@ namespace {
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
         float m_joystickVerticalSensitivity = 0.1f;   // m/s at full joystick swing.
 
+        size_t m_playbackIndex = 0;
         std::map<std::string, PosePlayback> m_playback;
 
         // OVR to OpenXR poses. Useful if we want to emulate a pose relative to the standard grip or aim pose.
