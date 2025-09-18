@@ -353,6 +353,18 @@ namespace {
         }
 
       private:
+        enum class CardinalDirection {
+            Center,
+            North,
+            South,
+            East,
+            West,
+            Northeast,
+            Northwest,
+            Southeast,
+            Southwest
+        };
+
         void InputThread() {
             SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
@@ -432,9 +444,12 @@ namespace {
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
                             : m_controllerInputState.HandTrigger[m_dominantHand] > 0.25f) {
                         // Sample the joystick on the dominant hand to apply an additional transform to the replay.
-                        const auto direction =
+                        const auto filtered =
                             HandleJoystickDeadzone({m_controllerInputState.Thumbstick[m_dominantHand].x,
                                                     m_controllerInputState.Thumbstick[m_dominantHand].y});
+
+                        // Snap the joystick to the cardinal directions if the user has enabled that option.
+                        const auto direction = (m_useJoystickCardinalSnap) ? SnapJoystickToCardinal(filtered) : filtered;
 
                         // Normalize the direction. If the joystick is untouched, assume direction is Down.
                         const auto lengthDirection = std::sqrt(direction.x * direction.x + direction.y * direction.y);
@@ -597,6 +612,9 @@ namespace {
             if (const auto joystickDeadzone = cJSON_GetObjectItemCaseSensitive(top, "joystick_deadzone")) {
                 m_joystickDeadzone = (float)joystickDeadzone->valuedouble;
             }
+            if (const auto joystickCardinalSnap = cJSON_GetObjectItemCaseSensitive(top, "joystick_cardinal_snap")) {
+                m_useJoystickCardinalSnap = joystickCardinalSnap->valueint;
+            }
 
             if (const auto recordedActions = cJSON_GetObjectItemCaseSensitive(top, "recorded_actions")) {
                 m_playback.clear();
@@ -757,6 +775,72 @@ namespace {
             pose.orientation.z = -pose.orientation.z;
         };
 
+        CardinalDirection GetJoystickCardinalDirection(const XrVector2f& rawInput) {
+            static constexpr float k_Threshold = 0.3f; // Threshold for snap to center
+
+            if (std::fabs(rawInput.x) < k_Threshold && std::fabs(rawInput.y) < k_Threshold) {
+                return CardinalDirection::Center;
+            }
+
+            if (rawInput.y >= k_Threshold) {
+                if (rawInput.x >= k_Threshold) {
+                    return CardinalDirection::Northeast;
+                }
+                if (rawInput.x <= -k_Threshold) {
+                    return CardinalDirection::Northwest;
+                }
+                return CardinalDirection::North;
+            }
+            else if (rawInput.y <= -k_Threshold) {
+                if (rawInput.x >= k_Threshold) {
+                    return CardinalDirection::Southeast;
+                }
+                if (rawInput.x <= -k_Threshold) {
+                    return CardinalDirection::Southwest;
+                }
+                return CardinalDirection::South;
+            }
+            else {
+                if (rawInput.x >= k_Threshold) {
+                    return CardinalDirection::East;
+                }
+                if (rawInput.x <= -k_Threshold) {
+                    return CardinalDirection::West;
+                }
+            }
+
+            return CardinalDirection::Center;
+        }
+
+        XrVector2f SnapJoystickToCardinal(const XrVector2f& rawInput) {
+            static constexpr float k_InvSqrt2 = 0.70710678f;
+
+            const CardinalDirection dir = GetJoystickCardinalDirection(rawInput);
+            const float magnitude = std::sqrt(rawInput.x * rawInput.x + rawInput.y * rawInput.y);
+
+            switch (dir) {
+            case CardinalDirection::North:
+                return {0.f, magnitude};
+            case CardinalDirection::South:
+                return {0.f, -magnitude};
+            case CardinalDirection::East:
+                return {magnitude, 0.f};
+            case CardinalDirection::West:
+                return {-magnitude, 0.f};
+            case CardinalDirection::Northeast:
+                return {magnitude * k_InvSqrt2, magnitude * k_InvSqrt2};
+            case CardinalDirection::Northwest:
+                return {-magnitude * k_InvSqrt2, magnitude * k_InvSqrt2};
+            case CardinalDirection::Southeast:
+                return {magnitude * k_InvSqrt2, -magnitude * k_InvSqrt2};
+            case CardinalDirection::Southwest:
+                return {-magnitude * k_InvSqrt2, -magnitude * k_InvSqrt2};
+            case CardinalDirection::Center:
+            default:
+                return { 0.f, 0.f };
+            }
+        }
+
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
         std::thread m_inputThread;
@@ -764,6 +848,7 @@ namespace {
 
         ovrInputState m_controllerInputState{};
         bool m_useTouchControllerButtons = false;
+        bool m_useJoystickCardinalSnap = false;
         xr::side_t m_dominantHand = xr::Side::Right;
         float m_joystickHorizontalSensitivity = 0.1f; // m/s at full joystick swing.
         float m_joystickVerticalSensitivity = 0.1f;   // m/s at full joystick swing.

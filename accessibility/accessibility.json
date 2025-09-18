@@ -1,7 +1,8 @@
 {
   "Beat Saber.exe": {
     "left_grip_as_aim": true,
-    "right_grip_as_aim": true
+    "right_grip_as_aim": true,
+    "joystick_cardinal_snap": true
   },
   "Pistol Whip.exe": {
     "pose_relative_to_head": {
@@ -22,6 +23,7 @@
     "joystick_horizontal_sensitivity": 0.1,
     "joystick_vertical_sensitivity": 0.1,
     "joystick_deadzone": 0.2,
+    "joystick_cardinal_snap": false,
     "pose_relative_to_head": {
       "x": -0.15,
       "y": -0.1,
