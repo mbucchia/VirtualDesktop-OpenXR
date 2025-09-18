@@ -8,10 +8,13 @@
     "joystick_horizontal_sensitivity": 0.1,
     "joystick_vertical_sensitivity": 0.1,
     "joystick_deadzone": 0.2,
-    "position_relative_to_head": {
-      "x": 0.15,
+    "pose_relative_to_head": {
+      "x": -0.15,
       "y": -0.1,
-      "z": -0.35
+      "z": -0.35,
+      "yaw": 0,
+      "pitch": 0,
+      "roll": 0
     },
     "recorded_actions": [
       {

@@ -50,8 +50,10 @@ namespace {
     static constexpr auto k_PollingInterval = 2ms;
 
     // Default controller position relative to head (in meters)
-    // Left or right 15cm, below 10cm, in front 35cm.
-    static constexpr XrVector3f k_DefaultPositionRelativeToHead = {0.15f, -0.1f, -0.35f};
+    // Left 15cm, below 10cm, in front 35cm.
+    // Will be mirrored for right side.
+    static constexpr XrVector3f k_DefaultPositionRelativeToHead = {-0.15f, -0.1f, -0.35f};
+    static constexpr XrVector3f k_DefaultRotationRelativeToHead = {0.f, 0.f, 0.f};
 
     struct PosePlayback {
         // Whether to reset to grip pose prior to starting the animation. Useful when a controller is in gripAsAim mode.
@@ -90,7 +92,8 @@ namespace {
         size_t animationFrame = -1;
 
         // The pose to use when placing the controller in from of the user and following gaze.
-        XrVector3f initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
+        XrPosef initialPoseRelativeToHead =
+            Pose::MakePose(k_DefaultPositionRelativeToHead, k_DefaultRotationRelativeToHead);
 
         // An offset to apply to the running animation.
         XrPosef poseAnimationOffset = Pose::Identity();
@@ -102,6 +105,9 @@ namespace {
                                 const std::wstring& configPath,
                                 const std::string& applicationName)
             : m_ovrSession(ovrSession) {
+            // Adjust default config for right controller.
+            FlipHandedness(m_controllerState[1].initialPoseRelativeToHead);
+
             // Parse our configuration.
             {
                 std::ifstream inputFile(configPath.c_str(), std::ios::in);
@@ -196,11 +202,8 @@ namespace {
 
                 const auto headPose = ovrPoseToXrPose(headPoseState.ThePose);
 
-                const auto controllerRelativeToHeadPose =
-                    Pose::MakePose(m_controllerState[side].initialPositionRelativeToHead, XrVector3f{0, 0, 0});
-
                 // Either leave as grip, or apply transform into aim.
-                finalPose = controllerRelativeToHeadPose * headPose;
+                finalPose = m_controllerState[side].initialPoseRelativeToHead * headPose;
                 if (m_controllerState[side].gripAsAim) {
                     finalPose = Pose::Invert(m_toGripPose[side]) * finalPose;
                 }
@@ -433,16 +436,25 @@ namespace {
         }
 
         void ParseConfiguration(cJSON* json, const std::string& applicationName) {
-            auto parsePosition = [](const cJSON* parent, const char* key, XrVector3f* outPosition) {
-                if (parent && outPosition) {
+            auto parsePoseSimple = [](const cJSON* parent, const char* key, XrPosef* outPose) {
+                if (parent && outPose) {
                     const cJSON* poseObj = key ? cJSON_GetObjectItemCaseSensitive(parent, key) : parent;
                     if (poseObj) {
                         const auto x = cJSON_GetObjectItemCaseSensitive(poseObj, "x");
                         const auto y = cJSON_GetObjectItemCaseSensitive(poseObj, "y");
                         const auto z = cJSON_GetObjectItemCaseSensitive(poseObj, "z");
+                        const auto yaw = cJSON_GetObjectItemCaseSensitive(poseObj, "yaw");
+                        const auto pitch = cJSON_GetObjectItemCaseSensitive(poseObj, "pitch");
+                        const auto roll = cJSON_GetObjectItemCaseSensitive(poseObj, "roll");
+                        // Make position mandatory, orientation optional.
                         if (x && y && z) {
-                            *outPosition =
-                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble};
+                            const auto toRadians = [](double degrees) { return (float)(degrees * M_PI / 180); };
+
+                            *outPose = Pose::MakePose(
+                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble},
+                                XrVector3f{pitch ? toRadians(pitch->valuedouble) : 0.f,
+                                           yaw ? toRadians(yaw->valuedouble) : 0.f,
+                                           roll ? toRadians(roll->valuedouble) : 0.f});
                             return true;
                         }
                     }
@@ -490,25 +502,13 @@ namespace {
             const auto emulateRight = cJSON_GetObjectItemCaseSensitive(top, "emulate_right");
             m_controllerState[1].enabled = emulateRight && emulateRight->valueint;
 
-            if (!parsePosition(top, "position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
-                if (!parsePosition(
-                        top, "left_position_relative_to_head", &m_controllerState[0].initialPositionRelativeToHead)) {
-                    m_controllerState[0].initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
-                    m_controllerState[0].initialPositionRelativeToHead.x =
-                        -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
-                }
-                if (!parsePosition(
-                        top, "right_position_relative_to_head", &m_controllerState[1].initialPositionRelativeToHead)) {
-                    m_controllerState[1].initialPositionRelativeToHead = k_DefaultPositionRelativeToHead;
-                    m_controllerState[1].initialPositionRelativeToHead.x =
-                        std::abs(m_controllerState[1].initialPositionRelativeToHead.x);
-                }
+            if (parsePoseSimple(top, "pose_relative_to_head", &m_controllerState[0].initialPoseRelativeToHead)) {
+                // Replicate to right side and flip.
+                m_controllerState[1].initialPoseRelativeToHead = m_controllerState[0].initialPoseRelativeToHead;
+                FlipHandedness(m_controllerState[1].initialPoseRelativeToHead);
             } else {
-                m_controllerState[0].initialPositionRelativeToHead = m_controllerState[1].initialPositionRelativeToHead;
-                m_controllerState[0].initialPositionRelativeToHead.x =
-                    -std::abs(m_controllerState[0].initialPositionRelativeToHead.x);
-                m_controllerState[1].initialPositionRelativeToHead.x =
-                    std::abs(m_controllerState[1].initialPositionRelativeToHead.x);
+                parsePoseSimple(top, "left_pose_relative_to_head", &m_controllerState[0].initialPoseRelativeToHead);
+                parsePoseSimple(top, "right_pose_relative_to_head", &m_controllerState[1].initialPoseRelativeToHead);
             }
 
             const auto useTouchControllerButtons =
@@ -697,6 +697,14 @@ namespace {
             const float scaling = (length - m_joystickDeadzone) / (1 - m_joystickDeadzone);
             return {normalizedInput.x * scaling, normalizedInput.y * scaling};
         }
+
+        void FlipHandedness(XrPosef& pose) {
+            // Mirror pose along the X axis.
+            // https://stackoverflow.com/a/33999726/15056285
+            pose.position.x = -pose.position.x;
+            pose.orientation.y = -pose.orientation.y;
+            pose.orientation.z = -pose.orientation.z;
+        };
 
         const ovrSession m_ovrSession;
         EmulatedControllerState m_controllerState[xr::Side::Count];
