@@ -160,7 +160,8 @@ namespace virtualdesktop_openxr {
                           TLArg(properties->graphicsProperties.maxSwapchainImageHeight, "MaxSwapchainImageHeight"));
 
         if (has_XR_EXT_hand_tracking && handTrackingProperties) {
-            handTrackingProperties->supportsHandTracking = m_supportsHandTracking ? XR_TRUE : XR_FALSE;
+            handTrackingProperties->supportsHandTracking =
+                (m_supportsHandTracking || has_XR_EXT_hand_tracking_data_source) ? XR_TRUE : XR_FALSE;
 
             TraceLoggingWrite(g_traceProvider,
                               "xrGetSystemProperties",

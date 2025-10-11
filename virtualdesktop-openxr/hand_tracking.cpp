@@ -156,7 +156,7 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_FUNCTION_UNSUPPORTED;
         }
 
-        if (!m_supportsHandTracking) {
+        if (!m_supportsHandTracking && !has_XR_EXT_hand_tracking_data_source) {
             return XR_ERROR_FEATURE_UNSUPPORTED;
         }
 
