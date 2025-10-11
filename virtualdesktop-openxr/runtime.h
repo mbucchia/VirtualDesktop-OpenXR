@@ -29,6 +29,8 @@
 #include "BodyState.h"
 #include <hand_simulation.h>
 #include "trackers.h"
+#include <SHMWriter.hpp>
+#include <FramePerformanceCounters.hpp>
 
 #include <RuntimeConfiguration.h>
 
@@ -808,10 +810,14 @@ namespace virtualdesktop_openxr {
         std::deque<double> m_frameTimes;
         CpuTimer m_frameTimerApp;
         CpuTimer m_renderTimerApp;
+        SHMWriter m_shmWriter;
         static constexpr uint32_t k_numGpuTimers = 3;
         std::unique_ptr<ITimer> m_gpuTimerApp[k_numGpuTimers];
         std::unique_ptr<ITimer> m_gpuTimerPrecomposition[k_numGpuTimers];
+        FramePerformanceCounters m_framePerformanceCounters[k_numGpuTimers]{};
         uint32_t m_currentTimerIndex{0};
+
+        ComPtr<IDXGIAdapter3> m_dxgiAdapterForStats;
     };
 
     // Singleton accessor.

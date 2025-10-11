@@ -176,6 +176,7 @@ namespace virtualdesktop_openxr {
                 Log("Using %s on adapter: %s\n", appGraphicsApi.c_str(), deviceName.c_str());
 
                 m_gpuVendor = desc.VendorId;
+                dxgiAdapter.As(&m_dxgiAdapterForStats);
 
                 break;
             }
@@ -810,7 +811,7 @@ namespace virtualdesktop_openxr {
                 m_ovrSession, slice.ovrSwapchain, i, IID_PPV_ARGS(texture.ReleaseAndGetAddressOf())));
             setDebugName(
                 texture.Get(),
-                fmt::format(std::string(debugName) + " Texture[{}, {}, {}]", sliceIndex, i, (void*)&xrSwapchain));
+                fmt::format("{} Texture[{}, {}, {}]", std::string(debugName), sliceIndex, i, (void*)&xrSwapchain));
 
             slice.images.push_back(std::move(texture));
         }

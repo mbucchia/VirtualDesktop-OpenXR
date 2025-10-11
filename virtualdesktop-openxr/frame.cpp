@@ -107,6 +107,8 @@ namespace virtualdesktop_openxr {
 
             std::unique_lock lock(m_frameMutex);
 
+            QueryPerformanceCounter(&m_framePerformanceCounters[m_currentTimerIndex].mCore.mWaitFrameStart);
+
             m_frameTimerApp.stop();
             m_lastCpuFrameTimeUs = m_frameTimerApp.query();
 
@@ -202,6 +204,9 @@ namespace virtualdesktop_openxr {
                               TLArg(m_frameWaited, "FrameWaited"),
                               TLArg(m_frameBegun, "FrameBegun"),
                               TLArg(m_frameCompleted, "FrameCompleted"));
+
+            m_framePerformanceCounters[m_currentTimerIndex].mCore.mXrDisplayTime = frameState->predictedDisplayTime;
+            QueryPerformanceCounter(&m_framePerformanceCounters[m_currentTimerIndex].mCore.mWaitFrameStop);
         }
 
         TraceLoggingWrite(g_traceProvider,
@@ -239,6 +244,8 @@ namespace virtualdesktop_openxr {
             }
 
             std::unique_lock lock(m_frameMutex);
+
+            QueryPerformanceCounter(&m_framePerformanceCounters[m_currentTimerIndex].mCore.mBeginFrameStart);
 
             if (m_frameWaited == m_frameCompleted || m_frameBegun == m_frameWaited) {
                 return XR_ERROR_CALL_ORDER_INVALID;
@@ -297,6 +304,7 @@ namespace virtualdesktop_openxr {
             }
 
             if (m_frameCompleted >= k_numGpuTimers) {
+                m_framePerformanceCounters[m_currentTimerIndex].mRenderGpu = m_lastGpuFrameTimeUs / 1000;
                 TraceLoggingWrite(g_traceProvider,
                                   "App_Statistics",
                                   TLArg(m_frameCompleted - k_numGpuTimers, "FrameId"),
@@ -330,6 +338,8 @@ namespace virtualdesktop_openxr {
             } else {
                 m_predictedFrameDuration = m_idealFrameDuration;
             }
+
+            QueryPerformanceCounter(&m_framePerformanceCounters[m_currentTimerIndex].mCore.mBeginFrameStop);
         }
 
         return !frameDiscarded ? XR_SUCCESS : XR_FRAME_DISCARDED;
@@ -375,6 +385,8 @@ namespace virtualdesktop_openxr {
         {
             std::unique_lock lock1(m_swapchainsMutex);
             std::unique_lock lock2(m_frameMutex);
+
+            QueryPerformanceCounter(&m_framePerformanceCounters[m_currentTimerIndex].mCore.mEndFrameStart);
 
             if (m_frameBegun == m_frameCompleted) {
                 return XR_ERROR_CALL_ORDER_INVALID;
@@ -575,6 +587,26 @@ namespace virtualdesktop_openxr {
 
                 // From this point, we know that the asynchronous thread may be executing, and we shall not use the
                 // submission context.
+            }
+
+            if (m_dxgiAdapterForStats) {
+                m_dxgiAdapterForStats->QueryVideoMemoryInfo(
+                    0,
+                    DXGI_MEMORY_SEGMENT_GROUP_LOCAL,
+                    &m_framePerformanceCounters[m_currentTimerIndex].mVideoMemoryInfo);
+            }
+
+            QueryPerformanceCounter(&m_framePerformanceCounters[m_currentTimerIndex].mCore.mEndFrameStop);
+            if (m_frameCompleted >= k_numGpuTimers) {
+                m_framePerformanceCounters[m_currentTimerIndex].mValidDataBits =
+                    (uint64_t)FramePerformanceCounters::ValidDataBits::GpuTime;
+                if (m_dxgiAdapterForStats) {
+                    m_framePerformanceCounters[m_currentTimerIndex].mValidDataBits |=
+                        (uint64_t)FramePerformanceCounters::ValidDataBits::VRAM;
+                }
+                assert(m_framePerformanceCounters[m_currentTimerIndex].mCore.mEndFrameStop.QuadPart >=
+                       m_framePerformanceCounters[m_currentTimerIndex].mCore.mEndFrameStart.QuadPart);
+                m_shmWriter.LogFrame(m_framePerformanceCounters[m_currentTimerIndex]);
             }
 
             m_frameCompleted = m_frameBegun;
