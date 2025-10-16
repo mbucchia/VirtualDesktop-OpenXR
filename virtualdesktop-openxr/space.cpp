@@ -209,7 +209,11 @@ namespace virtualdesktop_openxr {
         }
 
         if (time <= 0) {
-            return XR_ERROR_TIME_INVALID;
+            // Workaround: the OculusXR plugin is passing a time of 0 during early init and will refuse to submit frames
+            // if we error out.
+            if (!m_isOculusXrPlugin) {
+                return XR_ERROR_TIME_INVALID;
+            }
         }
 
         XrSpaceVelocity* velocity = reinterpret_cast<XrSpaceVelocity*>(location->next);

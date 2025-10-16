@@ -259,7 +259,10 @@ namespace virtualdesktop_openxr {
         }
 
         if (locateInfo->time <= 0) {
-            return XR_ERROR_TIME_INVALID;
+            // Workaround: the OculusXR plugin is passing a time of 0
+            if (!m_isOculusXrPlugin) {
+                return XR_ERROR_TIME_INVALID;
+            }
         }
 
         std::shared_lock lock(m_handTrackersMutex);
