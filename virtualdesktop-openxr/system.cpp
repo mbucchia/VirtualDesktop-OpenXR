@@ -441,8 +441,18 @@ namespace virtualdesktop_openxr {
             const double qpcTime = (double)now.QuadPart / m_qpcFrequency.QuadPart;
             m_ovrTimeFromQpcTimeOffset = std::min(m_ovrTimeFromQpcTimeOffset, ovr_GetTimeInSeconds() - qpcTime);
         }
-        TraceLoggingWrite(
-            g_traceProvider, "ConvertTime", TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"));
+        m_ovrTimeFromTimeSpecTimeOffset = INFINITY;
+        for (int i = 0; i < 100; i++) {
+            timespec now{};
+            timespec_get(&now, TIME_UTC);
+            const double tsTime = (double)now.tv_sec + (now.tv_nsec / 1e9f);
+            m_ovrTimeFromTimeSpecTimeOffset =
+                std::min(m_ovrTimeFromTimeSpecTimeOffset, ovr_GetTimeInSeconds() - tsTime);
+        }
+        TraceLoggingWrite(g_traceProvider,
+                          "ConvertTime",
+                          TLArg(m_ovrTimeFromQpcTimeOffset, "OvrTimeFromQpcTimeOffset"),
+                          TLArg(m_ovrTimeFromTimeSpecTimeOffset, "OvrTimeFromTimeSpecTimeOffset"));
 
         m_isLowVideoMemorySystem = false;
         {

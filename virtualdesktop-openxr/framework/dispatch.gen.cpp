@@ -1319,6 +1319,48 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec* timespecTime, XrTime* time) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrConvertTimespecTimeToTimeKHR");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrConvertTimespecTimeToTimeKHR(instance, timespecTime, time);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrConvertTimespecTimeToTimeKHR_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrConvertTimespecTimeToTimeKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrConvertTimespecTimeToTimeKHR", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrConvertTimespecTimeToTimeKHR failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct timespec* timespecTime) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrConvertTimeToTimespecTimeKHR");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrConvertTimeToTimespecTimeKHR(instance, time, timespecTime);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrConvertTimeToTimespecTimeKHR_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrConvertTimeToTimespecTimeKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrConvertTimeToTimespecTimeKHR", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrConvertTimeToTimespecTimeKHR failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 	XrResult XRAPI_CALL xrCreateVulkanInstanceKHR(XrInstance instance, const XrVulkanInstanceCreateInfoKHR* createInfo, VkInstance* vulkanInstance, VkResult* vulkanResult) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrCreateVulkanInstanceKHR");
@@ -2062,6 +2104,12 @@ namespace RUNTIME_NAMESPACE {
 		else if (has_XR_KHR_win32_convert_performance_counter_time && apiName == "xrConvertTimeToWin32PerformanceCounterKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertTimeToWin32PerformanceCounterKHR);
 		}
+		else if (has_XR_KHR_convert_timespec_time && apiName == "xrConvertTimespecTimeToTimeKHR") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertTimespecTimeToTimeKHR);
+		}
+		else if (has_XR_KHR_convert_timespec_time && apiName == "xrConvertTimeToTimespecTimeKHR") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrConvertTimeToTimespecTimeKHR);
+		}
 		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrCreateVulkanInstanceKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateVulkanInstanceKHR);
 		}
@@ -2180,6 +2228,9 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (extensionName == "XR_KHR_win32_convert_performance_counter_time") {
 			has_XR_KHR_win32_convert_performance_counter_time = true;
+		}
+		else if (extensionName == "XR_KHR_convert_timespec_time") {
+			has_XR_KHR_convert_timespec_time = true;
 		}
 		else if (extensionName == "XR_FB_display_refresh_rate") {
 			has_XR_FB_display_refresh_rate = true;

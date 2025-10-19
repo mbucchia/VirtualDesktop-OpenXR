@@ -222,6 +222,12 @@ namespace virtualdesktop_openxr {
         XrResult xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance,
                                                            XrTime time,
                                                            LARGE_INTEGER* performanceCounter) override;
+        XrResult xrConvertTimespecTimeToTimeKHR(XrInstance instance,
+                                                const struct timespec* timespecTime,
+                                                XrTime* time) override;
+        XrResult xrConvertTimeToTimespecTimeKHR(XrInstance instance,
+                                                XrTime time,
+                                                struct timespec* timespecTime) override;
         XrResult xrCreateVulkanInstanceKHR(XrInstance instance,
                                            const XrVulkanInstanceCreateInfoKHR* createInfo,
                                            VkInstance* vulkanInstance,
@@ -615,6 +621,7 @@ namespace virtualdesktop_openxr {
         mutable std::optional<float> m_lastKnownFloorHeight;
         LARGE_INTEGER m_qpcFrequency{};
         double m_ovrTimeFromQpcTimeOffset{0};
+        double m_ovrTimeFromTimeSpecTimeOffset{0};
         XrPath m_stringIndex{0};
         using MappingFunction = std::function<bool(const Action&, XrPath, ActionSource&)>;
         using CheckValidPathFunction = std::function<bool(const std::string&)>;

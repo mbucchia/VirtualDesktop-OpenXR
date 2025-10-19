@@ -574,6 +574,9 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Qpc timestamp conversion.
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
+        m_extensionsTable.push_back( // Timespec timestamp conversion.
+            {XR_KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME,
+             XR_KHR_convert_timespec_time_SPEC_VERSION});
 
         m_extensionsTable.push_back( // For UWP apps.
             {XR_EXT_WIN32_APPCONTAINER_COMPATIBLE_EXTENSION_NAME, XR_EXT_win32_appcontainer_compatible_SPEC_VERSION});

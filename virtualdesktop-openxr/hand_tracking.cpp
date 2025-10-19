@@ -259,7 +259,7 @@ namespace virtualdesktop_openxr {
         }
 
         if (locateInfo->time <= 0) {
-            // Workaround: the OculusXR plugin is passing a time of 0
+            // Workaround: the OculusXR plugin is passing a time of 0 during initialization.
             if (!m_isOculusXrPlugin) {
                 return XR_ERROR_TIME_INVALID;
             }

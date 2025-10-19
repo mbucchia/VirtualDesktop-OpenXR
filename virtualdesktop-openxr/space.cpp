@@ -209,7 +209,7 @@ namespace virtualdesktop_openxr {
         }
 
         if (time <= 0) {
-            // Workaround: the OculusXR plugin is passing a time of 0 during early init and will refuse to submit frames
+            // Workaround: the OculusXR plugin is passing a time of 0 during initialization.
             // if we error out.
             if (!m_isOculusXrPlugin) {
                 return XR_ERROR_TIME_INVALID;
@@ -466,10 +466,10 @@ namespace virtualdesktop_openxr {
             velocity->velocityFlags = 0;
         }
 
-        // Workaround for OVRPlugin and REFramework incorrect use of xrLocateViews().
+        // Workaround for OculusXR and REFramework incorrect use of xrLocateViews().
         const bool ignoreFloorHeight = time <= 1;
 
-        // OVRPlugin likes to specify random XrTime. Clamp to t-1s.
+        // OculusXR likes to specify random XrTime. Clamp to t-1s.
         if (m_lastPredictedDisplayTime) {
             time = std::max(time, m_lastPredictedDisplayTime - 1'000'000'000);
         }

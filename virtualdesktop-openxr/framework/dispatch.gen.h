@@ -104,6 +104,8 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrGetVisibilityMaskKHR(XrSession session, XrViewConfigurationType viewConfigurationType, uint32_t viewIndex, XrVisibilityMaskTypeKHR visibilityMaskType, XrVisibilityMaskKHR* visibilityMask) = 0;
 		virtual XrResult xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance, const LARGE_INTEGER* performanceCounter, XrTime* time) = 0;
 		virtual XrResult xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER* performanceCounter) = 0;
+		virtual XrResult xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec* timespecTime, XrTime* time) = 0;
+		virtual XrResult xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct timespec* timespecTime) = 0;
 		virtual XrResult xrCreateVulkanInstanceKHR(XrInstance instance, const XrVulkanInstanceCreateInfoKHR* createInfo, VkInstance* vulkanInstance, VkResult* vulkanResult) = 0;
 		virtual XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreateInfoKHR* createInfo, VkDevice* vulkanDevice, VkResult* vulkanResult) = 0;
 		virtual XrResult xrGetVulkanGraphicsDevice2KHR(XrInstance instance, const XrVulkanGraphicsDeviceGetInfoKHR* getInfo, VkPhysicalDevice* vulkanPhysicalDevice) = 0;
@@ -147,6 +149,7 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_KHR_composition_layer_cube{false};
 		bool has_XR_KHR_visibility_mask{false};
 		bool has_XR_KHR_win32_convert_performance_counter_time{false};
+		bool has_XR_KHR_convert_timespec_time{false};
 		bool has_XR_FB_display_refresh_rate{false};
 		bool has_XR_EXT_hand_tracking{false};
 		bool has_XR_EXT_hand_tracking_data_source{false};

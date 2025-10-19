@@ -89,6 +89,7 @@ using Microsoft::WRL::ComPtr;
 // OpenXR + Windows-specific definitions.
 #define XR_NO_PROTOTYPES
 #define XR_USE_PLATFORM_WIN32
+#define XR_USE_TIMESPEC
 #define XR_USE_GRAPHICS_API_D3D11
 #define XR_USE_GRAPHICS_API_D3D12
 #define XR_USE_GRAPHICS_API_VULKAN
