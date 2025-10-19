@@ -364,8 +364,7 @@ namespace virtualdesktop_openxr {
 
         // The OculusXR Plugin only loads successfully when the returned OpenXR runtime name is "Oculus". We fake that
         // if the caller is the OculusXR Plugin, but we return the real runtime name otherwise.
-        // Some games (like 7th Guest VR) do not play well when forcing the runtime name, so we exclude them.
-        const bool needOculusXrPluginWorkaround = m_isOculusXrPlugin && m_exeName != "The7thGuestVR-Win64-Shipping.exe";
+        const bool needOculusXrPluginWorkaround = m_isOculusXrPlugin;
         if (!needOculusXrPluginWorkaround) {
 #ifndef STANDALONE_RUNTIME
             sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
