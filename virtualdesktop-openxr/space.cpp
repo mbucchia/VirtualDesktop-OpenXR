@@ -466,8 +466,13 @@ namespace virtualdesktop_openxr {
             velocity->velocityFlags = 0;
         }
 
-        // Workaround for REFramework incorrect use of xrLocateViews().
-        const bool ignoreFloorHeight = time == 1;
+        // Workaround for OVRPlugin and REFramework incorrect use of xrLocateViews().
+        const bool ignoreFloorHeight = time <= 1;
+
+        // OVRPlugin likes to specify random XrTime. Clamp to t-1s.
+        if (m_lastPredictedDisplayTime) {
+            time = std::max(time, m_lastPredictedDisplayTime - 1'000'000'000);
+        }
 
         if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_VIEW) {
             // VIEW space if the headset pose.
