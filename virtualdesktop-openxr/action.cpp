@@ -625,12 +625,14 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+
         state->isActive = combinedState ? XR_TRUE : XR_FALSE;
         if (combinedState) {
             state->currentState = combinedState.value();
-            state->changedSinceLastSync = !!state->currentState != xrAction.lastBoolValue[subActionSide];
+            state->changedSinceLastSync = xrActionSet.generation == xrAction.lastChangedGeneration[subActionSide] ||
+                                          !!state->currentState != xrAction.lastBoolValue[subActionSide];
 
-            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
             state->lastChangeTime = state->changedSinceLastSync
                                         ? ovrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
                                         : xrAction.lastBoolValueChangedTime[subActionSide];
@@ -639,8 +641,11 @@ namespace virtualdesktop_openxr {
             state->lastChangeTime = 0;
         }
 
-        xrAction.lastBoolValue[subActionSide] = state->currentState;
-        xrAction.lastBoolValueChangedTime[subActionSide] = state->lastChangeTime;
+        if (state->changedSinceLastSync) {
+            xrAction.lastBoolValue[subActionSide] = state->currentState;
+            xrAction.lastBoolValueChangedTime[subActionSide] = state->lastChangeTime;
+            xrAction.lastChangedGeneration[subActionSide] = xrActionSet.generation;
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateBoolean",
@@ -733,12 +738,14 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+
         state->isActive = combinedState ? XR_TRUE : XR_FALSE;
         if (combinedState) {
             state->currentState = combinedState.value();
-            state->changedSinceLastSync = state->currentState != xrAction.lastFloatValue[subActionSide];
+            state->changedSinceLastSync = xrActionSet.generation == xrAction.lastChangedGeneration[subActionSide] ||
+                                          state->currentState != xrAction.lastFloatValue[subActionSide];
 
-            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
             state->lastChangeTime = state->changedSinceLastSync
                                         ? ovrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
                                         : xrAction.lastFloatValueChangedTime[subActionSide];
@@ -748,8 +755,11 @@ namespace virtualdesktop_openxr {
             state->lastChangeTime = 0;
         }
 
-        xrAction.lastFloatValue[subActionSide] = state->currentState;
-        xrAction.lastFloatValueChangedTime[subActionSide] = state->lastChangeTime;
+        if (state->changedSinceLastSync) {
+            xrAction.lastFloatValue[subActionSide] = state->currentState;
+            xrAction.lastFloatValueChangedTime[subActionSide] = state->lastChangeTime;
+            xrAction.lastChangedGeneration[subActionSide] = xrActionSet.generation;
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetActionStateFloat",
@@ -837,14 +847,16 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+
         state->isActive = combinedState ? XR_TRUE : XR_FALSE;
         if (combinedState) {
             state->currentState = combinedState.value();
 
-            state->changedSinceLastSync = state->currentState.x != xrAction.lastVector2fValue[subActionSide].x ||
+            state->changedSinceLastSync = xrActionSet.generation == xrAction.lastChangedGeneration[subActionSide] ||
+                                          state->currentState.x != xrAction.lastVector2fValue[subActionSide].x ||
                                           state->currentState.y != xrAction.lastVector2fValue[subActionSide].y;
 
-            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
             state->lastChangeTime = state->changedSinceLastSync
                                         ? ovrTimeToXrTime(xrActionSet.cachedInputState.TimeInSeconds)
                                         : xrAction.lastVector2fValueChangedTime[subActionSide];
@@ -854,8 +866,11 @@ namespace virtualdesktop_openxr {
             state->lastChangeTime = 0;
         }
 
-        xrAction.lastVector2fValue[subActionSide] = state->currentState;
-        xrAction.lastVector2fValueChangedTime[subActionSide] = state->lastChangeTime;
+        if (state->changedSinceLastSync) {
+            xrAction.lastVector2fValue[subActionSide] = state->currentState;
+            xrAction.lastVector2fValueChangedTime[subActionSide] = state->lastChangeTime;
+            xrAction.lastChangedGeneration[subActionSide] = xrActionSet.generation;
+        }
 
         TraceLoggingWrite(
             g_traceProvider,
@@ -1064,6 +1079,7 @@ namespace virtualdesktop_openxr {
             ActionSet& xrActionSet = *(ActionSet*)syncInfo->activeActionSets[i].actionSet;
 
             xrActionSet.cachedInputState = m_cachedInputState;
+            xrActionSet.generation++;
         }
 
         // Re-assert haptics to OVR. We do this regardless of actionsets being synced.

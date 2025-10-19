@@ -393,6 +393,7 @@ namespace virtualdesktop_openxr {
 
             // A copy of the input state. This is to handle when xrSyncActions() does not update all actionsets at once.
             ovrInputState cachedInputState;
+            uint64_t generation;
         };
 
         struct Action {
@@ -401,6 +402,7 @@ namespace virtualdesktop_openxr {
             std::string localizedName;
 
             XrActionSet actionSet{XR_NULL_HANDLE};
+            uint64_t lastChangedGeneration[xr::Side::Count]{0, 0};
 
             float lastFloatValue[xr::Side::Count]{0.f, 0.f};
             XrTime lastFloatValueChangedTime[xr::Side::Count]{0, 0};
