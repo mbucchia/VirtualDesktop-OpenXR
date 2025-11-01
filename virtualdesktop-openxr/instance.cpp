@@ -198,8 +198,16 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_VALIDATION_FAILURE;
         }
 
+        {
+            char path[_MAX_PATH];
+            GetModuleFileNameA(nullptr, path, sizeof(path));
+            std::filesystem::path fullPath(path);
+            m_exeName = fullPath.filename().string();
+        }
+
         TraceLoggingWrite(g_traceProvider,
                           "xrCreateInstance",
+                          TLArg(m_exeName.c_str(), "ExeName"),
                           TLArg(xr::ToString(createInfo->applicationInfo.apiVersion).c_str(), "ApiVersion"),
                           TLArg(createInfo->applicationInfo.applicationName, "ApplicationName"),
                           TLArg(createInfo->applicationInfo.applicationVersion, "ApplicationVersion"),
@@ -212,12 +220,6 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LIMIT_REACHED;
         }
 
-        {
-            char path[_MAX_PATH];
-            GetModuleFileNameA(nullptr, path, sizeof(path));
-            std::filesystem::path fullPath(path);
-            m_exeName = fullPath.filename().string();
-        }
         m_applicationName = createInfo->applicationInfo.applicationName;
 
         Log("Application: %s (%s); Engine: %s\n",
@@ -575,8 +577,7 @@ namespace virtualdesktop_openxr {
             {XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME,
              XR_KHR_win32_convert_performance_counter_time_SPEC_VERSION});
         m_extensionsTable.push_back( // Timespec timestamp conversion.
-            {XR_KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME,
-             XR_KHR_convert_timespec_time_SPEC_VERSION});
+            {XR_KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME, XR_KHR_convert_timespec_time_SPEC_VERSION});
 
         m_extensionsTable.push_back( // For UWP apps.
             {XR_EXT_WIN32_APPCONTAINER_COMPATIBLE_EXTENSION_NAME, XR_EXT_win32_appcontainer_compatible_SPEC_VERSION});
