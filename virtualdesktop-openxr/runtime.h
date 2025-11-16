@@ -24,6 +24,7 @@
 
 #include "framework/dispatch.gen.h"
 
+#include "accessibility.h"
 #include "utils.h"
 
 #include "BodyState.h"
@@ -728,6 +729,7 @@ namespace virtualdesktop_openxr {
         float m_overrideWorldScale{1.f};
         float m_overrideVisibilityMaskScale{1.f};
         uint32_t m_visibilityMaskDirty{0};
+        std::unique_ptr<AccessibilityHelper> m_accessibilityHelper;
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;

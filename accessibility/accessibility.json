@@ -1,0 +1,69 @@
+{
+  "Pistol Whip.exe": {
+    "pose_relative_to_head": {
+      "x": -0.15,
+      "y": -0.1,
+      "z": -0.35,
+      "yaw": 0,
+      "pitch": 20,
+      "roll": 0
+    },
+    "recorded_actions": [
+      {
+        "name": "Reload",
+        "start_from_grip": false,
+        "poses": [
+          {
+            "timestamp": 0,
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "rw": 1,
+            "rx": 0,
+            "ry": 0,
+            "rz": 0
+          },
+          {
+            "timestamp": 0.2,
+            "x": 0,
+            "y": -0.7,
+            "z": 0,
+            "rw": 1,
+            "rx": 0,
+            "ry": 0,
+            "rz": 0
+          },
+          {
+            "timestamp": 0.21,
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "rw": 1,
+            "rx": 0,
+            "ry": 0,
+            "rz": 0
+          }
+        ]
+      }
+    ]
+  },
+  "default": {
+    "emulate_left": true,
+    "emulate_right": true,
+    "dominant_hand": 1,
+    "left_grip_as_aim": false,
+    "right_grip_as_aim": false,
+    "joystick_horizontal_sensitivity": 0.1,
+    "joystick_vertical_sensitivity": 0.1,
+    "joystick_deadzone": 0.2,
+    "joystick_cardinal_snap": false,
+    "pose_relative_to_head": {
+      "x": -0.15,
+      "y": -0.1,
+      "z": -0.35,
+      "yaw": 0,
+      "pitch": 0,
+      "roll": 0
+    }
+  }
+}

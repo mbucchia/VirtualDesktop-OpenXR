@@ -26,6 +26,7 @@
 #include "runtime.h"
 #include "trackers.h"
 #include "utils.h"
+#include "cJSON.h"
 
 namespace virtualdesktop_openxr {
 
@@ -557,7 +558,7 @@ namespace virtualdesktop_openxr {
                         // Apply the pose offsets.
                         if (isAimPose) {
                             // Try using the hand tracking first.
-                            if (!getPinchPose(side, pose, pose)) {
+                            if (m_supportsHandTracking && !getPinchPose(side, pose, pose)) {
                                 pose = Pose::Multiply(m_controllerAimPose[side], pose);
                             }
                         } else if (isGripPose) {
@@ -628,7 +629,18 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags locationFlags = 0;
         ovrPoseStatef state{};
         ovrTrackedDeviceType controller = side == 0 ? ovrTrackedDevice_LTouch : ovrTrackedDevice_RTouch;
-        const auto result = ovr_GetDevicePoses(m_ovrSession, &controller, 1, xrTimeToOvrTime(time), &state);
+        const bool isEmulatedControllerConnected =
+            m_accessibilityHelper ? m_accessibilityHelper->IsControllerEmulated(side) : false;
+
+        ovrResult result = ovrError_LostTracking;
+        if (!isEmulatedControllerConnected) {
+            result = ovr_GetDevicePoses(m_ovrSession, &controller, 1, xrTimeToOvrTime(time), &state);
+        } else {
+            // When using accessibility mode, override the controller poses.
+            if (m_accessibilityHelper->GetEmulatedDevicePose(side, xrTimeToOvrTime(time), &state)) {
+                result = ovrSuccess;
+            }
+        }
         if (result == ovrError_LostTracking) {
             TraceLoggingWrite(g_traceProvider, "OVR_HmdPoseNotTracking", TLArg(side == 0 ? "Left" : "Right", "Side"));
         } else {

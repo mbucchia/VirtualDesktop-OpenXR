@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright(c) 2022-2024 Matthieu Bucchianeri
+// Copyright(c) 2025 Microsoft Corp.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this softwareand associated documentation files(the "Software"), to deal
@@ -20,5 +20,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "pch.h"
-#include "cJSON.h"
+#pragma once
+
+namespace virtualdesktop_openxr {
+
+    struct AccessibilityHelper {
+        virtual ~AccessibilityHelper() = default;
+
+        virtual bool IsControllerEmulated(xr::side_t side) const = 0;
+        virtual bool GetEmulatedDevicePose(xr::side_t side, double absTime, ovrPoseStatef* outDevicePose) = 0;
+        virtual bool GetEmulatedInputState(xr::side_t side, ovrInputState* outInputState) = 0;
+        virtual void SendEmulatedHapticPulse(xr::side_t side, float frequency, float amplitude) = 0;
+
+        virtual void SetOpenXrPoses(xr::side_t side, const XrPosef& rawToGrip, const XrPosef& rawToAim) = 0;
+    };
+
+    std::unique_ptr<AccessibilityHelper> CreateAccessibilityHelper(ovrSession ovrSession,
+                                                                   const std::wstring& configPath,
+                                                                   const std::string& applicationName,
+                                                                   const std::string& exeName);
+
+} // namespace virtualdesktop_openxr
