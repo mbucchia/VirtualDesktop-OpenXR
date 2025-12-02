@@ -786,24 +786,41 @@ extern "C" __declspec(dllexport) const char* WINAPI getVersionString() {
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     using namespace virtualdesktop_openxr::utils;
 
+    const auto getExeName = []() {
+        char path[_MAX_PATH];
+        GetModuleFileNameA(nullptr, path, sizeof(path));
+        std::filesystem::path fullPath(path);
+        return fullPath.filename().string();
+    };
+
     switch (ul_reason_for_call) {
-    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_ATTACH: {
 #ifdef _WIN64
-        DetourRestoreAfterWith();
+        // Roblox anti-cheat does not like Detours. We only need Detours for OVRPlugin compatibility, hence it is OK to
+        // skip with Roblox.
+        const bool noDetours = startsWith(getExeName(), "RobloxPlayer");
+        if (!noDetours) {
+            DetourRestoreAfterWith();
+        }
 #endif
         TraceLoggingRegister(virtualdesktop_openxr::log::g_traceProvider);
         virtualdesktop_openxr::utils::InitializeHighPrecisionTimer();
 #ifdef _WIN64
-        DetourDllAttach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+        if (!noDetours) {
+            DetourDllAttach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+        }
 #endif
-        break;
+    } break;
 
-    case DLL_PROCESS_DETACH:
+    case DLL_PROCESS_DETACH: {
 #ifdef _WIN64
-        DetourDllDetach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+        const bool noDetours = startsWith(getExeName(), "RobloxPlayer");
+        if (!noDetours) {
+            DetourDllDetach("Kernel32", "OpenEventW", hooked_OpenEventW, original_OpenEventW);
+        }
 #endif
         TraceLoggingUnregister(virtualdesktop_openxr::log::g_traceProvider);
-        break;
+    } break;
 
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
