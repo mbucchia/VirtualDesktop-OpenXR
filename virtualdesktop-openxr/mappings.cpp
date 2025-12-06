@@ -281,80 +281,106 @@ namespace virtualdesktop_openxr {
         if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x") {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_X;
+            source.sourceIndex = ActionSourceIndex::X;
         } else if (path == "/user/hand/left/input/x/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_X;
+            source.sourceIndex = ActionSourceIndex::XTouch;
         } else if (path == "/user/hand/left/input/y/click" || path == "/user/hand/left/input/y") {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_Y;
+            source.sourceIndex = ActionSourceIndex::Y;
         } else if (path == "/user/hand/left/input/y/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_Y;
+            source.sourceIndex = ActionSourceIndex::YTouch;
         } else if (path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/menu") {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_Enter;
+            source.sourceIndex = ActionSourceIndex::Menu;
         } else if (path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a") {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_A;
+            source.sourceIndex = ActionSourceIndex::A;
         } else if (path == "/user/hand/right/input/a/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_A;
+            source.sourceIndex = ActionSourceIndex::ATouch;
         } else if (path == "/user/hand/right/input/b/click" || path == "/user/hand/right/input/b") {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_B;
+            source.sourceIndex = ActionSourceIndex::B;
         } else if (path == "/user/hand/right/input/b/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_B;
+            source.sourceIndex = ActionSourceIndex::BTouch;
         } else if (path == "/user/hand/right/input/system/click" || path == "/user/hand/right/input/system") {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_Home;
         } else if (endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
                    endsWith(path, "/input/squeeze")) {
             source.floatValue = m_cachedInputState.HandTrigger;
+            source.sourceIndex = ActionSourceIndex::Squeeze;
         } else if (endsWith(path, "/input/squeeze/force")) {
             source.floatValue = m_cachedInputState.HandTrigger;
+            source.sourceIndex = ActionSourceIndex::Squeeze;
         } else if (endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
                    endsWith(path, "/input/trigger")) {
             source.floatValue = m_cachedInputState.IndexTrigger;
+            source.sourceIndex = ActionSourceIndex::Trigger;
         } else if (path == "/user/hand/left/input/trigger/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_LIndexTrigger;
+            source.sourceIndex = ActionSourceIndex::TriggerTouch;
         } else if (path == "/user/hand/right/input/trigger/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_RIndexTrigger;
+            source.sourceIndex = ActionSourceIndex::TriggerTouch;
         } else if (path == "/user/hand/left/input/thumbstick/click" ||
                    (xrAction.type == XR_ACTION_TYPE_BOOLEAN_INPUT && path == "/user/hand/left/input/thumbstick")) {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_LThumb;
+            source.sourceIndex = ActionSourceIndex::Thumbstick;
         } else if (path == "/user/hand/right/input/thumbstick/click" ||
                    (xrAction.type == XR_ACTION_TYPE_BOOLEAN_INPUT && path == "/user/hand/right/input/thumbstick")) {
             source.buttonMap = &m_cachedInputState.Buttons;
             source.buttonType = ovrButton_RThumb;
+            source.sourceIndex = ActionSourceIndex::Thumbstick;
         } else if (endsWith(path, "/input/thumbstick")) {
             source.vector2fValue = m_cachedInputState.ThumbstickNoDeadzone;
             source.vector2fIndex = -1;
+            source.sourceIndex = ActionSourceIndex::ThumbstickXY;
         } else if (endsWith(path, "/input/thumbstick/x")) {
             source.vector2fValue = m_cachedInputState.ThumbstickNoDeadzone;
             source.vector2fIndex = 0;
+            source.sourceIndex = ActionSourceIndex::ThumbstickX;
         } else if (endsWith(path, "/input/thumbstick/y")) {
             source.vector2fValue = m_cachedInputState.ThumbstickNoDeadzone;
             source.vector2fIndex = 1;
+            source.sourceIndex = ActionSourceIndex::ThumbstickY;
         } else if (path == "/user/hand/left/input/thumbstick/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_LThumb;
+            source.sourceIndex = ActionSourceIndex::ThumbstickTouch;
         } else if (path == "/user/hand/right/input/thumbstick/touch") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_RThumb;
+            source.sourceIndex = ActionSourceIndex::ThumbstickTouch;
         } else if (path == "/user/hand/left/input/thumbrest/touch" || path == "/user/hand/left/input/thumbrest") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_LThumbRest;
+            source.sourceIndex = ActionSourceIndex::ThumbrestTouch;
         } else if (path == "/user/hand/right/input/thumbrest/touch" || path == "/user/hand/right/input/thumbrest") {
             source.buttonMap = &m_cachedInputState.Touches;
             source.buttonType = (ovrButton)ovrTouch_RThumbRest;
-        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
-                   endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
-                   endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
-                   endsWith(path, "/output/haptic")) {
+            source.sourceIndex = ActionSourceIndex::ThumbrestTouch;
+        } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip")) {
+            source.sourceIndex = ActionSourceIndex::Grip;
+        } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
+            source.sourceIndex = ActionSourceIndex::Aim;
+        } else if (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
+            source.sourceIndex = ActionSourceIndex::Palm;
+        } else if (endsWith(path, "/output/haptic")) {
             // Do nothing.
         } else {
             // No possible binding.

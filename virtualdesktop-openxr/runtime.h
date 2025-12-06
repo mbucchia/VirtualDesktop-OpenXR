@@ -379,6 +379,34 @@ namespace virtualdesktop_openxr {
             XrPosef poseInSpace;
         };
 
+        enum class ActionSourceIndex {
+            Invalid = 0,
+            X,
+            XTouch,
+            Y,
+            YTouch,
+            Menu,
+            A,
+            ATouch,
+            B,
+            BTouch,
+            System,
+            Squeeze,
+            Trigger,
+            TriggerTouch,
+            Thumbstick,
+            ThumbstickXY,
+            ThumbstickX,
+            ThumbstickY,
+            ThumbstickTouch,
+            ThumbrestTouch,
+            Grip,
+            Aim,
+            Palm,
+
+            Count
+        };
+
         struct ActionSource {
             const float* floatValue{nullptr};
 
@@ -388,12 +416,15 @@ namespace virtualdesktop_openxr {
             const uint32_t* buttonMap{nullptr};
             ovrButton buttonType;
 
+            ActionSourceIndex sourceIndex = ActionSourceIndex::Invalid;
             std::string realPath;
         };
 
         struct ActionSet {
             std::string name;
             std::string localizedName;
+            uint32_t priority;
+            uint32_t effectivePriority;
 
             std::set<XrPath> subactionPaths;
 
@@ -683,7 +714,7 @@ namespace virtualdesktop_openxr {
         std::shared_mutex m_actionsAndSpacesMutex;
         std::map<XrPath, std::string> m_strings; // protected by actionsAndSpacesMutex
         std::set<XrActionSet> m_actionSets;
-        std::set<XrActionSet> m_activeActionSets;
+        std::set<XrActionSet> m_attachedActionSets;
         std::set<XrAction> m_actions;
         std::set<XrAction> m_actionsForCleanup;
         std::shared_mutex m_handTrackersMutex;
@@ -806,6 +837,8 @@ namespace virtualdesktop_openxr {
         uint64_t m_lastCpuFrameTimeUs{0};
         uint64_t m_lastGpuFrameTimeUs{0};
         ovrInputState m_cachedInputState;
+        std::set<XrActionSet> m_activeActionSets;
+        uint32_t m_actionSourcePriority[(size_t)ActionSourceIndex::Count]{};
         BodyTracking::BodyStateV2 m_cachedBodyState{};
         XrTime m_lastPredictedDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;

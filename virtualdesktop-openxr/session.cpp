@@ -174,6 +174,7 @@ namespace virtualdesktop_openxr {
         m_currentInteractionProfile[xr::Side::Left] = m_currentInteractionProfile[xr::Side::Right] = XR_NULL_PATH;
         rebindControllerActions(xr::Side::Left);
         rebindControllerActions(xr::Side::Right);
+        m_attachedActionSets.clear();
         m_activeActionSets.clear();
 
         m_sessionStartTime = ovr_GetTimeInSeconds();

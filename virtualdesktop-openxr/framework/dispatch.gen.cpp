@@ -2283,6 +2283,9 @@ namespace RUNTIME_NAMESPACE {
 		else if (extensionName == "XR_HTCX_vive_tracker_interaction") {
 			has_XR_HTCX_vive_tracker_interaction = true;
 		}
+		else if (extensionName == "XR_EXT_active_action_set_priority") {
+			has_XR_EXT_active_action_set_priority = true;
+		}
 
 	}
 

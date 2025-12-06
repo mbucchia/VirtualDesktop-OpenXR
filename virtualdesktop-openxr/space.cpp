@@ -522,52 +522,68 @@ namespace virtualdesktop_openxr {
         } else if (xrSpace.action != XR_NULL_HANDLE) {
             // Action spaces for motion controllers.
             Action& xrAction = *(Action*)xrSpace.action;
+            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
 
             const std::string& subActionPath = getXrPath(xrSpace.subActionPath);
+            const bool isActionSetActive = m_activeActionSets.count(xrAction.actionSet);
             for (const auto& source : xrAction.actionSources) {
                 if (!startsWith(source.first, subActionPath)) {
                     continue;
                 }
 
                 const std::string& fullPath = source.first;
-                TraceLoggingWrite(g_traceProvider, "xrLocateSpace", TLArg(fullPath.c_str(), "ActionSourcePath"));
+                const auto& value = source.second;
+                const bool isHighestPriority =
+                    value.sourceIndex == ActionSourceIndex::Invalid ||
+                    m_actionSourcePriority[(size_t)value.sourceIndex] == xrActionSet.effectivePriority;
+                const bool isBound = isActionSetActive && isHighestPriority;
+                TraceLoggingWrite(g_traceProvider,
+                                  "xrLocateSpace",
+                                  TLArg(fullPath.c_str(), "ActionSourcePath"),
+                                  TLArg(m_actionSourcePriority[(size_t)value.sourceIndex], "ActionSourcePriority"),
+                                  TLArg(xrActionSet.effectivePriority, "ActionSetPriority"),
+                                  TLArg(isBound, "Bound"));
 
-                const bool isEyeTracker = isActionEyeTracker(fullPath);
-                const int trackerIndex = getTrackerIndex(fullPath);
+                if (isBound) {
+                    const bool isEyeTracker = isActionEyeTracker(fullPath);
+                    const int trackerIndex = getTrackerIndex(fullPath);
 
-                if (isEyeTracker) {
-                    result = getEyeTrackerPose(time, pose, gazeSampleTime);
-
-                    // Per spec we must consistently pick one source. We pick the first one.
-                    break;
-                } else if (trackerIndex >= 0) {
-                    result = getBodyJointPose(TrackerRoles[trackerIndex].joint, time, pose);
-
-                    // Per spec we must consistently pick one source. We pick the first one.
-                    break;
-                } else {
-                    const bool isGripPose = endsWith(fullPath, "/input/grip/pose") || endsWith(fullPath, "/input/grip");
-                    const bool isAimPose = endsWith(fullPath, "/input/aim/pose") || endsWith(fullPath, "/input/aim");
-                    const bool isPalmPose =
-                        endsWith(fullPath, "/input/palm_ext/pose") || endsWith(fullPath, "/input/palm_ext");
-                    const int side = getActionSide(fullPath);
-                    if ((isGripPose || isAimPose || isPalmPose) && side >= 0) {
-                        result = getControllerPose(side, time, pose, velocity);
-
-                        // Apply the pose offsets.
-                        if (isAimPose) {
-                            // Try using the hand tracking first.
-                            if (!getPinchPose(side, pose, pose)) {
-                                pose = Pose::Multiply(m_controllerAimPose[side], pose);
-                            }
-                        } else if (isGripPose) {
-                            pose = Pose::Multiply(m_controllerGripPose[side], pose);
-                        } else {
-                            pose = Pose::Multiply(m_controllerPalmPose[side], pose);
-                        }
+                    if (isEyeTracker) {
+                        result = getEyeTrackerPose(time, pose, gazeSampleTime);
 
                         // Per spec we must consistently pick one source. We pick the first one.
                         break;
+                    } else if (trackerIndex >= 0) {
+                        result = getBodyJointPose(TrackerRoles[trackerIndex].joint, time, pose);
+
+                        // Per spec we must consistently pick one source. We pick the first one.
+                        break;
+                    } else {
+                        const bool isGripPose =
+                            endsWith(fullPath, "/input/grip/pose") || endsWith(fullPath, "/input/grip");
+                        const bool isAimPose =
+                            endsWith(fullPath, "/input/aim/pose") || endsWith(fullPath, "/input/aim");
+                        const bool isPalmPose =
+                            endsWith(fullPath, "/input/palm_ext/pose") || endsWith(fullPath, "/input/palm_ext");
+                        const int side = getActionSide(fullPath);
+                        if ((isGripPose || isAimPose || isPalmPose) && side >= 0) {
+                            result = getControllerPose(side, time, pose, velocity);
+
+                            // Apply the pose offsets.
+                            if (isAimPose) {
+                                // Try using the hand tracking first.
+                                if (!getPinchPose(side, pose, pose)) {
+                                    pose = Pose::Multiply(m_controllerAimPose[side], pose);
+                                }
+                            } else if (isGripPose) {
+                                pose = Pose::Multiply(m_controllerGripPose[side], pose);
+                            } else {
+                                pose = Pose::Multiply(m_controllerPalmPose[side], pose);
+                            }
+
+                            // Per spec we must consistently pick one source. We pick the first one.
+                            break;
+                        }
                     }
                 }
             }

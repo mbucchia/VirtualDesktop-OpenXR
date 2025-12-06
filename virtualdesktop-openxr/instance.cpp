@@ -591,6 +591,9 @@ namespace virtualdesktop_openxr {
         m_extensionsTable.push_back( // Palm pose.
             {XR_EXT_PALM_POSE_EXTENSION_NAME, XR_EXT_palm_pose_SPEC_VERSION});
 
+        m_extensionsTable.push_back( // Unreal Engine 5 needs this.
+            {XR_EXT_ACTIVE_ACTION_SET_PRIORITY_EXTENSION_NAME, XR_EXT_active_action_set_priority_SPEC_VERSION});
+
         m_extensionsTable.push_back( // Audio GUID.
             {XR_OCULUS_AUDIO_DEVICE_GUID_EXTENSION_NAME, XR_OCULUS_audio_device_guid_SPEC_VERSION});
 
