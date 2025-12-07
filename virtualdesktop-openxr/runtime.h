@@ -662,6 +662,7 @@ namespace virtualdesktop_openxr {
         bool m_loggedResolution{false};
         std::string m_applicationName;
         std::string m_exeName;
+        bool m_isUnity{false};
         bool m_useApplicationDeviceForSubmission{true};
         EyeTracking m_eyeTrackingType{EyeTracking::None};
         wil::unique_handle m_bodyStateFile;
@@ -841,7 +842,9 @@ namespace virtualdesktop_openxr {
         uint32_t m_actionSourcePriority[(size_t)ActionSourceIndex::Count]{};
         BodyTracking::BodyStateV2 m_cachedBodyState{};
         XrTime m_lastPredictedDisplayTime{0};
+        XrTime m_lastRequestedViewDisplayTime{0};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
+        mutable std::optional<XrView> m_lastValidViews;
         std::optional<float> m_lastSeenIpd{};
 
         // Statistics.

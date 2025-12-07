@@ -330,18 +330,26 @@ namespace virtualdesktop_openxr {
 
                     // Debug option to test reprojection.
                     if (m_jiggleViewRotations) {
-                        static std::mt19937_64 randGen(0);
+                        // To investigate cross-frame or within-frame issues.
+                        const bool useSameJiggleForEachDisplayTime = false;
+                        if (!useSameJiggleForEachDisplayTime ||
+                            m_lastRequestedViewDisplayTime != viewLocateInfo->displayTime) {
+                            static std::mt19937_64 randGen(0);
 
-                        // Scale jitter by FOV.
-                        const float randMax = (views[i].fov.angleRight - views[i].fov.angleLeft) * 0.06f;
-                        std::uniform_real_distribution<float> dist(-randMax, randMax);
-                        const auto randomQuatJiggle =
-                            DirectX::XMVectorSet(dist(randGen), dist(randGen), dist(randGen), dist(randGen));
-                        const auto originalPoseOrientation = xr::math::LoadXrQuaternion(views[i].pose.orientation);
-                        const auto poseOrientationWithJiggle =
-                            DirectX::XMVectorAdd(originalPoseOrientation, randomQuatJiggle);
-                        xr::math::StoreXrQuaternion(&views[i].pose.orientation,
-                                                    DirectX::XMVector4Normalize(poseOrientationWithJiggle));
+                            // Scale jitter by FOV.
+                            const float randMax = (views[i].fov.angleRight - views[i].fov.angleLeft) * 0.06f;
+                            std::uniform_real_distribution<float> dist(-randMax, randMax);
+                            const auto randomQuatJiggle =
+                                DirectX::XMVectorSet(dist(randGen), dist(randGen), dist(randGen), dist(randGen));
+                            const auto originalPoseOrientation = xr::math::LoadXrQuaternion(views[i].pose.orientation);
+                            const auto poseOrientationWithJiggle =
+                                DirectX::XMVectorAdd(originalPoseOrientation, randomQuatJiggle);
+                            xr::math::StoreXrQuaternion(&views[i].pose.orientation,
+                                                        DirectX::XMVector4Normalize(poseOrientationWithJiggle));
+                        } else if (m_lastValidViews) {
+                            *views = m_lastValidViews.value();
+                        }
+                        m_lastValidViews = *views;
                     }
 
                     TraceLoggingWrite(g_traceProvider,
@@ -359,13 +367,14 @@ namespace virtualdesktop_openxr {
                 } else {
                     m_lastSeenIpd.reset();
                 }
-
             } else {
                 // All or nothing.
                 viewState->viewStateFlags = 0;
                 TraceLoggingWrite(g_traceProvider, "xrLocateViews", TLArg(viewState->viewStateFlags, "ViewStateFlags"));
             }
         }
+
+        m_lastRequestedViewDisplayTime = viewLocateInfo->displayTime;
 
         return XR_SUCCESS;
     }
@@ -599,6 +608,13 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags locationFlags = 0;
         ovrPoseStatef state{};
         ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
+
+        // OVRPlugin assumes that xrLocateViews() with the same displayTime returns the same value across calls, which
+        // violates OpenXR spec 1.0 per 10.2. View and Projection State: "Repeatedly calling xrLocateViews with the same
+        // time may not necessarily return the same result. Instead the prediction gets increasingly accurate as the
+        // function is called closer to the given time for which a prediction is made.".
+        const bool enablePredictionRefinement = !(m_isUnity && m_isOculusXrPlugin);
+
         const auto result = ovr_GetDevicePoses(m_ovrSession, &hmd, 1, xrTimeToOvrTime(time), &state);
         if (result == ovrError_LostTracking) {
             TraceLoggingWrite(g_traceProvider, "OVR_HmdPoseNotTracking");
@@ -615,7 +631,15 @@ namespace virtualdesktop_openxr {
         if (isTracked) {
             locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
                               XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
-            pose = ovrPoseToXrPose(state.ThePose);
+            if (enablePredictionRefinement || time != m_lastRequestedViewDisplayTime) {
+                pose = ovrPoseToXrPose(state.ThePose);
+            } else if (m_lastValidHmdPose) {
+                // Return the same pose for the same timestamp.
+                pose = m_lastValidHmdPose.value();
+            } else {
+                locationFlags = 0;
+                pose = Pose::Identity();
+            }
         } else {
             if (m_lastValidHmdPose) {
                 locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;

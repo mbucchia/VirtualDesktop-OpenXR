@@ -221,6 +221,7 @@ namespace virtualdesktop_openxr {
         }
 
         m_applicationName = createInfo->applicationInfo.applicationName;
+        m_isUnity = startsWith(createInfo->applicationInfo.engineName, "Unity");
 
         Log("Application: %s (%s); Engine: %s\n",
             m_applicationName.c_str(),
