@@ -1109,6 +1109,9 @@ namespace virtualdesktop_openxr {
 
             const auto lastControllerType = m_cachedControllerType[side];
             const auto controllerTypes = ovr_GetConnectedControllerTypes(m_ovrSession);
+            const bool isLingering =
+                (std::chrono::high_resolution_clock::now() - m_lastControllerSeenTime[side]).count() <
+                m_controllerLingerTimeout;
             const bool isControllerConnected =
                 controllerTypes & (side == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch);
             if (isControllerConnected) {
@@ -1140,9 +1143,17 @@ namespace virtualdesktop_openxr {
                           "JoystickNoDeadzone"));
 
                 processHandGestures(side);
+
+                m_lastControllerSeenTime[side] = std::chrono::high_resolution_clock::now();
+            } else if (isLingering) {
+                TraceLoggingWrite(g_traceProvider,
+                                  "OVR_InputState",
+                                  TLArg(side == 0 ? "Left" : "Right", "Side"),
+                                  TLArg(true, "Lingering"));
             } else {
                 m_cachedControllerType[side].clear();
                 m_isControllerActive[side] = false;
+                m_lastValidControllerPose[side].reset();
 
                 TraceLoggingWrite(g_traceProvider,
                                   "OVR_InputState",

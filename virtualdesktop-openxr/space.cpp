@@ -689,8 +689,14 @@ namespace virtualdesktop_openxr {
                               XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
             pose = ovrPoseToXrPose(state.ThePose);
         } else {
-            pose = Pose::Identity();
+            if (m_lastValidControllerPose[side]) {
+                locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+                pose = m_lastValidControllerPose[side].value();
+            } else {
+                pose = Pose::Identity();
+            }
         }
+        m_lastValidControllerPose[side] = pose;
 
         if (velocity) {
             velocity->velocityFlags = 0;

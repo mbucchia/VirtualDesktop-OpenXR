@@ -760,6 +760,7 @@ namespace virtualdesktop_openxr {
         float m_overrideWorldScale{1.f};
         float m_overrideVisibilityMaskScale{1.f};
         uint32_t m_visibilityMaskDirty{0};
+        int64_t m_controllerLingerTimeout{5'000'000'000};
 
         // Swapchains and other graphics stuff.
         std::mutex m_swapchainsMutex;
@@ -843,7 +844,9 @@ namespace virtualdesktop_openxr {
         BodyTracking::BodyStateV2 m_cachedBodyState{};
         XrTime m_lastPredictedDisplayTime{0};
         XrTime m_lastRequestedViewDisplayTime{0};
+        std::chrono::high_resolution_clock::time_point m_lastControllerSeenTime[xr::Side::Count]{};
         mutable std::optional<XrPosef> m_lastValidHmdPose;
+        mutable std::optional<XrPosef> m_lastValidControllerPose[xr::Side::Count];
         mutable std::optional<XrView> m_lastValidViews;
         std::optional<float> m_lastSeenIpd{};
 

@@ -180,6 +180,8 @@ namespace virtualdesktop_openxr {
         m_sessionStartTime = ovr_GetTimeInSeconds();
         m_sessionTotalFrameCount = 0;
 
+        m_lastControllerSeenTime[xr::Side::Left] = m_lastControllerSeenTime[xr::Side::Right] = {};
+
         try {
             // Create a reference space with the origin and the HMD pose.
             m_originSpace = new Space;
@@ -536,6 +538,8 @@ namespace virtualdesktop_openxr {
             }
         }
 
+        m_controllerLingerTimeout = getSetting("controller_linger_timeout").value_or(5000) * (int64_t)1'000'000;
+
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
                           TLArg(m_useMirrorWindow, "MirrorWindow"),
@@ -546,7 +550,8 @@ namespace virtualdesktop_openxr {
                           TLArg(m_jiggleViewRotations, "JiggleViewRotations"),
                           TLArg(m_sharpenFactor, "SharpenFactor"),
                           TLArg(m_overrideWorldScale, "OverrideWorldScale"),
-                          TLArg(m_overrideVisibilityMaskScale, "OverrideVisibilityMaskScale"));
+                          TLArg(m_overrideVisibilityMaskScale, "OverrideVisibilityMaskScale"),
+                          TLArg(m_controllerLingerTimeout, "ControllerLingerTimeout"));
     }
 
 } // namespace virtualdesktop_openxr
