@@ -581,6 +581,16 @@ namespace virtualdesktop_openxr {
         // we use eye level for convenience.
         CHECK_OVRCMD(ovr_SetTrackingOriginType(
             m_ovrSession, !m_useOculusRuntime ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel));
+
+        m_accessibilityHelper = CreateAccessibilityHelper(
+            m_ovrSession, (programData / "accessibility.json").wstring(), m_applicationName, m_exeName);
+
+        // When accessibility is enabled, we stop advertising hand joints as it may conflict with the use of the virtual
+        // controllers.
+        if (m_accessibilityHelper && (m_accessibilityHelper->IsControllerEmulated(xr::Side::Left) ||
+                                      m_accessibilityHelper->IsControllerEmulated(xr::Side::Right))) {
+            m_supportsHandTracking = false;
+        }
     }
 
     void OpenXrRuntime::initializeBodyTrackingMmf() {

@@ -286,6 +286,7 @@ namespace virtualdesktop_openxr {
         // We do not destroy actionsets and actions, since they are tied to the instance.
 
         // FIXME: Add session and frame resource cleanup here.
+        m_accessibilityHelper.reset();
         cleanupOpenGL();
         cleanupVulkan();
         cleanupD3D12();

@@ -571,6 +571,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h" />
     <ClInclude Include="..\external\LibOVR\Shim\OVR_CAPI_Prototypes.h" />
     <ClInclude Include="..\external\openvr\samples\drivers\drivers\handskeletonsimulation\src\hand_simulation.h" />
+    <ClInclude Include="accessibility.h" />
     <ClInclude Include="OVR_Ext.h" />
     <ClInclude Include="RuntimeConfiguration.h" />
     <ClInclude Include="trackers.h" />
@@ -623,6 +624,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='ReleaseBundle|x64'">4244;4305</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4244;4305</DisableSpecificWarnings>
     </ClCompile>
+    <ClCompile Include="accessibility.cpp" />
     <ClCompile Include="action.cpp" />
     <ClCompile Include="audio.cpp" />
     <ClCompile Include="body_tracking.cpp" />
@@ -698,6 +700,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets" Condition="Exists('$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets')" />
+    <Import Project="$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets" Condition="Exists('$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -705,5 +708,6 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.Windows.ImplementationLibrary.1.0.220201.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
     <Error Condition="!Exists('$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Detours.4.0.1\build\native\Detours.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\Microsoft.GameInput.2.2.26100.6114\build\native\targets\Microsoft.GameInput.targets'))" />
   </Target>
 </Project>

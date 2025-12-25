@@ -26,6 +26,7 @@
 #include "runtime.h"
 #include "trackers.h"
 #include "utils.h"
+#include "cJSON.h"
 
 namespace virtualdesktop_openxr {
 
@@ -668,7 +669,18 @@ namespace virtualdesktop_openxr {
         XrSpaceLocationFlags locationFlags = 0;
         ovrPoseStatef state{};
         ovrTrackedDeviceType controller = side == 0 ? ovrTrackedDevice_LTouch : ovrTrackedDevice_RTouch;
-        const auto result = ovr_GetDevicePoses(m_ovrSession, &controller, 1, xrTimeToOvrTime(time), &state);
+        const bool isEmulatedControllerConnected =
+            m_accessibilityHelper ? m_accessibilityHelper->IsControllerEmulated(side) : false;
+
+        ovrResult result = ovrError_LostTracking;
+        if (!isEmulatedControllerConnected) {
+            result = ovr_GetDevicePoses(m_ovrSession, &controller, 1, xrTimeToOvrTime(time), &state);
+        } else {
+            // When using accessibility mode, override the controller poses.
+            if (m_accessibilityHelper->GetEmulatedDevicePose(side, xrTimeToOvrTime(time), &state)) {
+                result = ovrSuccess;
+            }
+        }
         if (result == ovrError_LostTracking) {
             TraceLoggingWrite(
                 g_traceProvider, "OVR_ControllerPoseNotTracking", TLArg(side == 0 ? "Left" : "Right", "Side"));
