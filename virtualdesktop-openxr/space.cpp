@@ -670,7 +670,8 @@ namespace virtualdesktop_openxr {
         ovrTrackedDeviceType controller = side == 0 ? ovrTrackedDevice_LTouch : ovrTrackedDevice_RTouch;
         const auto result = ovr_GetDevicePoses(m_ovrSession, &controller, 1, xrTimeToOvrTime(time), &state);
         if (result == ovrError_LostTracking) {
-            TraceLoggingWrite(g_traceProvider, "OVR_HmdPoseNotTracking", TLArg(side == 0 ? "Left" : "Right", "Side"));
+            TraceLoggingWrite(
+                g_traceProvider, "OVR_ControllerPoseNotTracking", TLArg(side == 0 ? "Left" : "Right", "Side"));
         } else {
             CHECK_OVRCMD(result);
             TraceLoggingWrite(g_traceProvider,
@@ -685,9 +686,30 @@ namespace virtualdesktop_openxr {
         // which is for some reason considered a success.
         const bool isTracked = OVR_UNQUALIFIED_SUCCESS(result);
         if (isTracked) {
-            locationFlags |= (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT |
-                              XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT);
-            pose = ovrPoseToXrPose(state.ThePose);
+            locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+
+            // Some devices like AndroidXR seem to like returning NaNs. The OVR API doesn't have validity bits. We need
+            // to check manually.
+            const bool isPositionValid = !(isnan(state.ThePose.Position.x) || isnan(state.ThePose.Position.y) ||
+                                           isnan(state.ThePose.Position.z));
+            const bool isOrientationValid =
+                !(isnan(state.ThePose.Orientation.x) || isnan(state.ThePose.Orientation.y) ||
+                  isnan(state.ThePose.Orientation.z) || isnan(state.ThePose.Orientation.w));
+
+            const auto returnedPose = ovrPoseToXrPose(state.ThePose);
+            const auto fallbackPose = m_lastValidControllerPose[side].value_or(Pose::Identity());
+            if (isPositionValid) {
+                locationFlags |= XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+                pose.position = returnedPose.position;
+            } else {
+                pose.position = fallbackPose.position;
+            }
+            if (isOrientationValid) {
+                locationFlags |= XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
+                pose.orientation = returnedPose.orientation;
+            } else {
+                pose.orientation = fallbackPose.orientation;
+            }
         } else {
             if (m_lastValidControllerPose[side]) {
                 locationFlags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
@@ -702,9 +724,21 @@ namespace virtualdesktop_openxr {
             velocity->velocityFlags = 0;
 
             if (isTracked) {
-                velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-                velocity->angularVelocity = ovrVector3fToXrVector3f(state.AngularVelocity);
-                velocity->linearVelocity = ovrVector3fToXrVector3f(state.LinearVelocity);
+                // Some devices like AndroidXR seem to like returning NaNs. The OVR API doesn't have validity bits. We
+                // need to check manually.
+                const bool isAngularVelocityValid = !(isnan(state.AngularVelocity.x) ||
+                                                      isnan(state.AngularVelocity.y) || isnan(state.AngularVelocity.z));
+                if (isAngularVelocityValid) {
+                    velocity->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+                    velocity->angularVelocity = ovrVector3fToXrVector3f(state.AngularVelocity);
+                }
+
+                const bool isLinearVelocityValid =
+                    !(isnan(state.LinearVelocity.x) || isnan(state.LinearVelocity.y) || isnan(state.LinearVelocity.z));
+                if (isLinearVelocityValid) {
+                    velocity->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+                    velocity->linearVelocity = ovrVector3fToXrVector3f(state.LinearVelocity);
+                }
             }
         }
 
