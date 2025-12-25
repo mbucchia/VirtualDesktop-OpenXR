@@ -11,9 +11,17 @@ DISCLAIMER: This software is distributed as-is, without any warranties or condit
 ## Contributors
 
 - Matthieu Bucchianeri
-- Mathias Peter Nordskog | Roughy
-- Guy Godin | Virtual Desktop
-- Kyle Hendry | 3NIGMA
+- Guy Godin (Virtual Desktop)
+- Kyle Hendry (Virtual Desktop)
+
+Additional contributions:
+
+- Vladimir Dranyonkov (bug fixes, on original PimaxXR)
+- Sarah Heinzen  (Accessibility project, sponsored by Microsoft)
+- Jonas Holderman (Accessibility project, sponsored by Microsoft)
+- Heather Kemp (Accessibility project, sponsored by Microsoft)
+- Mathias Peter Nordskog (bug fixes)
+- Pavel Skakov (bug fixes, on original PimaxXR)
 
 ## Donate
 
