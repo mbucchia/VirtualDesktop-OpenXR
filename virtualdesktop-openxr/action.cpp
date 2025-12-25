@@ -1184,7 +1184,9 @@ namespace virtualdesktop_openxr {
                               .c_str(),
                           "JoystickNoDeadzone"));
 
-                processHandGestures(side);
+                if (m_supportsHandTracking) {
+                    processHandGestures(side);
+                }
 
                 m_lastControllerSeenTime[side] = std::chrono::high_resolution_clock::now();
             } else if (isLingering) {
