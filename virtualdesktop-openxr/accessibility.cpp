@@ -91,14 +91,17 @@ namespace {
         const PosePlayback* animation = nullptr;
 
         // The start time for the playback.
-        double animationStartTime = -1;
+        std::optional<double> animationStartTime;
 
         // The current base frame for the playback.
-        size_t animationFrame = -1;
+        std::optional<size_t> animationFrame;
 
         // The pose to use when placing the controller in from of the user and following gaze.
         XrPosef initialPoseRelativeToHead =
-            Pose::MakePose(k_DefaultPositionRelativeToHead, k_DefaultRotationRelativeToHead);
+            Pose::MakePose(Quaternion::RotationRollPitchYaw({OVR::DegreeToRad(k_DefaultPositionRelativeToHead.x),
+                                                             OVR::DegreeToRad(k_DefaultPositionRelativeToHead.y),
+                                                             OVR::DegreeToRad(k_DefaultPositionRelativeToHead.z)}),
+                           k_DefaultRotationRelativeToHead);
 
         // An offset to apply to the running animation.
         XrPosef poseAnimationOffset = Pose::Identity();
@@ -202,58 +205,68 @@ namespace {
                 const bool shouldSpawn =
                     m_controllerState[side ^ 1].latestReportedPose && !m_controllerState[side].latestReportedPose;
 
+                const auto processAnimation = [&](XrPosef& transform) {
+                    if (m_controllerState[side].animation) {
+                        const auto currentPlaybackTime =
+                            absTime - m_controllerState[side].animationStartTime.value_or(absTime);
+
+                        while (m_controllerState[side].animationFrame &&
+                               m_controllerState[side].animationFrame.value() + 1 <
+                                   m_controllerState[side].animation->poses.size() &&
+                               currentPlaybackTime >
+                                   m_controllerState[side]
+                                           .animation->poses[m_controllerState[side].animationFrame.value() + 1]
+                                           .first /
+                                       m_controllerState[side].animation->playbackSpeed) {
+                            m_controllerState[side].animationFrame = m_controllerState[side].animationFrame.value() + 1;
+                        }
+
+                        const auto currentFrameIndex = m_controllerState[side].animationFrame.value_or(0);
+                        const auto currentFrame = m_controllerState[side].animation->poses[currentFrameIndex];
+                        const auto currentTimeStamp =
+                            currentFrame.first / m_controllerState[side].animation->playbackSpeed;
+                        const auto currentPose = currentFrame.second;
+
+                        const auto nextFrameIndex = m_controllerState[side].animationFrame.value_or(-1) + 1;
+                        if (nextFrameIndex >= m_controllerState[side].animation->poses.size()) {
+                            transform = currentPose * m_controllerState[side].poseAnimationOffset * transform;
+
+                            m_controllerState[side].animation = nullptr;
+                            m_controllerState[side].animationStartTime.reset();
+                            m_controllerState[side].animationFrame.reset();
+                        } else {
+                            // Interpolate between this frame and the next
+                            const auto nextFrame = m_controllerState[side].animation->poses[nextFrameIndex];
+                            const auto nextFrameTimeStamp =
+                                nextFrame.first / m_controllerState[side].animation->playbackSpeed;
+                            const auto nextFramePose = nextFrame.second;
+
+                            const double deltaTime = nextFrameTimeStamp - currentTimeStamp;
+                            const float alpha =
+                                deltaTime ? (float)((currentPlaybackTime - currentTimeStamp) / deltaTime) : 0.f;
+                            transform = xr::math::Pose::Slerp(currentPose, nextFramePose, alpha) *
+                                        m_controllerState[side].poseAnimationOffset * transform;
+                        }
+                    }
+                };
+
                 if (!m_controllerState[side].followGaze && !shouldSpawn) {
                     if (!m_controllerState[side].latestReportedPose) {
                         return false;
                     } else {
-                        // TODO: Return last good pose? Or a "parking" pose out of the screen?
+                        finalPose = m_controllerState[side].latestReportedPose.value();
 
-                        auto transform = m_controllerState[side].latestReportedPose.value();
+                        // Even if we stopped tracking the controller, we should still finish any queued up animation.
+                        processAnimation(finalPose);
 
-                        // DEMO CODE: Even if we stopped tracking it, we should still finish any queued up animation.
-                        if (m_controllerState[side].animation) {
-                            const auto currentPlaybackTime = absTime - m_controllerState[side].animationStartTime;
-
-                            while (
-                                m_controllerState[side].animationFrame <
-                                    m_controllerState[side].animation->poses.size() &&
-                                m_controllerState[side].animation->poses[m_controllerState[side].animationFrame].first /
-                                        m_controllerState[side].animation->playbackSpeed <
-                                    currentPlaybackTime) {
-                                m_controllerState[side].animationFrame++;
-                            }
-
-                            const auto currentFrameIndex = m_controllerState[side].animationFrame;
-                            const auto nextFrameIndex = m_controllerState[side].animationFrame + 1;
-                            if (nextFrameIndex >= m_controllerState[side].animation->poses.size()) {
-                                m_controllerState[side].animation = nullptr;
-                            } else {
-                                const auto currentFrame = m_controllerState[side].animation->poses[currentFrameIndex];
-                                const auto currentTimeStamp =
-                                    currentFrame.first / m_controllerState[side].animation->playbackSpeed;
-                                const auto currentPose = currentFrame.second;
-
-                                // Interpolate between this frame and the next
-                                const auto nextFrame = m_controllerState[side].animation->poses[nextFrameIndex];
-                                const auto nextFrameTimeStamp =
-                                    nextFrame.first / m_controllerState[side].animation->playbackSpeed;
-                                const auto nextFramePose = nextFrame.second;
-
-                                const float alpha = (float)((currentPlaybackTime - currentTimeStamp) /
-                                                            (nextFrameTimeStamp - currentTimeStamp));
-                                transform = xr::math::Pose::Slerp(currentPose, nextFramePose, alpha) *
-                                            m_controllerState[side].poseAnimationOffset * transform;
-                            }
-                        }
-                        outDevicePose->ThePose = xrPoseToOvrPose(transform);
+                        outDevicePose->ThePose = xrPoseToOvrPose(finalPose);
                         return true;
                     }
                 }
 
                 ZeroMemory(outDevicePose, sizeof(ovrPoseStatef));
 
-                // DEMO CODE: Move the emulated controllers in front of the user.
-
+                // Move the emulated controllers in front of the user.
                 // Get the head pose.
                 ovrPoseStatef headPoseState{};
                 ovrTrackedDeviceType hmd = ovrTrackedDevice_HMD;
@@ -267,45 +280,11 @@ namespace {
                     finalPose = Pose::Invert(m_toGripPose[side]) * finalPose;
                 }
 
-                // DEMO CODE: Replay a pre-recorded sequence (animation).
-
-                if (m_controllerState[side].animation) {
-                    const auto currentPlaybackTime = absTime - m_controllerState[side].animationStartTime;
-
-                    while (m_controllerState[side].animationFrame + 1 <
-                               m_controllerState[side].animation->poses.size() &&
-                           m_controllerState[side].animation->poses[m_controllerState[side].animationFrame + 1].first /
-                                   m_controllerState[side].animation->playbackSpeed <
-                               currentPlaybackTime) {
-                        m_controllerState[side].animationFrame++;
-                    }
-
-                    const auto currentFrameIndex = m_controllerState[side].animationFrame;
-                    const auto nextFrameIndex = m_controllerState[side].animationFrame + 1;
-                    if (nextFrameIndex >= m_controllerState[side].animation->poses.size()) {
-                        m_controllerState[side].animation = nullptr;
-                    } else {
-                        const auto currentFrame = m_controllerState[side].animation->poses[currentFrameIndex];
-                        const auto currentTimeStamp =
-                            currentFrame.first / m_controllerState[side].animation->playbackSpeed;
-                        const auto currentPose = currentFrame.second;
-
-                        // Interpolate between this frame and the next
-                        const auto nextFrame = m_controllerState[side].animation->poses[nextFrameIndex];
-                        const auto nextFrameTimeStamp =
-                            nextFrame.first / m_controllerState[side].animation->playbackSpeed;
-                        const auto nextFramePose = nextFrame.second;
-
-                        const float alpha =
-                            (float)((currentPlaybackTime - currentTimeStamp) / (nextFrameTimeStamp - currentTimeStamp));
-                        finalPose = xr::math::Pose::Slerp(currentPose, nextFramePose, alpha) *
-                                    m_controllerState[side].poseAnimationOffset * finalPose;
-                    }
-                }
+                // Replay a pre-recorded sequence (animation).
+                processAnimation(finalPose);
             }
 
             outDevicePose->ThePose = xrPoseToOvrPose(finalPose);
-            outDevicePose->TimeInSeconds = absTime;
 
             // Store the last reported pose. We can use it as a starting point for pre-recorded sequences.
             {
@@ -333,11 +312,11 @@ namespace {
             // correctly based on which controller is real or emulated.
             ZeroMemory(outInputState, sizeof(ovrInputState));
 
-            // DEMO CODE: Passthrough the trigger (so we can click in menus).
+            // Passthrough the trigger (so we can click in menus).
             outInputState->IndexTrigger[side] = outInputState->IndexTriggerNoDeadzone[side] =
                 outInputState->IndexTriggerRaw[side] = m_controllerInputState.IndexTrigger[m_dominantHand];
 
-            // DEMO CODE: Passthrough the menu button (so we can open menus).
+            // Passthrough the menu button (so we can open menus).
             outInputState->Buttons |= (m_controllerInputState.Buttons & ovrButton_Enter);
 
             return true;
@@ -390,7 +369,7 @@ namespace {
                 {
                     std::unique_lock lock1(m_controllerState[0].mutex), lock2(m_controllerState[1].mutex);
 
-                    // DEMO CODE: Use the A/B button to switch between left/right (or both) being followGaze.
+                    // Use the A/B button to switch between left/right (or both) being followGaze.
                     const bool wasFollowingGaze[2] = {m_controllerState[0].followGaze, m_controllerState[1].followGaze};
                     m_controllerState[0].followGaze =
                         m_controllerInputState.Buttons & ((m_dominantHand == 0) ? ovrButton_X : ovrButton_A);
@@ -411,7 +390,7 @@ namespace {
                         }
                     }
 
-                    // DEMO CODE: use directions to cycle through pre-recorded sequences.
+                    // Use D-pad to cycle through pre-recorded sequences.
                     if (!m_useTouchControllerButtons ? (m_controllerInputState.Buttons & ovrButton_Up) : false) {
                         m_playbackIndex = 0;
                     }
@@ -428,7 +407,7 @@ namespace {
                         m_playbackIndex = 3 % m_playback.size();
                     }
 
-                    // DEMO CODE: Use the shoulder button to start replay.
+                    // Use the shoulder button to start replay.
                     if (!m_playback.empty() && !m_useTouchControllerButtons
                             ? (m_controllerInputState.Buttons &
                                ((m_dominantHand == 0) ? ovrButton_LShoulder : ovrButton_RShoulder))
@@ -458,7 +437,7 @@ namespace {
                             m_controllerState[side].animation = &cit->second;
 
                             m_controllerState[side].poseAnimationOffset = Pose::MakePose(
-                                {},
+                                Quaternion::Identity(),
                                 XrVector3f{0.f,
                                            0.f,
                                            (float)M_PI_2 + std::atan2(normalizedDirectionWithDeadzone.y,
@@ -468,13 +447,17 @@ namespace {
                                 m_controllerState[side].poseAnimationOffset =
                                     m_controllerState[side].poseAnimationOffset * m_toGripPose[side];
                             }
-
-                            m_controllerState[side].animationStartTime = ovrNow;
-                            m_controllerState[side].animationFrame = 0;
+                        }
+                    } else {
+                        for (xr::side_t side = 0; side < xr::Side::Count; side++) {
+                            if (m_controllerState[side].animation && !m_controllerState[side].animationStartTime) {
+                                m_controllerState[side].animationStartTime = ovrNow;
+                                m_controllerState[side].animationFrame = 0;
+                            }
                         }
                     }
 
-                    // DEMO CODE: Use the joystick input on non-dominant hand to "move" the other controller (the
+                    // Use the joystick input on non-dominant hand to "move" the other controller (the
                     // one not following gaze).
                     if (!(m_controllerState[0].followGaze && m_controllerState[1].followGaze)) {
                         const xr::side_t otherSide =
@@ -483,12 +466,12 @@ namespace {
                             // TODO: This math is not correct. We want to apply the translation on the plan
                             // orthogonal to the controller forward pose.
                             const auto translation = Pose::MakePose(
+                                Quaternion::Identity(),
                                 XrVector3f{(float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].x *
                                                    m_joystickHorizontalSensitivity * deltaTime),
                                            (float)(m_controllerInputState.Thumbstick[m_dominantHand ^ 1].y *
                                                    m_joystickVerticalSensitivity * deltaTime),
-                                           0.f},
-                                XrVector3f{0, 0, 0});
+                                           0.f});
                             m_controllerState[otherSide].latestReportedPose =
                                 translation * m_controllerState[otherSide].latestReportedPose.value();
                         }
@@ -518,10 +501,11 @@ namespace {
                             const auto toRadians = [](double degrees) { return (float)(degrees * M_PI / 180); };
 
                             *outPose = Pose::MakePose(
-                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble},
-                                XrVector3f{pitch ? toRadians(pitch->valuedouble) : 0.f,
-                                           yaw ? toRadians(yaw->valuedouble) : 0.f,
-                                           roll ? toRadians(roll->valuedouble) : 0.f});
+                                Quaternion::RotationRollPitchYaw(
+                                    {pitch ? (float)OVR::DegreeToRad(pitch->valuedouble) : 0.f,
+                                     yaw ? (float)OVR::DegreeToRad(yaw->valuedouble) : 0.f,
+                                     roll ? (float)OVR::DegreeToRad(roll->valuedouble) : 0.f}),
+                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
                             return true;
                         }
                     }
@@ -536,18 +520,33 @@ namespace {
                         const auto x = cJSON_GetObjectItemCaseSensitive(poseObj, "x");
                         const auto y = cJSON_GetObjectItemCaseSensitive(poseObj, "y");
                         const auto z = cJSON_GetObjectItemCaseSensitive(poseObj, "z");
-                        const auto rx = cJSON_GetObjectItemCaseSensitive(poseObj, "rx");
-                        const auto ry = cJSON_GetObjectItemCaseSensitive(poseObj, "ry");
-                        const auto rz = cJSON_GetObjectItemCaseSensitive(poseObj, "rz");
-                        const auto rw = cJSON_GetObjectItemCaseSensitive(poseObj, "rw");
-                        if (x && y && z && rx && ry && rz && rw) {
-                            *outPose = Pose::MakePose(
-                                XrVector4f{(float)rx->valuedouble,
-                                           (float)ry->valuedouble,
-                                           (float)rz->valuedouble,
-                                           (float)rw->valuedouble},
-                                XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
-                            return true;
+                        if (x && y && z) {
+                            const auto rx = cJSON_GetObjectItemCaseSensitive(poseObj, "rx");
+                            const auto ry = cJSON_GetObjectItemCaseSensitive(poseObj, "ry");
+                            const auto rz = cJSON_GetObjectItemCaseSensitive(poseObj, "rz");
+                            const auto rw = cJSON_GetObjectItemCaseSensitive(poseObj, "rw");
+                            if (rx && ry && rz && rw) {
+                                *outPose = Pose::MakePose(
+                                    XrVector4f{(float)rx->valuedouble,
+                                               (float)ry->valuedouble,
+                                               (float)rz->valuedouble,
+                                               (float)rw->valuedouble},
+                                    XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
+                                return true;
+                            }
+
+                            const auto yaw = cJSON_GetObjectItemCaseSensitive(poseObj, "yaw");
+                            const auto pitch = cJSON_GetObjectItemCaseSensitive(poseObj, "pitch");
+                            const auto roll = cJSON_GetObjectItemCaseSensitive(poseObj, "roll");
+                            if (yaw && pitch && roll) {
+                                *outPose = Pose::MakePose(
+                                    Quaternion::RotationRollPitchYaw(
+                                        {pitch ? (float)OVR::DegreeToRad(pitch->valuedouble) : 0.f,
+                                         yaw ? (float)OVR::DegreeToRad(yaw->valuedouble) : 0.f,
+                                         roll ? (float)OVR::DegreeToRad(roll->valuedouble) : 0.f}),
+                                    XrVector3f{(float)x->valuedouble, (float)y->valuedouble, (float)z->valuedouble});
+                                return true;
+                            }
                         }
                     }
                 }

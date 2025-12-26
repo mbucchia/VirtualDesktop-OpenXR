@@ -108,14 +108,6 @@ namespace xr {
                 return pose;
             }
 
-            static inline XrPosef MakePose(const XrVector3f& translation, const XrVector3f& anglesInRadians) {
-                XrPosef pose{{}, translation};
-                StoreXrQuaternion(
-                    &pose.orientation,
-                    DirectX::XMQuaternionRotationRollPitchYaw(anglesInRadians.x, anglesInRadians.y, anglesInRadians.z));
-                return pose;
-            }
-
             static inline bool Equals(const XrPosef& a, const XrPosef& b) {
                 return std::abs(b.position.x - a.position.x) < 0.00001f &&
                        std::abs(b.position.y - a.position.y) < 0.00001f &&
