@@ -436,12 +436,13 @@ namespace {
                             std::advance(cit, m_playbackIndex);
                             m_controllerState[side].animation = &cit->second;
 
-                            m_controllerState[side].poseAnimationOffset = Pose::MakePose(
-                                Quaternion::Identity(),
-                                XrVector3f{0.f,
-                                           0.f,
-                                           (float)M_PI_2 + std::atan2(normalizedDirectionWithDeadzone.y,
-                                                                      normalizedDirectionWithDeadzone.x)});
+                            m_controllerState[side].poseAnimationOffset =
+                                Pose::MakePose(Quaternion::RotationRollPitchYaw(
+                                                   {0.f,
+                                                    0.f,
+                                                    (float)M_PI_2 + std::atan2(normalizedDirectionWithDeadzone.y,
+                                                                               normalizedDirectionWithDeadzone.x)}),
+                                               XrVector3f{});
 
                             if (m_controllerState[side].animation->startFromGrip && m_controllerState[side].gripAsAim) {
                                 m_controllerState[side].poseAnimationOffset =
