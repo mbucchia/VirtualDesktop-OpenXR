@@ -1082,20 +1082,26 @@ namespace virtualdesktop_openxr {
         }
 
         // Determine highest actionset priority for each action's bound source.
-        if (minPriority != maxPriority && syncInfo->countActiveActionSets) {
-            for (auto it = m_actions.begin(); it != m_actions.end(); it++) {
-                const Action& xrAction = *(Action*)*it;
+        if (syncInfo->countActiveActionSets) {
+            if (minPriority != maxPriority) {
+                for (auto it = m_actions.begin(); it != m_actions.end(); it++) {
+                    const Action& xrAction = *(Action*)*it;
 
-                for (const auto& source : xrAction.actionSources) {
-                    const auto sourceIndex = source.second.sourceIndex;
-                    if (sourceIndex != ActionSourceIndex::Invalid) {
-                        if (m_activeActionSets.count(xrAction.actionSet)) {
-                            const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
+                    for (const auto& source : xrAction.actionSources) {
+                        const auto sourceIndex = source.second.sourceIndex;
+                        if (sourceIndex != ActionSourceIndex::Invalid) {
+                            if (m_activeActionSets.count(xrAction.actionSet)) {
+                                const ActionSet& xrActionSet = *(ActionSet*)xrAction.actionSet;
 
-                            m_actionSourcePriority[(size_t)sourceIndex] =
-                                std::max(m_actionSourcePriority[(size_t)sourceIndex], xrActionSet.effectivePriority);
+                                m_actionSourcePriority[(size_t)sourceIndex] = std::max(
+                                    m_actionSourcePriority[(size_t)sourceIndex], xrActionSet.effectivePriority);
+                            }
                         }
                     }
+                }
+            } else {
+                for (size_t i = 0; i < std::size(m_actionSourcePriority); i++) {
+                    m_actionSourcePriority[i] = minPriority;
                 }
             }
         }
