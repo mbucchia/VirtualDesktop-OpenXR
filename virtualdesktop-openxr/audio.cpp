@@ -47,6 +47,12 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        // Workaround: The XR_OCULUS_audio_device_guid is poorly designed. This API takes an XrInstance, which is not
+        // sufficient to guarantee tha an HMD is active, and therefore the audio device is properly selected. Instead,
+        // it should take an XrSystemId. Unfortunately there is no good solution, the best effort below is to try to
+        // attach to the HMD, and if it's actually here, the query for audio device will succeed further below.
+        ensureOVRSession();
+
         const ovrResult result = ovr_GetAudioDeviceOutGuidStr(buffer);
         if (OVR_FAILURE(result)) {
             TraceLoggingWrite(g_traceProvider, "xrGetAudioOutputDeviceGuidOculus", TLArg((int)result, "Error"));
@@ -69,6 +75,12 @@ namespace virtualdesktop_openxr {
         if (!m_instanceCreated || instance != (XrInstance)1) {
             return XR_ERROR_HANDLE_INVALID;
         }
+
+        // Workaround: The XR_OCULUS_audio_device_guid is poorly designed. This API takes an XrInstance, which is not
+        // sufficient to guarantee tha an HMD is active, and therefore the audio device is properly selected. Instead,
+        // it should take an XrSystemId. Unfortunately there is no good solution, the best effort below is to try to
+        // attach to the HMD, and if it's actually here, the query for audio device will succeed further below.
+        ensureOVRSession();
 
         const ovrResult result = ovr_GetAudioDeviceInGuidStr(buffer);
         if (OVR_FAILURE(result)) {
