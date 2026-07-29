@@ -415,7 +415,7 @@ namespace virtualdesktop_openxr {
             const auto lastPrecompositionTime = m_gpuTimerPrecomposition[m_currentTimerIndex]
                                                     ? m_gpuTimerPrecomposition[m_currentTimerIndex]->query()
                                                     : 0;
-            if (IsTraceEnabled() && m_gpuTimerPrecomposition) {
+            if (IsTraceEnabled() && m_gpuTimerPrecomposition[0]) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->start();
             }
 
@@ -498,7 +498,7 @@ namespace virtualdesktop_openxr {
                 layersAllocator.back().Header.Type = ovrLayerType_Disabled;
             }
 
-            if (IsTraceEnabled() && m_gpuTimerPrecomposition) {
+            if (IsTraceEnabled() && m_gpuTimerPrecomposition[0]) {
                 m_gpuTimerPrecomposition[m_currentTimerIndex]->stop();
             }
 
