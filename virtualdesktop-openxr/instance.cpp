@@ -232,8 +232,9 @@ namespace virtualdesktop_openxr {
             XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion),
             XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion),
             XR_VERSION_PATCH(createInfo->applicationInfo.apiVersion));
-        if (XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != 1 ||
-            XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion) != 0) {
+        if ((XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != 1 ||
+             XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion) != 0) &&
+            !getSetting("quirk_bypass_api_version_check").value_or(false)) {
             return XR_ERROR_API_VERSION_UNSUPPORTED;
         }
 
