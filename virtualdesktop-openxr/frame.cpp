@@ -855,8 +855,17 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LAYER_INVALID;
         }
 
-        // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
-        // We cannot achieve conformance for this particular (but uncommon) API usage.
+        if (quad.eyeVisibility != XR_EYE_VISIBILITY_BOTH) {
+            if (!m_useOculusRuntime) {
+                if (quad.eyeVisibility == XR_EYE_VISIBILITY_LEFT) {
+                    layer.Header.Flags |= ovrLayerFlag_DisableRight;
+                } else if (quad.eyeVisibility == XR_EYE_VISIBILITY_RIGHT) {
+                    layer.Header.Flags |= ovrLayerFlag_DisableLeft;
+                }
+            } else {
+                OnceLog("Application is using unimplemented eyeVisibility on a quad/cylinder layer");
+            }
+        }
 
         if (quad.subImage.imageArrayIndex >= xrSwapchain.xrDesc.arraySize || xrSwapchain.xrDesc.faceCount != 1) {
             return XR_ERROR_VALIDATION_FAILURE;
@@ -937,8 +946,17 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_LAYER_INVALID;
         }
 
-        // CONFORMANCE: We ignore eyeVisibility, since there is no equivalent in the OVR compositor.
-        // We cannot achieve conformance for this particular (but uncommon) API usage.
+        if (cube.eyeVisibility != XR_EYE_VISIBILITY_BOTH) {
+            if (!m_useOculusRuntime) {
+                if (cube.eyeVisibility == XR_EYE_VISIBILITY_LEFT) {
+                    layer.Header.Flags |= ovrLayerFlag_DisableRight;
+                } else if (cube.eyeVisibility == XR_EYE_VISIBILITY_RIGHT) {
+                    layer.Header.Flags |= ovrLayerFlag_DisableLeft;
+                }
+            } else {
+                OnceLog("Application is using unimplemented eyeVisibility on a cube layer");
+            }
+        }
 
         if (cube.imageArrayIndex != 0 || xrSwapchain.xrDesc.faceCount != 6) {
             return XR_ERROR_VALIDATION_FAILURE;

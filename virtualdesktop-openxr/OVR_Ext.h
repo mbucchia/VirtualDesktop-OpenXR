@@ -26,5 +26,9 @@
 static constexpr int ovrHmd_QuestPro = 22;
 static constexpr int ovrHmd_Quest3 = 23;
 
+// Custom flags for VDXR.
+static constexpr int ovrLayerFlag_DisableLeft = 0x08;
+static constexpr int ovrLayerFlag_DisableRight = 0x10;
+
 // Some values we add for 3rd party standalone runtimes based on VDXR.
 static constexpr int ovrControllerType_Index = 0x1000;
