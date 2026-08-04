@@ -1,1 +1,1 @@
-https://github.com/KhronosGroup/OpenXR-SDK-Source/releases/download/release-1.1.36/openxr_loader_windows-1.1.36.zip
+https://github.com/KhronosGroup/OpenXR-SDK-Source/releases/download/release-1.1.62/openxr_loader_windows-1.1.62.zip
