@@ -1109,6 +1109,27 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrLocateSpaces(XrSession session, const XrSpacesLocateInfo* locateInfo, XrSpaceLocations* spaceLocations) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrLocateSpaces");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrLocateSpaces(session, locateInfo, spaceLocations);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrLocateSpaces_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrLocateSpaces: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrLocateSpaces", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrLocateSpaces failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 	XrResult XRAPI_CALL xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrGetOpenGLGraphicsRequirementsKHR");
@@ -1440,6 +1461,27 @@ namespace RUNTIME_NAMESPACE {
 		TraceLoggingWriteStop(local, "xrGetVulkanGraphicsRequirements2KHR", TLArg(xr::ToCString(result), "Result"));
 		if (XR_FAILED(result)) {
 			ErrorLog("xrGetVulkanGraphicsRequirements2KHR failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrLocateSpacesKHR(XrSession session, const XrSpacesLocateInfo* locateInfo, XrSpaceLocations* spaceLocations) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrLocateSpacesKHR");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrLocateSpacesKHR(session, locateInfo, spaceLocations);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrLocateSpacesKHR_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrLocateSpacesKHR: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrLocateSpacesKHR", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrLocateSpacesKHR failed with %s\n", xr::ToCString(result));
 		}
 
 		return result;
@@ -1844,6 +1886,69 @@ namespace RUNTIME_NAMESPACE {
 		return result;
 	}
 
+	XrResult XRAPI_CALL xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker, const XrBodyTrackingCalibrationInfoMETA* calibrationInfo) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrSuggestBodyTrackingCalibrationOverrideMETA");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrSuggestBodyTrackingCalibrationOverrideMETA(bodyTracker, calibrationInfo);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrSuggestBodyTrackingCalibrationOverrideMETA_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrSuggestBodyTrackingCalibrationOverrideMETA: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrSuggestBodyTrackingCalibrationOverrideMETA", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrSuggestBodyTrackingCalibrationOverrideMETA failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrResetBodyTrackingCalibrationMETA");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrResetBodyTrackingCalibrationMETA(bodyTracker);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrResetBodyTrackingCalibrationMETA_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrResetBodyTrackingCalibrationMETA: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrResetBodyTrackingCalibrationMETA", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrResetBodyTrackingCalibrationMETA failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
+	XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker, const XrBodyTrackingFidelityMETA fidelity) {
+		TraceLocalActivity(local);
+		TraceLoggingWriteStart(local, "xrRequestBodyTrackingFidelityMETA");
+
+		XrResult result;
+		try {
+			result = RUNTIME_NAMESPACE::GetInstance()->xrRequestBodyTrackingFidelityMETA(bodyTracker, fidelity);
+		} catch (std::exception& exc) {
+			TraceLoggingWriteTagged(local, "xrRequestBodyTrackingFidelityMETA_Error", TLArg(exc.what(), "Error"));
+			ErrorLog("xrRequestBodyTrackingFidelityMETA: %s\n", exc.what());
+			result = XR_ERROR_RUNTIME_FAILURE;
+		}
+
+		TraceLoggingWriteStop(local, "xrRequestBodyTrackingFidelityMETA", TLArg(xr::ToCString(result), "Result"));
+		if (XR_FAILED(result)) {
+			ErrorLog("xrRequestBodyTrackingFidelityMETA failed with %s\n", xr::ToCString(result));
+		}
+
+		return result;
+	}
+
 	XrResult XRAPI_CALL xrCreateFaceTracker2FB(XrSession session, const XrFaceTrackerCreateInfo2FB* createInfo, XrFaceTracker2FB* faceTracker) {
 		TraceLocalActivity(local);
 		TraceLoggingWriteStart(local, "xrCreateFaceTracker2FB");
@@ -2074,6 +2179,9 @@ namespace RUNTIME_NAMESPACE {
 		else if (apiName == "xrStopHapticFeedback") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrStopHapticFeedback);
 		}
+		else if (apiName == "xrLocateSpaces") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrLocateSpaces);
+		}
 		else if (has_XR_KHR_opengl_enable && apiName == "xrGetOpenGLGraphicsRequirementsKHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetOpenGLGraphicsRequirementsKHR);
 		}
@@ -2121,6 +2229,9 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (has_XR_KHR_vulkan_enable2 && apiName == "xrGetVulkanGraphicsRequirements2KHR") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetVulkanGraphicsRequirements2KHR);
+		}
+		else if (has_XR_KHR_locate_spaces && apiName == "xrLocateSpacesKHR") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrLocateSpacesKHR);
 		}
 		else if (has_XR_EXT_hand_tracking && apiName == "xrCreateHandTrackerEXT") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateHandTrackerEXT);
@@ -2178,6 +2289,15 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (has_XR_FB_eye_tracking_social && apiName == "xrGetEyeGazesFB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrGetEyeGazesFB);
+		}
+		else if (has_XR_META_body_tracking_calibration && apiName == "xrSuggestBodyTrackingCalibrationOverrideMETA") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrSuggestBodyTrackingCalibrationOverrideMETA);
+		}
+		else if (has_XR_META_body_tracking_calibration && apiName == "xrResetBodyTrackingCalibrationMETA") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrResetBodyTrackingCalibrationMETA);
+		}
+		else if (has_XR_META_body_tracking_fidelity && apiName == "xrRequestBodyTrackingFidelityMETA") {
+			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrRequestBodyTrackingFidelityMETA);
 		}
 		else if (has_XR_FB_face_tracking2 && apiName == "xrCreateFaceTracker2FB") {
 			*function = reinterpret_cast<PFN_xrVoidFunction>(RUNTIME_NAMESPACE::xrCreateFaceTracker2FB);
@@ -2285,6 +2405,18 @@ namespace RUNTIME_NAMESPACE {
 		}
 		else if (extensionName == "XR_EXT_active_action_set_priority") {
 			has_XR_EXT_active_action_set_priority = true;
+		}
+		else if (extensionName == "XR_KHR_locate_spaces") {
+			has_XR_KHR_locate_spaces = true;
+		}
+		else if (extensionName == "XR_KHR_maintenance1") {
+			has_XR_KHR_maintenance1 = true;
+		}
+		else if (extensionName == "XR_EXT_local_floor") {
+			has_XR_EXT_local_floor = true;
+		}
+		else if (extensionName == "XR_EXT_palm_pose") {
+			has_XR_EXT_palm_pose = true;
 		}
 
 	}

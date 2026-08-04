@@ -74,7 +74,7 @@ namespace virtualdesktop_openxr {
             g_traceProvider, "xrGetVulkanInstanceExtensionsKHR", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
         if (bufferCapacityInput && buffer) {
-            sprintf_s(buffer, bufferCapacityInput, "%s", instanceExtensions.data());
+            _snprintf_s(buffer, bufferCapacityInput, _TRUNCATE, "%s", instanceExtensions.data());
             TraceLoggingWrite(g_traceProvider, "xrGetVulkanInstanceExtensionsKHR", TLArg(buffer, "Extension"));
         }
 
@@ -120,7 +120,7 @@ namespace virtualdesktop_openxr {
             g_traceProvider, "xrGetVulkanDeviceExtensionsKHR", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
         if (bufferCapacityInput && buffer) {
-            sprintf_s(buffer, bufferCapacityInput, "%s", deviceExtensions.data());
+            _snprintf_s(buffer, bufferCapacityInput, _TRUNCATE, "%s", deviceExtensions.data());
             TraceLoggingWrite(g_traceProvider, "xrGetVulkanDeviceExtensionsKHR", TLArg(buffer, "Extension"));
         }
 
@@ -150,6 +150,8 @@ namespace virtualdesktop_openxr {
         if (!m_systemCreated || systemId != (XrSystemId)1) {
             return XR_ERROR_SYSTEM_INVALID;
         }
+
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
 
         uint32_t deviceCount = 0;
         CHECK_VKCMD(vkEnumeratePhysicalDevices(vkInstance, &deviceCount, nullptr));

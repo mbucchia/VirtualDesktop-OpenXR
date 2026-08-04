@@ -54,6 +54,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         // We only support one concurrent session.
         if (m_sessionCreated) {
             return XR_ERROR_LIMIT_REACHED;
@@ -326,7 +328,12 @@ namespace virtualdesktop_openxr {
         }
 
         if (!m_isHeadless && beginInfo->primaryViewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
-            return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            if (beginInfo->primaryViewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+                (m_apiMinor >= 1 && beginInfo->primaryViewConfigurationType ==
+                                        XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO_WITH_FOVEATED_INSET)) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+            return XR_ERROR_VALIDATION_FAILURE;
         }
 
         if (m_sessionBegun) {

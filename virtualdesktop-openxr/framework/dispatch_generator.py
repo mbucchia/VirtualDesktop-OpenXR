@@ -50,7 +50,7 @@ EXTENSIONS = ['XR_KHR_D3D11_enable', 'XR_KHR_D3D12_enable', 'XR_KHR_vulkan_enabl
               'XR_EXT_eye_gaze_interaction', 'XR_EXT_uuid', 'XR_META_headset_id', 'XR_OCULUS_audio_device_guid', 'XR_MND_headless',
               'XR_FB_eye_tracking_social', 'XR_FB_face_tracking', 'XR_FB_face_tracking2', 'XR_FB_hand_tracking_aim',
               'XR_FB_body_tracking', 'XR_META_body_tracking_full_body', 'XR_META_body_tracking_fidelity', 'XR_META_body_tracking_calibration', 'XR_HTCX_vive_tracker_interaction',
-              'XR_EXT_active_action_set_priority']
+              'XR_EXT_active_action_set_priority', 'XR_KHR_locate_spaces', 'XR_KHR_maintenance1', 'XR_EXT_local_floor', 'XR_EXT_palm_pose']
 
 SILENT_ERRORS = {
     'xrSuggestInteractionProfileBindings': ['XR_ERROR_PATH_UNSUPPORTED'],

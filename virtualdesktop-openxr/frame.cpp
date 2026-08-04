@@ -76,8 +76,8 @@ namespace virtualdesktop_openxr {
             m_sessionLossPending = !m_hmdStatus.HmdPresent || m_hmdStatus.DisplayLost || m_hmdStatus.ShouldQuit;
         }
         if (!m_shouldRecenter && m_hmdStatus.ShouldRecenter) {
-            // We will send 2 events, one for LOCAL and one for STAGE.
-            m_shouldRecenter = 2;
+            // We will send one event for each world-locked reference space (LOCAL, STAGE and LOCAL_FLOOR_EXT).
+            m_shouldRecenter = !(has_XR_EXT_local_floor || m_apiMinor >= 1) ? 2 : 3;
             m_recenterTime = ovrTimeToXrTime(ovr_GetTimeInSeconds());
 
             ovr_ClearShouldRecenterFlag(m_ovrSession);

@@ -59,6 +59,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
         graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_12_0;
 

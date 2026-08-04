@@ -90,6 +90,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         XrSystemHandTrackingPropertiesEXT* handTrackingProperties = nullptr;
         XrSystemEyeGazeInteractionPropertiesEXT* eyeGazeInteractionProperties = nullptr;
         XrSystemEyeTrackingPropertiesFB* eyeTrackingProperties = nullptr;
@@ -137,7 +139,8 @@ namespace virtualdesktop_openxr {
 
         properties->vendorId = m_cachedHmdInfo.VendorId;
 
-        sprintf_s(properties->systemName, sizeof(properties->systemName), "%s", m_cachedHmdInfo.ProductName);
+        _snprintf_s(
+            properties->systemName, sizeof(properties->systemName), _TRUNCATE, "%s", m_cachedHmdInfo.ProductName);
         properties->systemId = systemId;
 
         properties->trackingProperties.positionTracking = XR_TRUE;
@@ -266,8 +269,15 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
-            return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+                (m_apiMinor >= 1 &&
+                 viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO_WITH_FOVEATED_INSET)) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+            return XR_ERROR_VALIDATION_FAILURE;
         }
 
         if (environmentBlendModeCapacityInput && environmentBlendModeCapacityInput < ARRAYSIZE(blendModes)) {

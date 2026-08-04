@@ -54,6 +54,8 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         if (viewConfigurationTypeCapacityInput && viewConfigurationTypeCapacityInput < types.size()) {
             return XR_ERROR_SIZE_INSUFFICIENT;
         }
@@ -98,8 +100,15 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
-            return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+                (m_apiMinor >= 1 &&
+                 viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO_WITH_FOVEATED_INSET)) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+            return XR_ERROR_VALIDATION_FAILURE;
         }
 
         configurationProperties->viewConfigurationType = viewConfigurationType;
@@ -135,8 +144,15 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_SYSTEM_INVALID;
         }
 
+        CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
+
         if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
-            return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+                (m_apiMinor >= 1 &&
+                 viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO_WITH_FOVEATED_INSET)) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+            return XR_ERROR_VALIDATION_FAILURE;
         }
 
         if (viewCapacityInput && viewCapacityInput < xr::StereoView::Count) {
