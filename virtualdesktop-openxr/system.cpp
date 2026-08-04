@@ -297,6 +297,12 @@ namespace virtualdesktop_openxr {
         // The bundled runtime is meant to only work with Virtual Desktop.
         m_useOculusRuntime = false;
 #else
+        const auto localRuntimePath = dllHome /
+#ifdef _WIN64
+                                      L".\\LibOVRRT64_1.dll";
+#else
+                                      L".\\LibOVRRT32_1.dll";
+#endif
         m_useOculusRuntime = !IsServiceRunning(L"VirtualDesktop.Server.exe");
 #endif
         if (m_useOculusRuntime && !getSetting("allow_oculus_runtime").value_or(true)) {
@@ -315,7 +321,12 @@ namespace virtualdesktop_openxr {
 
             overridePath = path.wstring();
         }
-
+#ifdef STANDALONE_RUNTIME
+        else if (std::filesystem::exists(localRuntimePath)) {
+            OnceLog("Using local OVR runtime\n");
+            overridePath = dllHome.wstring() + L"\\";
+        }
+#endif
 #else
         // Load the LibOVR local to our folder.
         m_useOculusRuntime = true;

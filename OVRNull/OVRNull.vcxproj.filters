@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\external\LibOVR\Shim\OVR_CAPI_Util.cpp">
+      <Filter>LibOVR</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\LibOVR\Shim\OVR_StereoProjection.cpp">
+      <Filter>LibOVR</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stubs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="driver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Audio.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_D3D.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_GL.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Keys.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\Extras\OVR_CAPI_Util.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_CAPI_Vk.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_ErrorCode.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\Extras\OVR_StereoProjection.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\LibOVR\Include\OVR_Version.h">
+      <Filter>LibOVR</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="driver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="constantsbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="utils.hlsli">
+      <Filter>Shader Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="LibOVR">
+      <UniqueIdentifier>{656c0cb4-a652-412b-a377-25485fef6407}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3a816ac6-8179-4d56-b2ad-af5dd760a442}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{49b638b2-9743-4498-8d2b-5ecf3e7b5807}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader Files">
+      <UniqueIdentifier>{3fff676b-a977-45cb-b8b4-b8e178306041}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="ReprojectVS.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ReprojectPS.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>
