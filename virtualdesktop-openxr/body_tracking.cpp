@@ -351,13 +351,13 @@ namespace virtualdesktop_openxr {
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrSuggestBodyTrackingCalibrationOverrideMETA
-    XrResult OpenXrRuntime::xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker,
-                                                                         const XrBodyTrackingCalibrationInfoMETA calibrationInfo) {
+    XrResult OpenXrRuntime::xrSuggestBodyTrackingCalibrationOverrideMETA(
+        XrBodyTrackerFB bodyTracker, const XrBodyTrackingCalibrationInfoMETA* calibrationInfo) {
         return XR_ERROR_FEATURE_UNSUPPORTED;
     }
 
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrResetBodyTrackingCalibrationMETA
-    XrResult OpenXrRuntime::xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker){
+    XrResult OpenXrRuntime::xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker) {
         return XR_ERROR_FEATURE_UNSUPPORTED;
     }
 

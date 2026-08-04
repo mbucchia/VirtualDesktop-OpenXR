@@ -43,6 +43,9 @@ namespace virtualdesktop_openxr {
         referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_VIEW);
         referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_LOCAL);
         referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_STAGE);
+        if (has_XR_EXT_local_floor || m_apiMinor >= 1) {
+            referenceSpaces.push_back(XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT);
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "xrEnumerateReferenceSpaces",
@@ -89,9 +92,17 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (createInfo->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT &&
+            !(has_XR_EXT_local_floor || m_apiMinor >= 1)) {
+            return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
+        }
+
         if (createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_VIEW &&
             createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL &&
-            createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE) {
+            createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE &&
+            createInfo->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT) {
+            // TODO: This is likely incorrect, but CTS has the wrong error check.
+            // Should return XR_ERROR_VALIDATION_FAILURE.
             return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
         }
 
@@ -179,8 +190,16 @@ namespace virtualdesktop_openxr {
             return XR_ERROR_HANDLE_INVALID;
         }
 
+        if (referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT &&
+            !(has_XR_EXT_local_floor || m_apiMinor >= 1)) {
+            return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
+        }
+
         if (referenceSpaceType != XR_REFERENCE_SPACE_TYPE_VIEW && referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL &&
-            referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE) {
+            referenceSpaceType != XR_REFERENCE_SPACE_TYPE_STAGE &&
+            referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT) {
+            // TODO: This is likely incorrect, but CTS has the wrong error check.
+            // Should return XR_ERROR_VALIDATION_FAILURE.
             return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
         }
 
@@ -256,6 +275,28 @@ namespace virtualdesktop_openxr {
         return XR_SUCCESS;
     }
 
+    // https://www.khronos.org/registry/OpenXR/specs/1.1/html/xrspec.html#xrLocateSpacesKHR
+    XrResult OpenXrRuntime::xrLocateSpacesKHR(XrSession session,
+                                              const XrSpacesLocateInfoKHR* locateInfo,
+                                              XrSpaceLocationsKHR* spaceLocations) {
+        if (!has_XR_KHR_locate_spaces) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        return xrLocateSpacesCommon(session, locateInfo, spaceLocations);
+    }
+
+    // https://www.khronos.org/registry/OpenXR/specs/1.1/html/xrspec.html#xrLocateSpacesKHR
+    XrResult OpenXrRuntime::xrLocateSpaces(XrSession session,
+                                           const XrSpacesLocateInfo* locateInfo,
+                                           XrSpaceLocations* spaceLocations) {
+        if (m_apiMinor < 1) {
+            return XR_ERROR_FUNCTION_UNSUPPORTED;
+        }
+
+        return xrLocateSpacesCommon(session, locateInfo, spaceLocations);
+    }
+
     // https://www.khronos.org/registry/OpenXR/specs/1.0/html/xrspec.html#xrLocateViews
     XrResult OpenXrRuntime::xrLocateViews(XrSession session,
                                           const XrViewLocateInfo* viewLocateInfo,
@@ -288,7 +329,12 @@ namespace virtualdesktop_openxr {
         }
 
         if (viewLocateInfo->viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
-            return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            if (viewLocateInfo->viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+                (m_apiMinor >= 1 && viewLocateInfo->viewConfigurationType ==
+                                        XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO_WITH_FOVEATED_INSET)) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+            return XR_ERROR_VALIDATION_FAILURE;
         }
 
         if (viewCapacityInput && viewCapacityInput < xr::StereoView::Count) {
@@ -394,6 +440,62 @@ namespace virtualdesktop_openxr {
 
         delete xrSpace;
         m_spaces.erase(space);
+
+        return XR_SUCCESS;
+    }
+
+    XrResult OpenXrRuntime::xrLocateSpacesCommon(XrSession session,
+                                                 const XrSpacesLocateInfoKHR* locateInfo,
+                                                 XrSpaceLocationsKHR* spaceLocations) {
+        if (locateInfo->type != XR_TYPE_SPACES_LOCATE_INFO_KHR || spaceLocations->type != XR_TYPE_SPACE_LOCATIONS_KHR) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        TraceLoggingWrite(
+            g_traceProvider, "xrLocateSpaces", TLXArg(session, "Session"), TLArg(locateInfo->spaceCount, "SpaceCount"));
+
+        if (locateInfo->spaceCount == 0 || locateInfo->spaceCount != spaceLocations->locationCount) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        if (!m_sessionCreated || session != (XrSession)1) {
+            return XR_ERROR_HANDLE_INVALID;
+        }
+
+        // TODO: This could perhaps be optimized.
+
+        XrSpaceVelocitiesKHR* velocities = reinterpret_cast<XrSpaceVelocitiesKHR*>(spaceLocations->next);
+        while (velocities) {
+            if (velocities->type == XR_TYPE_SPACE_VELOCITIES_KHR) {
+                break;
+            }
+            velocities = reinterpret_cast<XrSpaceVelocitiesKHR*>(velocities->next);
+        }
+
+        if (velocities && locateInfo->spaceCount != velocities->velocityCount) {
+            return XR_ERROR_VALIDATION_FAILURE;
+        }
+
+        for (uint32_t i = 0; i < locateInfo->spaceCount; i++) {
+            XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+            XrSpaceVelocity velocity{XR_TYPE_SPACE_VELOCITY};
+            if (velocities) {
+                location.next = &velocity;
+            }
+            const auto result =
+                xrLocateSpace(locateInfo->spaces[i], locateInfo->baseSpace, locateInfo->time, &location);
+            if (XR_SUCCEEDED(result)) {
+                spaceLocations->locations[i].locationFlags = location.locationFlags;
+                spaceLocations->locations[i].pose = location.pose;
+                if (velocities) {
+                    velocities->velocities[i].velocityFlags = velocity.velocityFlags;
+                    velocities->velocities[i].angularVelocity = velocity.angularVelocity;
+                    velocities->velocities[i].linearVelocity = velocity.linearVelocity;
+                }
+            } else {
+                return result;
+            }
+        }
 
         return XR_SUCCESS;
     }
@@ -515,7 +617,8 @@ namespace virtualdesktop_openxr {
             if (velocity) {
                 velocity->velocityFlags = XR_SPACE_VELOCITY_ANGULAR_VALID_BIT | XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
             }
-        } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE) {
+        } else if (xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_STAGE ||
+                   xrSpace.referenceType == XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT) {
             // STAGE space is the origin at floor level.
             if (ovr_GetTrackingOriginType(m_ovrSession) == ovrTrackingOrigin_FloorLevel || ignoreFloorHeight) {
                 pose = Pose::Identity();
@@ -573,8 +676,10 @@ namespace virtualdesktop_openxr {
                             endsWith(fullPath, "/input/grip/pose") || endsWith(fullPath, "/input/grip");
                         const bool isAimPose =
                             endsWith(fullPath, "/input/aim/pose") || endsWith(fullPath, "/input/aim");
-                        const bool isPalmPose =
-                            endsWith(fullPath, "/input/palm_ext/pose") || endsWith(fullPath, "/input/palm_ext");
+                        const bool isPalmPose = (has_XR_EXT_palm_pose && (endsWith(fullPath, "/input/palm_ext/pose") ||
+                                                                          endsWith(fullPath, "/input/palm_ext"))) ||
+                                                (m_apiMinor >= 1 && (endsWith(fullPath, "/input/grip_surface/pose") ||
+                                                                     endsWith(fullPath, "/input/grip_surface")));
                         const int side = getActionSide(fullPath);
                         if ((isGripPose || isAimPose || isPalmPose) && side >= 0) {
                             result = getControllerPose(side, time, pose, velocity);

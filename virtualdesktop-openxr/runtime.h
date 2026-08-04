@@ -96,6 +96,12 @@ namespace virtualdesktop_openxr {
                                      const XrActionSpaceCreateInfo* createInfo,
                                      XrSpace* space) override;
         XrResult xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation* location) override;
+        XrResult xrLocateSpacesKHR(XrSession session,
+                                   const XrSpacesLocateInfoKHR* locateInfo,
+                                   XrSpaceLocationsKHR* spaceLocations) override;
+        XrResult xrLocateSpaces(XrSession session,
+                                const XrSpacesLocateInfo* locateInfo,
+                                XrSpaceLocations* spaceLocations) override;
         XrResult xrDestroySpace(XrSpace space) override;
         XrResult xrEnumerateViewConfigurations(XrInstance instance,
                                                XrSystemId systemId,
@@ -293,10 +299,10 @@ namespace virtualdesktop_openxr {
                                       XrBodyJointLocationsFB* locations) override;
         XrResult xrGetBodySkeletonFB(XrBodyTrackerFB bodyTracker, XrBodySkeletonFB* skeleton) override;
         XrResult xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
-                                                   const XrBodyTrackingFidelityMETA fidelity);
-        XrResult xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker,
-                                                              const XrBodyTrackingCalibrationInfoMETA calibrationInfo);
-        XrResult xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker);
+                                                   const XrBodyTrackingFidelityMETA fidelity) override;
+        XrResult xrSuggestBodyTrackingCalibrationOverrideMETA(
+            XrBodyTrackerFB bodyTracker, const XrBodyTrackingCalibrationInfoMETA* calibrationInfo) override;
+        XrResult xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker) override;
         XrResult xrEnumerateViveTrackerPathsHTCX(XrInstance instance,
                                                  uint32_t pathCapacityInput,
                                                  uint32_t* pathCountOutput,
@@ -524,6 +530,9 @@ namespace virtualdesktop_openxr {
         std::optional<std::string> remapIndexControllerToTouchController(const std::string& path) const;
 
         // space.cpp
+        XrResult xrLocateSpacesCommon(XrSession session,
+                                      const XrSpacesLocateInfoKHR* locateInfo,
+                                      XrSpaceLocationsKHR* spaceLocations);
         XrSpaceLocationFlags locateSpace(const Space& xrSpace,
                                          const Space& xrBaseSpace,
                                          XrTime time,
@@ -635,6 +644,7 @@ namespace virtualdesktop_openxr {
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
         // Instance & OVR state.
+        uint32_t m_apiMinor{0};
         bool m_isOVRLoaded{false};
         bool m_useOculusRuntime{false};
         wil::unique_hmodule m_OVRlay;

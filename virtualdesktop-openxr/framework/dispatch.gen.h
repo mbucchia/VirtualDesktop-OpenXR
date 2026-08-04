@@ -94,6 +94,7 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrGetInputSourceLocalizedName(XrSession session, const XrInputSourceLocalizedNameGetInfo* getInfo, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer) = 0;
 		virtual XrResult xrApplyHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo, const XrHapticBaseHeader* hapticFeedback) = 0;
 		virtual XrResult xrStopHapticFeedback(XrSession session, const XrHapticActionInfo* hapticActionInfo) = 0;
+		virtual XrResult xrLocateSpaces(XrSession session, const XrSpacesLocateInfo* locateInfo, XrSpaceLocations* spaceLocations) = 0;
 		virtual XrResult xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsOpenGLKHR* graphicsRequirements) = 0;
 		virtual XrResult xrGetVulkanInstanceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer) = 0;
 		virtual XrResult xrGetVulkanDeviceExtensionsKHR(XrInstance instance, XrSystemId systemId, uint32_t bufferCapacityInput, uint32_t* bufferCountOutput, char* buffer) = 0;
@@ -110,6 +111,7 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreateInfoKHR* createInfo, VkDevice* vulkanDevice, VkResult* vulkanResult) = 0;
 		virtual XrResult xrGetVulkanGraphicsDevice2KHR(XrInstance instance, const XrVulkanGraphicsDeviceGetInfoKHR* getInfo, VkPhysicalDevice* vulkanPhysicalDevice) = 0;
 		virtual XrResult xrGetVulkanGraphicsRequirements2KHR(XrInstance instance, XrSystemId systemId, XrGraphicsRequirementsVulkanKHR* graphicsRequirements) = 0;
+		virtual XrResult xrLocateSpacesKHR(XrSession session, const XrSpacesLocateInfo* locateInfo, XrSpaceLocations* spaceLocations) = 0;
 		virtual XrResult xrCreateHandTrackerEXT(XrSession session, const XrHandTrackerCreateInfoEXT* createInfo, XrHandTrackerEXT* handTracker) = 0;
 		virtual XrResult xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker) = 0;
 		virtual XrResult xrLocateHandJointsEXT(XrHandTrackerEXT handTracker, const XrHandJointsLocateInfoEXT* locateInfo, XrHandJointLocationsEXT* locations) = 0;
@@ -129,6 +131,9 @@ namespace RUNTIME_NAMESPACE {
 		virtual XrResult xrCreateEyeTrackerFB(XrSession session, const XrEyeTrackerCreateInfoFB* createInfo, XrEyeTrackerFB* eyeTracker) = 0;
 		virtual XrResult xrDestroyEyeTrackerFB(XrEyeTrackerFB eyeTracker) = 0;
 		virtual XrResult xrGetEyeGazesFB(XrEyeTrackerFB eyeTracker, const XrEyeGazesInfoFB* gazeInfo, XrEyeGazesFB* eyeGazes) = 0;
+		virtual XrResult xrSuggestBodyTrackingCalibrationOverrideMETA(XrBodyTrackerFB bodyTracker, const XrBodyTrackingCalibrationInfoMETA* calibrationInfo) = 0;
+		virtual XrResult xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker) = 0;
+		virtual XrResult xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker, const XrBodyTrackingFidelityMETA fidelity) = 0;
 		virtual XrResult xrCreateFaceTracker2FB(XrSession session, const XrFaceTrackerCreateInfo2FB* createInfo, XrFaceTracker2FB* faceTracker) = 0;
 		virtual XrResult xrDestroyFaceTracker2FB(XrFaceTracker2FB faceTracker) = 0;
 		virtual XrResult xrGetFaceExpressionWeights2FB(XrFaceTracker2FB faceTracker, const XrFaceExpressionInfo2FB* expressionInfo, XrFaceExpressionWeights2FB* expressionWeights) = 0;
@@ -168,6 +173,10 @@ namespace RUNTIME_NAMESPACE {
 		bool has_XR_META_body_tracking_calibration{false};
 		bool has_XR_HTCX_vive_tracker_interaction{false};
 		bool has_XR_EXT_active_action_set_priority{false};
+		bool has_XR_KHR_locate_spaces{false};
+		bool has_XR_KHR_maintenance1{false};
+		bool has_XR_EXT_local_floor{false};
+		bool has_XR_EXT_palm_pose{false};
 
 
 	};

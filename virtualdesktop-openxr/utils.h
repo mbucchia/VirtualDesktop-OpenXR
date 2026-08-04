@@ -684,7 +684,7 @@ namespace virtualdesktop_openxr::utils {
         return pos != std::string::npos && pos == str.size() - substr.size();
     }
 
-    #define DEFINE_DETOUR_FUNCTION(ReturnType, FunctionName, ...)                                                          \
+#define DEFINE_DETOUR_FUNCTION(ReturnType, FunctionName, ...)                                                          \
     ReturnType (*original_##FunctionName)(##__VA_ARGS__) = nullptr;                                                    \
     ReturnType hooked_##FunctionName(##__VA_ARGS__)
 

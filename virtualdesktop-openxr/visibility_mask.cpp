@@ -63,7 +63,12 @@ namespace virtualdesktop_openxr {
         }
 
         if (viewConfigurationType != XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO) {
-            return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            if (viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_MONO ||
+                (m_apiMinor >= 1 &&
+                 viewConfigurationType == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO_WITH_FOVEATED_INSET)) {
+                return XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED;
+            }
+            return XR_ERROR_VALIDATION_FAILURE;
         }
 
         if (viewIndex >= xr::StereoView::Count) {

@@ -38,7 +38,7 @@ namespace virtualdesktop_openxr {
         // https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#well-formed-path-strings
         bool validateString(const std::string_view& str) {
             for (const auto c : str) {
-                if (!islower(c) && !isdigit(c) && c != '-' && c != '_' && c != '.') {
+                if (c < 0 || (!islower(c) && !isdigit(c) && c != '-' && c != '_' && c != '.')) {
                     return false;
                 }
             }
@@ -122,7 +122,7 @@ namespace virtualdesktop_openxr {
         TraceLoggingWrite(g_traceProvider, "xrPathToString", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
         if (bufferCapacityInput && buffer) {
-            sprintf_s(buffer, bufferCapacityInput, "%s", str.c_str());
+            _snprintf_s(buffer, bufferCapacityInput, _TRUNCATE, "%s", str.c_str());
             TraceLoggingWrite(g_traceProvider, "xrPathToString", TLArg(buffer, "String"));
         }
 
@@ -1426,7 +1426,7 @@ namespace virtualdesktop_openxr {
             g_traceProvider, "xrGetInputSourceLocalizedName", TLArg(*bufferCountOutput, "BufferCountOutput"));
 
         if (bufferCapacityInput && buffer) {
-            sprintf_s(buffer, bufferCapacityInput, "%s", localizedName.c_str());
+            _snprintf_s(buffer, bufferCapacityInput, _TRUNCATE, "%s", localizedName.c_str());
             TraceLoggingWrite(g_traceProvider, "xrGetInputSourceLocalizedName", TLArg(buffer, "String"));
         }
 

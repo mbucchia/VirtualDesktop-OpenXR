@@ -102,8 +102,11 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
-                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
-                    endsWith(path, "/output/haptic")) {
+                    endsWith(path, "/output/haptic") ||
+                    (has_XR_EXT_palm_pose &&
+                     (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                    ((has_XR_KHR_maintenance1 || (has_XR_KHR_maintenance1 || m_apiMinor >= 1)) &&
+                     (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
                     return true;
                 }
                 return false;
@@ -120,8 +123,11 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad") ||
                     endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
                     endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
-                    endsWith(path, "/input/aim") || endsWith(path, "/input/palm_ext/pose") ||
-                    endsWith(path, "/input/palm_ext") || endsWith(path, "/output/haptic")) {
+                    endsWith(path, "/output/haptic") ||
+                    (has_XR_EXT_palm_pose &&
+                     (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                    ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                     (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
                     return true;
                 }
                 return false;
@@ -144,8 +150,11 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
-                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
-                    endsWith(path, "/output/haptic")) {
+                    endsWith(path, "/output/haptic") ||
+                    (has_XR_EXT_palm_pose &&
+                     (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                    ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                     (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
                     return true;
                 }
                 return false;
@@ -164,42 +173,27 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
                     endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
                     endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
-                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
-                    endsWith(path, "/input/aim") || endsWith(path, "/output/haptic")) {
+                    endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                    (has_XR_EXT_palm_pose &&
+                     (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                    ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                     (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
                     return true;
                 }
                 return false;
             });
         m_controllerValidPathsTable.insert_or_assign(
-            "/interaction_profiles/hp/mixed_reality_controller", [&](const std::string& path) {
-                if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x" ||
-                    path == "/user/hand/left/input/y/click" || path == "/user/hand/left/input/y" ||
-                    path == "/user/hand/right/input/a/click" || path == "/user/hand/left/right/a" ||
-                    path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
-                    endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
-                    endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
-                    endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
-                    endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
-                    endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
-                    endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
-                    endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
-                    endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/grip/pose") ||
-                    endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
-                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
-                    endsWith(path, "/input/aim") || endsWith(path, "/output/haptic")) {
-                    return true;
-                }
-                return false;
-            });
-        m_controllerValidPathsTable.insert_or_assign(
-            "/interaction_profiles/google/daydream_controller", [](const std::string& path) {
+            "/interaction_profiles/google/daydream_controller", [&](const std::string& path) {
                 if (endsWith(path, "/input/select/click") || endsWith(path, "/input/select") ||
                     endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/x") ||
                     endsWith(path, "/input/trackpad/y") || endsWith(path, "/input/trackpad/click") ||
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
-                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
+                    (has_XR_EXT_palm_pose &&
+                     (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                    ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                     (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
                     return true;
                 }
                 return false;
@@ -250,7 +244,7 @@ namespace virtualdesktop_openxr {
                 return false;
             });
         m_controllerValidPathsTable.insert_or_assign(
-            "/interaction_profiles/oculus/go_controller", [](const std::string& path) {
+            "/interaction_profiles/oculus/go_controller", [&](const std::string& path) {
                 if (endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
                     endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger") ||
                     endsWith(path, "/input/back/click") || endsWith(path, "/input/back") ||
@@ -259,11 +253,400 @@ namespace virtualdesktop_openxr {
                     endsWith(path, "/input/trackpad/force") || endsWith(path, "/input/trackpad/touch") ||
                     endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                     endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
-                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
+                    (has_XR_EXT_palm_pose &&
+                     (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                    ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                     (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
                     return true;
                 }
                 return false;
             });
+        if (m_apiMinor >= 1) {
+            // OpenXR 1.1 brings in a bunch of interaction profiles into core spec:
+            // https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_maintenance1
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/hp/mixed_reality_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x" ||
+                        path == "/user/hand/left/input/y/click" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/left/right/a" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                        endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                        endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                        endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/grip/pose") ||
+                        endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                        endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/samsung/odyssey_controller", [&](const std::string& path) {
+                    if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                        endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                        endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                        endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/trackpad") ||
+                        endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
+                        endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                        endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
+                        endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                        endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/samsung/odyssey_controller", [&](const std::string& path) {
+                    if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                        endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                        endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                        endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/trackpad") ||
+                        endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
+                        endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                        endsWith(path, "/input/trackpad/touch") || endsWith(path, "/input/grip/pose") ||
+                        endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                        endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/bytedance/pico_neo3_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                        endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/bytedance/pico4_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        endsWith(path, "/input/system/click") || endsWith(path, "/input/system") ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/bytedance/pico_g3_controller", [&](const std::string& path) {
+                    if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                        endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                        endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/meta/touch_pro_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest/force") ||
+                        endsWith(path, "/input/thumbrest") || endsWith(path, "/input/stylus/force") ||
+                        endsWith(path, "/input/stylus") || endsWith(path, "/input/trigger_curl/value") ||
+                        endsWith(path, "/input/trigger_curl") || endsWith(path, "/input/trigger_slide/value") ||
+                        endsWith(path, "/input/trigger_slide") || endsWith(path, "/input/trigger/proximity") ||
+                        endsWith(path, "/input/thumb_resting_surfaces/proximity") ||
+                        endsWith(path, "/input/thumb_resting_surfaces") || endsWith(path, "/input/grip/pose") ||
+                        endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                        endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                        endsWith(path, "/output/haptic_trigger") || endsWith(path, "/output/haptic_thumb") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/htc/vive_cosmos_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x" ||
+                        path == "/user/hand/left/input/y/click" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/left/right/a" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/shoulder/click") ||
+                        endsWith(path, "/input/shoulder") || endsWith(path, "/input/thumbstick") ||
+                        endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                        endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/grip/pose") ||
+                        endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                        endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/htc/vive_focus3_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x" ||
+                        path == "/user/hand/left/input/y/click" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/left/right/a" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/touch") ||
+                        endsWith(path, "/input/squeeze/value") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/touch") ||
+                        endsWith(path, "/input/trigger/value") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/shoulder/click") || endsWith(path, "/input/shoulder") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest/force") ||
+                        endsWith(path, "/input/thumbrest") || endsWith(path, "/input/grip/pose") ||
+                        endsWith(path, "/input/grip") || endsWith(path, "/input/aim/pose") ||
+                        endsWith(path, "/input/aim") || endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/meta/touch_plus_controller", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger/force") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/thumbstick") ||
+                        endsWith(path, "/input/thumbstick/x") || endsWith(path, "/input/thumbstick/y") ||
+                        endsWith(path, "/input/thumbstick/click") || endsWith(path, "/input/thumbstick/force") ||
+                        endsWith(path, "/input/thumbstick/touch") || endsWith(path, "/input/thumbrest/touch") ||
+                        endsWith(path, "/input/thumbrest/force") || endsWith(path, "/input/thumbrest") ||
+                        endsWith(path, "/input/thumb_resting_surfaces/proximity") ||
+                        endsWith(path, "/input/thumb_resting_surfaces") || endsWith(path, "/input/trigger/proximity") ||
+                        endsWith(path, "/input/trigger_curl/value") || endsWith(path, "/input/trigger_curl") ||
+                        endsWith(path, "/input/trigger_slide/value") || endsWith(path, "/input/trigger_slide") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") || endsWith(path, "/output/haptic_trigger") ||
+                        endsWith(path, "/output/haptic_thumb") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            // https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_ML_ml2_controller_interaction
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/ml/ml2_controller", [&](const std::string& path) {
+                    if (endsWith(path, "/input/menu/click") || endsWith(path, "/input/menu") ||
+                        endsWith(path, "/input/home/click") || endsWith(path, "/input/home") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger") || endsWith(path, "/input/trackpad") ||
+                        endsWith(path, "/input/trackpad/x") || endsWith(path, "/input/trackpad/y") ||
+                        endsWith(path, "/input/trackpad/click") || endsWith(path, "/input/trackpad/force") ||
+                        endsWith(path, "/input/trackpad") || endsWith(path, "/input/trackpad/touch") ||
+                        endsWith(path, "/input/shoulder/click") || endsWith(path, "/input/shoulder") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/meta/touch_controller_rift_cv1", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest/force") ||
+                        endsWith(path, "/input/thumbrest") ||
+                        endsWith(path, "/input/thumb_resting_surfaces/proximity") ||
+                        endsWith(path, "/input/thumb_resting_surfaces") || endsWith(path, "/input/trigger/proximity") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/meta/touch_controller_quest_1_rift_s", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/thumb_resting_surfaces/proximity") ||
+                        endsWith(path, "/input/thumb_resting_surfaces") || endsWith(path, "/input/trigger/proximity") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+            m_controllerValidPathsTable.insert_or_assign(
+                "/interaction_profiles/meta/touch_controller_quest_2", [&](const std::string& path) {
+                    if (path == "/user/hand/left/input/x/click" || path == "/user/hand/left/input/x/touch" ||
+                        path == "/user/hand/left/input/x" || path == "/user/hand/left/input/y/click" ||
+                        path == "/user/hand/left/input/y/touch" || path == "/user/hand/left/input/y" ||
+                        path == "/user/hand/left/input/menu/click" || path == "/user/hand/left/input/menu" ||
+                        path == "/user/hand/right/input/a/click" || path == "/user/hand/right/input/a/touch" ||
+                        path == "/user/hand/left/right/a" || path == "/user/hand/right/input/b/touch" ||
+                        path == "/user/hand/right/input/b/click" || path == "/user/hand/left/right/b" ||
+                        path == "/user/hand/right/input/system/click" || path == "/user/hand/left/right/system" ||
+                        endsWith(path, "/input/squeeze/click") || endsWith(path, "/input/squeeze/value") ||
+                        endsWith(path, "/input/squeeze/force") || endsWith(path, "/input/squeeze") ||
+                        endsWith(path, "/input/trigger/click") || endsWith(path, "/input/trigger/value") ||
+                        endsWith(path, "/input/trigger/touch") || endsWith(path, "/input/trigger") ||
+                        endsWith(path, "/input/thumbstick") || endsWith(path, "/input/thumbstick/x") ||
+                        endsWith(path, "/input/thumbstick/y") || endsWith(path, "/input/thumbstick/click") ||
+                        endsWith(path, "/input/thumbstick/force") || endsWith(path, "/input/thumbstick/touch") ||
+                        endsWith(path, "/input/thumbrest/touch") || endsWith(path, "/input/thumbrest") ||
+                        endsWith(path, "/input/thumb_resting_surfaces/proximity") ||
+                        endsWith(path, "/input/thumb_resting_surfaces") || endsWith(path, "/input/trigger/proximity") ||
+                        endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
+                        endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
+                        endsWith(path, "/output/haptic") ||
+                        (has_XR_EXT_palm_pose &&
+                         (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) ||
+                        ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                         (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")))) {
+                        return true;
+                    }
+                    return false;
+                });
+        }
         if (has_XR_HTCX_vive_tracker_interaction) {
             m_controllerValidPathsTable.insert_or_assign(
                 "/interaction_profiles/htc/vive_tracker_htcx",
@@ -378,7 +761,8 @@ namespace virtualdesktop_openxr {
             source.sourceIndex = ActionSourceIndex::Grip;
         } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             source.sourceIndex = ActionSourceIndex::Aim;
-        } else if (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
+        } else if (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
+                   endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface")) {
             source.sourceIndex = ActionSourceIndex::Palm;
         } else if (endsWith(path, "/output/haptic")) {
             // Do nothing.
@@ -440,8 +824,17 @@ namespace virtualdesktop_openxr {
             return "Grip Pose";
         } else if (endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim")) {
             return "Aim Pose";
-        } else if (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext")) {
+        } else if (m_apiMinor >= 1 && (endsWith(path, "/input/thumb_resting_surfaces/proximity") ||
+                                       endsWith(path, "/input/thumb_resting_surfaces"))) {
+            return "Thumb Resting Surfaces";
+        } else if (m_apiMinor >= 1 && endsWith(path, "/input/trigger/proximity")) {
+            return "Trigger Proximity";
+        } else if (has_XR_EXT_palm_pose &&
+                   (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) {
             return "Palm Pose";
+        } else if ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                   (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface"))) {
+            return "Grip Surface";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
         }
@@ -474,6 +867,12 @@ namespace virtualdesktop_openxr {
             return "Trackpad Touch";
         } else if (endsWith(path, "/input/grip/pose")) {
             return "Grip Pose";
+        } else if (has_XR_EXT_palm_pose &&
+                   (endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext"))) {
+            return "Palm Pose";
+        } else if ((has_XR_KHR_maintenance1 || m_apiMinor >= 1) &&
+                   (endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface"))) {
+            return "Grip Surface";
         } else if (endsWith(path, "/output/haptic")) {
             return "Haptics";
         }
@@ -491,6 +890,7 @@ namespace virtualdesktop_openxr {
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
+                   endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -515,6 +915,7 @@ namespace virtualdesktop_openxr {
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
+                   endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -539,6 +940,7 @@ namespace virtualdesktop_openxr {
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
+                   endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }
@@ -570,6 +972,7 @@ namespace virtualdesktop_openxr {
         } else if (endsWith(path, "/input/grip/pose") || endsWith(path, "/input/grip") ||
                    endsWith(path, "/input/aim/pose") || endsWith(path, "/input/aim") ||
                    endsWith(path, "/input/palm_ext/pose") || endsWith(path, "/input/palm_ext") ||
+                   endsWith(path, "/input/grip_surface/pose") || endsWith(path, "/input/grip_surface") ||
                    endsWith(path, "/output/haptic")) {
             return path;
         }

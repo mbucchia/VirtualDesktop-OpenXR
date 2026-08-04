@@ -52,14 +52,6 @@ namespace virtualdesktop_openxr {
         RuntimeVersionPatch,
         RuntimeCommitHash);
 
-    XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
-                                                          const XrBodyTrackingFidelityMETA fidelity);
-
-    XrResult XRAPI_CALL xrSuggestBodyTrackingCalibrationOverrideMETA(
-        XrBodyTrackerFB bodyTracker, const XrBodyTrackingCalibrationInfoMETA calibrationInfo);
-
-    XrResult XRAPI_CALL xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker);
-
     OpenXrRuntime::OpenXrRuntime() {
         const auto runtimeVersion =
             xr::ToString(XR_MAKE_VERSION(RuntimeVersionMajor, RuntimeVersionMinor, RuntimeVersionPatch));
@@ -129,19 +121,9 @@ namespace virtualdesktop_openxr {
 
         XrResult result = XR_ERROR_FUNCTION_UNSUPPORTED;
 
-        // XR_META_body_tracking_fidelity and XR_META_body_tracking_calibration is not in the SDK yet and requires
-        // special handling.
         const std::string_view apiName(name);
-        if (has_XR_META_body_tracking_fidelity && apiName == "xrRequestBodyTrackingFidelityMETA") {
-            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrRequestBodyTrackingFidelityMETA);
-            result = XR_SUCCESS;
-        } else if (has_XR_META_body_tracking_calibration && apiName == "xrSuggestBodyTrackingCalibrationOverrideMETA") {
-            *function = reinterpret_cast<PFN_xrVoidFunction>(
-                virtualdesktop_openxr::xrSuggestBodyTrackingCalibrationOverrideMETA);
-            result = XR_SUCCESS;
-        } else if (has_XR_META_body_tracking_calibration && apiName == "xrResetBodyTrackingCalibrationMETA") {
-            *function = reinterpret_cast<PFN_xrVoidFunction>(virtualdesktop_openxr::xrResetBodyTrackingCalibrationMETA);
-            result = XR_SUCCESS;
+        if (apiName == "xrLocateSpaces" && m_apiMinor < 1) {
+            // This function is only supported in OpenXR 1.1. Otherwise, use KHR_locate_spaces in OpenXR 1.0.
         } else {
             result = OpenXrApi::xrGetInstanceProcAddr(instance, name, function);
         }
@@ -177,10 +159,11 @@ namespace virtualdesktop_openxr {
                     return XR_ERROR_VALIDATION_FAILURE;
                 }
 
-                sprintf_s(properties[i].extensionName,
-                          sizeof(properties[0].extensionName),
-                          "%s",
-                          m_extensionsTable[i].extensionName);
+                _snprintf_s(properties[i].extensionName,
+                            sizeof(properties[0].extensionName),
+                            _TRUNCATE,
+                            "%s",
+                            m_extensionsTable[i].extensionName);
                 properties[i].extensionVersion = m_extensionsTable[i].extensionVersion;
                 TraceLoggingWrite(g_traceProvider,
                                   "xrEnumerateInstanceExtensionProperties",
@@ -232,9 +215,8 @@ namespace virtualdesktop_openxr {
             XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion),
             XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion),
             XR_VERSION_PATCH(createInfo->applicationInfo.apiVersion));
-        if ((XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != 1 ||
-             XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion) != 0) &&
-            !getSetting("quirk_bypass_api_version_check").value_or(false)) {
+        m_apiMinor = XR_VERSION_MINOR(createInfo->applicationInfo.apiVersion);
+        if (XR_VERSION_MAJOR(createInfo->applicationInfo.apiVersion) != 1 || m_apiMinor > 1) {
             return XR_ERROR_API_VERSION_UNSUPPORTED;
         }
 
@@ -371,12 +353,18 @@ namespace virtualdesktop_openxr {
         const bool needOculusXrPluginWorkaround = m_isOculusXrPlugin;
         if (!needOculusXrPluginWorkaround) {
 #ifndef STANDALONE_RUNTIME
-            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "VirtualDesktopXR");
+            _snprintf_s(instanceProperties->runtimeName,
+                        sizeof(instanceProperties->runtimeName),
+                        _TRUNCATE,
+                        "VirtualDesktopXR");
 #else
-            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), RUNTIME_PRETTY_NAME);
+            _snprintf_s(instanceProperties->runtimeName,
+                        sizeof(instanceProperties->runtimeName),
+                        _TRUNCATE,
+                        RUNTIME_PRETTY_NAME);
 #endif
         } else {
-            sprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), "Oculus");
+            _snprintf_s(instanceProperties->runtimeName, sizeof(instanceProperties->runtimeName), _TRUNCATE, "Oculus");
         }
 
         // This cannot be all 0.
@@ -446,8 +434,9 @@ namespace virtualdesktop_openxr {
             buffer->type = XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING;
             buffer->next = nullptr;
             buffer->session = (XrSession)1;
-            buffer->referenceSpaceType =
-                m_shouldRecenter == 2 ? XR_REFERENCE_SPACE_TYPE_LOCAL : XR_REFERENCE_SPACE_TYPE_STAGE;
+            buffer->referenceSpaceType = m_shouldRecenter == 3   ? XR_REFERENCE_SPACE_TYPE_LOCAL_FLOOR_EXT
+                                         : m_shouldRecenter == 2 ? XR_REFERENCE_SPACE_TYPE_LOCAL
+                                                                 : XR_REFERENCE_SPACE_TYPE_STAGE;
             buffer->changeTime = m_recenterTime;
             buffer->poseValid = XR_FALSE;
             buffer->poseInPreviousSpace = xr::math::Pose::Identity();
@@ -513,7 +502,7 @@ namespace virtualdesktop_openxr {
                                              char buffer[XR_MAX_RESULT_STRING_SIZE]) {
 #define EMIT_RESULT_STRING(name, value)                                                                                \
     case name:                                                                                                         \
-        sprintf_s(buffer, XR_MAX_RESULT_STRING_SIZE, "%s", #name);                                                     \
+        _snprintf_s(buffer, XR_MAX_RESULT_STRING_SIZE, _TRUNCATE, "%s", #name);                                        \
         break;
 
         switch (value) {
@@ -521,9 +510,9 @@ namespace virtualdesktop_openxr {
 
         default:
             if (XR_FAILED(value)) {
-                sprintf_s(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_FAILURE_%d", (int)value);
+                _snprintf_s(buffer, XR_MAX_RESULT_STRING_SIZE, _TRUNCATE, "XR_UNKNOWN_FAILURE_%d", (int)value);
             } else {
-                sprintf_s(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_SUCCESS_%d", (int)value);
+                _snprintf_s(buffer, XR_MAX_RESULT_STRING_SIZE, _TRUNCATE, "XR_UNKNOWN_SUCCESS_%d", (int)value);
             }
         }
 
@@ -538,14 +527,14 @@ namespace virtualdesktop_openxr {
                                                     char buffer[XR_MAX_STRUCTURE_NAME_SIZE]) {
 #define EMIT_STRUCTURE_TYPE_STRING(name, value)                                                                        \
     case name:                                                                                                         \
-        sprintf_s(buffer, XR_MAX_STRUCTURE_NAME_SIZE, "%s", #name);                                                    \
+        _snprintf_s(buffer, XR_MAX_STRUCTURE_NAME_SIZE, _TRUNCATE, "%s", #name);                                       \
         break;
 
         switch ((int)value) {
             XR_LIST_ENUM_XrStructureType(EMIT_STRUCTURE_TYPE_STRING);
 
         default:
-            sprintf_s(buffer, XR_MAX_STRUCTURE_NAME_SIZE, "XR_UNKNOWN_STRUCTURE_TYPE_%d", (int)value);
+            _snprintf_s(buffer, XR_MAX_STRUCTURE_NAME_SIZE, _TRUNCATE, "XR_UNKNOWN_STRUCTURE_TYPE_%d", (int)value);
         }
 
 #undef EMIT_STRUCTURE_TYPE_STRING
@@ -658,6 +647,11 @@ namespace virtualdesktop_openxr {
             {XR_MND_HEADLESS_EXTENSION_NAME, XR_MND_headless_SPEC_VERSION});
 #endif
 
+        // Promoted in OpenXR 1.1, exposed in OpenXR 1.0 for good measure.
+        m_extensionsTable.push_back({XR_KHR_LOCATE_SPACES_EXTENSION_NAME, XR_KHR_locate_spaces_SPEC_VERSION});
+        m_extensionsTable.push_back({XR_KHR_MAINTENANCE1_EXTENSION_NAME, XR_KHR_maintenance1_SPEC_VERSION});
+        m_extensionsTable.push_back({XR_EXT_LOCAL_FLOOR_EXTENSION_NAME, XR_EXT_local_floor_SPEC_VERSION});
+
         // To keep Oculus OpenXR plugin happy.
         m_extensionsTable.push_back({XR_EXT_UUID_EXTENSION_NAME, XR_EXT_uuid_SPEC_VERSION});
         m_extensionsTable.push_back({XR_META_HEADSET_ID_EXTENSION_NAME, XR_META_headset_id_SPEC_VERSION});
@@ -675,75 +669,6 @@ namespace virtualdesktop_openxr {
 
     std::optional<int> OpenXrRuntime::getSetting(const std::string& value) const {
         return RegGetDword(HKEY_LOCAL_MACHINE, RegPrefix, value);
-    }
-
-    XrResult XRAPI_CALL xrRequestBodyTrackingFidelityMETA(XrBodyTrackerFB bodyTracker,
-                                                          const XrBodyTrackingFidelityMETA fidelity) {
-        TraceLocalActivity(local);
-        TraceLoggingWriteStart(local, "xrRequestBodyTrackingFidelityMETA");
-
-        XrResult result;
-        try {
-            result =
-                dynamic_cast<OpenXrRuntime*>(GetInstance())->xrRequestBodyTrackingFidelityMETA(bodyTracker, fidelity);
-        } catch (std::exception& exc) {
-            TraceLoggingWriteTagged(local, "xrRequestBodyTrackingFidelityMETA_Error", TLArg(exc.what(), "Error"));
-            ErrorLog("xrRequestBodyTrackingFidelityMETA: %s\n", exc.what());
-            result = XR_ERROR_RUNTIME_FAILURE;
-        }
-
-        TraceLoggingWriteStop(local, "xrRequestBodyTrackingFidelityMETA", TLArg(xr::ToCString(result), "Result"));
-        if (XR_FAILED(result)) {
-            ErrorLog("xrRequestBodyTrackingFidelityMETA failed with %s\n", xr::ToCString(result));
-        }
-
-        return result;
-    }
-
-    XrResult XRAPI_CALL xrSuggestBodyTrackingCalibrationOverrideMETA(
-        XrBodyTrackerFB bodyTracker, const XrBodyTrackingCalibrationInfoMETA calibrationInfo) {
-        TraceLocalActivity(local);
-        TraceLoggingWriteStart(local, "xrSuggestBodyTrackingCalibrationOverrideMETA");
-
-        XrResult result;
-        try {
-            result = dynamic_cast<OpenXrRuntime*>(GetInstance())
-                         ->xrSuggestBodyTrackingCalibrationOverrideMETA(bodyTracker, calibrationInfo);
-        } catch (std::exception& exc) {
-            TraceLoggingWriteTagged(
-                local, "xrSuggestBodyTrackingCalibrationOverrideMETA_Error", TLArg(exc.what(), "Error"));
-            ErrorLog("xrSuggestBodyTrackingCalibrationOverrideMETA: %s\n", exc.what());
-            result = XR_ERROR_RUNTIME_FAILURE;
-        }
-
-        TraceLoggingWriteStop(
-            local, "xrSuggestBodyTrackingCalibrationOverrideMETA", TLArg(xr::ToCString(result), "Result"));
-        if (XR_FAILED(result)) {
-            ErrorLog("xrSuggestBodyTrackingCalibrationOverrideMETA failed with %s\n", xr::ToCString(result));
-        }
-
-        return result;
-    }
-
-    XrResult XRAPI_CALL xrResetBodyTrackingCalibrationMETA(XrBodyTrackerFB bodyTracker) {
-        TraceLocalActivity(local);
-        TraceLoggingWriteStart(local, "xrResetBodyTrackingCalibrationMETA");
-
-        XrResult result;
-        try {
-            result = dynamic_cast<OpenXrRuntime*>(GetInstance())->xrResetBodyTrackingCalibrationMETA(bodyTracker);
-        } catch (std::exception& exc) {
-            TraceLoggingWriteTagged(local, "xrResetBodyTrackingCalibrationMETA_Error", TLArg(exc.what(), "Error"));
-            ErrorLog("xrResetBodyTrackingCalibrationMETA: %s\n", exc.what());
-            result = XR_ERROR_RUNTIME_FAILURE;
-        }
-
-        TraceLoggingWriteStop(local, "xrResetBodyTrackingCalibrationMETA", TLArg(xr::ToCString(result), "Result"));
-        if (XR_FAILED(result)) {
-            ErrorLog("xrResetBodyTrackingCalibrationMETA failed with %s\n", xr::ToCString(result));
-        }
-
-        return result;
     }
 
     // Singleton class instance.
