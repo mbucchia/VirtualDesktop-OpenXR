@@ -1020,7 +1020,7 @@ namespace virtualdesktop_openxr {
                           TLArg(needClearAlpha, "NeedClearAlpha"),
                           TLArg(needPremultiplyAlpha, "needPremultiplyAlpha"));
 
-        if (needClearAlpha || needPremultiplyAlpha) {
+        if ((needClearAlpha || needPremultiplyAlpha) && ovrDestIndex >= 0) {
             // Circumvent some of OVR's limitations:
             // - For alpha-blended layers, we must pre-process the alpha channel.
 
