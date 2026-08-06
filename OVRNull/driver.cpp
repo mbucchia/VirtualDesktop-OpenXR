@@ -335,9 +335,11 @@ namespace {
             ID3D11Texture2D* image = nullptr;
 
             std::shared_lock lock(m_swapchainMutex);
-            if (m_swapchains.count(swapchain) && index < k_SwapchainLength) {
+            if (m_swapchains.count(swapchain)) {
                 Swapchain* swapchainObject = (Swapchain*)swapchain;
-                image = swapchainObject->textures[index].Get();
+                if (index < (!swapchainObject->desc.StaticImage ? k_SwapchainLength : 1)) {
+                    image = swapchainObject->textures[index].Get();
+                }
             }
 
             TraceLoggingWriteStop(local, "NullDriver_GetSwapchainImage", TLPArg(image, "Image"));
@@ -353,8 +355,9 @@ namespace {
             std::shared_lock lock(m_swapchainMutex);
             if (m_swapchains.count(swapchain)) {
                 Swapchain* swapchainObject = (Swapchain*)swapchain;
-                index = swapchainObject->lastCommittedIndex == 0 ? (k_SwapchainLength - 1)
-                                                                 : (swapchainObject->lastCommittedIndex - 1);
+                index = swapchainObject->lastCommittedIndex == 0
+                            ? (!swapchainObject->desc.StaticImage ? (k_SwapchainLength - 1) : 0)
+                            : (swapchainObject->lastCommittedIndex - 1);
             }
 
             TraceLoggingWriteStop(local, "NullDriver_GetSwapchainImageIndex", TLArg(index, "Index"));
@@ -372,7 +375,8 @@ namespace {
             if (m_swapchains.count(swapchain)) {
                 Swapchain* swapchainObject = (Swapchain*)swapchain;
                 swapchainObject->lastCommittedIndex++;
-                if (swapchainObject->lastCommittedIndex >= k_SwapchainLength) {
+                if (swapchainObject->lastCommittedIndex >=
+                    (!swapchainObject->desc.StaticImage ? k_SwapchainLength : 1)) {
                     swapchainObject->lastCommittedIndex = 0;
                 }
                 TraceLoggingWriteTagged(
