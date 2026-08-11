@@ -562,6 +562,14 @@ namespace {
                 }
             }
 
+            // Unbind resources.
+            {
+                ID3D11RenderTargetView* nullRTV[] = {nullptr};
+                m_submissionContext->OMSetRenderTargets(1, nullRTV, nullptr);
+                ID3D11ShaderResourceView* nullSRV[] = {nullptr};
+                m_submissionContext->PSSetShaderResources(0, 1, nullSRV);
+            }
+
             ProcessActionKeys();
 
             // "Maintain" the pose time.
