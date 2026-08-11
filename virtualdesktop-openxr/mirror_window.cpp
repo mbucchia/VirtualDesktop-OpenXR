@@ -174,6 +174,10 @@ namespace virtualdesktop_openxr {
         m_ovrSubmissionContext->CopyResource(frameBuffer.Get(), m_mirrorTexture.Get());
         m_mirrorWindowSwapchain->Present(0, 0);
         TraceLoggingWriteStop(presentMirrorWindow, "PresentMirrorWindow");
+
+        const std::string title = fmt::format(
+            RUNTIME_PRETTY_NAME " Mirror Window - {} ({} FPS)", m_applicationName.c_str(), m_frameTimes.size());
+        SetWindowTextA(m_mirrorWindowHwnd, title.c_str());
     }
 
     LRESULT CALLBACK OpenXrRuntime::mirrorWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
