@@ -339,6 +339,20 @@ namespace virtualdesktop_openxr {
         m_pointClampSampler.Reset();
         m_noDepthReadState.Reset();
 
+        if (m_dlssnrContext) {
+            m_dlssnrContext->Flush();
+        }
+        m_dlssnrOutputSwapchainImages.clear();
+        if (m_dlssnrOutputSwapchain) {
+            ovr_DestroyTextureSwapChain(m_ovrSession, m_dlssnrOutputSwapchain);
+        }
+
+        cleanupDlssnrResources();
+        m_dlssnrInFence.Reset();
+        m_dlssnrOutFence.Reset();
+        m_dlssnrContext.reset();
+        m_dlssnrDevice.Reset();
+
         m_ovrSubmissionFence.Reset();
         m_ovrSubmissionContextState.Reset();
         m_ovrSubmissionContext.Reset();

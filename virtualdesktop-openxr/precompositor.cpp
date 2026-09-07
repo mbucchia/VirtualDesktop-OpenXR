@@ -58,12 +58,12 @@ namespace virtualdesktop_openxr {
         alignas(16) uint32_t const1[4];
     };
 
-    void OpenXrRuntime::upscaler(Swapchain** swapchains, const XrSwapchainSubImage** subImages, ovrLayerEyeFov& layer) {
+    void OpenXrRuntime::upscaler(const XrSwapchainSubImage** subImages, ovrLayerEyeFov& layer) {
         const bool upscaling = std::abs(m_upscalingMultiplier - 1.f) > FLT_EPSILON;
         const bool sharpening = m_sharpenFactor > 0.f;
 
         // We will store our stereo projection in the left eye swapchain.
-        Swapchain& xrSwapchain = *swapchains[xr::StereoView::Left];
+        Swapchain& xrSwapchain = *(Swapchain*)subImages[xr::StereoView::Left]->swapchain;
         ovrSizei resolution = ovrSizei{
             (int)xr::math::AlignTo<4>((uint32_t)(subImages[0]->imageRect.extent.width / m_upscalingMultiplier)),
             (int)xr::math::AlignTo<4>((uint32_t)(subImages[0]->imageRect.extent.height / m_upscalingMultiplier))};
@@ -130,7 +130,8 @@ namespace virtualdesktop_openxr {
 
         for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
             // Prepare swapchain input.
-            auto& slice = swapchains[eye]->resolvedSlices[subImages[eye]->imageArrayIndex];
+            Swapchain& swapchain = *(Swapchain*)subImages[eye]->swapchain;
+            auto& slice = swapchain.resolvedSlices[subImages[eye]->imageArrayIndex];
             if ((int)slice.srvs.size() <= slice.lastCommittedIndex) {
                 slice.srvs.resize(slice.lastCommittedIndex + 1);
             }
@@ -147,7 +148,7 @@ namespace virtualdesktop_openxr {
                              fmt::format("Runtime Slice Copy SRV[{}, {}, {}]",
                                          subImages[eye]->imageArrayIndex,
                                          slice.lastCommittedIndex,
-                                         (void*)swapchains[eye]));
+                                         (void*)&swapchain));
             }
 
             // Prepare swapchain outputs.
@@ -159,12 +160,12 @@ namespace virtualdesktop_openxr {
                 m_ovrSubmissionContext->CSSetShader(m_upscaleShader.Get(), nullptr, 0);
                 {
                     UpscaleCSConstants constants{};
-                    constants.topLeftNormalized = {
-                        (float)subImages[eye]->imageRect.offset.x / swapchains[eye]->ovrDesc.Width,
-                        (float)subImages[eye]->imageRect.offset.y / swapchains[eye]->ovrDesc.Height};
+                    constants.topLeftNormalized = {(float)subImages[eye]->imageRect.offset.x / swapchain.ovrDesc.Width,
+                                                   (float)subImages[eye]->imageRect.offset.y /
+                                                       swapchain.ovrDesc.Height};
                     // If we apply sharpening at the next stage, we use half-precision floats for the intermediate
                     // texture and we will do conversion to sRGB at the sharpening stage.
-                    constants.isSRGB = !sharpening ? isSRGBFormat((DXGI_FORMAT)swapchains[eye]->xrDesc.format) : false;
+                    constants.isSRGB = !sharpening ? isSRGBFormat((DXGI_FORMAT)swapchain.xrDesc.format) : false;
 
                     FsrEasuCon(constants.const0,
                                constants.const1,
@@ -172,8 +173,8 @@ namespace virtualdesktop_openxr {
                                constants.const3,
                                (AF1)subImages[eye]->imageRect.extent.width,
                                (AF1)subImages[eye]->imageRect.extent.height,
-                               (AF1)swapchains[eye]->ovrDesc.Width,
-                               (AF1)swapchains[eye]->ovrDesc.Height,
+                               (AF1)swapchain.ovrDesc.Width,
+                               (AF1)swapchain.ovrDesc.Height,
                                (AF1)resolution.w,
                                (AF1)resolution.h);
 
@@ -207,7 +208,7 @@ namespace virtualdesktop_openxr {
                     SharpenCSConstants constants{};
                     // If we upscaled at the previous stage, the image occupies the entire texture.
                     constants.topLeft = !upscaling ? subImages[eye]->imageRect.offset : XrOffset2Di{0, 0};
-                    constants.isSRGB = isSRGBFormat((DXGI_FORMAT)swapchains[eye]->xrDesc.format);
+                    constants.isSRGB = isSRGBFormat((DXGI_FORMAT)swapchain.xrDesc.format);
 
                     CasSetup(constants.const0,
                              constants.const1,

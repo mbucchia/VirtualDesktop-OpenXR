@@ -31,3 +31,6 @@
 [submodule "external/cJSON"]
 	path = external/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
+[submodule "external/DLSS"]
+	path = external/DLSS
+	url = https://github.com/NVIDIA/DLSS.git

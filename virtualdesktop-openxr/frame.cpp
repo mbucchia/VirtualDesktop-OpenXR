@@ -457,7 +457,9 @@ namespace virtualdesktop_openxr {
                         return result;
                     }
 
-                    m_precompositor.isFirstProjectionLayer = false;
+                    if (m_precompositor.isFirstProjectionLayer) {
+                        m_precompositor.isFirstProjectionLayer = false;
+                    }
 
                 } else if (frameEndInfo->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD ||
                            (has_XR_KHR_composition_layer_cylinder &&
@@ -617,11 +619,19 @@ namespace virtualdesktop_openxr {
         static_assert(offsetof(decltype(layer.EyeFov), SensorSampleTime) ==
                       offsetof(decltype(layer.EyeFovDepth), SensorSampleTime));
 
+        // We only upscale the bottom projection layer and only the focus view (when applicable).
+        const bool canUpscale = std::abs(m_upscalingMultiplier - 1.f) > FLT_EPSILON;
+        const bool canSharpen = m_sharpenFactor > 0.f;
+        const bool needUpscaling = m_precompositor.isFirstProjectionLayer && (canUpscale || canSharpen);
+        const bool needUplifting = m_precompositor.isFirstProjectionLayer && m_dlssnrEnabled;
+
+        const XrSwapchainSubImage* subImages[xr::StereoView::Count] = {};
+        const XrSwapchainSubImage* depthSubImages[xr::StereoView::Count] = {};
+        float nearZ = 0.01f;
+        float farZ = 100.f;
+
         // Start without depth. We might change the type to ovrLayerType_EyeFovDepth further below.
         layer.Header.Type = ovrLayerType_EyeFov;
-
-        Swapchain* swapchains[xr::StereoView::Count] = {};
-        const XrSwapchainSubImage* subImages[xr::StereoView::Count] = {};
 
         for (uint32_t viewIndex = 0; viewIndex < xr::StereoView::Count; viewIndex++) {
             TraceLoggingWrite(g_traceProvider,
@@ -657,16 +667,11 @@ namespace virtualdesktop_openxr {
                 m_precompositor.isProj0SRGB = isSRGBFormat(xrSwapchain.dxgiFormatForSubmission);
             }
 
-            // We only upscale the bottom projection layer and only the focus view (when applicable).
-            const bool canUpscale = std::abs(m_upscalingMultiplier - 1.f) > FLT_EPSILON;
-            const bool canSharpen = m_sharpenFactor > 0.f;
-            const bool needUpscaling = m_precompositor.isFirstProjectionLayer && (canUpscale || canSharpen);
-
             // Fill out color buffer information.
             resolveSwapchainImage(xrSwapchain,
                                   proj.views[viewIndex].subImage.imageArrayIndex,
                                   m_precompositor.resolvedSwapchainImages,
-                                  needUpscaling /* Skip committing if we will not use the swapchain directly */);
+                                  needUpscaling || needUplifting /* Skip committing if we will not use the swapchain directly */);
             layer.EyeFov.ColorTexture[viewIndex] =
                 xrSwapchain.resolvedSlices[proj.views[viewIndex].subImage.imageArrayIndex].ovrSwapchain;
 
@@ -685,9 +690,10 @@ namespace virtualdesktop_openxr {
             layer.EyeFov.Viewport[viewIndex].Size.w = proj.views[viewIndex].subImage.imageRect.extent.width;
             layer.EyeFov.Viewport[viewIndex].Size.h = proj.views[viewIndex].subImage.imageRect.extent.height;
 
-            if (needUpscaling) {
-                swapchains[viewIndex] = &xrSwapchain;
-                subImages[viewIndex] = &proj.views[viewIndex].subImage;
+            subImages[viewIndex] = &proj.views[viewIndex].subImage;
+
+            if (m_precompositor.isFirstProjectionLayer) {
+                ensureSwapchainDlssnrResources(xrSwapchain, proj.views[viewIndex].subImage.imageArrayIndex);
             }
 
             // Fill out pose and FOV information.
@@ -727,44 +733,53 @@ namespace virtualdesktop_openxr {
 
                         // Some games (like WRC) will not properly submit depth. We bypass all the checks if the runtime
                         // does not care about depth.
+                        // We check the input and we resolve the images regardless (for correctness).
                         if (m_shouldUseDepth || m_isConformanceTest) {
                             layer.Header.Type = ovrLayerType_EyeFovDepth;
-
-                            if (!m_swapchains.count(depth->subImage.swapchain)) {
-                                return XR_ERROR_HANDLE_INVALID;
-                            }
-
-                            Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
-
-                            if (xrDepthSwapchain.lastReleasedIndex == -1) {
-                                return XR_ERROR_LAYER_INVALID;
-                            }
-
-                            if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
-                                xrSwapchain.xrDesc.faceCount != 1) {
-                                return XR_ERROR_VALIDATION_FAILURE;
-                            }
-
-                            // Fill out depth buffer information.
-                            resolveSwapchainImage(xrDepthSwapchain,
-                                                  depth->subImage.imageArrayIndex,
-                                                  m_precompositor.resolvedSwapchainImages);
-                            layer.EyeFovDepth.DepthTexture[viewIndex] =
-                                xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
-
-                            // TODO: We don't enforce that the viewport must match the color buffer.
-                            if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
-                                return XR_ERROR_SWAPCHAIN_RECT_INVALID;
-                            }
-
-                            // Fill out projection information.
-                            layer.EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
-                            layer.EyeFovDepth.ProjectionDesc.Projection23 =
-                                (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
-                            layer.EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
                         } else {
                             TraceLoggingWrite(g_traceProvider, "xrEndFrame_View_IgnoreDepth");
                         }
+
+                        if (!m_swapchains.count(depth->subImage.swapchain)) {
+                            return XR_ERROR_HANDLE_INVALID;
+                        }
+
+                        Swapchain& xrDepthSwapchain = *(Swapchain*)depth->subImage.swapchain;
+
+                        if (xrDepthSwapchain.lastReleasedIndex == -1) {
+                            return XR_ERROR_LAYER_INVALID;
+                        }
+
+                        if (depth->subImage.imageArrayIndex >= xrDepthSwapchain.xrDesc.arraySize ||
+                            xrSwapchain.xrDesc.faceCount != 1) {
+                            return XR_ERROR_VALIDATION_FAILURE;
+                        }
+
+                        // Fill out depth buffer information.
+                        resolveSwapchainImage(
+                            xrDepthSwapchain, depth->subImage.imageArrayIndex, m_precompositor.resolvedSwapchainImages);
+                        layer.EyeFovDepth.DepthTexture[viewIndex] =
+                            xrDepthSwapchain.resolvedSlices[depth->subImage.imageArrayIndex].ovrSwapchain;
+
+                        // TODO: We don't enforce that the viewport must match the color buffer.
+                        if (!isValidSwapchainRect(xrDepthSwapchain.ovrDesc, depth->subImage.imageRect)) {
+                            return XR_ERROR_SWAPCHAIN_RECT_INVALID;
+                        }
+
+                        depthSubImages[viewIndex] = &depth->subImage;
+
+                        if (m_precompositor.isFirstProjectionLayer) {
+                            ensureSwapchainDlssnrResources(xrDepthSwapchain, depth->subImage.imageArrayIndex);
+                        }
+
+                        // Fill out projection information.
+                        layer.EyeFovDepth.ProjectionDesc.Projection22 = depth->farZ / (depth->nearZ - depth->farZ);
+                        layer.EyeFovDepth.ProjectionDesc.Projection23 =
+                            (depth->farZ * depth->nearZ) / (depth->nearZ - depth->farZ);
+                        layer.EyeFovDepth.ProjectionDesc.Projection32 = -1.f;
+
+                        nearZ = depth->nearZ;
+                        farZ = depth->farZ;
 
                         break;
                     }
@@ -780,9 +795,14 @@ namespace virtualdesktop_openxr {
                 layer.EyeFov.RenderPose[ovrEye_Left], layer.EyeFov.RenderPose[ovrEye_Right], m_lastSeenIpd.value());
         }
 
+        // Run Neural Rendering if needed.
+        if (needUplifting) {
+            upliftLayer(subImages, depthSubImages, nearZ, farZ, layer.EyeFov);
+        }
+
         // Run the upscaler or sharpening if needed.
-        if (swapchains[xr::StereoView::Right]) {
-            upscaler(swapchains, subImages, layer.EyeFov);
+        if (needUpscaling) {
+            upscaler(subImages, layer.EyeFov);
         }
 
         return XR_SUCCESS;

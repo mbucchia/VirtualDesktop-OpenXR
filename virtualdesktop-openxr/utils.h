@@ -28,6 +28,7 @@
 
 #define CHECK_OVRCMD(cmd) xr::detail::_CheckOVRResult(cmd, #cmd, FILE_AND_LINE)
 #define CHECK_VKCMD(cmd) xr::detail::_CheckVKResult(cmd, #cmd, FILE_AND_LINE)
+#define CHECK_NGXCMD(cmd) xr::detail::_CheckNGXResult(cmd, #cmd, FILE_AND_LINE)
 
 namespace xr {
     static inline std::string ToString(XrVersion version) {
@@ -154,6 +155,22 @@ namespace xr {
             }
 
             return vks;
+        }
+
+        [[noreturn]] static inline void _ThrowNGXResult(NVSDK_NGX_Result ngx,
+                                                        const char* originator = nullptr,
+                                                        const char* sourceLocation = nullptr) {
+            xr::detail::_Throw(xr::detail::_Fmt("NVSDK_NGX_Result failure [%d]", ngx), originator, sourceLocation);
+        }
+
+        static inline HRESULT _CheckNGXResult(NVSDK_NGX_Result ngx,
+                                              const char* originator = nullptr,
+                                              const char* sourceLocation = nullptr) {
+            if (NVSDK_NGX_FAILED(ngx)) {
+                xr::detail::_ThrowNGXResult(ngx, originator, sourceLocation);
+            }
+
+            return ngx;
         }
     } // namespace detail
 

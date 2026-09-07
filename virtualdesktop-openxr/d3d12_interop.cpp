@@ -62,7 +62,7 @@ namespace virtualdesktop_openxr {
         CHECK_MSG(ensureOVRSession(), "Failed to re-create OVR session\n");
 
         memcpy(&graphicsRequirements->adapterLuid, &m_adapterLuid, sizeof(LUID));
-        graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_12_0;
+        graphicsRequirements->minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
         TraceLoggingWrite(g_traceProvider,
                           "xrGetD3D12GraphicsRequirementsKHR",

@@ -317,6 +317,7 @@ namespace virtualdesktop_openxr {
         struct SwapchainSlice {
             ovrTextureSwapChain ovrSwapchain{nullptr};
             std::vector<ComPtr<ID3D11Texture2D>> images;
+            std::vector<ComPtr<ID3D12Resource>> dlssnrImages;
             int lastCommittedIndex{-1};
 
             // Resources for copy/resolve/pre-processing.
@@ -631,7 +632,7 @@ namespace virtualdesktop_openxr {
         void serializeOpenGLFrame();
 
         // precompositor.cpp
-        void upscaler(Swapchain** swapchains, const XrSwapchainSubImage** subImages, ovrLayerEyeFov& layer);
+        void upscaler(const XrSwapchainSubImage** subImages, ovrLayerEyeFov& layer);
         void initializePrecompositorResources();
 
         // visibility_mask.cpp
@@ -642,6 +643,17 @@ namespace virtualdesktop_openxr {
         void updateMirrorWindow(bool preferSRGB = false);
         LRESULT CALLBACK mirrorWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
         friend LRESULT CALLBACK wndProcWrapper(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+        // dlssnr.cpp
+        void initializeDlssnrResources();
+        void cleanupDlssnrResources();
+        void ensureDlssnrSwapchainResources(ovrTextureFormat format, const ovrSizei& resolution);
+        void ensureSwapchainDlssnrResources(Swapchain& xrSwapchain, uint32_t slice);
+        void upliftLayer(const XrSwapchainSubImage** views,
+                         const XrSwapchainSubImage** depth,
+                         float nearZ,
+                         float farZ,
+                         ovrLayerEyeFov& layer);
 
         // Instance & OVR state.
         uint32_t m_apiMinor{0};
@@ -757,7 +769,7 @@ namespace virtualdesktop_openxr {
         bool m_hasEyeTrackerBindings{false};
         bool m_hasViveTrackerBindings{false};
         Haptic m_currentVibration[xr::Side::Count];
-        bool m_shouldUseDepth{true};
+        bool m_shouldUseDepth{false};
         bool m_useRunningStart{true};
         bool m_useDeferredFrameWait{false};
         bool m_jiggleViewRotations{false};
@@ -861,6 +873,25 @@ namespace virtualdesktop_openxr {
         mutable std::optional<XrPosef> m_lastValidControllerPose[xr::Side::Count];
         mutable std::optional<XrView> m_lastValidViews;
         std::optional<float> m_lastSeenIpd{};
+
+        // DLSS-NR
+        ComPtr<ID3D12Device> m_dlssnrDevice;
+        ComPtr<ID3D12Fence> m_dlssnrInFence;
+        ComPtr<ID3D11Fence> m_dlssnrOutFence;
+        std::unique_ptr<D3D12Utils::CommandContext> m_dlssnrContext;
+        ovrSizei m_dlssnrFeatureResolution{0, 0};
+        NVSDK_NGX_Handle* m_dlssnrFeature[xr::StereoView::Count]{nullptr, nullptr};
+        ovrSizei m_dlssnrOutputSwapchainResolution{0, 0};
+        ovrTextureSwapChain m_dlssnrOutputSwapchain{nullptr};
+        std::vector<ComPtr<ID3D12Resource>> m_dlssnrOutputSwapchainImages;
+        NVSDK_NGX_Parameter* m_ngxParameters{nullptr};
+        bool m_dlssnrEnabled{false};
+        int m_dlssnrStyle{0};
+        float m_dlssnrIntensity{1.f};
+        float m_dlssnrLocalToneStrength{0.2f};
+        float m_dlssnrLocalStructureStrength{0.7f};
+        float m_dlssnrSkinStructureStrength{0.5f};
+        float m_dlssnrFoveationSize{0.66f};
 
         // Statistics.
         double m_sessionStartTime{0.0};

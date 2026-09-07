@@ -61,6 +61,7 @@ using namespace std::chrono_literals;
 #include <wrl.h>
 #include <wil/registry.h>
 #include <wil/resource.h>
+#include <winrt/base.h>
 #include <traceloggingactivity.h>
 #include <traceloggingprovider.h>
 #include <TlHelp32.h>
@@ -71,6 +72,7 @@ using Microsoft::WRL::ComPtr;
 // Graphics APIs.
 #include <d3d11_4.h>
 #include <d3d12.h>
+#include <d3dx12.h>
 #include <dxgi1_2.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
@@ -136,3 +138,10 @@ using Microsoft::WRL::ComPtr;
 #ifndef GAMEINPUT_API_VERSION
 #define GAMEINPUT_API_VERSION 0
 #endif
+
+#include "D3D12Utils.h"
+
+// DLSS
+#include <nvsdk_ngx.h>
+#include <nvsdk_ngx_defs.h>
+#include <nvsdk_ngx_params.h>

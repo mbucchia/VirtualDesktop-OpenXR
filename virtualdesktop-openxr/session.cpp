@@ -149,6 +149,7 @@ namespace virtualdesktop_openxr {
             }
 
             initializePrecompositorResources();
+            initializeDlssnrResources();
         } else {
             // We initialize a submission device since OVR needs one to create a swapchain before being able to wait
             // frames.
@@ -522,7 +523,7 @@ namespace virtualdesktop_openxr {
         m_useMirrorWindow = getSetting("mirror_window").value_or(false);
 
         m_useRunningStart = !getSetting("quirk_disable_running_start").value_or(false);
-        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(false);
+        m_useDeferredFrameWait = getSetting("defer_frame_wait").value_or(true);
 
         const bool shouldUseDepth =
 #ifndef IGNORE_DEPTH_SUBMISSION
@@ -549,6 +550,14 @@ namespace virtualdesktop_openxr {
         }
 
         m_controllerLingerTimeout = getSetting("controller_linger_timeout").value_or(5000) * (int64_t)1'000'000;
+
+        m_dlssnrEnabled = getSetting("DLSSNR_Enabled").value_or(0);
+        m_dlssnrStyle = getSetting("DLSSNR_Style").value_or(0);
+        m_dlssnrIntensity = getSetting("DLSSNR_Intensity").value_or(100) / 100.0f;
+        m_dlssnrLocalToneStrength = getSetting("DLSSNR_LocalToneStrength").value_or(20) / 100.0f;
+        m_dlssnrLocalStructureStrength = getSetting("DLSSNR_LocalStructureStrength").value_or(70) / 100.0f;
+        m_dlssnrSkinStructureStrength = getSetting("DLSSNR_SkinStructureStrength").value_or(50) / 100.0f;
+        m_dlssnrFoveationSize = getSetting("FoveationSize").value_or(66) / 100.0f;
 
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
