@@ -309,6 +309,8 @@ namespace virtualdesktop_openxr {
                                                  XrViveTrackerPathsHTCX* paths) override;
 
       private:
+        friend struct AlphaPreprocessCacheRegression;
+
         struct Extension {
             const char* extensionName;
             uint32_t extensionVersion;
