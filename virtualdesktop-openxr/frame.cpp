@@ -1081,10 +1081,12 @@ namespace virtualdesktop_openxr {
     }
 
     void OpenXrRuntime::ensurePreprocessResources() {
-        CHECK_HRCMD(m_ovrSubmissionDevice->CreateComputeShader(
-            g_AlphaBlendingCS, sizeof(g_AlphaBlendingCS), nullptr, m_alphaCorrectShader.ReleaseAndGetAddressOf()));
-        setDebugName(m_alphaCorrectShader.Get(), "AlphaBlending CS");
-        {
+        if (!m_alphaCorrectShader) {
+            CHECK_HRCMD(m_ovrSubmissionDevice->CreateComputeShader(
+                g_AlphaBlendingCS, sizeof(g_AlphaBlendingCS), nullptr, m_alphaCorrectShader.ReleaseAndGetAddressOf()));
+            setDebugName(m_alphaCorrectShader.Get(), "AlphaBlending CS");
+        }
+        if (!m_alphaCorrectConstants) {
             D3D11_BUFFER_DESC desc{};
             desc.ByteWidth = ((sizeof(AlphaBlendingCSConstants) + 15) / 16) * 16;
             desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
