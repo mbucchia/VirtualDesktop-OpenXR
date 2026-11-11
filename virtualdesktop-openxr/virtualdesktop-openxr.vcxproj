@@ -671,6 +671,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
   </ItemGroup>
   <ItemGroup>
     <None Include="Common.hlsli" />
+    <None Include="DlssnrMotion.hlsli" />
     <None Include="framework\dispatch_generator.py" />
     <None Include="packages.config" />
     <None Include="virtualdesktop-openxr-32.json" />
@@ -691,6 +692,18 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
       <ShaderType>Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="SharpeningCS.hlsl">
+      <ShaderType>Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="DlssnrFlowCS.hlsl">
+      <ShaderType>Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="DlssnrLumaCS.hlsl">
+      <ShaderType>Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="DlssnrMotionCS.hlsl">
+      <ShaderType>Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="DlssnrCacheCS.hlsl">
       <ShaderType>Compute</ShaderType>
     </FxCompile>
     <FxCompile Include="UpscalingCS.hlsl">

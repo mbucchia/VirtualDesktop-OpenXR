@@ -649,6 +649,12 @@ namespace virtualdesktop_openxr {
         void cleanupDlssnrResources();
         void ensureDlssnrSwapchainResources(ovrTextureFormat format, const ovrSizei& resolution);
         void ensureSwapchainDlssnrResources(Swapchain& xrSwapchain, uint32_t slice);
+        void initializeDlssnrCacheResources();
+        void ensureDlssnrCorrectionResources(const ovrSizei& resolution);
+        void initializeDlssnrMotionResources();
+        void ensureDlssnrMotionResources(const ovrSizei& imageResolution, const ovrSizei& foveatedResolution);
+        void ensureDlssnrWorkResources(const ovrSizei& resolution, DXGI_FORMAT format);
+        bool getDlssnrEyeGazes(XrVector3f gaze[xr::StereoView::Count]) const;
         void upliftLayer(const XrSwapchainSubImage** views,
                          const XrSwapchainSubImage** depth,
                          float nearZ,
@@ -892,6 +898,88 @@ namespace virtualdesktop_openxr {
         float m_dlssnrLocalStructureStrength{0.7f};
         float m_dlssnrSkinStructureStrength{0.5f};
         float m_dlssnrFoveationSize{0.66f};
+        float m_dlssnrFoveationWidth{0.66f}, m_dlssnrFoveationHeight{0.66f};
+        int m_dlssnrPreset{2}; // 0 = let the DLL pick, 1 = model A, 2 = model B (NR 310.9.16+).
+
+        // DLSS-NR eye-tracked foveation.
+        bool m_dlssnrEyeTracking{true};
+        bool m_dlssnrGazePerEye{true};
+        float m_dlssnrGazeSmoothing{0.f};
+        int m_dlssnrGazeQuantization{8};
+        float m_dlssnrGazeJumpReset{0.3f};
+        int m_dlssnrGazeHoldMs{400};
+        float m_dlssnrFixedDistance{2.f}; // meters: the stereo-aligned fixed center (0: infinity)
+        bool m_dlssnrDebugFovea{false};
+        bool m_dlssnrDebugSplit{false}; // A/B: no NR on the right half of the region
+        float m_dlssnrTransition{0.f}; // the region's edge fades over this fraction of it (0: a hard edge)
+        bool m_dlssnrUseDepth{true};    // give NR the game's depth when it submits one
+        int m_dlssnrFeaturePreset{-1};
+        XrVector2f m_dlssnrGazeCenter[xr::StereoView::Count]{{0.5f, 0.5f}, {0.5f, 0.5f}};
+        ovrVector2i m_dlssnrFoveaOffset[xr::StereoView::Count]{{-1, -1}, {-1, -1}};
+        std::chrono::steady_clock::time_point m_dlssnrLastGazeTime{};
+
+        // DLSS-NR correction cache: reuse the last NR correction on some frames instead of running NR.
+        int m_dlssnrCacheMode{0}; // 0 = off, 1 = every other frame, 2 = adaptive.
+        int m_dlssnrCacheMaxInterval{2};
+        float m_dlssnrCacheGpuBudgetMs{0.f};
+        float m_dlssnrCacheMaxRotationDeg{2.f};
+        ComPtr<ID3D12RootSignature> m_dlssnrCacheRootSignature;
+        ComPtr<ID3D12PipelineState> m_dlssnrCachePSO;
+        ComPtr<ID3D12DescriptorHeap> m_dlssnrCacheHeap;
+        UINT m_dlssnrCacheDescriptorSize{0};
+        uint32_t m_dlssnrCacheHeapSlot{0};
+        ComPtr<ID3D12Resource> m_dlssnrCorrection[xr::StereoView::Count];
+        ovrSizei m_dlssnrCorrectionResolution{0, 0};
+        bool m_dlssnrCacheValid[xr::StereoView::Count]{false, false};
+        ovrVector2i m_dlssnrCacheOffset[xr::StereoView::Count]{};
+        ovrQuatf m_dlssnrCacheOrientation[xr::StereoView::Count]{};
+        uint32_t m_dlssnrFramesSinceFullEval{0};
+        std::unique_ptr<D3D12GpuTimer> m_dlssnrGpuTimer;
+        bool m_dlssnrGpuTimerPending{false};
+        float m_dlssnrLastGpuMs{0.f};
+
+        // DLSS-NR at a reduced working resolution: NR runs on a downscaled foveated region and its correction is
+        // applied, upscaled, to the full-size image.
+        float m_dlssnrWorkingScale{1.f};
+        ComPtr<ID3D12Resource> m_dlssnrWorkInput[xr::StereoView::Count];
+        ComPtr<ID3D12Resource> m_dlssnrWorkOutput[xr::StereoView::Count];
+        ovrSizei m_dlssnrWorkResolution{0, 0};
+        DXGI_FORMAT m_dlssnrWorkFormat{DXGI_FORMAT_UNKNOWN};
+        // The stored correction of each eye: its scale (working / full size) and size.
+        float m_dlssnrCorrectionScale[xr::StereoView::Count]{1.f, 1.f};
+        ovrSizei m_dlssnrCorrectionSize[xr::StereoView::Count]{};
+
+        // DLSS-NR motion vectors from optical flow .
+        bool m_dlssnrMotion{true};
+        float m_dlssnrMotionScale[2]{1.f, 1.f};
+        float m_dlssnrFlowRadius{2.f};
+        float m_dlssnrFlowPenalty{0.02f};
+        ComPtr<ID3D12RootSignature> m_dlssnrMotionRootSignature;
+        ComPtr<ID3D12PipelineState> m_dlssnrLumaPSO;
+        ComPtr<ID3D12PipelineState> m_dlssnrFlowPSO;
+        ComPtr<ID3D12PipelineState> m_dlssnrMotionPSO;
+        ComPtr<ID3D12DescriptorHeap> m_dlssnrMotionHeap;
+        uint32_t m_dlssnrMotionHeapSlot{0};
+        ComPtr<ID3D12Resource> m_dlssnrLuma[xr::StereoView::Count][2]; // [eye][ping-pong]
+        ComPtr<ID3D12Resource> m_dlssnrFlow[xr::StereoView::Count];
+        ComPtr<ID3D12Resource> m_dlssnrMotionVectors[xr::StereoView::Count];
+        ovrSizei m_dlssnrLumaResolution{0, 0};
+        ovrSizei m_dlssnrMotionVectorsResolution{0, 0};
+        uint32_t m_dlssnrLumaCurrent[xr::StereoView::Count]{};
+        // The frame NR last ran on, for the next frame's motion.
+        bool m_dlssnrHistoryValid[xr::StereoView::Count]{};
+        ovrQuatf m_dlssnrHistoryOrientation[xr::StereoView::Count]{};
+        float m_dlssnrHistoryTan[xr::StereoView::Count][4]{};
+        ovrVector2i m_dlssnrHistoryOffset[xr::StereoView::Count]{};
+        ovrSizei m_dlssnrHistoryImageSize[xr::StereoView::Count]{};
+
+        // DLSS-NR statistics (logged periodically).
+        uint32_t m_dlssnrStatMotion{0};
+        uint32_t m_dlssnrStatFrames{0};
+        uint32_t m_dlssnrStatCached{0};
+        uint32_t m_dlssnrStatGaze{0};
+        uint32_t m_dlssnrStatResets{0};
+        std::chrono::steady_clock::time_point m_dlssnrStatStart{};
 
         // Statistics.
         double m_sessionStartTime{0.0};
