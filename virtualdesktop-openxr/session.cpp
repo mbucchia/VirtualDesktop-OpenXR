@@ -560,6 +560,12 @@ namespace virtualdesktop_openxr {
         m_dlssnrLocalStructureStrength = getSetting("DLSSNR_LocalStructureStrength").value_or(70) / 100.0f;
         m_dlssnrSkinStructureStrength = getSetting("DLSSNR_SkinStructureStrength").value_or(50) / 100.0f;
         m_dlssnrFoveationSize = getSetting("FoveationSize").value_or(66) / 100.0f;
+        // Width and height of the region (percent of each eye's image); FoveationSize for both by default.
+        m_dlssnrFoveationWidth =
+            getSetting("DLSSNR_FoveationWidth").value_or(int(std::lround(m_dlssnrFoveationSize * 100))) / 100.0f;
+        m_dlssnrFoveationHeight =
+            getSetting("DLSSNR_FoveationHeight").value_or(int(std::lround(m_dlssnrFoveationSize * 100))) / 100.0f;
+        m_dlssnrPreset = std::clamp(getSetting("DLSSNR_Preset").value_or(2), 0, 2);
         m_dlssnrEyeTracking = getSetting("DLSSNR_EyeTracking").value_or(1);
         m_dlssnrGazePerEye = getSetting("DLSSNR_GazePerEye").value_or(1);
         m_dlssnrGazeSmoothing = std::clamp(getSetting("DLSSNR_GazeSmoothing").value_or(0), 0, 95) / 100.0f;
@@ -568,6 +574,49 @@ namespace virtualdesktop_openxr {
         m_dlssnrGazeHoldMs = std::clamp(getSetting("DLSSNR_GazeHoldMs").value_or(400), 0, 5000);
         // Centimeters; 0 aligns at infinity.
         m_dlssnrFixedDistance = std::clamp(getSetting("DLSSNR_FixedDistance").value_or(200), 0, 10000) / 100.0f;
+        m_dlssnrDebugFovea = getSetting("DLSSNR_DebugFovea").value_or(0);
+        m_dlssnrDebugSplit = getSetting("DLSSNR_DebugSplit").value_or(0);
+        m_dlssnrTransition = std::clamp(getSetting("DLSSNR_Transition").value_or(0), 0, 50) / 100.0f;
+        m_dlssnrUseDepth = getSetting("DLSSNR_UseDepth").value_or(1);
+        m_dlssnrCacheMode = std::clamp(getSetting("DLSSNR_Cache").value_or(0), 0, 2);
+        m_dlssnrCacheMaxInterval = std::clamp(getSetting("DLSSNR_CacheMaxInterval").value_or(2), 2, 8);
+        // Tenths of milliseconds and tenths of degrees (registry values are integers).
+        m_dlssnrCacheGpuBudgetMs = std::clamp(getSetting("DLSSNR_CacheGpuBudget").value_or(0), 0, 500) / 10.0f;
+        m_dlssnrCacheMaxRotationDeg = std::clamp(getSetting("DLSSNR_CacheMaxRotation").value_or(20), 0, 300) / 10.0f;
+        if (m_dlssnrEnabled) {
+            Log("DLSS-NR: Preset=%d FoveationSize=%.2f EyeTracking=%d PerEye=%d Smoothing=%.2f Quantization=%d "
+                "JumpReset=%.2f HoldMs=%d Cache=%d CacheMaxInterval=%d CacheGpuBudget=%.1fms CacheMaxRotation=%.1fdeg "
+                "Debug=%d\n",
+                m_dlssnrPreset,
+                m_dlssnrFoveationSize,
+                (int)m_dlssnrEyeTracking,
+                (int)m_dlssnrGazePerEye,
+                m_dlssnrGazeSmoothing,
+                m_dlssnrGazeQuantization,
+                m_dlssnrGazeJumpReset,
+                m_dlssnrGazeHoldMs,
+                m_dlssnrCacheMode,
+                m_dlssnrCacheMaxInterval,
+                m_dlssnrCacheGpuBudgetMs,
+                m_dlssnrCacheMaxRotationDeg,
+                (int)m_dlssnrDebugFovea);
+        }
+        m_dlssnrWorkingScale = std::clamp(getSetting("DLSSNR_WorkingScale").value_or(100), 25, 100) / 100.0f;
+        m_dlssnrMotion = getSetting("DLSSNR_Motion").value_or(1);
+        // Percent; negative values flip the vectors (registry DWORDs read as signed).
+        m_dlssnrMotionScale[0] = std::clamp(getSetting("DLSSNR_MotionScaleX").value_or(100), -400, 400) / 100.0f;
+        m_dlssnrMotionScale[1] = std::clamp(getSetting("DLSSNR_MotionScaleY").value_or(100), -400, 400) / 100.0f;
+        m_dlssnrFlowRadius = (float)std::clamp(getSetting("DLSSNR_FlowRadius").value_or(2), 0, 8);
+        m_dlssnrFlowPenalty = std::clamp(getSetting("DLSSNR_FlowPenalty").value_or(20), 0, 1000) / 1000.0f;
+        if (m_dlssnrEnabled) {
+            Log("DLSS-NR: WorkingScale=%.2f Motion=%d MotionScale=%.2f,%.2f FlowRadius=%.0f FlowPenalty=%.3f\n",
+                m_dlssnrWorkingScale,
+                (int)m_dlssnrMotion,
+                m_dlssnrMotionScale[0],
+                m_dlssnrMotionScale[1],
+                m_dlssnrFlowRadius,
+                m_dlssnrFlowPenalty);
+        }
 
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",
