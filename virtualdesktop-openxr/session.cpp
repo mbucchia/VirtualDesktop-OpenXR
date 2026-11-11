@@ -354,6 +354,8 @@ namespace virtualdesktop_openxr {
         if (m_supportsHandTracking ||
             ((has_XR_EXT_eye_gaze_interaction || has_XR_FB_eye_tracking_social) &&
              m_eyeTrackingType == EyeTracking::Mmf) ||
+            // DLSS-NR follows the gaze even when the app does not use eye tracking.
+            (m_dlssnrEnabled && m_dlssnrEyeTracking && m_eyeTrackingType == EyeTracking::Mmf) ||
             ((has_XR_FB_face_tracking || has_XR_FB_face_tracking2) && m_supportsFaceTracking) ||
             ((has_XR_FB_body_tracking || has_XR_HTCX_vive_tracker_interaction) && m_supportsBodyTracking)) {
             m_terminateBodyStateThread = false;
@@ -558,6 +560,14 @@ namespace virtualdesktop_openxr {
         m_dlssnrLocalStructureStrength = getSetting("DLSSNR_LocalStructureStrength").value_or(70) / 100.0f;
         m_dlssnrSkinStructureStrength = getSetting("DLSSNR_SkinStructureStrength").value_or(50) / 100.0f;
         m_dlssnrFoveationSize = getSetting("FoveationSize").value_or(66) / 100.0f;
+        m_dlssnrEyeTracking = getSetting("DLSSNR_EyeTracking").value_or(1);
+        m_dlssnrGazePerEye = getSetting("DLSSNR_GazePerEye").value_or(1);
+        m_dlssnrGazeSmoothing = std::clamp(getSetting("DLSSNR_GazeSmoothing").value_or(0), 0, 95) / 100.0f;
+        m_dlssnrGazeQuantization = std::clamp(getSetting("DLSSNR_GazeQuantization").value_or(8), 1, 128);
+        m_dlssnrGazeJumpReset = std::clamp(getSetting("DLSSNR_GazeJumpReset").value_or(30), 0, 100) / 100.0f;
+        m_dlssnrGazeHoldMs = std::clamp(getSetting("DLSSNR_GazeHoldMs").value_or(400), 0, 5000);
+        // Centimeters; 0 aligns at infinity.
+        m_dlssnrFixedDistance = std::clamp(getSetting("DLSSNR_FixedDistance").value_or(200), 0, 10000) / 100.0f;
 
         TraceLoggingWrite(g_traceProvider,
                           "VDXR_Config",

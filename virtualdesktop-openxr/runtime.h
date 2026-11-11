@@ -649,6 +649,7 @@ namespace virtualdesktop_openxr {
         void cleanupDlssnrResources();
         void ensureDlssnrSwapchainResources(ovrTextureFormat format, const ovrSizei& resolution);
         void ensureSwapchainDlssnrResources(Swapchain& xrSwapchain, uint32_t slice);
+        bool getDlssnrEyeGazes(XrVector3f gaze[xr::StereoView::Count]) const;
         void upliftLayer(const XrSwapchainSubImage** views,
                          const XrSwapchainSubImage** depth,
                          float nearZ,
@@ -892,6 +893,17 @@ namespace virtualdesktop_openxr {
         float m_dlssnrLocalStructureStrength{0.7f};
         float m_dlssnrSkinStructureStrength{0.5f};
         float m_dlssnrFoveationSize{0.66f};
+        // Eye-tracked foveation: the region follows the gaze (or a fixed, stereo-aligned point without it).
+        bool m_dlssnrEyeTracking{true};
+        bool m_dlssnrGazePerEye{true};
+        float m_dlssnrGazeSmoothing{0.f};
+        int m_dlssnrGazeQuantization{8};
+        float m_dlssnrGazeJumpReset{0.3f};
+        int m_dlssnrGazeHoldMs{400};
+        float m_dlssnrFixedDistance{2.f};
+        XrVector2f m_dlssnrGazeCenter[xr::StereoView::Count]{{0.5f, 0.5f}, {0.5f, 0.5f}};
+        ovrVector2i m_dlssnrFoveaOffset[xr::StereoView::Count]{{-1, -1}, {-1, -1}};
+        std::chrono::steady_clock::time_point m_dlssnrLastGazeTime{};
 
         // Statistics.
         double m_sessionStartTime{0.0};

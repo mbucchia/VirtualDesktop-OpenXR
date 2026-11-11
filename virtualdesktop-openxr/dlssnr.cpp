@@ -102,6 +102,49 @@ namespace virtualdesktop_openxr {
     using namespace virtualdesktop_openxr::log;
     using namespace virtualdesktop_openxr::utils;
 
+    namespace {
+
+        // Project a direction (eye space, -Z forward) onto an eye's image, as fractions of the image (Y down).
+        XrVector2f ProjectToImage(const XrVector3f& direction, const ovrFovPort& fov) {
+            const float tx = direction.x / -direction.z;
+            const float ty = direction.y / -direction.z;
+            return {(tx + fov.LeftTan) / (fov.LeftTan + fov.RightTan), (fov.UpTan - ty) / (fov.UpTan + fov.DownTan)};
+        }
+
+    } // namespace
+
+    // One gaze direction per eye, relative to the head (-Z forward).
+    bool OpenXrRuntime::getDlssnrEyeGazes(XrVector3f gaze[xr::StereoView::Count]) const {
+        if (m_eyeTrackingType == EyeTracking::Mmf && m_dlssnrGazePerEye) {
+            std::shared_lock lock(m_bodyStateMutex);
+
+            if (!(m_cachedBodyState.LeftEyeIsValid && m_cachedBodyState.RightEyeIsValid)) {
+                return false;
+            }
+            if (!(m_cachedBodyState.LeftEyeConfidence > 0.5f && m_cachedBodyState.RightEyeConfidence > 0.5f)) {
+                return false;
+            }
+
+            // Each eye's own gaze: this accounts for vergence on near objects.
+            const BodyTracking::Pose* eyePoses[] = {&m_cachedBodyState.LeftEyePose, &m_cachedBodyState.RightEyePose};
+            for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+                const auto& o = eyePoses[eye]->orientation;
+                const auto forward = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.f, 0.f, -1.f, 0.f),
+                                                              DirectX::XMVectorSet(o.x, o.y, o.z, o.w));
+                xr::math::StoreXrVector3(&gaze[eye], forward);
+            }
+            return true;
+        }
+
+        XrVector3f unitVector{};
+        XrTime sampleTime;
+        if (!getEyeGaze(0, false /* getStateOnly */, unitVector, sampleTime)) {
+            return false;
+        }
+        gaze[xr::StereoView::Left] = gaze[xr::StereoView::Right] = unitVector;
+        return true;
+    }
+
     void OpenXrRuntime::upliftLayer(const XrSwapchainSubImage** views,
                                     const XrSwapchainSubImage** depth,
                                     float nearZ,
@@ -115,9 +158,82 @@ namespace virtualdesktop_openxr {
         const float foveatedScale = std::clamp(m_dlssnrFoveationSize, 0.1f, 1.f);
         const ovrSizei foveatedResolution = {(int)xr::math::AlignTo<4>((uint32_t)(resolution.w * foveatedScale)),
                                              (int)xr::math::AlignTo<4>((uint32_t)(resolution.h * foveatedScale))};
-        // TODO: Plumb in the eye tracking data.
-        const ovrVector2i offset = {(resolution.w - foveatedResolution.w) / 2,
-                                    (resolution.h - foveatedResolution.h) / 2};
+
+        // Place the foveated region of each eye: following the gaze, or at a fixed, stereo-aligned point.
+        const auto now = std::chrono::steady_clock::now();
+        ovrVector2i offset[xr::StereoView::Count]{};
+        bool resetHistory[xr::StereoView::Count]{};
+        const bool followGaze = m_dlssnrEyeTracking && m_eyeTrackingType != EyeTracking::None && foveatedScale < 1.f;
+        XrVector3f gaze[xr::StereoView::Count]{};
+        const bool gazeValid = followGaze && getDlssnrEyeGazes(gaze) && gaze[0].z < -0.1f && gaze[1].z < -0.1f;
+        if (gazeValid) {
+            m_dlssnrLastGazeTime = now;
+        }
+        // Gaze lost (blink): keep the last position for a moment before going back to the fixed point.
+        const bool holdGaze =
+            followGaze && !gazeValid && now - m_dlssnrLastGazeTime < std::chrono::milliseconds(m_dlssnrGazeHoldMs);
+        // The fixed point: the same point of the scene in both eyes, straight ahead at m_dlssnrFixedDistance
+        // (infinity when 0). The image centers differ between eyes (asymmetric fields of view), so centering each
+        // image would place the two regions on different parts of the scene.
+        XrVector2f alignedCenter[xr::StereoView::Count]{};
+        {
+            const auto& left = layer.RenderPose[xr::StereoView::Left].Position;
+            const auto& right = layer.RenderPose[xr::StereoView::Right].Position;
+            const float dx = right.x - left.x, dy = right.y - left.y, dz = right.z - left.z;
+            const float halfIpd = 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+            for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+                // Eye render poses are assumed parallel to the head (no canted displays).
+                const float eyeX = eye == xr::StereoView::Left ? -halfIpd : halfIpd;
+                const XrVector3f ahead = m_dlssnrFixedDistance > 0.f ? XrVector3f{-eyeX, 0.f, -m_dlssnrFixedDistance}
+                                                                     : XrVector3f{0.f, 0.f, -1.f};
+                const XrVector2f point = ProjectToImage(ahead, layer.Fov[eye]);
+                alignedCenter[eye] = {std::clamp(point.x, 0.f, 1.f), std::clamp(point.y, 0.f, 1.f)};
+            }
+        }
+        for (uint32_t eye = 0; eye < xr::StereoView::Count; eye++) {
+            const ovrSizei& viewSize = layer.Viewport[eye].Size;
+            const int maxX = std::max(0, viewSize.w - foveatedResolution.w);
+            const int maxY = std::max(0, viewSize.h - foveatedResolution.h);
+            if (!followGaze) {
+                offset[eye] = {std::clamp((int)(alignedCenter[eye].x * viewSize.w) - foveatedResolution.w / 2, 0, maxX),
+                               std::clamp((int)(alignedCenter[eye].y * viewSize.h) - foveatedResolution.h / 2, 0, maxY)};
+                m_dlssnrFoveaOffset[eye] = {-1, -1};
+                continue;
+            }
+
+            if (!holdGaze) {
+                XrVector2f target = alignedCenter[eye];
+                if (gazeValid) {
+                    // Eye render poses are assumed parallel to the head (no canted displays).
+                    const XrVector2f point = ProjectToImage(gaze[eye], layer.Fov[eye]);
+                    target = {std::clamp(point.x, 0.f, 1.f), std::clamp(point.y, 0.f, 1.f)};
+                }
+                const float follow = 1.f - m_dlssnrGazeSmoothing;
+                m_dlssnrGazeCenter[eye].x += (target.x - m_dlssnrGazeCenter[eye].x) * follow;
+                m_dlssnrGazeCenter[eye].y += (target.y - m_dlssnrGazeCenter[eye].y) * follow;
+            }
+            const int x = std::clamp((int)(m_dlssnrGazeCenter[eye].x * viewSize.w) - foveatedResolution.w / 2, 0, maxX);
+            const int y = std::clamp((int)(m_dlssnrGazeCenter[eye].y * viewSize.h) - foveatedResolution.h / 2, 0, maxY);
+
+            // Move the region in steps only, so gaze jitter does not keep shifting the NR input.
+            ovrVector2i& current = m_dlssnrFoveaOffset[eye];
+            if (current.x >= 0) {
+                current = {std::min(current.x, maxX), std::min(current.y, maxY)};
+            }
+            const int step = m_dlssnrGazeQuantization;
+            if (current.x < 0 || std::abs(x - current.x) >= step || std::abs(y - current.y) >= step) {
+                const ovrVector2i next = {std::clamp((x + step / 2) / step * step, 0, maxX),
+                                          std::clamp((y + step / 2) / step * step, 0, maxY)};
+                // Large jump (saccade): restart the NR history instead of blending with the old location.
+                if (current.x >= 0 && m_dlssnrGazeJumpReset > 0.f &&
+                    (std::abs(next.x - current.x) > m_dlssnrGazeJumpReset * foveatedResolution.w ||
+                     std::abs(next.y - current.y) > m_dlssnrGazeJumpReset * foveatedResolution.h)) {
+                    resetHistory[eye] = true;
+                }
+                current = next;
+            }
+            offset[eye] = current;
+        }
 
         struct BOX {
             int32_t left;
@@ -210,6 +326,15 @@ namespace virtualdesktop_openxr {
                                         "GetModuleFileNameW",
                                         ngx::hooked_GetModuleFileNameW,
                                         ngx::original_GetModuleFileNameW);
+                        // The detour stays in Kernel32 for the process's life: this runtime must stay loaded with
+                        // it. Applications that destroy and recreate their instance would otherwise unload it and
+                        // crash on the next GetModuleFileNameW() call.
+                        {
+                            HMODULE self;
+                            GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+                                               reinterpret_cast<LPCWSTR>(&ngx::hooked_GetModuleFileNameW),
+                                               &self);
+                        }
 
                         const auto nvngx_dlssnrPath = virtualdesktop_openxr::dllHome / L"nvngx_dlssnr.dll";
                         *ngx::dlssnrModule.put() = LoadLibraryW(nvngx_dlssnrPath.c_str());
@@ -250,8 +375,8 @@ namespace virtualdesktop_openxr {
                     .dlssnrImages[xrSwapchain.resolvedSlices[views[eye]->imageArrayIndex].lastCommittedIndex]
                     .Get();
             BOX colorBox{};
-            colorBox.left = views[eye]->imageRect.offset.x + offset.x;
-            colorBox.top = views[eye]->imageRect.offset.y + offset.y;
+            colorBox.left = views[eye]->imageRect.offset.x + offset[eye].x;
+            colorBox.top = views[eye]->imageRect.offset.y + offset[eye].y;
             colorBox.right = colorBox.left + foveatedResolution.w;
             colorBox.bottom = colorBox.top + foveatedResolution.h;
             SafeClamp(colorBox, inputBox[eye]);
@@ -262,8 +387,8 @@ namespace virtualdesktop_openxr {
             m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_ColorSubrectHeight, colorBox.bottom - colorBox.top);
 
             BOX destBox{};
-            destBox.left = eye * resolution.w + offset.x; // Double-wide.
-            destBox.top = offset.y;
+            destBox.left = eye * resolution.w + offset[eye].x; // Double-wide.
+            destBox.top = offset[eye].y;
             destBox.right = destBox.left + foveatedResolution.w;
             destBox.bottom = destBox.top + foveatedResolution.h;
             SafeClamp(destBox, outputBox[eye]);
@@ -291,8 +416,8 @@ namespace virtualdesktop_openxr {
                         .dlssnrImages[xrDepthSwapchain.resolvedSlices[depth[eye]->imageArrayIndex].lastCommittedIndex]
                         .Get());
                 BOX depthBox{};
-                depthBox.left = depth[eye]->imageRect.offset.x + offset.x;
-                depthBox.top = depth[eye]->imageRect.offset.y + offset.y;
+                depthBox.left = depth[eye]->imageRect.offset.x + offset[eye].x;
+                depthBox.top = depth[eye]->imageRect.offset.y + offset[eye].y;
                 depthBox.right = depthBox.left + foveatedResolution.w;
                 depthBox.bottom = depthBox.top + foveatedResolution.h;
                 SafeClamp(depthBox, inputBox[eye]);
@@ -303,7 +428,8 @@ namespace virtualdesktop_openxr {
                 m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_DepthSubrectHeight, depthBox.bottom - depthBox.top);
             }
 
-            m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_Reset, false);
+            // A saccade moved the region far: NR's history is from elsewhere.
+            m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_Reset, resetHistory[eye]);
             m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_UseAutoMask, true);
             m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_Style, m_dlssnrStyle);
             m_ngxParameters->Set(NVSDK_NGX_Parameter_DLSSNR_Intensity, m_dlssnrIntensity);
@@ -335,11 +461,11 @@ namespace virtualdesktop_openxr {
                 box.left = views[eye]->imageRect.offset.x;
                 box.top = views[eye]->imageRect.offset.y;
                 box.right = box.left + resolution.w;
-                box.bottom = box.top + offset.y;
+                box.bottom = box.top + offset[eye].y;
                 SafeClamp(box, inputBox[eye]);
                 ToD3dBox(d3dBox, box);
                 cmdList.Commands->CopyTextureRegion(&dst, eye * resolution.w, 0, 0, &src, &d3dBox);
-                box.top = views[eye]->imageRect.offset.y + offset.y + foveatedResolution.h;
+                box.top = views[eye]->imageRect.offset.y + offset[eye].y + foveatedResolution.h;
                 box.bottom = box.top + resolution.h;
                 SafeClamp(box, inputBox[eye]);
                 ToD3dBox(d3dBox, box);
@@ -347,14 +473,14 @@ namespace virtualdesktop_openxr {
                     &dst, eye * resolution.w, resolution.h - (box.bottom - box.top), 0, &src, &d3dBox);
 
                 box.left = views[eye]->imageRect.offset.x;
-                box.top = views[eye]->imageRect.offset.y + offset.y;
-                box.right = box.left + offset.x;
+                box.top = views[eye]->imageRect.offset.y + offset[eye].y;
+                box.right = box.left + offset[eye].x;
                 box.bottom = box.top + foveatedResolution.h;
                 SafeClamp(box, inputBox[eye]);
                 ToD3dBox(d3dBox, box);
                 cmdList.Commands->CopyTextureRegion(
                     &dst, eye * resolution.w, box.top - views[eye]->imageRect.offset.y, 0, &src, &d3dBox);
-                box.left = views[eye]->imageRect.offset.x + offset.x + foveatedResolution.w;
+                box.left = views[eye]->imageRect.offset.x + offset[eye].x + foveatedResolution.w;
                 box.right = box.left + resolution.w;
                 SafeClamp(box, inputBox[eye]);
                 ToD3dBox(d3dBox, box);
