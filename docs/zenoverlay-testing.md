@@ -1,5 +1,14 @@
 # ZenOverlay local validation
 
+## Current PR scope
+
+The Skyrim Upscaler submission-device workaround has been removed from this PR;
+`instance.cpp` matches upstream. The runtime integration is unchanged. The
+November 26 headset observations below identify the earlier tested binary, which
+included that workaround. Elements Divided does not meet its Skyrim-only trigger.
+No new Skyrim compatibility claim or fresh headset run of the narrowed PR is
+implied by those observations.
+
 ## November 26, 2026 — Elements Divided
 
 The user reported that the headset test passed and separately confirmed that
