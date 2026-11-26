@@ -298,18 +298,6 @@ namespace virtualdesktop_openxr {
             Log("Detected OpenComposite - OpenComposite is not supported, use at your own risks!\n");
         }
 
-        // Skyrim Upscaler can interfere with the separate submission device.
-        // Restrict the fallback to this combination and honor explicit overrides,
-        // including zero to opt out of application-device submission.
-        if (m_isOpenComposite && _stricmp(m_exeName.c_str(), "SkyrimVR.exe") == 0 &&
-            GetModuleHandleW(L"SkyrimUpscaler.dll") != nullptr) {
-            const auto submissionDeviceOverride = getSetting("quirk_use_application_device_for_submission");
-            m_useApplicationDeviceForSubmission = submissionDeviceOverride.value_or(true);
-            Log("Skyrim Upscaler compatibility: %s submission device (%s)\n",
-                m_useApplicationDeviceForSubmission ? "application" : "separate",
-                submissionDeviceOverride.has_value() ? "explicit override" : "automatic");
-        }
-
         if ((startsWith(m_exeName, "Contractors_") && endsWith(m_exeName, "-Win64-Shipping.exe"))) {
             m_controllerGripOffset.position.z = -0.1f;
             m_quirkedControllerPoses = true;
