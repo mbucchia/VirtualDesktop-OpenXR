@@ -577,6 +577,10 @@ namespace virtualdesktop_openxr {
         void asyncSubmissionThread();
         void waitForAsyncSubmissionIdle(bool doRunningStart = false);
 
+        // zenoverlay.cpp (external desktop overlay)
+        bool appendZenOverlayLayer(std::vector<ovrLayer_Union>& layers);
+        void cleanupZenOverlay();
+
         // d3d11_native.cpp
         XrResult initializeD3D11(const XrGraphicsBindingD3D11KHR& d3dBindings);
         void cleanupD3D11();
@@ -714,6 +718,16 @@ namespace virtualdesktop_openxr {
         ComPtr<ID3D11ComputeShader> m_upscaleShader;
         ComPtr<ID3D11Buffer> m_upscalerConstants;
         ComPtr<IDXGISwapChain1> m_dxgiSwapchain;
+
+        // ZenOverlay resources. These are owned by the runtime
+        // session and remain unused unless the external capture producer is
+        // actively publishing its named D3D11 texture.
+        struct ZenOverlayState;
+        struct ZenOverlayStateDeleter {
+            void operator()(ZenOverlayState* state) const;
+        };
+        std::unique_ptr<ZenOverlayState, ZenOverlayStateDeleter> m_zenOverlay;
+
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};
         std::deque<std::pair<XrSessionState, double>> m_sessionEventQueue;
