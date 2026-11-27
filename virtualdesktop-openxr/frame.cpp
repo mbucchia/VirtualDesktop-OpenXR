@@ -487,6 +487,12 @@ namespace virtualdesktop_openxr {
                 }
             }
 
+            // Desktop capture stays external; the runtime owns the final quad.
+            // Preserve application layer priority when the compositor is full.
+            if (layersAllocator.size() < ovrMaxLayerCount) {
+                appendZenOverlayLayer(layersAllocator);
+            }
+
             // Mark all swapchain images as clean (aka already pre-processed).
             for (auto resolvedSwapchain : m_precompositor.resolvedSwapchainImages) {
                 resolvedSwapchain.first->dirty = false;

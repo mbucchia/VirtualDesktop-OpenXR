@@ -582,6 +582,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="log.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="zenoverlay.h" />
     <ClInclude Include="runtime.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
@@ -667,6 +668,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClCompile Include="system.cpp" />
     <ClCompile Include="visibility_mask.cpp" />
     <ClCompile Include="vulkan_interop.cpp" />
+    <ClCompile Include="zenoverlay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Common.hlsli" />
@@ -680,6 +682,9 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="ZenOverlayKeyPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="AlphaBlendingCS.hlsl">
       <ShaderType>Compute</ShaderType>
     </FxCompile>

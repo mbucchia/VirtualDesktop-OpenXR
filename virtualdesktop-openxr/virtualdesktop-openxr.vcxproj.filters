@@ -32,6 +32,9 @@
     <ClInclude Include="framework\dispatch.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="zenoverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="runtime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -182,6 +185,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="accessibility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="zenoverlay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\external\cJSON\cJSON.c">
