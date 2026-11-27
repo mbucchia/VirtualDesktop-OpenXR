@@ -22,6 +22,7 @@ Additional contributions:
 - Heather Kemp (Accessibility project, sponsored by Microsoft)
 - Mathias Peter Nordskog (bug fixes)
 - Pavel Skakov (bug fixes, on original PimaxXR)
+- ZenMonkeyVR (ZenOverlay desktop quad submission)
 
 ## Donate
 
