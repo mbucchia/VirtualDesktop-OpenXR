@@ -25,6 +25,7 @@
 #include "framework/dispatch.gen.h"
 
 #include "accessibility.h"
+#include "zenoverlay.h"
 #include "utils.h"
 
 #include "BodyState.h"
@@ -722,11 +723,8 @@ namespace virtualdesktop_openxr {
         // ZenOverlay resources. These are owned by the runtime
         // session and remain unused unless the external capture producer is
         // actively publishing its named D3D11 texture.
-        struct ZenOverlayState;
-        struct ZenOverlayStateDeleter {
-            void operator()(ZenOverlayState* state) const;
-        };
-        std::unique_ptr<ZenOverlayState, ZenOverlayStateDeleter> m_zenOverlay;
+        friend class ZenOverlayHelperImpl;
+        std::unique_ptr<ZenOverlayHelper> m_zenOverlay;
 
         bool m_sessionCreated{false};
         XrSessionState m_sessionState{XR_SESSION_STATE_UNKNOWN};

@@ -32,6 +32,9 @@
     <ClInclude Include="framework\dispatch.h">
       <Filter>Framework</Filter>
     </ClInclude>
+    <ClInclude Include="zenoverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="runtime.h">
       <Filter>Header Files</Filter>
     </ClInclude>

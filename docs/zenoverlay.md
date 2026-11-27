@@ -77,7 +77,7 @@ other absent settings objects are discovered with a bounded 500 ms probe cadence
 
 The compositor-facing swapchain is sRGB, with a typeless backing resource for
 copies from BGRA8 UNORM desktop capture. Green-screen processing uses compiled
-shader bytecode, linear premultiplied output, and restores D3D11 context state.
+shader bytecode and linear premultiplied output. When submission uses the application's D3D11 device, it saves context state through the existing runtime mechanism; the `xrEndFrame` scope guard restores it.
 Toggling keying can reprocess the private snapshot even for a static window.
 
 The runtime supports fixed LOCAL, head-locked, player-yaw and both wrist poses.

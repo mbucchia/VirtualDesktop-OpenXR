@@ -154,7 +154,6 @@ namespace virtualdesktop_openxr {
         Ptr<ID3D11ShaderResourceView> source;
         Ptr<ID3D11VertexShader> vertex;
         Ptr<ID3D11PixelShader> pixel;
-        Ptr<ID3DDeviceContextState> state;
         std::vector<std::pair<Ptr<ID3D11Texture2D>, Ptr<ID3D11RenderTargetView>>> targets;
         UINT width{0}, height{0};
 
@@ -172,7 +171,6 @@ namespace virtualdesktop_openxr {
             desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
             desc.Usage = D3D11_USAGE_DEFAULT;
             desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-            const D3D_FEATURE_LEVEL level = device->GetFeatureLevel();
             return SUCCEEDED(device->CreateTexture2D(&desc, nullptr, snapshot.ReleaseAndGetAddressOf())) &&
                    SUCCEEDED(
                        device->CreateShaderResourceView(snapshot.Get(), nullptr, source.ReleaseAndGetAddressOf())) &&
@@ -183,14 +181,7 @@ namespace virtualdesktop_openxr {
                    SUCCEEDED(device->CreatePixelShader(zenoverlay_shader_bytecode::g_ZenOverlayKeyPS,
                                                        sizeof(zenoverlay_shader_bytecode::g_ZenOverlayKeyPS),
                                                        nullptr,
-                                                       pixel.ReleaseAndGetAddressOf())) &&
-                   SUCCEEDED(device->CreateDeviceContextState(0,
-                                                              &level,
-                                                              1,
-                                                              D3D11_SDK_VERSION,
-                                                              __uuidof(ID3D11Device),
-                                                              nullptr,
-                                                              state.ReleaseAndGetAddressOf()));
+                                                       pixel.ReleaseAndGetAddressOf()));
         }
 
         bool render(ID3D11Device1* device, ID3D11DeviceContext1* context, ID3D11Texture2D* destination, bool enabled) {
@@ -216,10 +207,8 @@ namespace virtualdesktop_openxr {
                 Ptr<ID3D11Texture2D> texture = destination;
                 targets.emplace_back(std::move(texture), std::move(view));
             }
-            // Preserve all runtime pipeline bindings, not just the ones used
-            // here. Compile shaders at build time, never on the submission thread.
-            Ptr<ID3DDeviceContextState> previous;
-            context->SwapDeviceContextState(state.Get(), previous.GetAddressOf());
+            // The caller saves application state through xrEndFrame's existing guard.
+            // Establish a clean draw state on the runtime submission context.
             context->ClearState();
             const D3D11_VIEWPORT viewport{0, 0, float(width), float(height), 0, 1};
             context->RSSetViewports(1, &viewport);
@@ -231,7 +220,6 @@ namespace virtualdesktop_openxr {
             context->PSSetShaderResources(0, 1, &srv);
             context->Draw(3, 0);
             context->ClearState();
-            context->SwapDeviceContextState(previous.Get(), nullptr);
             return true;
         }
     };
@@ -314,7 +302,15 @@ namespace virtualdesktop_openxr {
         return std::isfinite(facing) && gaze >= (wasVisible ? .76f : .82f) && facing >= (wasVisible ? .40f : .55f);
     }
 
-    struct OpenXrRuntime::ZenOverlayState {
+    class ZenOverlayHelperImpl : public ZenOverlayHelper {
+      public:
+        explicit ZenOverlayHelperImpl(OpenXrRuntime& runtime) : m_runtime(runtime) {
+        }
+        bool AppendLayer(std::vector<ovrLayer_Union>& layers) override;
+        void Cleanup() override;
+
+      private:
+        OpenXrRuntime& m_runtime;
         ZenOverlaySettingsReader m_zenOverlaySettings;
         XrPosef m_zenOverlayWristPose{};
         bool m_zenOverlayWristPoseValid{false};
@@ -330,8 +326,22 @@ namespace virtualdesktop_openxr {
         bool m_zenOverlayHasCommittedFrame{false};
         uint64_t m_zenOverlayNextProbeTick{0};
     };
-    void OpenXrRuntime::ZenOverlayStateDeleter::operator()(ZenOverlayState* state) const {
-        delete state;
+    std::unique_ptr<ZenOverlayHelper> CreateZenOverlayHelper(OpenXrRuntime& runtime) {
+        return std::make_unique<ZenOverlayHelperImpl>(runtime);
+    }
+
+    void OpenXrRuntime::cleanupZenOverlay() {
+        if (m_zenOverlay)
+            m_zenOverlay->Cleanup();
+    }
+
+    bool OpenXrRuntime::appendZenOverlayLayer(std::vector<ovrLayer_Union>& layers) {
+        if (m_isHeadless || !m_ovrSession || !m_ovrSubmissionDevice || !m_ovrSubmissionContext ||
+            layers.size() >= ovrMaxLayerCount)
+            return false;
+        if (!m_zenOverlay)
+            m_zenOverlay = CreateZenOverlayHelper(*this);
+        return m_zenOverlay->AppendLayer(layers);
     }
 
     using namespace virtualdesktop_openxr::log;
@@ -364,39 +374,35 @@ namespace virtualdesktop_openxr {
         }
     } // namespace
 
-    void OpenXrRuntime::cleanupZenOverlay() {
-        if (!m_zenOverlay)
-            return;
-        m_zenOverlay->m_zenOverlaySettings.shortcutArmed = false;
-        m_zenOverlay->m_zenOverlayTransparency = {};
-        if (m_zenOverlay->m_zenOverlaySwapchain && m_ovrSession) {
-            ovr_DestroyTextureSwapChain(m_ovrSession, m_zenOverlay->m_zenOverlaySwapchain);
+    void ZenOverlayHelperImpl::Cleanup() {
+        m_zenOverlaySettings.shortcutArmed = false;
+        m_zenOverlayTransparency = {};
+        if (m_zenOverlaySwapchain && m_runtime.m_ovrSession) {
+            ovr_DestroyTextureSwapChain(m_runtime.m_ovrSession, m_zenOverlaySwapchain);
         }
-        m_zenOverlay->m_zenOverlaySwapchain = nullptr;
-        m_zenOverlay->m_zenOverlaySharedMutex.Reset();
-        m_zenOverlay->m_zenOverlaySharedTexture.Reset();
-        m_zenOverlay->m_zenOverlayProducerProcess.reset();
-        m_zenOverlay->m_zenOverlayWidth = 0;
-        m_zenOverlay->m_zenOverlayHeight = 0;
-        m_zenOverlay->m_zenOverlayHasCommittedFrame = false;
-        m_zenOverlay->m_zenOverlayWristPoseValid = false;
-        m_zenOverlay->m_zenOverlayGazeVisible = false;
+        m_zenOverlaySwapchain = nullptr;
+        m_zenOverlaySharedMutex.Reset();
+        m_zenOverlaySharedTexture.Reset();
+        m_zenOverlayProducerProcess.reset();
+        m_zenOverlayWidth = 0;
+        m_zenOverlayHeight = 0;
+        m_zenOverlayHasCommittedFrame = false;
+        m_zenOverlayWristPoseValid = false;
+        m_zenOverlayGazeVisible = false;
     }
 
-    bool OpenXrRuntime::appendZenOverlayLayer(std::vector<ovrLayer_Union>& layers) {
-        if (m_isHeadless || !m_ovrSession || !m_ovrSubmissionDevice || !m_ovrSubmissionContext ||
-            layers.size() >= ovrMaxLayerCount) {
+    bool ZenOverlayHelperImpl::AppendLayer(std::vector<ovrLayer_Union>& layers) {
+        if (m_runtime.m_isHeadless || !m_runtime.m_ovrSession || !m_runtime.m_ovrSubmissionDevice ||
+            !m_runtime.m_ovrSubmissionContext || layers.size() >= ovrMaxLayerCount) {
             return false;
         }
-        if (!m_zenOverlay)
-            m_zenOverlay.reset(new ZenOverlayState{});
         const uint64_t now = GetTickCount64();
-        const auto previousSettings = m_zenOverlay->m_zenOverlaySettings.current;
-        if (m_zenOverlay->m_zenOverlaySettings.poll(now)) {
-            m_zenOverlay->m_zenOverlayWristPoseValid = false;
-            const auto& s = m_zenOverlay->m_zenOverlaySettings.current;
+        const auto previousSettings = m_zenOverlaySettings.current;
+        if (m_zenOverlaySettings.poll(now)) {
+            m_zenOverlayWristPoseValid = false;
+            const auto& s = m_zenOverlaySettings.current;
             if (s.mode != previousSettings.mode || s.flags != previousSettings.flags) {
-                m_zenOverlay->m_zenOverlayGazeVisible = false;
+                m_zenOverlayGazeVisible = false;
             }
             Log("ZenOverlay settings revision=%llu mode=%d position=(%.3f,%.3f,%.3f) width=%.3f\n",
                 static_cast<unsigned long long>(s.revision),
@@ -407,50 +413,48 @@ namespace virtualdesktop_openxr {
                 s.width);
         }
 
-        if (!m_zenOverlay->m_zenOverlayReadyEvent) {
-            if (now < m_zenOverlay->m_zenOverlayNextProbeTick) {
+        if (!m_zenOverlayReadyEvent) {
+            if (now < m_zenOverlayNextProbeTick) {
                 return false;
             }
-            m_zenOverlay->m_zenOverlayReadyEvent.reset(CreateEventW(nullptr, TRUE, FALSE, CaptureReadyEventName));
-            if (!m_zenOverlay->m_zenOverlayReadyEvent) {
+            m_zenOverlayReadyEvent.reset(CreateEventW(nullptr, TRUE, FALSE, CaptureReadyEventName));
+            if (!m_zenOverlayReadyEvent) {
                 // Retry only creation failures. The event otherwise survives
                 // producer exits, so idle frames need only a zero-time wait.
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
         }
 
-        const bool producerReady = m_zenOverlay->m_zenOverlayReadyEvent &&
-                                   WaitForSingleObject(m_zenOverlay->m_zenOverlayReadyEvent.get(), 0) == WAIT_OBJECT_0;
+        const bool producerReady =
+            m_zenOverlayReadyEvent && WaitForSingleObject(m_zenOverlayReadyEvent.get(), 0) == WAIT_OBJECT_0;
 
         // A retained event stays signaled after a crash. Conversely, reopening
         // our own retained texture cannot establish that its producer is alive.
-        if (!producerReady ||
-            (m_zenOverlay->m_zenOverlayProducerProcess &&
-             WaitForSingleObject(m_zenOverlay->m_zenOverlayProducerProcess.get(), 0) != WAIT_TIMEOUT)) {
-            cleanupZenOverlay();
-            m_zenOverlay->m_zenOverlayNextProbeTick = 0;
+        if (!producerReady || (m_zenOverlayProducerProcess &&
+                               WaitForSingleObject(m_zenOverlayProducerProcess.get(), 0) != WAIT_TIMEOUT)) {
+            Cleanup();
+            m_zenOverlayNextProbeTick = 0;
             return false;
         }
 
-        if (!m_zenOverlay->m_zenOverlaySharedTexture || !m_zenOverlay->m_zenOverlaySwapchain) {
+        if (!m_zenOverlaySharedTexture || !m_zenOverlaySwapchain) {
             if (!producerReady) {
                 return false;
             }
-            if (now < m_zenOverlay->m_zenOverlayNextProbeTick) {
+            if (now < m_zenOverlayNextProbeTick) {
                 return false;
             }
-            cleanupZenOverlay();
+            Cleanup();
 
-            m_zenOverlay->m_zenOverlayProducerProcess.reset(
-                zenOverlayOpenCaptureProcess(L"Local\\ZenOverlayCaptureStatus_v1"));
-            if (!m_zenOverlay->m_zenOverlayProducerProcess) {
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+            m_zenOverlayProducerProcess.reset(zenOverlayOpenCaptureProcess(L"Local\\ZenOverlayCaptureStatus_v1"));
+            if (!m_zenOverlayProducerProcess) {
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
 
             ComPtr<ID3D11Device1> device1;
-            if (FAILED(m_ovrSubmissionDevice.As(&device1)) || !device1) {
+            if (FAILED(m_runtime.m_ovrSubmissionDevice.As(&device1)) || !device1) {
                 return false;
             }
 
@@ -460,7 +464,7 @@ namespace virtualdesktop_openxr {
                                                   DXGI_SHARED_RESOURCE_READ,
                                                   IID_PPV_ARGS(sharedTexture.ReleaseAndGetAddressOf()));
             if (FAILED(openResult) || !sharedTexture) {
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 100;
+                m_zenOverlayNextProbeTick = now + 100;
                 return false;
             }
 
@@ -468,20 +472,20 @@ namespace virtualdesktop_openxr {
             sharedTexture->GetDesc(&sourceDesc);
             if (!sourceDesc.Width || !sourceDesc.Height || sourceDesc.Format != DXGI_FORMAT_B8G8R8A8_UNORM ||
                 sourceDesc.SampleDesc.Count != 1) {
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
 
             ComPtr<IDXGIKeyedMutex> sharedMutex;
             if (FAILED(sharedTexture.As(&sharedMutex)) || !sharedMutex) {
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
 
-            if (!m_zenOverlay->m_zenOverlayTransparency.initialize(device1.Get(), sourceDesc)) {
+            if (!m_zenOverlayTransparency.initialize(device1.Get(), sourceDesc)) {
                 Log("ZenOverlay transparency resource initialization failed\n");
-                cleanupZenOverlay();
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+                Cleanup();
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
 
@@ -503,90 +507,96 @@ namespace virtualdesktop_openxr {
             swapchainDesc.BindFlags = ovrTextureBind_DX_RenderTarget;
 
             ovrTextureSwapChain swapchain = nullptr;
-            const ovrResult createResult =
-                ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &swapchainDesc, &swapchain);
+            const ovrResult createResult = ovr_CreateTextureSwapChainDX(
+                m_runtime.m_ovrSession, m_runtime.m_ovrSubmissionDevice.Get(), &swapchainDesc, &swapchain);
             if (OVR_FAILURE(createResult) || !swapchain) {
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
 
-            m_zenOverlay->m_zenOverlaySharedTexture = std::move(sharedTexture);
-            m_zenOverlay->m_zenOverlaySharedMutex = std::move(sharedMutex);
-            m_zenOverlay->m_zenOverlaySwapchain = swapchain;
-            m_zenOverlay->m_zenOverlayWidth = sourceDesc.Width;
-            m_zenOverlay->m_zenOverlayHeight = sourceDesc.Height;
-            m_zenOverlay->m_zenOverlayNextProbeTick = 0;
+            m_zenOverlaySharedTexture = std::move(sharedTexture);
+            m_zenOverlaySharedMutex = std::move(sharedMutex);
+            m_zenOverlaySwapchain = swapchain;
+            m_zenOverlayWidth = sourceDesc.Width;
+            m_zenOverlayHeight = sourceDesc.Height;
+            m_zenOverlayNextProbeTick = 0;
 
-            Log("ZenOverlay runtime texture opened: %ux%u\n",
-                m_zenOverlay->m_zenOverlayWidth,
-                m_zenOverlay->m_zenOverlayHeight);
+            Log("ZenOverlay runtime texture opened: %ux%u\n", m_zenOverlayWidth, m_zenOverlayHeight);
         }
 
-        if (m_zenOverlay->m_zenOverlaySettings.updateShortcut(m_ovrSession,
-                                                              m_sessionState == XR_SESSION_STATE_FOCUSED)) {
-            Log("A+B+X+Y runtime shortcut: overlay %s\n",
-                m_zenOverlay->m_zenOverlaySettings.visible ? "shown" : "hidden");
+        if (m_zenOverlaySettings.updateShortcut(m_runtime.m_ovrSession,
+                                                m_runtime.m_sessionState == XR_SESSION_STATE_FOCUSED)) {
+            Log("A+B+X+Y runtime shortcut: overlay %s\n", m_zenOverlaySettings.visible ? "shown" : "hidden");
         }
 
         int destinationIndex = -1;
         if (OVR_FAILURE(ovr_GetTextureSwapChainCurrentIndex(
-                m_ovrSession, m_zenOverlay->m_zenOverlaySwapchain, &destinationIndex))) {
-            cleanupZenOverlay();
+                m_runtime.m_ovrSession, m_zenOverlaySwapchain, &destinationIndex))) {
+            Cleanup();
             return false;
         }
 
         ComPtr<ID3D11Texture2D> destination;
-        if (OVR_FAILURE(ovr_GetTextureSwapChainBufferDX(m_ovrSession,
-                                                        m_zenOverlay->m_zenOverlaySwapchain,
+        if (OVR_FAILURE(ovr_GetTextureSwapChainBufferDX(m_runtime.m_ovrSession,
+                                                        m_zenOverlaySwapchain,
                                                         destinationIndex,
                                                         IID_PPV_ARGS(destination.ReleaseAndGetAddressOf()))) ||
             !destination) {
-            cleanupZenOverlay();
+            Cleanup();
             return false;
         }
 
         // A timeout is nonnegative but does not grant ownership. Keep the last
         // committed frame until the producer has released a completed image.
-        const HRESULT acquireResult = m_zenOverlay->m_zenOverlaySharedMutex->AcquireSync(1, 0);
+        const HRESULT acquireResult = m_zenOverlaySharedMutex->AcquireSync(1, 0);
         bool newFrame = false;
         if (acquireResult == S_OK) {
-            m_ovrSubmissionContext->CopyResource(m_zenOverlay->m_zenOverlayTransparency.snapshot.Get(),
-                                                 m_zenOverlay->m_zenOverlaySharedTexture.Get());
-            if (m_zenOverlay->m_zenOverlaySharedMutex->ReleaseSync(0) != S_OK) {
+            m_runtime.m_ovrSubmissionContext->CopyResource(m_zenOverlayTransparency.snapshot.Get(),
+                                                           m_zenOverlaySharedTexture.Get());
+            if (m_zenOverlaySharedMutex->ReleaseSync(0) != S_OK) {
                 Log("ZenOverlay runtime shared mutex release failed\n");
-                cleanupZenOverlay();
+                Cleanup();
                 return false;
             }
             newFrame = true;
         } else if (acquireResult != WAIT_TIMEOUT) {
             Log("ZenOverlay runtime shared mutex acquisition failed: 0x%08x\n", unsigned(acquireResult));
-            cleanupZenOverlay();
-            m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+            Cleanup();
+            m_zenOverlayNextProbeTick = now + 500;
             return false;
-        } else if (!m_zenOverlay->m_zenOverlayHasCommittedFrame) {
+        } else if (!m_zenOverlayHasCommittedFrame) {
             return false;
         }
 
-        const bool keyEnabled =
-            m_zenOverlay->m_zenOverlaySettings.valid && (m_zenOverlay->m_zenOverlaySettings.current.flags & 2u);
-        if (newFrame || keyEnabled != m_zenOverlay->m_zenOverlayTransparency.lastEnabled) {
-            if (!m_zenOverlay->m_zenOverlayTransparency.render(
-                    m_ovrSubmissionDevice.Get(), m_ovrSubmissionContext.Get(), destination.Get(), keyEnabled) ||
-                OVR_FAILURE(ovr_CommitTextureSwapChain(m_ovrSession, m_zenOverlay->m_zenOverlaySwapchain))) {
+        const bool keyEnabled = m_zenOverlaySettings.valid && (m_zenOverlaySettings.current.flags & 2u);
+        if (newFrame || keyEnabled != m_zenOverlayTransparency.lastEnabled) {
+            // Match resolveSwapchainImage: save the application context only once.
+            // xrEndFrame's scope guard restores it, including on early exits.
+            if (keyEnabled && m_runtime.m_d3d11Device == m_runtime.m_ovrSubmissionDevice &&
+                !m_runtime.m_d3d11ContextState) {
+                m_runtime.m_ovrSubmissionContext->SwapDeviceContextState(
+                    m_runtime.m_ovrSubmissionContextState.Get(),
+                    m_runtime.m_d3d11ContextState.ReleaseAndGetAddressOf());
+            }
+            if (!m_zenOverlayTransparency.render(m_runtime.m_ovrSubmissionDevice.Get(),
+                                                 m_runtime.m_ovrSubmissionContext.Get(),
+                                                 destination.Get(),
+                                                 keyEnabled) ||
+                OVR_FAILURE(ovr_CommitTextureSwapChain(m_runtime.m_ovrSession, m_zenOverlaySwapchain))) {
                 Log("ZenOverlay transparency presentation failed\n");
-                cleanupZenOverlay();
-                m_zenOverlay->m_zenOverlayNextProbeTick = now + 500;
+                Cleanup();
+                m_zenOverlayNextProbeTick = now + 500;
                 return false;
             }
-            m_zenOverlay->m_zenOverlayHasCommittedFrame = true;
-            m_zenOverlay->m_zenOverlayTransparency.lastEnabled = keyEnabled;
+            m_zenOverlayHasCommittedFrame = true;
+            m_zenOverlayTransparency.lastEnabled = keyEnabled;
         }
 
         // Continue consuming completed capture frames while hidden, so the
         // producer can keep updating and Show never exposes an obsolete frame.
-        if (!m_zenOverlay->m_zenOverlaySettings.visible) {
-            m_zenOverlay->m_zenOverlayWristPoseValid = false;
-            m_zenOverlay->m_zenOverlayGazeVisible = false;
+        if (!m_zenOverlaySettings.visible) {
+            m_zenOverlayWristPoseValid = false;
+            m_zenOverlayGazeVisible = false;
             return false;
         }
 
@@ -594,17 +604,16 @@ namespace virtualdesktop_openxr {
         auto& layer = layers.back().Quad;
         layer.Header.Type = ovrLayerType_Quad;
         layer.Header.Flags = ovrLayerFlag_HeadLocked | ovrLayerFlag_HighQuality;
-        layer.ColorTexture = m_zenOverlay->m_zenOverlaySwapchain;
+        layer.ColorTexture = m_zenOverlaySwapchain;
         layer.Viewport.Pos = {0, 0};
-        layer.Viewport.Size = {static_cast<int>(m_zenOverlay->m_zenOverlayWidth),
-                               static_cast<int>(m_zenOverlay->m_zenOverlayHeight)};
+        layer.Viewport.Size = {static_cast<int>(m_zenOverlayWidth), static_cast<int>(m_zenOverlayHeight)};
         layer.QuadPoseCenter.Orientation = {0.f, 0.f, 0.f, 1.f};
         layer.QuadPoseCenter.Position = {0.f, 0.f, -1.25f};
         layer.QuadSize.x = 0.8f;
-        layer.QuadSize.y = layer.QuadSize.x * static_cast<float>(m_zenOverlay->m_zenOverlayHeight) /
-                           static_cast<float>(m_zenOverlay->m_zenOverlayWidth);
-        if (m_zenOverlay->m_zenOverlaySettings.valid) {
-            const auto& s = m_zenOverlay->m_zenOverlaySettings.current;
+        layer.QuadSize.y =
+            layer.QuadSize.x * static_cast<float>(m_zenOverlayHeight) / static_cast<float>(m_zenOverlayWidth);
+        if (m_zenOverlaySettings.valid) {
+            const auto& s = m_zenOverlaySettings.current;
             constexpr float halfRadians = 3.14159265358979323846f / 360.f;
             const float sx = std::sin(s.pitch * halfRadians), cx = std::cos(s.pitch * halfRadians);
             const float sy = std::sin(s.yaw * halfRadians), cy = std::cos(s.yaw * halfRadians);
@@ -616,32 +625,34 @@ namespace virtualdesktop_openxr {
                                                 cz * cy * cx + sz * sy * sx};
             layer.QuadPoseCenter.Position = {s.x, s.y, s.z};
             layer.QuadSize.x = s.width;
-            layer.QuadSize.y = s.preserveAspect ? s.width * static_cast<float>(m_zenOverlay->m_zenOverlayHeight) /
-                                                      static_cast<float>(m_zenOverlay->m_zenOverlayWidth)
+            layer.QuadSize.y = s.preserveAspect ? s.width * static_cast<float>(m_zenOverlayHeight) /
+                                                      static_cast<float>(m_zenOverlayWidth)
                                                 : s.height;
             if (s.mode != 2) {
-                Space localSpace{};
+                OpenXrRuntime::Space localSpace{};
                 localSpace.referenceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
                 localSpace.poseInSpace = xr::math::Pose::Identity();
                 XrPosef localToOrigin{};
                 constexpr XrSpaceLocationFlags required =
                     XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
-                const XrTime time = m_precompositor.displayTime;
-                if (!m_originSpace || !time ||
-                    (locateSpace(localSpace, *m_originSpace, time, localToOrigin) & required) != required) {
+                const XrTime time = m_runtime.m_precompositor.displayTime;
+                if (!m_runtime.m_originSpace || !time ||
+                    (m_runtime.locateSpace(localSpace, *m_runtime.m_originSpace, time, localToOrigin) & required) !=
+                        required) {
                     layers.pop_back();
-                    m_zenOverlay->m_zenOverlayWristPoseValid = false;
-                    m_zenOverlay->m_zenOverlayGazeVisible = false;
+                    m_zenOverlayWristPoseValid = false;
+                    m_zenOverlayGazeVisible = false;
                     return false;
                 }
                 XrPosef pose = ovrPoseToXrPose(layer.QuadPoseCenter);
                 XrPosef gazePose = pose;
                 if (s.mode == 3) {
                     XrPosef headInLocal{}, playerPose{};
-                    if (!m_viewSpace ||
-                        (locateSpace(*m_viewSpace, localSpace, time, headInLocal) & required) != required ||
+                    if (!m_runtime.m_viewSpace ||
+                        (m_runtime.locateSpace(*m_runtime.m_viewSpace, localSpace, time, headInLocal) & required) !=
+                            required ||
                         !zenOverlayPlayerPose(headInLocal, pose, playerPose)) {
-                        m_zenOverlay->m_zenOverlayGazeVisible = false;
+                        m_zenOverlayGazeVisible = false;
                         layers.pop_back();
                         return false;
                     }
@@ -652,43 +663,43 @@ namespace virtualdesktop_openxr {
                     XrPosef controllerPose{};
                     constexpr XrSpaceLocationFlags tracked =
                         required | XR_SPACE_LOCATION_POSITION_TRACKED_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
-                    if ((getControllerPose(side, time, controllerPose, nullptr) & tracked) != tracked) {
-                        m_zenOverlay->m_zenOverlayWristPoseValid = false;
-                        m_zenOverlay->m_zenOverlayGazeVisible = false;
+                    if ((m_runtime.getControllerPose(side, time, controllerPose, nullptr) & tracked) != tracked) {
+                        m_zenOverlayWristPoseValid = false;
+                        m_zenOverlayGazeVisible = false;
                         layers.pop_back();
                         return false;
                     }
-                    const XrPosef gripInOrigin = xr::math::Pose::Multiply(m_controllerGripPose[side], controllerPose);
+                    const XrPosef gripInOrigin =
+                        xr::math::Pose::Multiply(m_runtime.m_controllerGripPose[side], controllerPose);
                     const XrPosef gripInLocal =
                         xr::math::Pose::Multiply(gripInOrigin, xr::math::Pose::Invert(localToOrigin));
                     const XrPosef wristInLocal = xr::math::Pose::Multiply(pose, gripInLocal);
                     gazePose = wristInLocal;
-                    if (!zenOverlaySmoothWrist(wristInLocal,
-                                               m_zenOverlay->m_zenOverlayWristPose,
-                                               m_zenOverlay->m_zenOverlayWristPoseValid)) {
+                    if (!zenOverlaySmoothWrist(wristInLocal, m_zenOverlayWristPose, m_zenOverlayWristPoseValid)) {
                         layers.pop_back();
                         return false;
                     }
-                    pose = m_zenOverlay->m_zenOverlayWristPose;
+                    pose = m_zenOverlayWristPose;
                 }
                 // Visibility never pauses shared-texture consumption. Use the
                 // unsmoothed wrist pose for the gaze decision.
                 if (s.flags & 1u) {
                     XrPosef headInLocal{};
-                    if (!m_viewSpace ||
-                        (locateSpace(*m_viewSpace, localSpace, time, headInLocal) & required) != required) {
-                        m_zenOverlay->m_zenOverlayGazeVisible = false;
+                    if (!m_runtime.m_viewSpace ||
+                        (m_runtime.locateSpace(*m_runtime.m_viewSpace, localSpace, time, headInLocal) & required) !=
+                            required) {
+                        m_zenOverlayGazeVisible = false;
                     } else {
                         const XrPosef inView = xr::math::Pose::Multiply(gazePose, xr::math::Pose::Invert(headInLocal));
-                        m_zenOverlay->m_zenOverlayGazeVisible = zenOverlayGazeVisible(
-                            inView, s.mode == 0 || s.mode == 4, m_zenOverlay->m_zenOverlayGazeVisible);
+                        m_zenOverlayGazeVisible =
+                            zenOverlayGazeVisible(inView, s.mode == 0 || s.mode == 4, m_zenOverlayGazeVisible);
                     }
-                    if (!m_zenOverlay->m_zenOverlayGazeVisible) {
+                    if (!m_zenOverlayGazeVisible) {
                         layers.pop_back();
                         return false;
                     }
                 } else {
-                    m_zenOverlay->m_zenOverlayGazeVisible = false;
+                    m_zenOverlayGazeVisible = false;
                 }
                 // Use the same LOCAL-to-OVR conversion as application quad layers.
                 layer.QuadPoseCenter = xrPoseToOvrPose(xr::math::Pose::Multiply(pose, localToOrigin));

@@ -582,6 +582,7 @@ echo const char* RuntimeCommitHash = "%commit%"; &gt; $(IntDir)\commit.h
     <ClInclude Include="log.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="zenoverlay.h" />
     <ClInclude Include="runtime.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
